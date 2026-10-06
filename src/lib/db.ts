@@ -83,6 +83,64 @@ export const useCreatePencil = () => {
   });
 };
 
+export const useMarkJobCompleted = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("bookings").update({ status: "awaiting_review" }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["bookings"] }),
+  });
+};
+
+export const useMarkPaymentReceived = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (bookingId: string) => { const { error } = await supabase.rpc("mark_payment_received", { _booking: bookingId }); if (error) throw error; },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["bookings"] }),
+  });
+};
+
+export const useApproveJob = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (bookingId: string) => { const { error } = await supabase.rpc("approve_job", { _booking: bookingId }); if (error) throw error; },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["bookings"] }),
+  });
+};
+
+export const useReleasePayment = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (bookingId: string) => { const { data, error } = await supabase.rpc("release_payment", { _booking: bookingId }); if (error) throw error; return data as string; },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["bookings"] }); qc.invalidateQueries({ queryKey: ["invoices"] }); },
+  });
+};
+
+export const useCancelBooking = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (f: { bookingId: string; reason: string; postponedTo?: string }) => {
+      const { error } = await supabase.rpc("cancel_booking", { _booking: f.bookingId, _reason: f.reason, _postponed_to: f.postponedTo || null });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["bookings"] }),
+  });
+};
+
+export type Invoice = { id: string; invoice_number: string; booking_id: string; crew_id: string; production_id: string; day_rate: number; days: number; overtime_amount: number; equipment_amount: number; subtotal: number; vat_rate: number; vat_amount: number; total: number; status: string; created_at: string };
+
+export const useInvoices = (crewId?: string) => useQuery({
+  queryKey: ["invoices", crewId ?? "all"],
+  queryFn: async () => {
+    const b = supabase.from("invoices").select("*").order("created_at", { ascending: false });
+    const { data, error } = crewId ? await b.eq("crew_id", crewId) : await b;
+    if (error) throw error;
+    return (data ?? []) as Invoice[];
+  },
+});
+
 export const useRespondToBooking = () => {
   const qc = useQueryClient();
   return useMutation({

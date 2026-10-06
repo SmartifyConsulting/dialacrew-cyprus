@@ -9,7 +9,10 @@ import { Avatar } from "@/components/site/SiteTabs";
 import { useRole, useSession } from "@/lib/auth";
 import { zar } from "@/lib/demo-data";
 import { uploadFile, useInvalidate, useOnTimePct, useReviews } from "@/lib/site";
-import { useNegotiations, useProposeRate, useRequestOvertime, useRespondToBooking, useRespondToNegotiation } from "@/lib/db";
+import {
+  useApproveJob, useCancelBooking, useMarkJobCompleted, useMarkPaymentReceived, useNegotiations,
+  useProposeRate, useReleasePayment, useRequestOvertime, useRespondToBooking, useRespondToNegotiation,
+} from "@/lib/db";
 
 export const Route = createFileRoute("/_authenticated/crew/$id")({
   head: () => ({
@@ -45,7 +48,7 @@ function CrewProfile() {
   const jobs = useQuery({
     queryKey: ["crew-jobs", id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("bookings").select("id, role, status, days, crew_rate, booking_date, call_time, wrap_time, pencil_expires_at, cancelled_reason, production_id, productions(name, client, date, status)").eq("crew_id", id);
+      const { data, error } = await supabase.from("bookings").select("id, role, status, days, crew_rate, booking_date, call_time, wrap_time, pencil_expires_at, cancelled_reason, payment_status, client_approved, production_id, productions(name, client, date, status)").eq("crew_id", id);
       if (error) throw error; return data ?? [];
     },
   });
@@ -153,15 +156,27 @@ const STATUS_LABEL: Record<string, string> = {
   completed: "Completed", cancelled: "Cancelled", disputed: "Disputed",
 };
 
+const PAYMENT_LABEL: Record<string, string> = {
+  not_required: "", payment_required: "Awaiting client payment", payment_received: "Payment received",
+  funds_held: "Funds held in escrow", awaiting_release: "Awaiting producer release", release_authorised: "Release authorised",
+  payment_released: "Payment released", payment_failed: "Payment failed", payment_disputed: "Payment disputed",
+};
+
 type Job = {
   id: string; role: string; status: string; days: number; crew_rate: number;
   booking_date: string | null; call_time: string | null; wrap_time: string | null; pencil_expires_at: string | null; cancelled_reason: string | null;
+  payment_status: string; client_approved: boolean | null;
   production_id: string; productions: { name: string; client: string; date: string | null; status: string } | null;
 };
 
 function ProjectRow({ job: j, userId, canRespond, isProducer, onChange }: { job: Job; userId?: string | undefined; canRespond: boolean; isProducer: boolean; onChange: () => void }) {
   const pr = j.productions;
   const respond = useRespondToBooking();
+  const markCompleted = useMarkJobCompleted();
+  const markPaid = useMarkPaymentReceived();
+  const approve = useApproveJob();
+  const release = useReleasePayment();
+  const cancelBooking = useCancelBooking();
   const [negOpen, setNegOpen] = useState(false);
   const negotiations = useNegotiations(j.id, negOpen);
   const propose = useProposeRate();
@@ -173,6 +188,29 @@ function ProjectRow({ job: j, userId, canRespond, isProducer, onChange }: { job:
   const canAct = canRespond || isProducer;
   const pending = j.status === "pencil" || j.status === "awaiting_crew_confirmation";
   const onJob = j.status === "confirmed" || j.status === "in_progress";
+
+  async function completeJob() {
+    try { await markCompleted.mutateAsync(j.id); toast.success("Marked as completed — client has 24 hours to review"); onChange(); }
+    catch (e) { toast.error((e as Error).message); }
+  }
+  async function recordPayment() {
+    try { await markPaid.mutateAsync(j.id); toast.success("Payment recorded — funds held"); onChange(); }
+    catch (e) { toast.error((e as Error).message); }
+  }
+  async function approveOnClientBehalf() {
+    try { await approve.mutateAsync(j.id); toast.success("Job approved — ready to release payment"); onChange(); }
+    catch (e) { toast.error((e as Error).message); }
+  }
+  async function releaseFunds() {
+    try { const invId = await release.mutateAsync(j.id); toast.success(`Payment released, invoice generated (${invId})`); onChange(); }
+    catch (e) { toast.error((e as Error).message); }
+  }
+  async function doCancelBooking() {
+    const reason = window.prompt("Reason for cancelling this booking?");
+    if (!reason) return;
+    try { await cancelBooking.mutateAsync({ bookingId: j.id, reason }); toast.success("Booking cancelled"); onChange(); }
+    catch (e) { toast.error((e as Error).message); }
+  }
 
   async function submitOvertime() {
     const hours = Number(ot.hours), amount = Number(ot.amount);
@@ -212,8 +250,28 @@ function ProjectRow({ job: j, userId, canRespond, isProducer, onChange }: { job:
           {j.status === "cancelled" && j.cancelled_reason && <div className="text-xs text-destructive">{j.cancelled_reason}</div>}
           {j.status === "pencil" && j.pencil_expires_at && <div className="text-xs text-muted-foreground">Expires {new Date(j.pencil_expires_at).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" })}</div>}
         </div>
-        <span className="text-xs uppercase text-muted-foreground">{STATUS_LABEL[j.status] ?? j.status}</span>
+        <div className="text-right">
+          <span className="text-xs uppercase text-muted-foreground">{STATUS_LABEL[j.status] ?? j.status}</span>
+          {j.payment_status !== "not_required" && PAYMENT_LABEL[j.payment_status] && (
+            <div className="text-xs text-muted-foreground">{PAYMENT_LABEL[j.payment_status]}</div>
+          )}
+        </div>
       </div>
+      {canRespond && onJob && (
+        <button onClick={completeJob} className="mt-2 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold uppercase text-primary-foreground">Mark job completed</button>
+      )}
+      {isProducer && j.status === "confirmed" && j.payment_status === "payment_required" && (
+        <button onClick={recordPayment} className="mt-2 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold uppercase text-primary-foreground">Record payment received</button>
+      )}
+      {isProducer && j.status === "awaiting_review" && j.client_approved == null && (
+        <button onClick={approveOnClientBehalf} className="mt-2 rounded-sm border border-primary px-3 py-1.5 text-xs font-semibold uppercase text-primary">Approve job (on client's behalf)</button>
+      )}
+      {isProducer && (j.payment_status === "awaiting_release" || j.payment_status === "release_authorised") && (
+        <button onClick={releaseFunds} className="mt-2 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold uppercase text-primary-foreground">Release payment</button>
+      )}
+      {isProducer && ["pencil", "awaiting_crew_confirmation", "confirmed"].includes(j.status) && (
+        <button onClick={doCancelBooking} className="mt-2 ml-2 text-xs text-destructive hover:underline">Cancel booking</button>
+      )}
       {canRespond && pending && (
         <div className="mt-2 flex gap-2">
           <button onClick={accept} className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold uppercase text-primary-foreground">Accept</button>

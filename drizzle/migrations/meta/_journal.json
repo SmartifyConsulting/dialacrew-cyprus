@@ -71,6 +71,13 @@
       "when": 1791300500000,
       "tag": "0009_checkin_overtime",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791300600000,
+      "tag": "0010_payments_admin",
+      "breakpoints": true
     }
   ]
 }

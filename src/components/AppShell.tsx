@@ -28,6 +28,7 @@ const appNav = [
   { to: "/crew", label: "Crew" },
   { to: "/profile", label: "My profile" },
 ] as const;
+const adminNav = { to: "/admin", label: "Admin" } as const;
 
 export function TopNav() {
   const { session, ready } = useSession();
@@ -79,6 +80,11 @@ export function TopNav() {
                 {n.label}
               </Link>
             ))}
+            {role.data === "admin" && (
+              <Link to={adminNav.to} className="rounded-sm px-3 py-1 font-display text-xs uppercase tracking-widest text-muted-foreground hover:text-primary" activeProps={{ className: "text-primary" }}>
+                {adminNav.label}
+              </Link>
+            )}
             <div className="ml-auto flex items-center gap-3">
               <NotificationBell userId={session.user.id} />
               <span className="hidden text-xs font-semibold uppercase tracking-widest text-muted-foreground md:block">{role.data ? `${role.data} view` : ""}</span>
