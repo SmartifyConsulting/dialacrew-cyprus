@@ -104,11 +104,12 @@ function RoleGate({ children, open }: { children: ReactNode; open?: boolean | un
   const { session } = useSession();
   const role = useRole(session?.user.id);
   if (!session || role.isLoading) return <p className="text-muted-foreground">Loading…</p>;
-  if (role.data !== "producer" && !open)
+  const isManager = role.data === "producer" || (role.data as string) === "admin";
+  if (!isManager && !open)
     return (
       <div className="rounded-sm border border-border bg-card p-8 text-center">
-        <h2 className="font-script text-4xl text-primary">You're signed in as {role.data === "crew" ? "crew" : "a client"}</h2>
-        <p className="mt-3 text-muted-foreground">This area is for producers. Your own {role.data === "crew" ? "job offers and availability" : "productions and quotes"} will appear here soon.</p>
+        <h2 className="font-script text-4xl text-primary">You're signed in as {role.data === "crew" ? "crew" : (role.data ?? "a guest")}</h2>
+        <p className="mt-3 text-muted-foreground">This area is for producers. Your own job offers and availability will appear here soon.</p>
       </div>
     );
   return <>{children}</>;

@@ -27,7 +27,9 @@ function AuthPage() {
   const [mode, setMode] = useState<"signin" | "signup">(inviteToken ? "signup" : "signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [dialCode, setDialCode] = useState("+27");
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<"crew" | "client" | "producer">("crew");
   const [companyName, setCompanyName] = useState("");
@@ -99,7 +101,9 @@ function AuthPage() {
           options: {
             emailRedirectTo: window.location.origin,
             data: {
-              full_name: fullName, phone, role,
+              full_name: `${firstName.trim()} ${lastName.trim()}`.trim(),
+              first_name: firstName.trim(), last_name: lastName.trim(),
+              phone: phone.trim() ? `${dialCode} ${phone.trim().replace(/^0+/, "")}` : "", role,
               ...(role === "producer" && !invite ? { company_name: companyName } : {}),
               ...(role === "crew" && !invite ? { skills } : {}),
               ...(invite ? { invite_token: inviteToken } : {}),
@@ -178,10 +182,19 @@ function AuthPage() {
                   You've been invited to join <strong>{invite.company_name}</strong> as {invite.company_role.replace("_", " ")}.
                 </div>
               )}
-              <div><label className={labelClass} htmlFor="name">Full name</label>
-                <input id="name" required value={fullName} onChange={(e) => setFullName(e.target.value)} className={fieldClass} /></div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><label className={labelClass} htmlFor="firstName">First name</label>
+                  <input id="firstName" required value={firstName} onChange={(e) => setFirstName(e.target.value)} className={fieldClass} /></div>
+                <div><label className={labelClass} htmlFor="lastName">Last name</label>
+                  <input id="lastName" required value={lastName} onChange={(e) => setLastName(e.target.value)} className={fieldClass} /></div>
+              </div>
               <div><label className={labelClass} htmlFor="phone">Phone</label>
-                <input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className={fieldClass} /></div>
+                <div className="flex gap-2">
+                  <select aria-label="Country code" value={dialCode} onChange={(e) => setDialCode(e.target.value)} className={`${fieldClass} w-28`}>
+                    {DIAL_CODES.map((d) => <option key={d.code} value={d.code}>{d.label}</option>)}
+                  </select>
+                  <input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="82 123 4567" className={fieldClass} />
+                </div></div>
               {!invite && (
                 <div><span className={labelClass}>I am</span>
                   <div className={`grid gap-2 ${producerSignupEnabled ? "grid-cols-2" : "grid-cols-1"}`}>
@@ -195,7 +208,6 @@ function AuthPage() {
                   {!producerSignupEnabled && (
                     <p className="mt-1 text-xs text-muted-foreground">Producer accounts are set up by an existing producer.</p>
                   )}
-                  <p className="mt-1 text-xs text-muted-foreground">Client sign-up is disabled for now.</p>
                 </div>
               )}
               {!invite && producerSignupEnabled && role === "producer" && (
@@ -216,8 +228,9 @@ function AuthPage() {
                       );
                     })}
                   </div>
-                  <div className="mt-2 flex gap-2">
-                    <input value={customSkill} onChange={(e) => setCustomSkill(e.target.value)} placeholder="Not listed? Add your own (e.g. Trapeze Artist)" className={fieldClass}
+                  <p className="mt-2 text-[10px] text-muted-foreground">Service not listed? Add your own.</p>
+                  <div className="mt-1 flex gap-2">
+                    <input value={customSkill} onChange={(e) => setCustomSkill(e.target.value)} placeholder="Your service" className={`${fieldClass} text-xs`}
                       onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); const v = customSkill.trim(); if (v && !skills.includes(v)) setSkills([...skills, v]); setCustomSkill(""); } }} />
                     <button type="button" onClick={() => { const v = customSkill.trim(); if (v && !skills.includes(v)) setSkills([...skills, v]); setCustomSkill(""); }}
                       className="rounded-sm border border-input px-3 text-xs font-semibold uppercase text-muted-foreground hover:border-primary hover:text-primary">Add</button>
@@ -272,3 +285,11 @@ function AuthPage() {
     </div>
   );
 }
+
+const DIAL_CODES = [
+  { code: "+27", label: "ZA +27" }, { code: "+357", label: "CY +357" }, { code: "+44", label: "UK +44" },
+  { code: "+1", label: "US +1" }, { code: "+264", label: "NA +264" }, { code: "+267", label: "BW +267" },
+  { code: "+263", label: "ZW +263" }, { code: "+254", label: "KE +254" }, { code: "+234", label: "NG +234" },
+  { code: "+61", label: "AU +61" }, { code: "+49", label: "DE +49" }, { code: "+33", label: "FR +33" },
+  { code: "+971", label: "AE +971" },
+];
