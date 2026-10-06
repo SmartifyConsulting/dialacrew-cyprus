@@ -6,6 +6,7 @@ import { lovable } from "@/integrations/lovable/index";
 import { TopNav } from "@/components/AppShell";
 import { PasswordInput, fieldClass, labelClass, submitClass } from "@/components/PasswordInput";
 import { mapAuthError, passwordChecks, usePlatformSetting } from "@/lib/auth";
+import { DEV_ACCOUNTS } from "@/lib/dev-accounts";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -99,10 +100,45 @@ function AuthPage() {
     if (result.error) fail(result.error);
   }
 
+  async function quickSwitch(acct: (typeof DEV_ACCOUNTS)[number]) {
+    setError("");
+    let pw = acct.password;
+    if (!pw) {
+      const cacheKey = `devpw:${acct.email}`;
+      pw = sessionStorage.getItem(cacheKey);
+      if (!pw) {
+        pw = window.prompt(`Password for ${acct.email} (cached for this browser session only, never saved to disk):`);
+        if (!pw) return;
+        sessionStorage.setItem(cacheKey, pw);
+      }
+    }
+    setBusy(true);
+    const { error } = await supabase.auth.signInWithPassword({ email: acct.email, password: pw });
+    setBusy(false);
+    if (error) { sessionStorage.removeItem(`devpw:${acct.email}`); fail(error); }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <TopNav />
       <main className="mx-auto max-w-md px-4 py-12">
+        {import.meta.env.DEV && (
+          <div className="mb-6 rounded-sm border border-dashed border-primary/50 bg-primary/5 p-3">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-primary">Dev quick switch (local only)</p>
+            <div className="flex flex-wrap gap-2">
+              {DEV_ACCOUNTS.map((a) => (
+                <button key={a.email} type="button" disabled={busy} onClick={() => quickSwitch(a)}
+                  className="rounded-sm border border-primary/40 bg-card px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary hover:bg-primary/10 disabled:opacity-50">
+                  {a.label}
+                </button>
+              ))}
+              <button type="button" disabled={busy} onClick={() => supabase.auth.signOut()}
+                className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:bg-muted disabled:opacity-50">
+                Sign out
+              </button>
+            </div>
+          </div>
+        )}
         <h1 className="text-center font-script text-6xl text-primary">{mode === "signin" ? "Welcome back" : "Join the crew"}</h1>
         <div className="mt-6 grid grid-cols-2 border border-border">
           {(["signin", "signup"] as const).map((m) => (
@@ -121,17 +157,18 @@ function AuthPage() {
               <div><label className={labelClass} htmlFor="phone">Phone</label>
                 <input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className={fieldClass} /></div>
               <div><span className={labelClass}>I am</span>
-                <div className={`grid gap-2 ${producerSignupEnabled ? "grid-cols-3" : "grid-cols-2"}`}>
-                  {(producerSignupEnabled ? (["crew", "client", "producer"] as const) : (["crew", "client"] as const)).map((r) => (
+                <div className={`grid gap-2 ${producerSignupEnabled ? "grid-cols-2" : "grid-cols-1"}`}>
+                  {(producerSignupEnabled ? (["crew", "producer"] as const) : (["crew"] as const)).map((r) => (
                     <button key={r} type="button" onClick={() => setRole(r)}
                       className={`rounded-sm border py-2 text-sm font-semibold uppercase tracking-wider ${role === r ? "border-primary bg-primary/15 text-primary" : "border-input text-muted-foreground"}`}>
-                      {r === "crew" ? "Crew member" : r === "client" ? "Client" : "Producer"}
+                      {r === "crew" ? "Crew member" : "Producer"}
                     </button>
                   ))}
                 </div>
                 {!producerSignupEnabled && (
                   <p className="mt-1 text-xs text-muted-foreground">Producer accounts are set up by an existing producer.</p>
                 )}
+                <p className="mt-1 text-xs text-muted-foreground">Client sign-up is disabled for now.</p>
               </div>
               {producerSignupEnabled && role === "producer" && (
                 <div><label className={labelClass} htmlFor="companyName">Company name</label>
