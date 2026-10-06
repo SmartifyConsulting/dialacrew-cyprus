@@ -1,3 +1,5 @@
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Badge, Page, Panel } from "@/components/AppShell";
@@ -21,6 +23,10 @@ const field = "w-full rounded-sm border border-input bg-background px-3 py-2 tex
 function Productions() {
   const list = useProductions().data ?? [];
   const create = useCreateProduction();
+  const clients = useQuery({
+    queryKey: ["clients"],
+    queryFn: async () => { const { data, error } = await supabase.from("clients").select("id, name, company").order("company"); if (error) throw error; return data ?? []; },
+  }).data ?? [];
   const [open, setOpen] = useState(false);
   const [f, setF] = useState({ name: "", client: "", type: "Commercial", location: "", date: "", days: 1, budget: 0 });
 
@@ -38,7 +44,10 @@ function Productions() {
       {open && (
         <form onSubmit={submit} className="mb-5 grid gap-3 rounded-sm border border-primary/50 bg-card p-4 md:grid-cols-4">
           <input className={field} placeholder="Production name *" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
-          <input className={field} placeholder="Client *" value={f.client} onChange={(e) => setF({ ...f, client: e.target.value })} />
+          <select className={field} value={f.client} onChange={(e) => setF({ ...f, client: e.target.value })}>
+            <option value="">Select client *</option>
+            {clients.map((c) => <option key={c.id} value={c.company}>{c.company} — {c.name}</option>)}
+          </select>
           <select className={field} value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>
             {["Commercial", "Film", "Television", "Photography", "Other"].map((t) => <option key={t}>{t}</option>)}
           </select>
