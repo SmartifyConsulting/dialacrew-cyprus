@@ -15,7 +15,7 @@ export const Route = createFileRoute("/")({
           "With film and video content more popular than ever, we connect businesses with the creative professionals needed to make content.",
       },
       { property: "og:title", content: "Book a Crew" },
-      { property: "og:description", content: "Connecting businesses with film and video crew in Cyprus." },
+      { property: "og:description", content: "Connecting businesses with film and video crew." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { property: "og:image", content: HERO_BG },
