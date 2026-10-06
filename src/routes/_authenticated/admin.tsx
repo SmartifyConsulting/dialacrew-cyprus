@@ -1,18 +1,126 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Page, Badge, Panel } from "@/components/AppShell";
 import { useRole, useSession } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { zar } from "@/lib/demo-data";
 
+const REQUIRED_FIELDS = ["name", "role", "department"] as const;
+const CREW_FIELDS = [...REQUIRED_FIELDS, "location", "email", "phone", "day_rate", "experience"] as const;
+
+function parseCsv(text: string): { headers: string[]; rows: string[][] } {
+  const lines = text.trim().split(/\r?\n/).filter(Boolean);
+  const splitLine = (l: string) => l.split(",").map((c) => c.trim().replace(/^"|"$/g, ""));
+  const [headerLine, ...rest] = lines;
+  return { headers: headerLine ? splitLine(headerLine) : [], rows: rest.map(splitLine) };
+}
+
+function ImportTab() {
+  const inv = useInv();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [csv, setCsv] = useState<{ headers: string[]; rows: string[][] } | null>(null);
+  const [mapping, setMapping] = useState<Record<string, string>>({});
+  const [importing, setImporting] = useState(false);
+  const [result, setResult] = useState<{ imported: number; skipped: number; errors: string[] } | null>(null);
+
+  function onFile(file?: File) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { const parsed = parseCsv(String(reader.result)); setCsv(parsed); setResult(null);
+      const auto: Record<string, string> = {};
+      for (const f of CREW_FIELDS) { const h = parsed.headers.find((x) => x.toLowerCase().replace(/[\s_]/g, "") === f.replace(/_/g, "")); if (h) auto[f] = h; }
+      setMapping(auto);
+    };
+    reader.readAsText(file);
+  }
+
+  async function runImport() {
+    if (!csv) return;
+    const missing = REQUIRED_FIELDS.filter((f) => !mapping[f]);
+    if (missing.length) { toast.error(`Map required fields: ${missing.join(", ")}`); return; }
+    setImporting(true);
+    const errors: string[] = [];
+    let imported = 0, skipped = 0;
+    const seen = new Set<string>();
+    const idx = (field: string) => csv.headers.indexOf(mapping[field] ?? "");
+    const rowsToInsert: { name: string; role: string; department: string; location: string; email: string; phone: string; day_rate: number; experience: number }[] = [];
+    csv.rows.forEach((row, i) => {
+      const name = row[idx("name")]?.trim();
+      const role = row[idx("role")]?.trim();
+      const department = row[idx("department")]?.trim();
+      if (!name || !role || !department) { errors.push(`Row ${i + 2}: missing required field(s)`); skipped++; return; }
+      const email = mapping["email"] ? (row[idx("email")]?.trim() ?? "") : "";
+      const dedupeKey = email || name;
+      if (seen.has(dedupeKey)) { errors.push(`Row ${i + 2}: duplicate (${dedupeKey}) skipped`); skipped++; return; }
+      seen.add(dedupeKey);
+      rowsToInsert.push({
+        name, role, department,
+        location: mapping["location"] ? (row[idx("location")]?.trim() ?? "") : "",
+        email, phone: mapping["phone"] ? (row[idx("phone")]?.trim() ?? "") : "",
+        day_rate: mapping["day_rate"] ? (Number(row[idx("day_rate")]) || 0) : 0,
+        experience: mapping["experience"] ? (Number(row[idx("experience")]) || 0) : 0,
+      });
+    });
+    if (rowsToInsert.length) {
+      const { error } = await supabase.from("crew_members").insert(rowsToInsert);
+      if (error) errors.push(`Insert failed: ${error.message}`); else imported = rowsToInsert.length;
+    }
+    setResult({ imported, skipped, errors });
+    setImporting(false);
+    if (imported > 0) { toast.success(`Imported ${imported} crew member${imported > 1 ? "s" : ""}`); inv(["admin-crew"], ["crew"], ["crew-search"], ["departments"]); }
+  }
+
+  return (
+    <div className="space-y-5">
+      <Panel title="Import crew from CSV">
+        <div className="space-y-3 p-4">
+          <p className="text-sm text-muted-foreground">Upload a CSV with a header row. Map its columns to crew fields below, preview, then import. Required: name, role, department.</p>
+          <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={(e) => onFile(e.target.files?.[0])} className="text-sm" />
+          {csv && (
+            <>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {CREW_FIELDS.map((f) => (
+                  <label key={f} className="block text-xs">
+                    <span className="uppercase tracking-wider text-muted-foreground">{f}{(REQUIRED_FIELDS as readonly string[]).includes(f) ? " *" : ""}</span>
+                    <select className="mt-1 w-full rounded-sm border border-input bg-background px-2 py-1" value={mapping[f] ?? ""} onChange={(e) => setMapping({ ...mapping, [f]: e.target.value })}>
+                      <option value="">— not mapped —</option>
+                      {csv.headers.map((h) => <option key={h} value={h}>{h}</option>)}
+                    </select>
+                  </label>
+                ))}
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead><tr>{csv.headers.map((h) => <th key={h} className="px-2 py-1 text-left font-semibold">{h}</th>)}</tr></thead>
+                  <tbody>{csv.rows.slice(0, 5).map((r, i) => <tr key={i} className="border-t border-border">{r.map((c, j) => <td key={j} className="px-2 py-1">{c}</td>)}</tr>)}</tbody>
+                </table>
+                <p className="mt-1 text-xs text-muted-foreground">Previewing {Math.min(5, csv.rows.length)} of {csv.rows.length} rows.</p>
+              </div>
+              <button onClick={runImport} disabled={importing} className="rounded-sm bg-primary px-4 py-2 text-xs font-semibold uppercase tracking-wider text-primary-foreground disabled:opacity-60">
+                {importing ? "Importing…" : `Import ${csv.rows.length} rows`}
+              </button>
+            </>
+          )}
+          {result && (
+            <div className="rounded-sm border border-border bg-muted/30 p-3 text-sm">
+              <div>Imported: {result.imported} · Skipped: {result.skipped}</div>
+              {result.errors.length > 0 && <ul className="mt-2 max-h-40 list-disc overflow-y-auto pl-5 text-xs text-muted-foreground">{result.errors.map((e, i) => <li key={i}>{e}</li>)}</ul>}
+            </div>
+          )}
+        </div>
+      </Panel>
+    </div>
+  );
+}
+
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — Book a Crew" }] }),
   component: AdminPage,
 });
 
-const TABS = ["Users", "Crew", "Companies", "Bookings", "Payments", "Invoices", "Disputes", "Reviews", "Memberships", "Audit Log"] as const;
+const TABS = ["Users", "Crew", "Import", "Companies", "Bookings", "Payments", "Invoices", "Disputes", "Reviews", "Memberships", "Audit Log"] as const;
 const btn = "rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary-foreground";
 
 function AdminPage() {
@@ -42,6 +150,7 @@ function AdminPage() {
       </nav>
       {tab === "Users" && <UsersTab />}
       {tab === "Crew" && <CrewTab />}
+      {tab === "Import" && <ImportTab />}
       {tab === "Companies" && <CompaniesTab />}
       {tab === "Bookings" && <BookingsTab />}
       {tab === "Payments" && <PaymentsTab />}

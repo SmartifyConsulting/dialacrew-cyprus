@@ -121,6 +121,17 @@ function CrewProfile() {
                   <div key={l}><div className="font-display text-3xl font-bold">{v}</div><div className="text-xs text-muted-foreground">{l}</div></div>
                 ))}
               </section>
+              {(m.portfolio_url || m.youtube_url || m.vimeo_url || m.instagram_url) && (
+                <section className="border-t border-border pt-5">
+                  <h3 className="mb-2 font-semibold">Portfolio & links</h3>
+                  <div className="flex flex-wrap gap-3 text-sm">
+                    {m.portfolio_url && <a href={m.portfolio_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Portfolio / showreel</a>}
+                    {m.youtube_url && <a href={m.youtube_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">YouTube</a>}
+                    {m.vimeo_url && <a href={m.vimeo_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Vimeo</a>}
+                    {m.instagram_url && <a href={m.instagram_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Instagram</a>}
+                  </div>
+                </section>
+              )}
             </div>
           )}
           {tab === "Certifications" && <Certifications certs={certs} canEdit={canEdit} onChange={(next) => update({ certifications: next })} />}
@@ -323,8 +334,11 @@ function ProjectRow({ job: j, userId, canRespond, isProducer, onChange }: { job:
   );
 }
 
-function EditForm({ m, onSave }: { m: { name: string; role: string; department: string; email: string; phone: string; location: string; bio: string; skills: string[]; experience_notes: string; team_led: number; safety_record: number }; onSave: (p: Record<string, unknown>) => void }) {
-  const [f, setF] = useState({ ...m, skills: m.skills.join(", ") });
+function EditForm({ m, onSave }: { m: { name: string; role: string; department: string; email: string; phone: string; location: string; bio: string; skills: string[]; experience_notes: string; team_led: number; safety_record: number; portfolio_url?: string | null; youtube_url?: string | null; vimeo_url?: string | null; instagram_url?: string | null }; onSave: (p: Record<string, unknown>) => void }) {
+  const [f, setF] = useState({
+    ...m, skills: m.skills.join(", "),
+    portfolio_url: m.portfolio_url ?? "", youtube_url: m.youtube_url ?? "", vimeo_url: m.vimeo_url ?? "", instagram_url: m.instagram_url ?? "",
+  });
   const field = (k: keyof typeof f, label: string, type = "text") => (
     <label className="block"><span className="text-xs uppercase tracking-wider text-muted-foreground">{label}</span>
       <input type={type} className={`${input} mt-1 w-full`} value={String(f[k])} onChange={(e) => setF({ ...f, [k]: e.target.value })} /></label>
@@ -337,10 +351,13 @@ function EditForm({ m, onSave }: { m: { name: string; role: string; department: 
       <label className="block sm:col-span-2"><span className="text-xs uppercase tracking-wider text-muted-foreground">Experience</span>
         <textarea rows={4} className={`${input} mt-1 w-full`} value={f.experience_notes} onChange={(e) => setF({ ...f, experience_notes: e.target.value })} /></label>
       {field("team_led", "Team members led", "number")}{field("safety_record", "Safety record %", "number")}
+      {field("portfolio_url", "Portfolio / showreel URL", "url")}{field("youtube_url", "YouTube URL", "url")}
+      {field("vimeo_url", "Vimeo URL", "url")}{field("instagram_url", "Instagram URL", "url")}
       <div className="sm:col-span-2"><button className={btn} onClick={() => onSave({
         name: f.name, role: f.role, department: f.department, location: f.location, email: f.email, phone: f.phone,
         experience_notes: f.experience_notes, team_led: Number(f.team_led) || 0, safety_record: Math.min(100, Math.max(0, Number(f.safety_record) || 0)),
         skills: f.skills.split(",").map((s) => s.trim()).filter(Boolean),
+        portfolio_url: f.portfolio_url || null, youtube_url: f.youtube_url || null, vimeo_url: f.vimeo_url || null, instagram_url: f.instagram_url || null,
       })}>Save profile</button></div>
     </div>
   );

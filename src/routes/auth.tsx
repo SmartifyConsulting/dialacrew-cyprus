@@ -28,6 +28,7 @@ function AuthPage() {
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<"crew" | "client" | "producer">("crew");
   const [companyName, setCompanyName] = useState("");
+  const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [wait, setWait] = useState(0);
@@ -63,13 +64,17 @@ function AuthPage() {
       pwRef.current?.focus();
       return;
     }
+    if (mode === "signup" && !agreed) {
+      setError("Please accept the Terms & Conditions and Privacy Policy to continue.");
+      return;
+    }
     setBusy(true);
     try {
       if (mode === "signin") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email, password,
           options: {
             emailRedirectTo: window.location.origin,
@@ -80,6 +85,10 @@ function AuthPage() {
           },
         });
         if (error) throw error;
+        if (data.session) {
+          const { data: docs } = await supabase.from("legal_documents").select("id").eq("active", true).in("doc_type", ["terms", "privacy_policy"]);
+          if (docs?.length) await supabase.from("legal_acceptances").insert(docs.map((d) => ({ user_id: data.session!.user.id, document_id: d.id, user_agent: navigator.userAgent })));
+        }
       }
     } catch (err) { fail(err); } finally { setBusy(false); }
   }
@@ -140,6 +149,12 @@ function AuthPage() {
               </ul>
             )}
           </div>
+          {mode === "signup" && (
+            <label className="flex items-start gap-2 text-xs text-muted-foreground">
+              <input type="checkbox" className="mt-0.5 accent-primary" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
+              <span>I agree to the <Link to="/terms" target="_blank" className="text-primary hover:underline">Terms &amp; Conditions</Link> and Privacy Policy, and (for crew) confirm I'm registering as an independent contractor, not an employee of Book a Crew.</span>
+            </label>
+          )}
           <p aria-live="polite" className="min-h-5 text-sm text-destructive">{error}</p>
           <button type="submit" disabled={busy || wait > 0} className={submitClass}>
             {wait > 0 ? `Try again in ${wait}s` : busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}

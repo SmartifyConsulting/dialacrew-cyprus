@@ -36,6 +36,10 @@ const q = <T,>(key: unknown[], fn: () => PromiseLike<{ data: T[] | null; error: 
 
 export const useSiteMembers = (pid: string) => useQuery(q(["site-members", pid], () => supabase.rpc("site_members", { _prod: pid })));
 export const usePosts = (pid: string) => useQuery(q(["posts", pid], () => supabase.from("site_posts").select("*").eq("production_id", pid).order("created_at", { ascending: false })));
+export const useMessages = (pid: string, bookingId: string | "all") => useQuery(q(["messages", pid, bookingId], () => {
+  const b = supabase.from("messages").select("*").eq("production_id", pid).order("created_at");
+  return bookingId === "all" ? b : b.eq("booking_id", bookingId);
+}));
 export const useTasks = (pid: string) => useQuery(q(["tasks", pid], () => supabase.from("site_tasks").select("*").eq("production_id", pid).order("created_at")));
 export const useDocs = (pid: string) => useQuery(q(["docs", pid], () => supabase.from("site_documents").select("*").eq("production_id", pid).order("created_at", { ascending: false })));
 export const useRegister = (pid: string) => useQuery(q(["register", pid], () => supabase.from("site_attendance").select("*").eq("production_id", pid).order("created_at", { ascending: false })));

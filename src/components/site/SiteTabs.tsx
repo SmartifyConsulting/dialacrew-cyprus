@@ -10,7 +10,7 @@ import { assetsTotal, providerTotal } from "@/lib/costing";
 import { distanceMeters, getPosition, isOnSite } from "@/lib/geo";
 import { isOnline, pendingCount, queueCheckin, syncQueue } from "@/lib/offline-checkin";
 import {
-  signedUrl, uploadFile, useBookingAssets, useCrewAssets, useDocs, useInvalidate, usePosts, useRegister,
+  signedUrl, uploadFile, useBookingAssets, useCrewAssets, useDocs, useInvalidate, useMessages, usePosts, useRegister,
   useReviews, useSignedUrl, useSiteMembers, useTasks,
 } from "@/lib/site";
 
@@ -224,6 +224,53 @@ export function PostsTab({ p, userId, myName, isProducer }: Ctx) {
 function AudioPlayer({ path }: { path: string }) {
   const url = useSignedUrl(path).data;
   return url ? <audio controls src={url} className="mt-2 w-full" /> : null;
+}
+
+/* ---------------- Messages (booking-scoped) ---------------- */
+export function MessagesTab({ p, userId, myName }: Ctx & { bookings: Booking[]; crewNames: Record<string, string> }) {
+  const bookingId = "all" as const;
+  const messages = useMessages(p.id, bookingId);
+  const inv = useInvalidate();
+  const [body, setBody] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const ch = supabase.channel(`messages-${p.id}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `production_id=eq.${p.id}` }, () => inv(["messages", p.id, bookingId]))
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.id, bookingId]);
+
+  async function send() {
+    if (!body.trim()) return;
+    setBusy(true);
+    try {
+      const { error } = await supabase.from("messages").insert({ production_id: p.id, booking_id: bookingId === "all" ? null : bookingId, sender_id: userId, sender_name: myName, body: body.trim() });
+      if (error) throw error;
+      setBody(""); inv(["messages", p.id, bookingId]);
+    } catch (e) { toast.error((e as Error).message); }
+    setBusy(false);
+  }
+
+  return (
+    <div className="mx-auto max-w-2xl space-y-4">
+      <div className="space-y-2 rounded-sm border border-border bg-card p-4">
+        {(messages.data ?? []).length === 0 && <p className="text-center text-sm text-muted-foreground">No messages yet.</p>}
+        {(messages.data ?? []).map((m) => (
+          <div key={m.id} className={`rounded-sm p-2 text-sm ${m.sender_id === userId ? "ml-auto max-w-[80%] bg-primary/15" : "max-w-[80%] bg-muted"}`}>
+            <div className="text-xs font-semibold">{m.sender_name}</div>
+            <div className="whitespace-pre-wrap">{m.body}</div>
+            <div className="text-[10px] text-muted-foreground">{when(m.created_at)}</div>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <textarea rows={2} className={`${input} flex-1`} placeholder="Call time, location, documents, changes…" value={body} onChange={(e) => setBody(e.target.value)} />
+        <button onClick={send} disabled={busy} className={btn}>Send</button>
+      </div>
+    </div>
+  );
 }
 
 /* ---------------- Register (geolocation ins & outs) ---------------- */

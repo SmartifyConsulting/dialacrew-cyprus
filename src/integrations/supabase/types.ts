@@ -297,6 +297,10 @@ export type Database = {
           skills: string[]
           team_led: number
           user_id: string | null
+          portfolio_url: string | null
+          youtube_url: string | null
+          vimeo_url: string | null
+          instagram_url: string | null
         }
         Insert: {
           available?: boolean
@@ -321,6 +325,10 @@ export type Database = {
           skills?: string[]
           team_led?: number
           user_id?: string | null
+          portfolio_url?: string | null
+          youtube_url?: string | null
+          vimeo_url?: string | null
+          instagram_url?: string | null
         }
         Update: {
           available?: boolean
@@ -345,6 +353,10 @@ export type Database = {
           skills?: string[]
           team_led?: number
           user_id?: string | null
+          portfolio_url?: string | null
+          youtube_url?: string | null
+          vimeo_url?: string | null
+          instagram_url?: string | null
         }
         Relationships: []
       }
@@ -536,6 +548,7 @@ export type Database = {
           phone: string | null
           role: string
           suspended: boolean
+          whatsapp_number: string | null
         }
         Insert: {
           created_at?: string
@@ -545,6 +558,7 @@ export type Database = {
           phone?: string | null
           role?: string
           suspended?: boolean
+          whatsapp_number?: string | null
         }
         Update: {
           created_at?: string
@@ -554,6 +568,7 @@ export type Database = {
           phone?: string | null
           role?: string
           suspended?: boolean
+          whatsapp_number?: string | null
         }
         Relationships: []
       }
@@ -936,6 +951,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      messages: {
+        Row: { id: string; production_id: string; booking_id: string | null; sender_id: string; sender_name: string; body: string; created_at: string }
+        Insert: { id?: string; production_id: string; booking_id?: string | null; sender_id?: string; sender_name?: string; body: string; created_at?: string }
+        Update: { id?: string; production_id?: string; booking_id?: string | null; sender_id?: string; sender_name?: string; body?: string; created_at?: string }
+        Relationships: []
+      }
+      whatsapp_outbox: {
+        Row: { id: string; user_id: string; phone: string | null; title: string; body: string; status: string; created_at: string }
+        Insert: { id?: string; user_id: string; phone?: string | null; title: string; body: string; status?: string; created_at?: string }
+        Update: { id?: string; user_id?: string; phone?: string | null; title?: string; body?: string; status?: string; created_at?: string }
+        Relationships: []
+      }
+      legal_documents: {
+        Row: { id: string; doc_type: string; version: string; title: string; content: string; active: boolean; created_at: string }
+        Insert: { id?: string; doc_type: string; version: string; title: string; content?: string; active?: boolean; created_at?: string }
+        Update: { id?: string; doc_type?: string; version?: string; title?: string; content?: string; active?: boolean; created_at?: string }
+        Relationships: []
+      }
+      legal_acceptances: {
+        Row: { id: string; user_id: string; document_id: string; accepted_at: string; user_agent: string | null }
+        Insert: { id?: string; user_id: string; document_id: string; accepted_at?: string; user_agent?: string | null }
+        Update: { id?: string; user_id?: string; document_id?: string; accepted_at?: string; user_agent?: string | null }
+        Relationships: []
+      }
+      favourites: {
+        Row: { id: string; user_id: string; crew_id: string; created_at: string }
+        Insert: { id?: string; user_id?: string; crew_id: string; created_at?: string }
+        Update: { id?: string; user_id?: string; crew_id?: string; created_at?: string }
+        Relationships: []
       }
       invoices: {
         Row: {

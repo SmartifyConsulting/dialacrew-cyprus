@@ -152,6 +152,48 @@ export const useRespondToBooking = () => {
   });
 };
 
+const PAGE_SIZE = 24;
+
+export const useCrewSearch = (f: { q: string; department: string; availableOnly: boolean; favouriteIds?: string[] | undefined; favouritesOnly: boolean; page: number }) => useQuery({
+  queryKey: ["crew-search", f],
+  queryFn: async () => {
+    let query = supabase.from("crew_members").select("*", { count: "exact" }).order("name");
+    if (f.q) query = query.or(`name.ilike.%${f.q}%,role.ilike.%${f.q}%,location.ilike.%${f.q}%`);
+    if (f.department !== "All") query = query.eq("department", f.department);
+    if (f.availableOnly) query = query.eq("available", true);
+    if (f.favouritesOnly) query = query.in("id", f.favouriteIds?.length ? f.favouriteIds : ["__none__"]);
+    const from = f.page * PAGE_SIZE, to = from + PAGE_SIZE - 1;
+    const { data, error, count } = await query.range(from, to);
+    if (error) throw error;
+    return { rows: (data ?? []).map(toCrew), total: count ?? 0 };
+  },
+});
+
+export const useDepartments = () => useQuery({
+  queryKey: ["departments"],
+  queryFn: async () => {
+    const { data, error } = await supabase.from("crew_members").select("department");
+    if (error) throw error;
+    return ["All", ...Array.from(new Set((data ?? []).map((r) => r.department)))];
+  },
+});
+
+export const useFavourites =(userId: string | undefined) => useQuery({
+  queryKey: ["favourites", userId], enabled: !!userId,
+  queryFn: async () => { const { data, error } = await supabase.from("favourites").select("crew_id").eq("user_id", userId!); if (error) throw error; return (data ?? []).map((r) => r.crew_id); },
+});
+
+export const useToggleFavourite = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ crewId, on }: { crewId: string; on: boolean }) => {
+      if (on) { const { error } = await supabase.from("favourites").insert({ crew_id: crewId }); if (error) throw error; }
+      else { const { error } = await supabase.from("favourites").delete().eq("crew_id", crewId); if (error) throw error; }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["favourites"] }),
+  });
+};
+
 export const useRequestOvertime = () => {
   const qc = useQueryClient();
   return useMutation({

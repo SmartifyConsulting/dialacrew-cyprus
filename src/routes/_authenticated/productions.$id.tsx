@@ -5,7 +5,7 @@ import { Badge, Page } from "@/components/AppShell";
 import { useRole, useSession } from "@/lib/auth";
 import { useBookings, useCrew, useProductions, useRequests } from "@/lib/db";
 import { useMyCrewId, useMyName } from "@/lib/site";
-import { AssetsTab, CommercialsTab, DocumentsTab, OverviewTab, PostsTab, RegisterTab, TasksTab } from "@/components/site/SiteTabs";
+import { AssetsTab, CommercialsTab, DocumentsTab, MessagesTab, OverviewTab, PostsTab, RegisterTab, TasksTab } from "@/components/site/SiteTabs";
 
 export const Route = createFileRoute("/_authenticated/productions/$id")({
   head: () => ({
@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_authenticated/productions/$id")({
   component: ProductionSite,
 });
 
-const TABS = ["Overview", "Posts", "Register", "Tasks", "Documents", "Assets", "Commercials"] as const;
+const TABS = ["Overview", "Posts", "Messages", "Register", "Tasks", "Documents", "Assets", "Commercials"] as const;
 
 function ProductionSite() {
   const { id } = Route.useParams();
@@ -53,6 +53,7 @@ function ProductionSite() {
       </nav>
       {tab === "Overview" && <OverviewTab {...ctx} />}
       {tab === "Posts" && <PostsTab {...ctx} />}
+      {tab === "Messages" && <MessagesTab {...ctx} bookings={bookings} crewNames={crewNames} />}
       {tab === "Register" && <RegisterTab {...ctx} />}
       {tab === "Tasks" && <TasksTab {...ctx} />}
       {tab === "Documents" && <DocumentsTab {...ctx} />}
