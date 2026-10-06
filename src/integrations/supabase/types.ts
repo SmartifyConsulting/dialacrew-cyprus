@@ -194,6 +194,33 @@ export type Database = {
           },
         ]
       }
+      brief_matches: {
+        Row: {
+          brief: string
+          client: string
+          created_at: string
+          created_by: string | null
+          id: string
+          result: Json
+        }
+        Insert: {
+          brief: string
+          client?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          result?: Json
+        }
+        Update: {
+          brief?: string
+          client?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          result?: Json
+        }
+        Relationships: []
+      }
       change_requests: {
         Row: {
           amount: number
@@ -341,6 +368,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      company_memory: {
+        Row: {
+          client: string
+          profile: Json
+          sources: number
+          summary: string
+          updated_at: string
+        }
+        Insert: {
+          client: string
+          profile?: Json
+          sources?: number
+          summary?: string
+          updated_at?: string
+        }
+        Update: {
+          client?: string
+          profile?: Json
+          sources?: number
+          summary?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       company_users: {
         Row: {
@@ -1040,6 +1091,50 @@ export type Database = {
           value?: Json
         }
         Relationships: []
+      }
+      production_retrospectives: {
+        Row: {
+          client: string
+          created_at: string
+          created_by: string | null
+          form: Json
+          id: string
+          lessons: string
+          memory: Json
+          production_id: string
+          updated_at: string
+        }
+        Insert: {
+          client?: string
+          created_at?: string
+          created_by?: string | null
+          form?: Json
+          id?: string
+          lessons?: string
+          memory?: Json
+          production_id: string
+          updated_at?: string
+        }
+        Update: {
+          client?: string
+          created_at?: string
+          created_by?: string | null
+          form?: Json
+          id?: string
+          lessons?: string
+          memory?: Json
+          production_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_retrospectives_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: true
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       productions: {
         Row: {
