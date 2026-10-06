@@ -8,7 +8,7 @@ export const Route = createFileRoute("/join")({
   head: () => ({
     meta: [
       { title: "JOIN | dialacrew" },
-      { name: "description", content: "Join Dial a Crew — film and video crew in Cyprus." },
+      { name: "description", content: "Join Dial a Crew — film and video crew." },
       { property: "og:title", content: "Join Dial a Crew" },
       { property: "og:description", content: "Apply to join the Dial a Crew books." },
       { property: "og:type", content: "website" },
@@ -26,7 +26,8 @@ const schema = z.object({
   message: z.string().trim().max(2000),
 });
 
-const field = "w-full border border-primary bg-transparent px-2 py-1.5 text-foreground placeholder:text-foreground focus:outline-none focus:ring-1 focus:ring-primary";
+const field =
+  "w-full border border-primary bg-transparent px-2 py-1.5 text-foreground placeholder:text-foreground focus:outline-none focus:ring-1 focus:ring-primary";
 
 function Join() {
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -63,7 +64,10 @@ function Join() {
           <textarea name="message" placeholder="Message" rows={5} className={field} />
           {state === "error" && <p className="text-sm text-destructive">Something went wrong — please try again.</p>}
           <div className="text-center">
-            <button disabled={state === "sending"} className="-mt-6 w-[150px] bg-primary py-4 font-script text-xl text-primary-foreground hover:opacity-90 disabled:opacity-60">
+            <button
+              disabled={state === "sending"}
+              className="-mt-6 w-[150px] bg-primary py-4 font-script text-xl text-primary-foreground hover:opacity-90 disabled:opacity-60"
+            >
               Send
             </button>
           </div>
