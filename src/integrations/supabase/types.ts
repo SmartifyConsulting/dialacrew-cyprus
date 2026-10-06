@@ -331,6 +331,36 @@ export type Database = {
           },
         ]
       }
+      join_requests: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          job_description: string
+          message: string
+          name: string
+          phone: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          job_description?: string
+          message?: string
+          name: string
+          phone?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          job_description?: string
+          message?: string
+          name?: string
+          phone?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string
