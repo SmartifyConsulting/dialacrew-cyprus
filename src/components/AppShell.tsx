@@ -1,6 +1,9 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import logo from "@/assets/bookacrew-logo.png.asset.json";
+import { supabase } from "@/integrations/supabase/client";
+import { useRole, useSession } from "@/lib/auth";
 
 const nav = [
   { to: "/", label: "Home" },
@@ -10,6 +13,18 @@ const nav = [
 ] as const;
 
 export function TopNav() {
+  const { session, ready } = useSession();
+  const role = useRole(session?.user.id);
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
+  async function signOut() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  }
+
   return (
     <header className="sticky top-0 z-30 bg-primary text-primary-foreground">
       <div className="mx-auto flex max-w-7xl items-center gap-6 px-4 py-2">
@@ -31,10 +46,33 @@ export function TopNav() {
             </Link>
           ))}
         </nav>
-        <span className="hidden text-xs font-semibold uppercase tracking-widest md:block">Producer view</span>
+        <div className="flex items-center gap-3">
+          {ready && session ? (
+            <>
+              <span className="hidden text-xs font-semibold uppercase tracking-widest md:block">{role.data ? `${role.data} view` : ""}</span>
+              <button onClick={signOut} className="rounded-sm border border-primary-foreground/50 px-3 py-1.5 font-display text-xs uppercase tracking-widest hover:bg-primary-foreground/10">Sign out</button>
+            </>
+          ) : ready ? (
+            <Link to="/auth" className="rounded-sm bg-primary-foreground px-3 py-1.5 font-display text-xs uppercase tracking-widest text-primary">Sign in</Link>
+          ) : null}
+        </div>
       </div>
     </header>
   );
+}
+
+function RoleGate({ children }: { children: ReactNode }) {
+  const { session } = useSession();
+  const role = useRole(session?.user.id);
+  if (!session || role.isLoading) return <p className="text-muted-foreground">Loading…</p>;
+  if (role.data !== "producer")
+    return (
+      <div className="rounded-sm border border-border bg-card p-8 text-center">
+        <h2 className="font-script text-4xl text-primary">You're signed in as {role.data === "crew" ? "crew" : "a client"}</h2>
+        <p className="mt-3 text-muted-foreground">This area is for producers. Your own {role.data === "crew" ? "job offers and availability" : "productions and quotes"} will appear here soon.</p>
+      </div>
+    );
+  return <>{children}</>;
 }
 
 export function Page({ title, subtitle, actions, children }: { title: string; subtitle?: string; actions?: ReactNode; children: ReactNode }) {
@@ -42,14 +80,16 @@ export function Page({ title, subtitle, actions, children }: { title: string; su
     <div className="min-h-screen bg-background">
       <TopNav />
       <main className="mx-auto max-w-7xl px-4 py-6">
-        <div className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
-          <div>
-            <h1 className="font-script text-5xl text-primary">{title}</h1>
-            {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
+        <RoleGate>
+          <div className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
+            <div>
+              <h1 className="font-script text-5xl text-primary">{title}</h1>
+              {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
+            </div>
+            {actions}
           </div>
-          {actions}
-        </div>
-        {children}
+          {children}
+        </RoleGate>
       </main>
     </div>
   );

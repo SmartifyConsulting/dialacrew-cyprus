@@ -46,7 +46,7 @@ export function mapAuthError(err: unknown): { message: string; retryAfter?: numb
   const msg = (e?.message ?? "").toLowerCase();
   const code = e?.code ?? "";
   console.error("[auth]", err);
-  if (code === "weak_password" && msg.includes("pwned") || msg.includes("breach") || msg.includes("leaked"))
+  if (msg.includes("pwned") || msg.includes("breach") || msg.includes("leaked"))
     return { message: "This password has appeared in a known data breach. Please choose a different one." };
   if (code === "invalid_credentials" || msg.includes("invalid login") || msg.includes("user not found"))
     return { message: "Email or password is incorrect." };
