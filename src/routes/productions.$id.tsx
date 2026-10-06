@@ -1,19 +1,15 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Badge, Page, Panel } from "@/components/AppShell";
-import { bookings, crew, productions, zar } from "@/lib/demo-data";
+import { zar } from "@/lib/demo-data";
+import { useBookings, useCrew, useProductions } from "@/lib/db";
 
 export const Route = createFileRoute("/productions/$id")({
-  loader: ({ params }) => {
-    const p = productions.find((x) => x.id === params.id);
-    if (!p) throw notFound();
-    return p;
-  },
-  head: ({ loaderData }) => ({
+  head: () => ({
     meta: [
-      { title: `${loaderData?.name ?? "Production"} — Book a Crew` },
-      { name: "description", content: `Crew breakdown, bookings and budget for ${loaderData?.name ?? "this production"}.` },
-      { property: "og:title", content: `${loaderData?.name ?? "Production"} — Book a Crew` },
+      { title: "Production — Book a Crew" },
+      { name: "description", content: "Crew breakdown, bookings and budget for this production." },
+      { property: "og:title", content: "Production — Book a Crew" },
       { property: "og:description", content: "Production breakdown and bookings." },
     ],
   }),
@@ -21,8 +17,13 @@ export const Route = createFileRoute("/productions/$id")({
 });
 
 function ProductionDetail() {
-  const p = Route.useLoaderData();
+  const { id } = Route.useParams();
+  const prods = useProductions();
+  const crew = useCrew().data ?? [];
+  const bookings = useBookings().data ?? [];
   const [clientView, setClientView] = useState(false);
+  const p = prods.data?.find((x) => x.id === id);
+  if (!p) return <Page title={prods.isLoading ? "Loading…" : "Production not found"}>{null}</Page>;
   const rows = bookings.filter((b) => b.productionId === p.id);
   const crewCost = rows.reduce((a, b) => a + b.crewRate * b.days, 0);
   const clientTotal = rows.reduce((a, b) => a + b.clientCharge * b.days, 0);

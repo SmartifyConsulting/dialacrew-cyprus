@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
 import { Badge, Page, Panel } from "@/components/AppShell";
-import { bookings, crew, productions, requests, zar } from "@/lib/demo-data";
+import { zar } from "@/lib/demo-data";
+import { useBookings, useCrew, useProductions, useRequests, useSetRequestState } from "@/lib/db";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -15,10 +15,13 @@ export const Route = createFileRoute("/dashboard")({
   component: Dashboard,
 });
 
-const crewName = (id: string) => crew.find((c) => c.id === id)?.name ?? "—";
-
 function Dashboard() {
-  const [reqs, setReqs] = useState(requests.map((r) => ({ ...r, state: "Pending" as string })));
+  const productions = useProductions().data ?? [];
+  const crew = useCrew().data ?? [];
+  const bookings = useBookings().data ?? [];
+  const reqs = useRequests().data ?? [];
+  const setState = useSetRequestState();
+  const crewName = (id: string) => crew.find((c) => c.id === id)?.name ?? "—";
   const count = (s: string) => bookings.filter((b) => b.status === s).length;
   const secured = productions.reduce((a, p) => a + p.securedFunds, 0);
   const stats = [
@@ -78,8 +81,8 @@ function Dashboard() {
                 <div className="text-xs text-muted-foreground">{r.who} · {r.production}</div>
                 {r.state === "Pending" ? (
                   <div className="mt-2 flex gap-2">
-                    <button onClick={() => setReqs((x) => x.map((y) => y.id === r.id ? { ...y, state: "Approved" } : y))} className="rounded-sm bg-primary px-3 py-1 text-xs font-semibold uppercase text-primary-foreground">Approve</button>
-                    <button onClick={() => setReqs((x) => x.map((y) => y.id === r.id ? { ...y, state: "Declined" } : y))} className="rounded-sm border border-border px-3 py-1 text-xs font-semibold uppercase">Decline</button>
+                    <button onClick={() => setState.mutate({ id: r.id, state: "Approved" })} className="rounded-sm bg-primary px-3 py-1 text-xs font-semibold uppercase text-primary-foreground">Approve</button>
+                    <button onClick={() => setState.mutate({ id: r.id, state: "Declined" })} className="rounded-sm border border-border px-3 py-1 text-xs font-semibold uppercase">Decline</button>
                   </div>
                 ) : <div className="mt-2 text-xs font-semibold uppercase">{r.state}</div>}
               </li>
