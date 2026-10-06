@@ -1,0 +1,517 @@
+import { useEffect, useRef, useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { toast } from "sonner";
+import { CheckCircle2, Circle, Download, FileText, LogIn, LogOut, MapPin, Mic, Paperclip, Star, Trash2, Users } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Badge, Panel } from "@/components/AppShell";
+import { AudioRecorder } from "@/components/AudioRecorder";
+import { zar, type Booking, type Production } from "@/lib/demo-data";
+import { assetsTotal, providerTotal } from "@/lib/costing";
+import { distanceMeters, getPosition, isOnSite } from "@/lib/geo";
+import {
+  signedUrl, uploadFile, useBookingAssets, useCrewAssets, useDocs, useInvalidate, usePosts, useRegister,
+  useReviews, useSignedUrl, useSiteMembers, useTasks,
+} from "@/lib/site";
+
+type Ctx = { p: Production; isProducer: boolean; userId: string; myName: string; myCrewId: string | null };
+const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
+const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold uppercase tracking-wider text-primary-foreground disabled:opacity-50";
+const when = (s: string) => new Date(s).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" });
+const initials = (n: string) => n.split(" ").map((x) => x[0]).join("").slice(0, 2).toUpperCase();
+
+function FileLink({ path, name }: { path: string; name: string }) {
+  return (
+    <button onClick={async () => { try { window.open(await signedUrl(path), "_blank", "noopener"); } catch { toast.error("Could not open file"); } }}
+      className="inline-flex items-center gap-1.5 rounded-sm border border-border px-2 py-1 text-xs hover:border-primary hover:text-primary">
+      <Paperclip className="h-3 w-3" /> {name}
+    </button>
+  );
+}
+
+/* ---------------- Overview ---------------- */
+export function OverviewTab({ p, isProducer }: Ctx) {
+  const members = useSiteMembers(p.id).data ?? [];
+  const inv = useInvalidate();
+  const [f, setF] = useState({ address: p.address ?? "", summary: p.summary ?? "", latitude: p.latitude?.toString() ?? "", longitude: p.longitude?.toString() ?? "", geofence: String(p.geofenceM ?? 200) });
+  const [rating, setRating] = useState<{ crewId: string; name: string } | null>(null);
+
+  async function save() {
+    const { error } = await supabase.from("productions").update({
+      address: f.address, summary: f.summary, geofence_m: Number(f.geofence) || 200,
+      latitude: f.latitude ? Number(f.latitude) : null, longitude: f.longitude ? Number(f.longitude) : null,
+    }).eq("id", p.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Site details saved");
+    inv(["productions"]);
+  }
+  async function useHere() {
+    try { const pos = await getPosition(); setF({ ...f, latitude: pos.coords.latitude.toFixed(6), longitude: pos.coords.longitude.toFixed(6) }); }
+    catch (e) { toast.error((e as Error).message); }
+  }
+
+  return (
+    <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
+      <div className="space-y-5">
+        <Panel title="Basic information">
+          <div className="space-y-3 p-4 text-sm">
+            {isProducer ? (
+              <>
+                <label className="block"><span className="text-xs uppercase tracking-wider text-muted-foreground">Site address</span>
+                  <input className={`${input} mt-1 w-full`} value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} placeholder="Street, suburb, city" /></label>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <label><span className="text-xs uppercase tracking-wider text-muted-foreground">Latitude</span><input className={`${input} mt-1 w-full`} value={f.latitude} onChange={(e) => setF({ ...f, latitude: e.target.value })} /></label>
+                  <label><span className="text-xs uppercase tracking-wider text-muted-foreground">Longitude</span><input className={`${input} mt-1 w-full`} value={f.longitude} onChange={(e) => setF({ ...f, longitude: e.target.value })} /></label>
+                  <label><span className="text-xs uppercase tracking-wider text-muted-foreground">Site radius (m)</span><input type="number" className={`${input} mt-1 w-full`} value={f.geofence} onChange={(e) => setF({ ...f, geofence: e.target.value })} /></label>
+                </div>
+                <button onClick={useHere} className="inline-flex items-center gap-1 text-xs text-primary hover:underline"><MapPin className="h-3 w-3" /> Use my current location as the site location</button>
+                <label className="block"><span className="text-xs uppercase tracking-wider text-muted-foreground">Project summary</span>
+                  <textarea rows={4} className={`${input} mt-1 w-full`} value={f.summary} onChange={(e) => setF({ ...f, summary: e.target.value })} /></label>
+                <button onClick={save} className={btn}>Save</button>
+              </>
+            ) : (
+              <>
+                <div className="flex gap-2"><MapPin className="h-4 w-4 text-primary" /> {p.address || p.location || "Address not set"}</div>
+                <div className="text-muted-foreground">{p.client} · {p.type} · {p.date} · {p.days} day(s)</div>
+                <p className="whitespace-pre-wrap">{p.summary || "No summary yet."}</p>
+              </>
+            )}
+            {(p.address || p.latitude) && (
+              <a className="inline-flex text-xs text-primary hover:underline" target="_blank" rel="noopener noreferrer"
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.latitude ? `${p.latitude},${p.longitude}` : p.address ?? "")}`}>Open in maps</a>
+            )}
+          </div>
+        </Panel>
+      </div>
+      <Panel title={`Members on the job (${members.length})`}>
+        <ul className="divide-y divide-border">
+          {members.length === 0 && <li className="p-4 text-sm text-muted-foreground">No crew booked yet.</li>}
+          {members.map((m) => (
+            <li key={m.crew_id} className="flex items-center gap-3 px-4 py-2.5">
+              <Avatar name={m.name} path={m.photo_url} />
+              <div className="min-w-0 flex-1">
+                <Link to="/crew/$id" params={{ id: m.crew_id }} className="block truncate text-sm font-semibold hover:text-primary">{m.name}</Link>
+                <div className="truncate text-xs text-muted-foreground">{m.role} · {m.department}</div>
+              </div>
+              {isProducer && <button onClick={() => setRating({ crewId: m.crew_id, name: m.name })} className="text-xs text-primary hover:underline">Rate</button>}
+            </li>
+          ))}
+        </ul>
+      </Panel>
+      {rating && <RateDialog {...rating} productionId={p.id} onClose={() => setRating(null)} />}
+    </div>
+  );
+}
+
+export function Avatar({ name, path, size = 36 }: { name: string; path?: string | null; size?: number }) {
+  const url = useSignedUrl(path).data;
+  return url
+    ? <img src={url} alt={name} style={{ width: size, height: size }} className="shrink-0 rounded-full object-cover" />
+    : <span style={{ width: size, height: size }} className="grid shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{initials(name)}</span>;
+}
+
+function RateDialog({ crewId, name, productionId, onClose }: { crewId: string; name: string; productionId: string; onClose: () => void }) {
+  const [stars, setStars] = useState(5);
+  const [comment, setComment] = useState("");
+  const inv = useInvalidate();
+  async function submit() {
+    const { data: u } = await supabase.auth.getUser();
+    const { data: prof } = await supabase.from("profiles").select("full_name").eq("id", u.user!.id).maybeSingle();
+    const { error } = await supabase.from("crew_reviews").upsert(
+      { crew_id: crewId, production_id: productionId, rating: stars, comment, reviewer_id: u.user!.id, reviewer_name: prof?.full_name ?? "" },
+      { onConflict: "crew_id,production_id,reviewer_id" });
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Rating saved for ${name}`);
+    inv(["reviews"], ["crew"]);
+    onClose();
+  }
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-4" onClick={onClose}>
+      <div className="w-full max-w-md rounded-sm border border-border bg-card p-5" onClick={(e) => e.stopPropagation()}>
+        <h3 className="font-script text-3xl text-primary">Rate {name}</h3>
+        <div className="my-3 flex gap-1">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button key={n} aria-label={`${n} stars`} onClick={() => setStars(n)}><Star className={`h-7 w-7 ${n <= stars ? "fill-primary text-primary" : "text-muted-foreground"}`} /></button>
+          ))}
+        </div>
+        <textarea rows={3} className={`${input} w-full`} placeholder="How did they do on this job?" value={comment} onChange={(e) => setComment(e.target.value)} />
+        <div className="mt-3 flex justify-end gap-2">
+          <button onClick={onClose} className="px-3 py-2 text-xs uppercase text-muted-foreground">Cancel</button>
+          <button onClick={submit} className={btn}>Save rating</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Posts ---------------- */
+export function PostsTab({ p, userId, myName, isProducer }: Ctx) {
+  const posts = usePosts(p.id);
+  const inv = useInvalidate();
+  const [body, setBody] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const [audio, setAudio] = useState<{ blob: Blob; transcript: string } | null>(null);
+  const [recording, setRecording] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const ch = supabase.channel(`posts-${p.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "site_posts", filter: `production_id=eq.${p.id}` }, () => inv(["posts", p.id]))
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.id]);
+
+  async function submit() {
+    if (!body.trim() && !audio && !files.length) return;
+    setBusy(true);
+    try {
+      const audio_path = audio ? await uploadFile(`${p.id}/audio`, audio.blob, "voice-note.webm") : null;
+      const attachments = [];
+      for (const f of files) attachments.push({ name: f.name, path: await uploadFile(`${p.id}/posts`, f, f.name), size: f.size, type: f.type });
+      const { error } = await supabase.from("site_posts").insert({
+        production_id: p.id, author_id: userId, author_name: myName, body: body.trim(),
+        audio_path, transcript: audio?.transcript || null, attachments,
+      });
+      if (error) throw error;
+      setBody(""); setFiles([]); setAudio(null);
+      inv(["posts", p.id]);
+      toast.success("Posted — everyone on the job has been notified");
+    } catch (e) { toast.error((e as Error).message); }
+    setBusy(false);
+  }
+
+  async function remove(id: string) {
+    const { error } = await supabase.from("site_posts").delete().eq("id", id);
+    if (error) toast.error(error.message); else inv(["posts", p.id]);
+  }
+
+  return (
+    <div className="mx-auto max-w-2xl space-y-4">
+      <div className="rounded-sm border border-border bg-card p-4">
+        <textarea rows={3} className={`${input} w-full`} placeholder="Share an update with everyone on this job…" value={body} onChange={(e) => setBody(e.target.value)} />
+        {recording && <div className="mt-2"><AudioRecorder onCancel={() => setRecording(false)} onDone={(blob, transcript) => { setRecording(false); setAudio({ blob, transcript }); if (transcript) setBody((b) => (b ? `${b}\n${transcript}` : transcript)); }} /></div>}
+        {audio && !recording && <div className="mt-2 flex items-center gap-2 text-xs text-primary"><Mic className="h-3 w-3" /> Voice note attached{audio.transcript ? " and transcribed" : ""} <button className="text-muted-foreground underline" onClick={() => setAudio(null)}>remove</button></div>}
+        {files.length > 0 && <div className="mt-2 flex flex-wrap gap-2">{files.map((f, i) => <span key={i} className="rounded-sm bg-muted px-2 py-1 text-xs">{f.name} <button onClick={() => setFiles(files.filter((_, j) => j !== i))}>×</button></span>)}</div>}
+        <div className="mt-3 flex items-center gap-2">
+          <button onClick={() => setRecording(true)} disabled={recording} className="inline-flex items-center gap-1 rounded-sm border border-border px-3 py-2 text-xs uppercase hover:border-primary"><Mic className="h-4 w-4" /> Audio</button>
+          <button onClick={() => fileRef.current?.click()} className="inline-flex items-center gap-1 rounded-sm border border-border px-3 py-2 text-xs uppercase hover:border-primary"><Paperclip className="h-4 w-4" /> Attach</button>
+          <input ref={fileRef} type="file" multiple hidden onChange={(e) => { setFiles([...files, ...Array.from(e.target.files ?? [])]); e.target.value = ""; }} />
+          <button onClick={submit} disabled={busy || recording} className={`${btn} ml-auto`}>{busy ? "Posting…" : "Post"}</button>
+        </div>
+      </div>
+      {posts.data?.length === 0 && <p className="text-center text-sm text-muted-foreground">No posts yet. Start the conversation.</p>}
+      {posts.data?.map((post) => (
+        <article key={post.id} className="rounded-sm border border-border bg-card p-4">
+          <header className="mb-2 flex items-center gap-3">
+            <Avatar name={post.author_name || "?"} />
+            <div className="flex-1"><div className="text-sm font-semibold">{post.author_name || "Team member"}</div><div className="text-xs text-muted-foreground">{when(post.created_at)}</div></div>
+            {(post.author_id === userId || isProducer) && <button aria-label="Delete post" onClick={() => remove(post.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>}
+          </header>
+          {post.body && <p className="whitespace-pre-wrap text-sm">{post.body}</p>}
+          {post.audio_path && <AudioPlayer path={post.audio_path} />}
+          {post.transcript && post.transcript !== post.body && <p className="mt-2 rounded-sm bg-muted p-2 text-xs italic text-muted-foreground">Transcript: {post.transcript}</p>}
+          {Array.isArray(post.attachments) && post.attachments.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">{(post.attachments as { name: string; path: string }[]).map((a) => <FileLink key={a.path} {...a} />)}</div>
+          )}
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function AudioPlayer({ path }: { path: string }) {
+  const url = useSignedUrl(path).data;
+  return url ? <audio controls src={url} className="mt-2 w-full" /> : null;
+}
+
+/* ---------------- Register (geolocation ins & outs) ---------------- */
+export function RegisterTab({ p, isProducer, userId, myName, myCrewId }: Ctx) {
+  const reg = useRegister(p.id);
+  const members = useSiteMembers(p.id).data ?? [];
+  const inv = useInvalidate();
+  const [auto, setAuto] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const rows = reg.data ?? [];
+  const lastByCrew = new Map<string, (typeof rows)[number]>();
+  for (const r of rows) if (r.crew_id && !lastByCrew.has(r.crew_id)) lastByCrew.set(r.crew_id, r);
+  const myLast = myCrewId ? lastByCrew.get(myCrewId) : undefined;
+  const hasSite = p.latitude != null && p.longitude != null;
+  const radius = p.geofenceM ?? 200;
+
+  async function mark(kind: "in" | "out", crewId: string, name: string, source: string, coords?: GeolocationCoordinates) {
+    const distance = coords && hasSite ? distanceMeters(coords.latitude, coords.longitude, p.latitude!, p.longitude!) : null;
+    const { error } = await supabase.from("site_attendance").insert({
+      production_id: p.id, crew_id: crewId, user_id: userId, person_name: name, kind, source,
+      latitude: coords?.latitude ?? null, longitude: coords?.longitude ?? null,
+      distance_m: distance, on_site: distance == null ? null : isOnSite(distance, radius),
+    });
+    if (error) throw error;
+    inv(["register", p.id]);
+    return distance;
+  }
+
+  async function selfMark(kind: "in" | "out") {
+    if (!myCrewId) return;
+    setBusy(true);
+    try {
+      const pos = await getPosition();
+      const d = await mark(kind, myCrewId, myName, "gps", pos.coords);
+      if (kind === "in" && d != null && !isOnSite(d, radius)) toast.warning(`Checked in, but you are ${d}m from the site.`);
+      else toast.success(kind === "in" ? "Checked in" : "Checked out");
+    } catch (e) { toast.error((e as Error).message); }
+    setBusy(false);
+  }
+
+  // Automatic tracking: marks in when entering the site radius, out when leaving
+  const state = useRef<boolean | null>(myLast ? myLast.kind === "in" : null);
+  useEffect(() => { state.current = myLast ? myLast.kind === "in" : false; }, [myLast]);
+  useEffect(() => {
+    if (!auto || !myCrewId || !hasSite || !navigator.geolocation) return undefined;
+    const id = navigator.geolocation.watchPosition(async (pos) => {
+      const d = distanceMeters(pos.coords.latitude, pos.coords.longitude, p.latitude!, p.longitude!);
+      const inside = isOnSite(d, radius);
+      if (inside !== state.current) {
+        state.current = inside;
+        try { await mark(inside ? "in" : "out", myCrewId, myName, "geofence", pos.coords); toast(inside ? "You arrived on site — checked in" : "You left the site — checked out"); } catch { /* ignore */ }
+      }
+    }, () => toast.error("Location tracking stopped. Check location permissions."), { enableHighAccuracy: true });
+    return () => navigator.geolocation.clearWatch(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auto, myCrewId, hasSite]);
+
+  return (
+    <div className="space-y-5">
+      {!hasSite && <p className="rounded-sm border border-primary/40 bg-primary/10 p-3 text-sm">The site location isn't set yet{isProducer ? " — add it under Overview so check-ins can be verified." : ", so check-ins can't be verified yet."}</p>}
+      {myCrewId && (
+        <Panel title="My attendance">
+          <div className="flex flex-wrap items-center gap-3 p-4">
+            <span className="text-sm">Status: <strong>{myLast?.kind === "in" ? "On site" : "Not checked in"}</strong></span>
+            <button disabled={busy} onClick={() => selfMark("in")} className={`${btn} inline-flex items-center gap-1`}><LogIn className="h-4 w-4" /> Check in</button>
+            <button disabled={busy} onClick={() => selfMark("out")} className="inline-flex items-center gap-1 rounded-sm border border-border px-3 py-2 text-xs font-semibold uppercase"><LogOut className="h-4 w-4" /> Check out</button>
+            <label className="ml-auto flex items-center gap-2 text-sm"><input type="checkbox" className="accent-primary" checked={auto} disabled={!hasSite} onChange={(e) => setAuto(e.target.checked)} /> Automatic tracking while this page is open</label>
+          </div>
+        </Panel>
+      )}
+      <Panel title="Who's on site" right={<span className="text-xs text-muted-foreground">Radius {radius}m</span>}>
+        <table className="w-full text-sm">
+          <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground"><tr><th className="px-4 py-2">Member</th><th className="px-4">Status</th><th className="px-4">Last movement</th>{isProducer && <th className="px-4">Mark</th>}</tr></thead>
+          <tbody>
+            {members.map((m) => {
+              const l = lastByCrew.get(m.crew_id);
+              const status = !l ? "Not arrived" : l.kind === "in" ? "On set" : "Wrapped";
+              return (
+                <tr key={m.crew_id} className="border-t border-border">
+                  <td className="px-4 py-2 font-medium">{m.name}</td>
+                  <td className="px-4"><Badge>{status}</Badge></td>
+                  <td className="px-4 text-xs text-muted-foreground">{l ? `${l.kind === "in" ? "In" : "Out"} · ${when(l.created_at)}${l.distance_m != null ? ` · ${l.distance_m}m` : ""}` : "—"}</td>
+                  {isProducer && <td className="px-4"><div className="flex gap-2">
+                    <button className="text-xs text-primary hover:underline" onClick={() => mark("in", m.crew_id, m.name, "manual").catch((e) => toast.error(e.message))}>In</button>
+                    <button className="text-xs text-primary hover:underline" onClick={() => mark("out", m.crew_id, m.name, "manual").catch((e) => toast.error(e.message))}>Out</button>
+                  </div></td>}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </Panel>
+      <Panel title="Register — all ins and outs">
+        <table className="w-full text-sm">
+          <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground"><tr><th className="px-4 py-2">Time</th><th className="px-4">Member</th><th className="px-4">In/Out</th><th className="px-4">How</th><th className="px-4">Location</th></tr></thead>
+          <tbody>
+            {rows.length === 0 && <tr><td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">No entries yet.</td></tr>}
+            {rows.map((r) => (
+              <tr key={r.id} className="border-t border-border">
+                <td className="px-4 py-2 text-xs">{when(r.created_at)}</td>
+                <td className="px-4">{r.person_name}</td>
+                <td className="px-4 font-semibold uppercase">{r.kind}</td>
+                <td className="px-4 text-xs text-muted-foreground">{r.source === "geofence" ? "Automatic" : r.source === "gps" ? "GPS" : "Marked by producer"}</td>
+                <td className="px-4 text-xs">{r.on_site == null ? "—" : r.on_site ? <span className="text-success">On site ({r.distance_m}m)</span> : <span className="text-destructive">Off site ({r.distance_m}m)</span>}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Panel>
+    </div>
+  );
+}
+
+/* ---------------- Tasks ---------------- */
+export function TasksTab({ p, userId }: Ctx) {
+  const tasks = useTasks(p.id).data ?? [];
+  const members = useSiteMembers(p.id).data ?? [];
+  const inv = useInvalidate();
+  const [f, setF] = useState({ title: "", crew: "", due: "" });
+  async function add() {
+    if (!f.title.trim()) return;
+    const { error } = await supabase.from("site_tasks").insert({ production_id: p.id, title: f.title.trim(), assigned_crew_id: f.crew || null, due_date: f.due || null, created_by: userId });
+    if (error) { toast.error(error.message); return; }
+    setF({ title: "", crew: "", due: "" }); inv(["tasks", p.id]);
+  }
+  async function toggle(id: string, done: boolean) { await supabase.from("site_tasks").update({ done }).eq("id", id); inv(["tasks", p.id]); }
+  async function remove(id: string) { const { error } = await supabase.from("site_tasks").delete().eq("id", id); if (error) toast.error(error.message); inv(["tasks", p.id]); }
+  return (
+    <Panel title="Tasks">
+      <div className="flex flex-wrap gap-2 border-b border-border p-4">
+        <input className={`${input} min-w-56 flex-1`} placeholder="New task…" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} onKeyDown={(e) => e.key === "Enter" && add()} />
+        <select className={input} value={f.crew} onChange={(e) => setF({ ...f, crew: e.target.value })}><option value="">Unassigned</option>{members.map((m) => <option key={m.crew_id} value={m.crew_id}>{m.name}</option>)}</select>
+        <input type="date" className={input} value={f.due} onChange={(e) => setF({ ...f, due: e.target.value })} />
+        <button onClick={add} className={btn}>Add task</button>
+      </div>
+      <ul className="divide-y divide-border">
+        {tasks.length === 0 && <li className="p-4 text-sm text-muted-foreground">No tasks yet.</li>}
+        {tasks.map((t) => (
+          <li key={t.id} className="flex items-center gap-3 px-4 py-2.5">
+            <button aria-label={t.done ? "Mark not done" : "Mark done"} onClick={() => toggle(t.id, !t.done)}>{t.done ? <CheckCircle2 className="h-5 w-5 text-success" /> : <Circle className="h-5 w-5 text-muted-foreground" />}</button>
+            <span className={`flex-1 text-sm ${t.done ? "text-muted-foreground line-through" : ""}`}>{t.title}</span>
+            <span className="text-xs text-muted-foreground">{members.find((m) => m.crew_id === t.assigned_crew_id)?.name ?? ""}{t.due_date ? ` · due ${t.due_date}` : ""}</span>
+            <button aria-label="Delete task" onClick={() => remove(t.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
+          </li>
+        ))}
+      </ul>
+    </Panel>
+  );
+}
+
+/* ---------------- Documents ---------------- */
+const DOC_CATS = ["Call sheet", "Script", "Permit", "Contract", "Schedule", "General"];
+export function DocumentsTab({ p, userId, myName }: Ctx) {
+  const docs = useDocs(p.id).data ?? [];
+  const inv = useInvalidate();
+  const [cat, setCat] = useState("General");
+  const [busy, setBusy] = useState(false);
+  async function upload(list: FileList | null) {
+    if (!list?.length) return;
+    setBusy(true);
+    try {
+      for (const file of Array.from(list)) {
+        const path = await uploadFile(`${p.id}/docs`, file, file.name);
+        const { error } = await supabase.from("site_documents").insert({ production_id: p.id, name: file.name, category: cat, path, size: file.size, uploaded_by: userId, uploader_name: myName });
+        if (error) throw error;
+      }
+      toast.success("Uploaded"); inv(["docs", p.id]);
+    } catch (e) { toast.error((e as Error).message); }
+    setBusy(false);
+  }
+  async function remove(id: string) { const { error } = await supabase.from("site_documents").delete().eq("id", id); if (error) toast.error(error.message); inv(["docs", p.id]); }
+  return (
+    <Panel title="Documents" right={
+      <div className="flex items-center gap-2">
+        <select className={`${input} py-1`} value={cat} onChange={(e) => setCat(e.target.value)}>{DOC_CATS.map((c) => <option key={c}>{c}</option>)}</select>
+        <label className={`${btn} cursor-pointer`}>{busy ? "Uploading…" : "Upload"}<input type="file" multiple hidden onChange={(e) => { upload(e.target.files); e.target.value = ""; }} /></label>
+      </div>}>
+      <ul className="divide-y divide-border">
+        {docs.length === 0 && <li className="p-4 text-sm text-muted-foreground">No documents yet.</li>}
+        {docs.map((d) => (
+          <li key={d.id} className="flex items-center gap-3 px-4 py-2.5">
+            <FileText className="h-5 w-5 text-primary" />
+            <div className="min-w-0 flex-1"><div className="truncate text-sm font-medium">{d.name}</div><div className="text-xs text-muted-foreground">{d.category} · {d.uploader_name || "—"} · {when(d.created_at)}</div></div>
+            <button aria-label="Download" onClick={async () => window.open(await signedUrl(d.path), "_blank", "noopener")} className="text-muted-foreground hover:text-primary"><Download className="h-4 w-4" /></button>
+            <button aria-label="Delete" onClick={() => remove(d.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
+          </li>
+        ))}
+      </ul>
+    </Panel>
+  );
+}
+
+/* ---------------- Assets ---------------- */
+export function AssetsTab({ p, isProducer, bookings, crewNames }: Ctx & { bookings: Booking[]; crewNames: Record<string, string> }) {
+  const assets = useCrewAssets(true).data ?? [];
+  const selected = useBookingAssets(true).data ?? [];
+  const inv = useInvalidate();
+  const rows = bookings.filter((b) => b.productionId === p.id);
+
+  async function toggle(b: Booking, a: (typeof assets)[number], on: boolean) {
+    const { error } = on
+      ? await supabase.from("booking_assets").insert({ booking_id: b.id, asset_id: a.id, daily_fee: a.daily_fee, days: b.days })
+      : await supabase.from("booking_assets").delete().eq("booking_id", b.id).eq("asset_id", a.id);
+    if (error) toast.error(error.message); else inv(["booking-assets"]);
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">{isProducer ? "Tick the kit and props from each provider's inventory that Dial a Crew has selected for this job. Each fee is added to that provider's total." : "Kit and props selected for this job."}</p>
+      {rows.length === 0 && <p className="text-sm text-muted-foreground">No crew booked yet.</p>}
+      {rows.map((b) => {
+        const own = assets.filter((a) => a.crew_id === b.crewId);
+        const sel = selected.filter((s) => s.booking_id === b.id);
+        const lines = sel.map((s) => ({ dailyFee: Number(s.daily_fee), days: s.days }));
+        return (
+          <Panel key={b.id} title={`${crewNames[b.crewId] ?? "Provider"} — ${b.role}`} right={<span className="text-sm">Assets {zar(assetsTotal(lines))}{isProducer && <> · Total {zar(providerTotal(b.crewRate, b.days, lines))}</>}</span>}>
+            <ul className="divide-y divide-border">
+              {own.length === 0 && <li className="p-4 text-sm text-muted-foreground">This provider hasn't listed any kit or props yet.</li>}
+              {own.filter((a) => isProducer || sel.some((s) => s.asset_id === a.id)).map((a) => {
+                const on = sel.some((s) => s.asset_id === a.id);
+                return (
+                  <li key={a.id} className="flex items-center gap-3 px-4 py-2">
+                    {isProducer && <input type="checkbox" className="accent-primary" checked={on} onChange={(e) => toggle(b, a, e.target.checked)} aria-label={`Select ${a.name}`} />}
+                    <span className="flex-1 text-sm">{a.name} <span className="text-xs text-muted-foreground">· {a.category}</span></span>
+                    <span className="text-sm">{zar(Number(a.daily_fee))}/day × {b.days}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </Panel>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ---------------- Commercials (producer only) ---------------- */
+export function CommercialsTab({ p, bookings, crewNames, requests }: Ctx & { bookings: Booking[]; crewNames: Record<string, string>; requests: { production: string; amount: number; state: string; kind: string; detail: string }[] }) {
+  const selected = useBookingAssets(true).data ?? [];
+  const [clientView, setClientView] = useState(false);
+  const rows = bookings.filter((b) => b.productionId === p.id).map((b) => {
+    const lines = selected.filter((s) => s.booking_id === b.id).map((s) => ({ dailyFee: Number(s.daily_fee), days: s.days }));
+    return { b, assets: assetsTotal(lines), cost: providerTotal(b.crewRate, b.days, lines), charge: b.clientCharge * b.days + assetsTotal(lines) };
+  });
+  const extras = requests.filter((r) => r.production === p.name && r.state === "Approved");
+  const extrasTotal = extras.reduce((a, r) => a + r.amount, 0);
+  const crewCost = rows.reduce((a, r) => a + r.b.crewRate * r.b.days, 0);
+  const assetCost = rows.reduce((a, r) => a + r.assets, 0);
+  const running = crewCost + assetCost + extrasTotal;
+  const billing = rows.reduce((a, r) => a + r.charge, 0) + extrasTotal;
+  return (
+    <div className="space-y-5">
+      <div className="flex justify-end">
+        <div className="flex rounded-sm border border-border text-xs font-semibold uppercase">
+          <button onClick={() => setClientView(false)} className={`px-3 py-2 ${!clientView ? "bg-primary text-primary-foreground" : ""}`}>Producer view</button>
+          <button onClick={() => setClientView(true)} className={`px-3 py-2 ${clientView ? "bg-primary text-primary-foreground" : ""}`}>Client view</button>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-border bg-border md:grid-cols-5">
+        {(clientView
+          ? [["Budget", zar(p.budget)], ["Quoted to client", zar(billing)], ["Crew booked", `${p.crewBooked}/${p.crewNeeded}`], ["Secured funds", zar(p.securedFunds)], ["Balance due", zar(Math.max(0, billing - p.securedFunds))]]
+          : [["Budget", zar(p.budget)], ["Running cost", zar(running)], ["Client billing", zar(billing)], ["Margin", zar(billing - running)], ["Budget left", zar(p.budget - running)]]
+        ).map(([l, v]) => (
+          <div key={l} className="bg-card px-4 py-3"><div className="text-[11px] uppercase tracking-wider text-muted-foreground">{l}</div><div className="font-display text-2xl font-semibold">{v}</div></div>
+        ))}
+      </div>
+      <Panel title="Cost breakdown">
+        <table className="w-full text-sm">
+          <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground"><tr>
+            <th className="px-4 py-2">Role</th><th className="px-4">Provider</th><th className="px-4">Days</th>
+            {!clientView && <><th className="px-4">Crew rate</th><th className="px-4">Assets</th><th className="px-4">Provider total</th></>}
+            <th className="px-4">{clientView ? "Charge" : "Client charge"}</th><th className="px-4">Status</th></tr></thead>
+          <tbody>
+            {rows.map(({ b, assets, cost, charge }) => (
+              <tr key={b.id} className="border-t border-border">
+                <td className="px-4 py-2.5 font-medium">{b.role}</td><td className="px-4">{crewNames[b.crewId]}</td><td className="px-4">{b.days}</td>
+                {!clientView && <><td className="px-4 text-muted-foreground">{zar(b.crewRate)}</td><td className="px-4">{zar(assets)}</td><td className="px-4 font-semibold">{zar(cost)}</td></>}
+                <td className="px-4">{zar(charge)}</td><td className="px-4"><Badge>{b.status}</Badge></td>
+              </tr>
+            ))}
+            {extras.map((r, i) => (
+              <tr key={i} className="border-t border-border"><td className="px-4 py-2.5 font-medium">{r.kind}</td><td className="px-4 text-muted-foreground" colSpan={clientView ? 2 : 5}>{r.detail}</td><td className="px-4">{zar(r.amount)}</td><td className="px-4"><Badge>Approved</Badge></td></tr>
+            ))}
+          </tbody>
+        </table>
+      </Panel>
+      {clientView && <p className="text-xs text-muted-foreground">Client view hides internal crew rates, provider totals and margin.</p>}
+    </div>
+  );
+}
+
+export const SiteIcons = { Users };

@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      booking_assets: {
+        Row: {
+          asset_id: string
+          booking_id: string
+          created_at: string
+          daily_fee: number
+          days: number
+          id: string
+        }
+        Insert: {
+          asset_id: string
+          booking_id: string
+          created_at?: string
+          daily_fee?: number
+          days?: number
+          id?: string
+        }
+        Update: {
+          asset_id?: string
+          booking_id?: string
+          created_at?: string
+          daily_fee?: number
+          days?: number
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_assets_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "crew_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_assets_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           attendance: string | null
@@ -131,53 +173,205 @@ export type Database = {
         }
         Relationships: []
       }
+      crew_assets: {
+        Row: {
+          category: string
+          created_at: string
+          crew_id: string
+          daily_fee: number
+          id: string
+          name: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          crew_id: string
+          daily_fee?: number
+          id?: string
+          name: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          crew_id?: string
+          daily_fee?: number
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crew_assets_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crew_members: {
         Row: {
           available: boolean
+          bio: string
+          certifications: Json
           created_at: string
           day_rate: number
           department: string
+          email: string
           experience: number
+          experience_notes: string
           id: string
           kit: string | null
           location: string
           name: string
           pencilled: boolean
+          phone: string
+          photo_url: string | null
           rating: number
           role: string
+          safety_record: number
+          skills: string[]
+          team_led: number
+          user_id: string | null
         }
         Insert: {
           available?: boolean
+          bio?: string
+          certifications?: Json
           created_at?: string
           day_rate?: number
           department: string
+          email?: string
           experience?: number
+          experience_notes?: string
           id?: string
           kit?: string | null
           location?: string
           name: string
           pencilled?: boolean
+          phone?: string
+          photo_url?: string | null
           rating?: number
           role: string
+          safety_record?: number
+          skills?: string[]
+          team_led?: number
+          user_id?: string | null
         }
         Update: {
           available?: boolean
+          bio?: string
+          certifications?: Json
           created_at?: string
           day_rate?: number
           department?: string
+          email?: string
           experience?: number
+          experience_notes?: string
           id?: string
           kit?: string | null
           location?: string
           name?: string
           pencilled?: boolean
+          phone?: string
+          photo_url?: string | null
           rating?: number
           role?: string
+          safety_record?: number
+          skills?: string[]
+          team_led?: number
+          user_id?: string | null
         }
         Relationships: []
       }
+      crew_reviews: {
+        Row: {
+          comment: string
+          created_at: string
+          crew_id: string
+          id: string
+          production_id: string | null
+          rating: number
+          reviewer_id: string
+          reviewer_name: string
+        }
+        Insert: {
+          comment?: string
+          created_at?: string
+          crew_id: string
+          id?: string
+          production_id?: string | null
+          rating: number
+          reviewer_id?: string
+          reviewer_name?: string
+        }
+        Update: {
+          comment?: string
+          created_at?: string
+          crew_id?: string
+          id?: string
+          production_id?: string | null
+          rating?: number
+          reviewer_id?: string
+          reviewer_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crew_reviews_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crew_reviews_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          production_id: string | null
+          read: boolean
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          id?: string
+          production_id?: string | null
+          read?: boolean
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          production_id?: string | null
+          read?: boolean
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       productions: {
         Row: {
+          address: string
           budget: number
           client: string
           created_at: string
@@ -185,14 +379,19 @@ export type Database = {
           crew_needed: number
           date: string | null
           days: number
+          geofence_m: number
           id: string
+          latitude: number | null
           location: string
+          longitude: number | null
           name: string
           secured_funds: number
           status: string
+          summary: string
           type: string
         }
         Insert: {
+          address?: string
           budget?: number
           client: string
           created_at?: string
@@ -200,14 +399,19 @@ export type Database = {
           crew_needed?: number
           date?: string | null
           days?: number
+          geofence_m?: number
           id?: string
+          latitude?: number | null
           location?: string
+          longitude?: number | null
           name: string
           secured_funds?: number
           status?: string
+          summary?: string
           type?: string
         }
         Update: {
+          address?: string
           budget?: number
           client?: string
           created_at?: string
@@ -215,11 +419,15 @@ export type Database = {
           crew_needed?: number
           date?: string | null
           days?: number
+          geofence_m?: number
           id?: string
+          latitude?: number | null
           location?: string
+          longitude?: number | null
           name?: string
           secured_funds?: number
           status?: string
+          summary?: string
           type?: string
         }
         Relationships: []
@@ -290,6 +498,202 @@ export type Database = {
         }
         Relationships: []
       }
+      site_attendance: {
+        Row: {
+          created_at: string
+          crew_id: string | null
+          distance_m: number | null
+          id: string
+          kind: string
+          latitude: number | null
+          longitude: number | null
+          on_site: boolean | null
+          person_name: string
+          production_id: string
+          source: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          crew_id?: string | null
+          distance_m?: number | null
+          id?: string
+          kind: string
+          latitude?: number | null
+          longitude?: number | null
+          on_site?: boolean | null
+          person_name?: string
+          production_id: string
+          source?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          crew_id?: string | null
+          distance_m?: number | null
+          id?: string
+          kind?: string
+          latitude?: number | null
+          longitude?: number | null
+          on_site?: boolean | null
+          person_name?: string
+          production_id?: string
+          source?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_attendance_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_attendance_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_documents: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          name: string
+          path: string
+          production_id: string
+          size: number
+          uploaded_by: string
+          uploader_name: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          id?: string
+          name: string
+          path: string
+          production_id: string
+          size?: number
+          uploaded_by?: string
+          uploader_name?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          name?: string
+          path?: string
+          production_id?: string
+          size?: number
+          uploaded_by?: string
+          uploader_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_documents_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_posts: {
+        Row: {
+          attachments: Json
+          audio_path: string | null
+          author_id: string
+          author_name: string
+          body: string
+          created_at: string
+          id: string
+          production_id: string
+          transcript: string | null
+        }
+        Insert: {
+          attachments?: Json
+          audio_path?: string | null
+          author_id?: string
+          author_name?: string
+          body?: string
+          created_at?: string
+          id?: string
+          production_id: string
+          transcript?: string | null
+        }
+        Update: {
+          attachments?: Json
+          audio_path?: string | null
+          author_id?: string
+          author_name?: string
+          body?: string
+          created_at?: string
+          id?: string
+          production_id?: string
+          transcript?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_posts_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_tasks: {
+        Row: {
+          assigned_crew_id: string | null
+          created_at: string
+          created_by: string
+          done: boolean
+          due_date: string | null
+          id: string
+          production_id: string
+          title: string
+        }
+        Insert: {
+          assigned_crew_id?: string | null
+          created_at?: string
+          created_by?: string
+          done?: boolean
+          due_date?: string | null
+          id?: string
+          production_id: string
+          title: string
+        }
+        Update: {
+          assigned_crew_id?: string | null
+          created_at?: string
+          created_by?: string
+          done?: boolean
+          due_date?: string | null
+          id?: string
+          production_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_tasks_assigned_crew_id_fkey"
+            columns: ["assigned_crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_tasks_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -313,12 +717,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_crew_profile: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      is_site_member: { Args: { _prod: string }; Returns: boolean }
+      my_crew_id: { Args: never; Returns: string }
+      site_members: {
+        Args: { _prod: string }
+        Returns: {
+          booking_status: string
+          crew_id: string
+          department: string
+          name: string
+          phone: string
+          photo_url: string
+          role: string
+          user_id: string
+        }[]
       }
     }
     Enums: {

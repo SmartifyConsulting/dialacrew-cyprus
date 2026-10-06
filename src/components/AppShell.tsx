@@ -4,12 +4,14 @@ import type { ReactNode } from "react";
 import logo from "@/assets/bookacrew-logo.png.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { useRole, useSession } from "@/lib/auth";
+import { NotificationBell } from "@/components/NotificationBell";
 
 const nav = [
   { to: "/", label: "Home" },
   { to: "/dashboard", label: "Dashboard" },
   { to: "/productions", label: "Productions" },
   { to: "/crew", label: "Crew" },
+  { to: "/profile", label: "My profile" },
 ] as const;
 
 export function TopNav() {
@@ -49,6 +51,7 @@ export function TopNav() {
         <div className="flex items-center gap-3">
           {ready && session ? (
             <>
+              <NotificationBell userId={session.user.id} />
               <span className="hidden text-xs font-semibold uppercase tracking-widest md:block">{role.data ? `${role.data} view` : ""}</span>
               <button onClick={signOut} className="rounded-sm border border-primary-foreground/50 px-3 py-1.5 font-display text-xs uppercase tracking-widest hover:bg-primary-foreground/10">Sign out</button>
             </>
@@ -61,11 +64,11 @@ export function TopNav() {
   );
 }
 
-function RoleGate({ children }: { children: ReactNode }) {
+function RoleGate({ children, open }: { children: ReactNode; open?: boolean | undefined }) {
   const { session } = useSession();
   const role = useRole(session?.user.id);
   if (!session || role.isLoading) return <p className="text-muted-foreground">Loading…</p>;
-  if (role.data !== "producer")
+  if (role.data !== "producer" && !open)
     return (
       <div className="rounded-sm border border-border bg-card p-8 text-center">
         <h2 className="font-script text-4xl text-primary">You're signed in as {role.data === "crew" ? "crew" : "a client"}</h2>
@@ -75,12 +78,12 @@ function RoleGate({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-export function Page({ title, subtitle, actions, children }: { title: string; subtitle?: string; actions?: ReactNode; children: ReactNode }) {
+export function Page({ title, subtitle, actions, children, open }: { title: string; subtitle?: string; actions?: ReactNode; children: ReactNode; open?: boolean }) {
   return (
     <div className="min-h-screen bg-background">
       <TopNav />
       <main className="mx-auto max-w-7xl px-4 py-6">
-        <RoleGate>
+        <RoleGate open={open}>
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
             <div>
               <h1 className="font-script text-5xl text-primary">{title}</h1>

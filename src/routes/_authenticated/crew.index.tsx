@@ -1,10 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Page } from "@/components/AppShell";
 import { zar } from "@/lib/demo-data";
 import { useCrew, useTogglePencil } from "@/lib/db";
 
-export const Route = createFileRoute("/_authenticated/crew")({
+export const Route = createFileRoute("/_authenticated/crew/")({
   head: () => ({
     meta: [
       { title: "Crew Directory — Book a Crew" },
@@ -46,7 +46,7 @@ function CrewPage() {
                   {c.name.split(" ").map((n) => n[0]).join("")}
                 </div>
                 <div className="flex-1">
-                  <div className="font-semibold">{c.name}</div>
+                  <Link to="/crew/$id" params={{ id: c.id }} className="font-semibold hover:text-primary hover:underline">{c.name}</Link>
                   <div className="text-sm text-primary">{c.role}</div>
                   <div className="text-xs text-muted-foreground">{c.department} · {c.location} · {c.experience} yrs</div>
                 </div>

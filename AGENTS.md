@@ -13,3 +13,8 @@
 - Roles live in `user_roles` (enum `app_role`) checked via `has_role()`; never on `profiles` — prevents privilege escalation.
 - Signup role comes from a DB trigger: first account is producer, others may self-pick only crew or client — users can never grant themselves producer.
 - Signed-in pages live under `src/routes/_authenticated/`; non-producer gating is in `Page` (AppShell) and enforced by RLS — the UI gate is cosmetic, RLS is the real guard.
+- Production site data (posts, tasks, documents, register, assets) is gated by `is_site_member()` (producer or booked crew via `crew_members.user_id`) — RLS is the guard, not the UI.
+- Crew accounts link to their crew record via `claim_crew_profile()` (email match, else new row); a trigger stops non-producers editing rates/rating — rates stay private.
+- Crew-to-site member lists come from the `site_members()` RPC so co-workers never see each other's rates.
+- Provider job totals use `providerTotal()` in src/lib/costing.ts (day rate × days + selected asset fees) — one formula for Assets and Commercials.
+- Files live in the private `site-files` bucket under `<productionId>/…` or `crew/<crewId>/…`, opened via signed URLs.

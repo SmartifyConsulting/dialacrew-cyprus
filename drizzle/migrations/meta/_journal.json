@@ -15,6 +15,20 @@
       "when": 1791292596313,
       "tag": "0001_auth_roles_profiles",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791294347052,
+      "tag": "0002_production_site_features",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791294365015,
+      "tag": "0003_site_files_policies",
+      "breakpoints": true
     }
   ]
 }
