@@ -1,70 +1,113 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { TopNav } from "@/components/AppShell";
 import logo from "@/assets/bookacrew-logo.png.asset.json";
+
+const HERO_BG = "https://static.wixstatic.com/media/20efcd_c74b87f40292491e9dbcf1db2483f78c~mv2.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Book a Crew — Book crew direct, run your production" },
-      { name: "description", content: "Find, pencil and book professional film and commercial crew directly. Budgets, attendance and payments in one place." },
-      { property: "og:title", content: "Book a Crew — Book crew direct" },
-      { property: "og:description", content: "Production and crew management for producers, crew and clients." },
+      { title: "HOME | dialacrew" },
+      { name: "description", content: "With film and video content more popular than ever in Cyprus, we connect businesses with the creative professionals needed to make content." },
+      { property: "og:title", content: "Dial a Crew Cyprus" },
+      { property: "og:description", content: "Connecting businesses with film and video crew in Cyprus." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:image", content: HERO_BG },
+      { name: "twitter:image", content: HERO_BG },
     ],
   }),
   component: Index,
 });
 
-const services = ["Directors", "Director of Photography", "1st AC", "Gaffers", "Sparks", "Grips", "Art Department", "Wardrobe", "Make Up Artists", "Sound", "DIT", "Data Wranglers", "Line Producers", "Assistant Directors", "Casting", "Location Scouts", "Stills Photographers", "Editors", "Colourists", "VFX Supervisors"];
+// Copy verbatim from https://ma9599.wixsite.com/dialacrew
+const story =
+  "With film and video content more popular than ever in Cyprus, we have created an agency that will help connect businesses with the creative professionals needed to make content to delight your target audiences. No matter what goals you want to achieve, we'll help you find the qualified professionals and resources you need to make your ideas become a reality .";
+
+const services = [
+  "Art Department", "Wardrobe", "Line Producers", "Make Up Artists", "DIT", "Adobe Premiere Editors",
+  "Directors", "VFX Supervisors", "Gaffers", "Designers", "Assistant Directors", "Autodesk Flame Artists",
+  "Sparks", "Autodesk Smoke Artists", "Data Wranglers", "Da Vinci Resolve Colour Artists",
+  "Director of Photography", "Stills Photographers", "Behind the Scense", "Casting Agent", "Location Scouts",
+];
+
+const gallery = [
+  "20efcd_db152710e0a5462593057d2c8b6399b0~mv2_d_6000_4000_s_4_2.jpg",
+  "20efcd_e2af50ab819c4d75a76737b10f45413c~mv2_d_4459_2508_s_4_2.jpg",
+  "20efcd_0441576308664e628165e05b23f246ac~mv2_d_4912_4912_s_4_2.jpg",
+  "20efcd_6d1e817a2b7b49238632dc63a9dc957f~mv2_d_4000_6000_s_4_2.jpg",
+  "20efcd_e0e502b4361b46749241ff3bb8ccada6~mv2_d_5472_3648_s_4_2.jpg",
+  "20efcd_95b110353618461f9db9f46af409abb7~mv2_d_6000_4000_s_4_2.jpg",
+  "20efcd_10b45c794d4347b2bc6076a650ca645c~mv2_d_4592_3064_s_4_2.jpg",
+  "20efcd_b02266a1d44348d6abdf5a3b96dfb790~mv2_d_5398_3648_s_4_2.jpg",
+  "20efcd_a69645ee1cf7464782078d4f58c57c76~mv2_d_4896_3264_s_4_2.jpg",
+].map((f) => `https://static.wixstatic.com/media/${f}/v1/fill/w_626,h_624,q_90/${f}`);
+
+const social = [
+  { label: "Instagram", href: "https://www.instagram.com/dialacrewcyrus/" },
+  { label: "Facebook", href: "https://www.facebook.com/Dial-A-Crew-341215269680331/" },
+];
 
 function Index() {
   return (
     <div className="min-h-screen bg-background">
       <TopNav />
-      <section className="relative overflow-hidden bg-sidebar">
-        <div className="absolute inset-0 opacity-30 [background:radial-gradient(circle_at_20%_30%,var(--muted)_0,transparent_40%),radial-gradient(circle_at_80%_70%,var(--secondary)_0,transparent_45%)]" />
-        <div className="relative mx-auto flex max-w-5xl flex-col items-center px-4 py-16 text-center">
-          <img src={logo.url} alt="Book a Crew" className="w-72 md:w-96" />
-          <p className="mt-6 max-w-xl font-display text-xl uppercase tracking-[0.25em] text-muted-foreground">Producers book crew direct</p>
-          <Link to="/dashboard" className="mt-8 rounded-sm bg-primary px-8 py-3 font-display text-sm font-semibold uppercase tracking-widest text-primary-foreground hover:opacity-90">
-            Open producer dashboard
-          </Link>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-4xl px-4 py-16 text-center">
-        <h2 className="font-script text-6xl text-primary">Our Story</h2>
-        <p className="mt-6 text-lg leading-relaxed text-muted-foreground">
-          Crew shouldn't depend on agents to get work, and producers shouldn't run 50-person shoots from spreadsheets and WhatsApp.
-          Book a Crew connects producers directly with professional crew — with control over selection, rates, availability, budgets,
-          bookings, attendance and payment, all in one record of the production.
-        </p>
-      </section>
-
-      <section className="bg-primary py-16 text-primary-foreground">
-        <div className="mx-auto max-w-5xl px-4">
-          <h2 className="text-center font-script text-6xl">Service offering</h2>
-          <div className="mt-10 grid grid-cols-2 gap-x-6 gap-y-3 md:grid-cols-4">
-            {services.map((s) => (
-              <div key={s} className="border-b border-primary-foreground/30 pb-2 font-display text-sm font-semibold uppercase tracking-wider">{s}</div>
+      <section className="relative bg-cover bg-center" style={{ backgroundImage: `url(${HERO_BG})` }}>
+        <div className="absolute inset-0 bg-background/40" />
+        <div className="relative mx-auto flex min-h-[760px] max-w-5xl flex-col items-center justify-center px-4 py-16">
+          <img src={logo.url} alt="Dial a Crew Cyprus" className="w-72 md:w-[400px]" />
+          <div className="mt-10 flex gap-4 self-end">
+            {social.map((s) => (
+              <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" className="text-sm uppercase tracking-widest text-muted-foreground hover:text-primary">{s.label}</a>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-6xl gap-px bg-border px-0 md:grid-cols-3">
-        {[
-          ["Producers", "Break down a brief, pencil and confirm crew, approve overtime and track every rand."],
-          ["Crew", "Get offers directly, manage availability and get paid promptly for days worked."],
-          ["Clients", "See the production and your quote — never the producer's internal crew rates."],
-        ].map(([t, d]) => (
-          <div key={t} className="bg-background p-10 text-center">
-            <h3 className="font-script text-4xl text-primary">{t}</h3>
-            <p className="mt-3 text-muted-foreground">{d}</p>
-          </div>
-        ))}
+      <section id="about" className="mx-auto max-w-4xl scroll-mt-28 px-4 py-16 text-center">
+        <h2 className="font-script text-7xl text-foreground md:text-8xl">Our Story</h2>
+        <p className="mt-10 text-left text-xl font-light leading-snug text-foreground">{story}</p>
       </section>
 
-      <footer className="border-t border-border py-8 text-center text-xs uppercase tracking-widest text-muted-foreground">© 2026 Book a Crew</footer>
+      <section id="services" className="mx-auto max-w-5xl scroll-mt-28 px-4 py-16">
+        <h2 className="text-center font-script text-7xl text-foreground md:text-8xl">Service offering</h2>
+        <div className="mt-12 grid grid-cols-1 gap-x-10 gap-y-4 sm:grid-cols-2 md:grid-cols-3">
+          {services.map((s) => (
+            <div key={s} className="border-b border-primary/60 pb-2 text-lg font-light text-foreground">{s}</div>
+          ))}
+        </div>
+      </section>
+
+      <section id="gallery" className="scroll-mt-28 py-16">
+        <h2 className="text-center font-script text-7xl text-foreground md:text-8xl">GALLERY</h2>
+        <div className="mx-auto mt-12 grid max-w-5xl grid-cols-2 gap-1 px-4 md:grid-cols-3">
+          {gallery.map((src) => (
+            <img key={src} src={src} alt="" loading="lazy" className="aspect-square w-full object-cover" />
+          ))}
+        </div>
+      </section>
+
+      <section id="contact" className="scroll-mt-28 bg-primary py-16 text-primary-foreground">
+        <div className="mx-auto max-w-5xl px-4">
+          <h2 className="text-center font-script text-6xl md:text-7xl">Contact Us Now</h2>
+          <p className="mt-4 text-center text-lg">Office : +357 22 546 345  Mobile +357 99 604740</p>
+          <div className="mt-12 grid gap-10 text-center md:grid-cols-3">
+            <div>
+              <h3 className="font-display text-xl font-semibold uppercase tracking-widest">SAY HELLO</h3>
+              <p className="mt-3">Phone: <a href="tel:+35799604740">+35799604740</a></p>
+              <p>Email: <a href="mailto:info@dialacrew.com" className="underline">info@dialacrew.com</a></p>
+            </div>
+            <div>
+              <h3 className="font-display text-xl font-semibold uppercase tracking-widest">OUR ADDRESS</h3>
+              <p className="mt-3">32 Stasikratous</p><p>Nicosia</p><p>Cyprus</p>
+            </div>
+            <div>
+              <h3 className="font-display text-xl font-semibold uppercase tracking-widest">OPENING HOURS</h3>
+              <p className="mt-3">Mon - Fri: 7am - 10pm</p><p>Saturday: 8am - 10pm</p><p>Sunday: 8am - 11pm</p>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
