@@ -56,11 +56,6 @@ function Index() {
         <div className="absolute inset-0 bg-background/40" />
         <div className="relative mx-auto flex min-h-[760px] max-w-5xl flex-col items-center justify-center px-4 py-16">
           <img src={logo.url} alt="Dial a Crew Cyprus" className="w-72 md:w-[400px]" />
-          <div className="mt-10 flex gap-4 self-end">
-            {social.map((s) => (
-              <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" className="text-sm uppercase tracking-widest text-muted-foreground hover:text-primary">{s.label}</a>
-            ))}
-          </div>
         </div>
       </section>
 
@@ -108,6 +103,17 @@ function Index() {
           </div>
         </div>
       </section>
+
+      <footer className="border-t border-border bg-background py-8">
+        <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 px-4 text-center">
+          <div className="flex gap-4">
+            {social.map((s) => (
+              <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" className="text-sm uppercase tracking-widest text-muted-foreground hover:text-primary">{s.label}</a>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Dial a Crew Cyprus</p>
+        </div>
+      </footer>
     </div>
   );
 }

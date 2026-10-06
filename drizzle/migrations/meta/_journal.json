@@ -92,6 +92,13 @@
       "when": 1791300800000,
       "tag": "0012_fix_platform_settings_anon_read",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791300900000,
+      "tag": "0013_company_invites",
+      "breakpoints": true
     }
   ]
 }

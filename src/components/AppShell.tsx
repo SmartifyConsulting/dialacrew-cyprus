@@ -21,14 +21,26 @@ const siteNav = [
   { label: "CONTACT", to: "/", hash: "contact" },
 ] as const;
 
-// Signed-in production tools.
-const appNav = [
-  { to: "/dashboard", label: "Dashboard" },
-  { to: "/productions", label: "Productions" },
-  { to: "/crew", label: "Crew" },
-  { to: "/profile", label: "My profile" },
-] as const;
-const adminNav = { to: "/admin", label: "Admin" } as const;
+// Signed-in production tools, per the actual workflow each role uses.
+const navByRole = {
+  producer: [
+    { to: "/dashboard", label: "Dashboard" },
+    { to: "/productions", label: "Productions" },
+    { to: "/crew", label: "Find Crew" },
+    { to: "/profile", label: "My company" },
+  ],
+  crew: [
+    { to: "/profile", label: "My Profile" },
+    { to: "/crew", label: "Directory" },
+  ],
+  client: [
+    { to: "/profile", label: "My Profile" },
+  ],
+  admin: [
+    { to: "/admin", label: "Admin" },
+    { to: "/profile", label: "My Profile" },
+  ],
+} as const;
 
 export function TopNav() {
   const { session, ready } = useSession();
@@ -75,16 +87,11 @@ export function TopNav() {
       {ready && session && (
         <div className="border-b border-border bg-sidebar">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-1 px-4 py-1.5">
-            {appNav.map((n) => (
+            {(navByRole[role.data ?? "client"] ?? navByRole.client).map((n) => (
               <Link key={n.to} to={n.to} className="rounded-sm px-3 py-1 font-display text-xs uppercase tracking-widest text-muted-foreground hover:text-primary" activeProps={{ className: "text-primary" }}>
                 {n.label}
               </Link>
             ))}
-            {role.data === "admin" && (
-              <Link to={adminNav.to} className="rounded-sm px-3 py-1 font-display text-xs uppercase tracking-widest text-muted-foreground hover:text-primary" activeProps={{ className: "text-primary" }}>
-                {adminNav.label}
-              </Link>
-            )}
             <div className="ml-auto flex items-center gap-3">
               <NotificationBell userId={session.user.id} />
               <span className="hidden text-xs font-semibold uppercase tracking-widest text-muted-foreground md:block">{role.data ? `${role.data} view` : ""}</span>
