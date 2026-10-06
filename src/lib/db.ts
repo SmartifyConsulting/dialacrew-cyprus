@@ -155,7 +155,7 @@ export const useCancelBooking = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (f: { bookingId: string; reason: string; postponedTo?: string }) => {
-      const { error } = await supabase.rpc("cancel_booking", { _booking: f.bookingId, _reason: f.reason, _postponed_to: f.postponedTo || null });
+      const { error } = await supabase.rpc("cancel_booking", { _booking: f.bookingId, _reason: f.reason, _postponed_to: f.postponedTo || undefined });
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["bookings"] }),
