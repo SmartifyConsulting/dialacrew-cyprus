@@ -10,58 +10,60 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as CrewRouteImport } from './routes/crew'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as ProductionsIndexRouteImport } from './routes/productions.index'
-import { Route as ProductionsIdRouteImport } from './routes/productions.$id'
+import { Route as AuthenticatedCrewRouteImport } from './routes/_authenticated/crew'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedProductionsIndexRouteImport } from './routes/_authenticated/productions.index'
+import { Route as AuthenticatedProductionsIdRouteImport } from './routes/_authenticated/productions.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CrewRoute = CrewRouteImport.update({
-  id: '/crew',
+const AuthenticatedCrewRoute = AuthenticatedCrewRouteImport.update({
+  id: '/_authenticated/crew',
   path: '/crew',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/_authenticated/dashboard',
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProductionsIndexRoute = ProductionsIndexRouteImport.update({
-  id: '/productions/',
-  path: '/productions/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProductionsIdRoute = ProductionsIdRouteImport.update({
-  id: '/productions/$id',
-  path: '/productions/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const AuthenticatedProductionsIndexRoute =
+  AuthenticatedProductionsIndexRouteImport.update({
+    id: '/_authenticated/productions/',
+    path: '/productions/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AuthenticatedProductionsIdRoute =
+  AuthenticatedProductionsIdRouteImport.update({
+    id: '/_authenticated/productions/$id',
+    path: '/productions/$id',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/crew': typeof CrewRoute
-  '/dashboard': typeof DashboardRoute
-  '/productions/$id': typeof ProductionsIdRoute
-  '/productions/': typeof ProductionsIndexRoute
+  '/crew': typeof AuthenticatedCrewRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/productions/$id': typeof AuthenticatedProductionsIdRoute
+  '/productions/': typeof AuthenticatedProductionsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/crew': typeof CrewRoute
-  '/dashboard': typeof DashboardRoute
-  '/productions/$id': typeof ProductionsIdRoute
-  '/productions': typeof ProductionsIndexRoute
+  '/crew': typeof AuthenticatedCrewRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/productions/$id': typeof AuthenticatedProductionsIdRoute
+  '/productions': typeof AuthenticatedProductionsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/crew': typeof CrewRoute
-  '/dashboard': typeof DashboardRoute
-  '/productions/$id': typeof ProductionsIdRoute
-  '/productions/': typeof ProductionsIndexRoute
+  '/_authenticated/crew': typeof AuthenticatedCrewRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/productions/$id': typeof AuthenticatedProductionsIdRoute
+  '/_authenticated/productions/': typeof AuthenticatedProductionsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -71,18 +73,18 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/crew'
-    | '/dashboard'
-    | '/productions/$id'
-    | '/productions/'
+    | '/_authenticated/crew'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/productions/$id'
+    | '/_authenticated/productions/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  CrewRoute: typeof CrewRoute
-  DashboardRoute: typeof DashboardRoute
-  ProductionsIdRoute: typeof ProductionsIdRoute
-  ProductionsIndexRoute: typeof ProductionsIndexRoute
+  AuthenticatedCrewRoute: typeof AuthenticatedCrewRoute
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedProductionsIdRoute: typeof AuthenticatedProductionsIdRoute
+  AuthenticatedProductionsIndexRoute: typeof AuthenticatedProductionsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -94,32 +96,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/crew': {
-      id: '/crew'
+    '/_authenticated/crew': {
+      id: '/_authenticated/crew'
       path: '/crew'
       fullPath: '/crew'
-      preLoaderRoute: typeof CrewRouteImport
+      preLoaderRoute: typeof AuthenticatedCrewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard': {
-      id: '/dashboard'
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/productions/': {
-      id: '/productions/'
+    '/_authenticated/productions/': {
+      id: '/_authenticated/productions/'
       path: '/productions'
       fullPath: '/productions/'
-      preLoaderRoute: typeof ProductionsIndexRouteImport
+      preLoaderRoute: typeof AuthenticatedProductionsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/productions/$id': {
-      id: '/productions/$id'
+    '/_authenticated/productions/$id': {
+      id: '/_authenticated/productions/$id'
       path: '/productions/$id'
       fullPath: '/productions/$id'
-      preLoaderRoute: typeof ProductionsIdRouteImport
+      preLoaderRoute: typeof AuthenticatedProductionsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -127,10 +129,10 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  CrewRoute: CrewRoute,
-  DashboardRoute: DashboardRoute,
-  ProductionsIdRoute: ProductionsIdRoute,
-  ProductionsIndexRoute: ProductionsIndexRoute,
+  AuthenticatedCrewRoute: AuthenticatedCrewRoute,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedProductionsIdRoute: AuthenticatedProductionsIdRoute,
+  AuthenticatedProductionsIndexRoute: AuthenticatedProductionsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
