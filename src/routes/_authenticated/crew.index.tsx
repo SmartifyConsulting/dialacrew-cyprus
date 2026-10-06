@@ -4,7 +4,7 @@ import { Page } from "@/components/AppShell";
 import { zar } from "@/lib/demo-data";
 import { useCrew, useTogglePencil } from "@/lib/db";
 
-export const Route = createFileRoute("/_authenticated/crew")({
+export const Route = createFileRoute("/_authenticated/crew/")({
   head: () => ({
     meta: [
       { title: "Crew Directory — Book a Crew" },
