@@ -64,7 +64,7 @@ export function TopNav() {
   );
 }
 
-function RoleGate({ children, open }: { children: ReactNode; open?: boolean }) {
+function RoleGate({ children, open }: { children: ReactNode; open?: boolean | undefined }) {
   const { session } = useSession();
   const role = useRole(session?.user.id);
   if (!session || role.isLoading) return <p className="text-muted-foreground">Loading…</p>;

@@ -62,7 +62,8 @@ function CrewProfile() {
   const refresh = () => inv(["crew-profile", id], ["crew"], ["crew-assets", id], ["crew-assets"]);
 
   async function update(patch: Record<string, unknown>) {
-    const { error } = await supabase.from("crew_members").update(patch).eq("id", id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await supabase.from("crew_members").update(patch as any).eq("id", id);
     if (error) { toast.error(error.message); return false; }
     refresh(); return true;
   }

@@ -267,7 +267,7 @@ export function RegisterTab({ p, isProducer, userId, myName, myCrewId }: Ctx) {
   const state = useRef<boolean | null>(myLast ? myLast.kind === "in" : null);
   useEffect(() => { state.current = myLast ? myLast.kind === "in" : false; }, [myLast]);
   useEffect(() => {
-    if (!auto || !myCrewId || !hasSite || !navigator.geolocation) return;
+    if (!auto || !myCrewId || !hasSite || !navigator.geolocation) return undefined;
     const id = navigator.geolocation.watchPosition(async (pos) => {
       const d = distanceMeters(pos.coords.latitude, pos.coords.longitude, p.latitude!, p.longitude!);
       const inside = isOnSite(d, radius);

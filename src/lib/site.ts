@@ -6,7 +6,7 @@ export const BUCKET = "site-files";
 export async function uploadFile(folder: string, file: Blob, name: string) {
   const safe = name.replace(/[^\w.\-]+/g, "_");
   const path = `${folder}/${crypto.randomUUID()}-${safe}`;
-  const { error } = await supabase.storage.from(BUCKET).upload(path, file, { contentType: file.type || undefined });
+  const { error } = await supabase.storage.from(BUCKET).upload(path, file, file.type ? { contentType: file.type } : {});
   if (error) throw error;
   return path;
 }
