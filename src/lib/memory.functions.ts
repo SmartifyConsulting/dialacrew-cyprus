@@ -92,7 +92,7 @@ export const saveRetrospective = createServerFn({ method: "POST" })
     await assertProducer(db, context.userId);
     const { data: p } = await db.from("productions").select("id, name, client").eq("id", data.productionId).single();
     if (!p) throw new Error("Production not found.");
-    const out = await aiJson<{ lessons_learned_alert: string; payload: Record<string, unknown> }>({
+    const out = await aiJson<{ lessons_learned_alert: string; payload: Record<string, string | string[]> }>({
       name: "retro_memory",
       schema: S({
         lessons_learned_alert: str,

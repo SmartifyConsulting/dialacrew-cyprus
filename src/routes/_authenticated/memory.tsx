@@ -45,7 +45,7 @@ function MemoryPage() {
 
   const run = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (f.brief.trim().length < 10) return toast.error("Describe the brief in a sentence or two.");
+    if (f.brief.trim().length < 10) { toast.error("Describe the brief in a sentence or two."); return; }
     setBusy(true); setRes(null);
     try { setRes(await match({ data: f })); } catch (err) { toast.error(err instanceof Error ? err.message : "Matching failed."); } finally { setBusy(false); }
   };

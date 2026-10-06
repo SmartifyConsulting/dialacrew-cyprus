@@ -46,11 +46,11 @@ export function RetroTab({ p }: { p: Production }) {
     queryFn: async () => {
       const { data } = await (supabase as unknown as { from: (t: string) => ReturnType<typeof supabase.from> })
         .from("production_retrospectives").select("form, lessons, memory").eq("production_id", p.id).maybeSingle();
-      return data as unknown as { form: RetroForm; lessons: string; memory: Record<string, unknown> } | null;
+      return data as unknown as { form: RetroForm; lessons: string; memory: Record<string, string | string[]> } | null;
     },
   });
   const [f, setF] = useState<RetroForm>(() => blank(p));
-  const [out, setOut] = useState<{ lessons: string; payload: Record<string, unknown> } | null>(null);
+  const [out, setOut] = useState<{ lessons: string; payload: Record<string, string | string[]> } | null>(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => { if (existing.data) { setF({ ...blank(p), ...existing.data.form }); setOut({ lessons: existing.data.lessons, payload: existing.data.memory }); } }, [existing.data, p]);
 
