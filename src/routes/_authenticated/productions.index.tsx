@@ -4,7 +4,7 @@ import { Badge, Page, Panel } from "@/components/AppShell";
 import { zar } from "@/lib/demo-data";
 import { useCreateProduction, useProductions } from "@/lib/db";
 
-export const Route = createFileRoute("/productions/")({
+export const Route = createFileRoute("/_authenticated/productions/")({
   head: () => ({
     meta: [
       { title: "Productions — Book a Crew" },
