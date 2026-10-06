@@ -19,6 +19,9 @@ const toBooking = (r: any): Booking => ({
   id: r.id, productionId: r.production_id, crewId: r.crew_id, role: r.role, status: r.status,
   crewRate: Number(r.crew_rate), clientCharge: Number(r.client_charge), days: r.days,
   attendance: r.attendance ?? undefined,
+  bookingDate: r.booking_date ?? null, callTime: r.call_time ?? null, wrapTime: r.wrap_time ?? null,
+  pencilPriority: r.pencil_priority ?? null, pencilExpiresAt: r.pencil_expires_at ?? null,
+  createdBy: r.created_by ?? null, cancelledReason: r.cancelled_reason ?? null,
 });
 
 const run = async <T,>(p: PromiseLike<{ data: any; error: any }>, map: (r: any) => T): Promise<T[]> => {
@@ -54,16 +57,6 @@ export const useCreateProduction = () => {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["productions"] }),
   });
 };
-export const useTogglePencil = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, pencilled }: { id: string; pencilled: boolean }) => {
-      const { error } = await supabase.from("crew_members").update({ pencilled }).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["crew"] }),
-  });
-};
 export const useSetRequestState = () => {
   const qc = useQueryClient();
   return useMutation({
@@ -72,5 +65,65 @@ export const useSetRequestState = () => {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["requests"] }),
+  });
+};
+
+export const useCreatePencil = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (f: { productionId: string; crewId: string; role: string; bookingDate: string; callTime?: string; wrapTime?: string; crewRate: number; clientCharge: number; days: number }) => {
+      const { error } = await supabase.from("bookings").insert({
+        production_id: f.productionId, crew_id: f.crewId, role: f.role, status: "pencil",
+        booking_date: f.bookingDate || null, call_time: f.callTime || null, wrap_time: f.wrapTime || null,
+        crew_rate: f.crewRate, client_charge: f.clientCharge, days: f.days,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["bookings"] }),
+  });
+};
+
+export const useRespondToBooking = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, status, reason }: { id: string; status: "confirmed" | "cancelled"; reason?: string }) => {
+      const { error } = await supabase.from("bookings").update({ status, ...(reason ? { cancelled_reason: reason } : {}) }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["bookings"] }),
+  });
+};
+
+export type RateNegotiation = { id: string; booking_id: string; proposed_by: string; proposed_rate: number; status: "pending" | "accepted" | "declined" | "countered"; note: string; created_at: string };
+
+export const useNegotiations = (bookingId: string, enabled = true) => useQuery({
+  queryKey: ["negotiations", bookingId],
+  enabled,
+  queryFn: async () => {
+    const { data, error } = await supabase.from("rate_negotiations").select("*").eq("booking_id", bookingId).order("created_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []) as RateNegotiation[];
+  },
+});
+
+export const useProposeRate = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (f: { bookingId: string; proposedRate: number; note?: string }) => {
+      const { error } = await supabase.from("rate_negotiations").insert({ booking_id: f.bookingId, proposed_rate: f.proposedRate, note: f.note ?? "" });
+      if (error) throw error;
+    },
+    onSuccess: (_d, f) => { qc.invalidateQueries({ queryKey: ["negotiations", f.bookingId] }); },
+  });
+};
+
+export const useRespondToNegotiation = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, bookingId, status }: { id: string; bookingId: string; status: "accepted" | "declined" }) => {
+      const { error } = await supabase.from("rate_negotiations").update({ status }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, f) => { qc.invalidateQueries({ queryKey: ["negotiations", f.bookingId] }); qc.invalidateQueries({ queryKey: ["bookings"] }); },
   });
 };

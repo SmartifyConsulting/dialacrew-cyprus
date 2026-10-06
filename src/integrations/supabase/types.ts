@@ -67,7 +67,16 @@ export type Database = {
           id: string
           production_id: string
           role: string
-          status: string
+          status: Database["public"]["Enums"]["booking_status"]
+          booking_date: string | null
+          call_time: string | null
+          wrap_time: string | null
+          pencil_priority: number | null
+          pencil_expires_at: string | null
+          created_by: string | null
+          cancelled_reason: string | null
+          cancelled_by: string | null
+          cancelled_at: string | null
         }
         Insert: {
           attendance?: string | null
@@ -79,7 +88,16 @@ export type Database = {
           id?: string
           production_id: string
           role: string
-          status?: string
+          status?: Database["public"]["Enums"]["booking_status"]
+          booking_date?: string | null
+          call_time?: string | null
+          wrap_time?: string | null
+          pencil_priority?: number | null
+          pencil_expires_at?: string | null
+          created_by?: string | null
+          cancelled_reason?: string | null
+          cancelled_by?: string | null
+          cancelled_at?: string | null
         }
         Update: {
           attendance?: string | null
@@ -91,7 +109,16 @@ export type Database = {
           id?: string
           production_id?: string
           role?: string
-          status?: string
+          status?: Database["public"]["Enums"]["booking_status"]
+          booking_date?: string | null
+          call_time?: string | null
+          wrap_time?: string | null
+          pencil_priority?: number | null
+          pencil_expires_at?: string | null
+          created_by?: string | null
+          cancelled_reason?: string | null
+          cancelled_by?: string | null
+          cancelled_at?: string | null
         }
         Relationships: [
           {
@@ -869,6 +896,44 @@ export type Database = {
           },
         ]
       }
+      rate_negotiations: {
+        Row: {
+          id: string
+          booking_id: string
+          proposed_by: string
+          proposed_rate: number
+          status: string
+          note: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          booking_id: string
+          proposed_by?: string
+          proposed_rate: number
+          status?: string
+          note?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          booking_id?: string
+          proposed_by?: string
+          proposed_rate?: number
+          status?: string
+          note?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rate_negotiations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_settings: {
         Row: {
           key: string
@@ -919,6 +984,7 @@ export type Database = {
     Enums: {
       app_role: "producer" | "crew" | "client" | "admin"
       company_role: "owner" | "producer" | "production_manager" | "accounts"
+      booking_status: "draft" | "pencil" | "awaiting_crew_confirmation" | "confirmed" | "in_progress" | "awaiting_review" | "payment_released" | "completed" | "cancelled" | "disputed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1048,6 +1114,7 @@ export const Constants = {
     Enums: {
       app_role: ["producer", "crew", "client", "admin"],
       company_role: ["owner", "producer", "production_manager", "accounts"],
+      booking_status: ["draft", "pencil", "awaiting_crew_confirmation", "confirmed", "in_progress", "awaiting_review", "payment_released", "completed", "cancelled", "disputed"],
     },
   },
 } as const

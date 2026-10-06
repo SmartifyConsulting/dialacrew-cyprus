@@ -57,6 +57,13 @@
       "when": 1791300300000,
       "tag": "0007_fix_company_rls_recursion",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791300400000,
+      "tag": "0008_booking_state_machine",
+      "breakpoints": true
     }
   ]
 }

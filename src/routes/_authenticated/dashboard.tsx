@@ -27,9 +27,9 @@ function Dashboard() {
   const stats = [
     ["Active productions", productions.filter((p) => p.status === "Active").length],
     ["Upcoming", productions.filter((p) => p.status === "Upcoming").length],
-    ["Pencils", count("Pencil")],
-    ["Confirmed", count("Confirmed")],
-    ["Pending responses", count("Pending")],
+    ["Pencils", count("pencil")],
+    ["Confirmed", count("confirmed")],
+    ["Pending responses", count("awaiting_crew_confirmation")],
     ["Approvals waiting", reqs.filter((r) => r.state === "Pending").length],
     ["Secured funds", zar(secured)],
     ["Outstanding invoices", zar(186_400)],
@@ -109,7 +109,7 @@ function Dashboard() {
 
         <Panel title="Pending crew responses">
           <ul className="text-sm">
-            {bookings.filter((b) => b.status === "Pending" || b.status === "Pencil").map((b) => (
+            {bookings.filter((b) => b.status === "awaiting_crew_confirmation" || b.status === "pencil").map((b) => (
               <li key={b.id} className="flex items-center justify-between border-t border-border px-4 py-2.5 first:border-t-0">
                 <span>{crewName(b.crewId)} <span className="text-muted-foreground">· {b.role}</span></span>
                 <Badge>{b.status}</Badge>

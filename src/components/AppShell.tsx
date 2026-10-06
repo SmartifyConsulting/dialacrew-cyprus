@@ -126,14 +126,21 @@ export function Page({ title, subtitle, actions, children, open }: { title: stri
 }
 
 const tone: Record<string, string> = {
-  Confirmed: "bg-success/20 text-success",
+  Confirmed: "bg-success/20 text-success", confirmed: "bg-success/20 text-success",
   "On set": "bg-success/20 text-success",
   Active: "bg-success/20 text-success",
-  Pencil: "bg-primary/20 text-primary",
+  Pencil: "bg-primary/20 text-primary", pencil: "bg-primary/20 text-primary",
   Upcoming: "bg-primary/20 text-primary",
   Pending: "bg-chart-3/20 text-chart-3",
+  awaiting_crew_confirmation: "bg-chart-3/20 text-chart-3",
+  in_progress: "bg-success/20 text-success",
+  awaiting_review: "bg-chart-3/20 text-chart-3",
+  payment_released: "bg-success/20 text-success",
+  completed: "bg-muted text-muted-foreground",
+  disputed: "bg-destructive/20 text-destructive",
+  draft: "bg-muted text-muted-foreground",
   Late: "bg-primary/20 text-primary",
-  Declined: "bg-destructive/20 text-destructive",
+  Declined: "bg-destructive/20 text-destructive", cancelled: "bg-destructive/20 text-destructive",
   "Not arrived": "bg-destructive/20 text-destructive",
   Wrapped: "bg-muted text-muted-foreground",
 };

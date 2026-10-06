@@ -9,6 +9,7 @@ import { Avatar } from "@/components/site/SiteTabs";
 import { useRole, useSession } from "@/lib/auth";
 import { zar } from "@/lib/demo-data";
 import { uploadFile, useInvalidate, useReviews } from "@/lib/site";
+import { useNegotiations, useProposeRate, useRespondToBooking, useRespondToNegotiation } from "@/lib/db";
 
 export const Route = createFileRoute("/_authenticated/crew/$id")({
   head: () => ({
@@ -44,7 +45,7 @@ function CrewProfile() {
   const jobs = useQuery({
     queryKey: ["crew-jobs", id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("bookings").select("id, role, status, days, production_id, productions(name, client, date, status)").eq("crew_id", id);
+      const { data, error } = await supabase.from("bookings").select("id, role, status, days, crew_rate, booking_date, call_time, wrap_time, pencil_expires_at, cancelled_reason, production_id, productions(name, client, date, status)").eq("crew_id", id);
       if (error) throw error; return data ?? [];
     },
   });
@@ -122,15 +123,9 @@ function CrewProfile() {
           {tab === "Projects" && (
             <ul className="divide-y divide-border">
               {(jobs.data ?? []).length === 0 && <li className="py-3 text-sm text-muted-foreground">No projects yet.</li>}
-              {(jobs.data ?? []).map((j) => {
-                const pr = j.productions as { name: string; client: string; date: string | null; status: string } | null;
-                return (
-                  <li key={j.id} className="flex items-center justify-between py-3">
-                    <div><Link to="/productions/$id" params={{ id: j.production_id }} className="font-semibold hover:text-primary">{pr?.name}</Link><div className="text-xs text-muted-foreground">{j.role} · {pr?.client} · {pr?.date}</div></div>
-                    <span className="text-xs uppercase text-muted-foreground">{pr?.status}</span>
-                  </li>
-                );
-              })}
+              {(jobs.data ?? []).map((j) => (
+                <ProjectRow key={j.id} job={j} userId={session?.user.id} canRespond={canEdit && m.user_id === session?.user.id} isProducer={role.data === "producer"} onChange={() => { jobs.refetch(); }} />
+              ))}
             </ul>
           )}
           {tab === "Reviews" && (
@@ -148,6 +143,94 @@ function CrewProfile() {
         </div>
       </div>
     </Page>
+  );
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  draft: "Draft", pencil: "Pencil", awaiting_crew_confirmation: "Awaiting your confirmation", confirmed: "Confirmed",
+  in_progress: "In progress", awaiting_review: "Awaiting review", payment_released: "Payment released",
+  completed: "Completed", cancelled: "Cancelled", disputed: "Disputed",
+};
+
+type Job = {
+  id: string; role: string; status: string; days: number; crew_rate: number;
+  booking_date: string | null; call_time: string | null; wrap_time: string | null; pencil_expires_at: string | null; cancelled_reason: string | null;
+  production_id: string; productions: { name: string; client: string; date: string | null; status: string } | null;
+};
+
+function ProjectRow({ job: j, userId, canRespond, isProducer, onChange }: { job: Job; userId?: string | undefined; canRespond: boolean; isProducer: boolean; onChange: () => void }) {
+  const pr = j.productions;
+  const respond = useRespondToBooking();
+  const [negOpen, setNegOpen] = useState(false);
+  const negotiations = useNegotiations(j.id, negOpen);
+  const propose = useProposeRate();
+  const respondNeg = useRespondToNegotiation();
+  const [proposedRate, setProposedRate] = useState(String(j.crew_rate));
+  const canAct = canRespond || isProducer;
+  const pending = j.status === "pencil" || j.status === "awaiting_crew_confirmation";
+
+  async function accept() {
+    try { await respond.mutateAsync({ id: j.id, status: "confirmed" }); toast.success("Booking confirmed"); onChange(); }
+    catch (e) { toast.error((e as Error).message); }
+  }
+  async function decline() {
+    try { await respond.mutateAsync({ id: j.id, status: "cancelled", reason: "Declined by crew" }); toast.success("Booking declined"); onChange(); }
+    catch (e) { toast.error((e as Error).message); }
+  }
+  async function sendProposal() {
+    const rate = Number(proposedRate);
+    if (!rate || rate <= 0) return;
+    try { await propose.mutateAsync({ bookingId: j.id, proposedRate: rate }); toast.success("Rate proposal sent"); }
+    catch (e) { toast.error((e as Error).message); }
+  }
+  async function respondProposal(id: string, status: "accepted" | "declined") {
+    try { await respondNeg.mutateAsync({ id, bookingId: j.id, status }); toast.success(status === "accepted" ? "Rate accepted" : "Rate declined"); onChange(); }
+    catch (e) { toast.error((e as Error).message); }
+  }
+
+  return (
+    <li className="py-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <Link to="/productions/$id" params={{ id: j.production_id }} className="font-semibold hover:text-primary">{pr?.name}</Link>
+          <div className="text-xs text-muted-foreground">{j.role} · {pr?.client} · {j.booking_date ?? pr?.date}{j.call_time ? ` · call ${j.call_time}` : ""} · {zar(j.crew_rate)}/day</div>
+          {j.status === "cancelled" && j.cancelled_reason && <div className="text-xs text-destructive">{j.cancelled_reason}</div>}
+          {j.status === "pencil" && j.pencil_expires_at && <div className="text-xs text-muted-foreground">Expires {new Date(j.pencil_expires_at).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" })}</div>}
+        </div>
+        <span className="text-xs uppercase text-muted-foreground">{STATUS_LABEL[j.status] ?? j.status}</span>
+      </div>
+      {canRespond && pending && (
+        <div className="mt-2 flex gap-2">
+          <button onClick={accept} className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold uppercase text-primary-foreground">Accept</button>
+          <button onClick={decline} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold uppercase">Decline</button>
+          <button onClick={() => setNegOpen(!negOpen)} className="ml-auto text-xs text-primary hover:underline">{negOpen ? "Hide rate negotiation" : "Negotiate rate"}</button>
+        </div>
+      )}
+      {canAct && pending && !canRespond && (
+        <button onClick={() => setNegOpen(!negOpen)} className="mt-2 text-xs text-primary hover:underline">{negOpen ? "Hide rate negotiation" : "Negotiate rate"}</button>
+      )}
+      {negOpen && (
+        <div className="mt-2 space-y-2 rounded-sm border border-border bg-muted/30 p-3">
+          {(negotiations.data ?? []).map((n) => (
+            <div key={n.id} className="flex items-center justify-between text-xs">
+              <span>{n.proposed_by === userId ? "You" : "They"} proposed {zar(n.proposed_rate)} — <span className="uppercase">{n.status}</span></span>
+              {n.status === "pending" && n.proposed_by !== userId && (
+                <div className="flex gap-2">
+                  <button onClick={() => respondProposal(n.id, "accepted")} className="text-primary hover:underline">Accept</button>
+                  <button onClick={() => respondProposal(n.id, "declined")} className="text-muted-foreground hover:underline">Decline</button>
+                </div>
+              )}
+            </div>
+          ))}
+          {pending && (
+            <div className="flex items-center gap-2">
+              <input type="number" className="w-28 rounded-sm border border-input bg-background px-2 py-1 text-xs" value={proposedRate} onChange={(e) => setProposedRate(e.target.value)} />
+              <button onClick={sendProposal} className="rounded-sm bg-primary px-2 py-1 text-xs font-semibold uppercase text-primary-foreground">Propose</button>
+            </div>
+          )}
+        </div>
+      )}
+    </li>
   );
 }
 
