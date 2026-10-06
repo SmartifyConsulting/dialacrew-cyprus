@@ -134,6 +134,13 @@
       "when": 1791301400000,
       "tag": "0018_inventory",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1791301500000,
+      "tag": "0019_memory_bank",
+      "breakpoints": true
     }
   ]
 }
