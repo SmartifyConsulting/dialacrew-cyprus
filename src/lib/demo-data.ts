@@ -12,10 +12,10 @@ export type Crew = {
 
 export type BookingStatus =
   | "draft" | "pencil" | "awaiting_crew_confirmation" | "confirmed"
-  | "in_progress" | "awaiting_review" | "payment_released" | "completed" | "cancelled" | "disputed";
+  | "in_progress" | "awaiting_review" | "payment_released" | "completed" | "cancelled" | "disputed" | "open";
 
 export type Booking = {
-  id: string; productionId: string; crewId: string; role: string;
+  id: string; productionId: string; crewId: string | null; role: string;
   status: BookingStatus;
   crewRate: number; clientCharge: number; days: number;
   attendance?: "On set" | "Late" | "Not arrived" | "Wrapped";

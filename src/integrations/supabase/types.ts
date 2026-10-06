@@ -999,6 +999,21 @@ export type Database = {
         Update: { id?: string; user_id?: string; crew_id?: string; created_at?: string }
         Relationships: []
       }
+      inventory_items: {
+        Row: { id: string; name: string; category: string; total_count: number; notes: string; created_at: string }
+        Insert: { id?: string; name: string; category?: string; total_count?: number; notes?: string; created_at?: string }
+        Update: { id?: string; name?: string; category?: string; total_count?: number; notes?: string; created_at?: string }
+        Relationships: []
+      }
+      inventory_checkouts: {
+        Row: { id: string; item_id: string; quantity: number; production_id: string | null; checked_out_to: string; checked_out_at: string; expected_return_at: string | null; returned_at: string | null; created_at: string }
+        Insert: { id?: string; item_id: string; quantity?: number; production_id?: string | null; checked_out_to?: string; checked_out_at?: string; expected_return_at?: string | null; returned_at?: string | null; created_at?: string }
+        Update: { id?: string; item_id?: string; quantity?: number; production_id?: string | null; checked_out_to?: string; checked_out_at?: string; expected_return_at?: string | null; returned_at?: string | null; created_at?: string }
+        Relationships: [
+          { foreignKeyName: "inventory_checkouts_item_id_fkey"; columns: ["item_id"]; isOneToOne: false; referencedRelation: "inventory_items"; referencedColumns: ["id"] },
+          { foreignKeyName: "inventory_checkouts_production_id_fkey"; columns: ["production_id"]; isOneToOne: false; referencedRelation: "productions"; referencedColumns: ["id"] },
+        ]
+      }
       invoices: {
         Row: {
           id: string

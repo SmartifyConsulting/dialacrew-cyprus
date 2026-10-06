@@ -127,6 +127,13 @@
       "when": 1791301300000,
       "tag": "0017_profile_avatar",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1791301400000,
+      "tag": "0018_inventory",
+      "breakpoints": true
     }
   ]
 }

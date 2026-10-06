@@ -21,7 +21,7 @@ function Dashboard() {
   const bookings = useBookings().data ?? [];
   const reqs = useRequests().data ?? [];
   const setState = useSetRequestState();
-  const crewName = (id: string) => crew.find((c) => c.id === id)?.name ?? "—";
+  const crewName = (id: string | null) => (id ? crew.find((c) => c.id === id)?.name ?? "—" : "Open gig");
   const count = (s: string) => bookings.filter((b) => b.status === s).length;
   const secured = productions.reduce((a, p) => a + p.securedFunds, 0);
   const stats = [

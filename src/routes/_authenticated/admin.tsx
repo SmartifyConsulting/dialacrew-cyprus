@@ -120,7 +120,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminPage,
 });
 
-const TABS = ["Users", "Crew", "Import", "Companies", "Bookings", "Payments", "Invoices", "Disputes", "Reviews", "Memberships", "Audit Log"] as const;
+const TABS = ["Users", "Crew", "Import", "Companies", "Bookings", "Payments", "Invoices", "Inventory", "Disputes", "Reviews", "Memberships", "Audit Log"] as const;
 const btn = "rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary-foreground";
 
 function AdminPage() {
@@ -155,6 +155,7 @@ function AdminPage() {
       {tab === "Bookings" && <BookingsTab />}
       {tab === "Payments" && <PaymentsTab />}
       {tab === "Invoices" && <InvoicesTab />}
+      {tab === "Inventory" && <InventoryTab />}
       {tab === "Disputes" && <DisputesTab />}
       {tab === "Reviews" && <ReviewsTab />}
       {tab === "Memberships" && <MembershipsTab />}
@@ -454,5 +455,155 @@ function AuditLogTab() {
         ))}</tbody>
       </table>
     </Panel>
+  );
+}
+
+const invField = "rounded-sm border border-input bg-background px-2 py-1.5 text-sm outline-none focus:border-ring";
+const INV_CATEGORIES = ["Equipment", "Lighting", "Sound", "Camera", "Grip", "Wardrobe", "Props", "Vehicle"];
+
+function InventoryTab() {
+  const inv = useInv();
+  const items = useQuery({
+    queryKey: ["admin-inventory-items"],
+    queryFn: async () => { const { data, error } = await supabase.from("inventory_items").select("*").order("name"); if (error) throw error; return data ?? []; },
+  });
+  const checkouts = useQuery({
+    queryKey: ["admin-inventory-checkouts"],
+    queryFn: async () => { const { data, error } = await supabase.from("inventory_checkouts").select("*, productions(name)").order("checked_out_at", { ascending: false }); if (error) throw error; return data ?? []; },
+  });
+  const [newItem, setNewItem] = useState({ name: "", category: "Equipment", total_count: "1", notes: "" });
+  const [checkoutFor, setCheckoutFor] = useState<{ id: string; name: string } | null>(null);
+
+  async function addItem() {
+    if (!newItem.name.trim()) return;
+    const { error } = await supabase.from("inventory_items").insert({ name: newItem.name.trim(), category: newItem.category, total_count: Number(newItem.total_count) || 1, notes: newItem.notes });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Item added");
+    setNewItem({ name: "", category: "Equipment", total_count: "1", notes: "" });
+    inv(["admin-inventory-items"]);
+  }
+  async function removeItem(id: string) {
+    const { error } = await supabase.from("inventory_items").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    inv(["admin-inventory-items"], ["admin-inventory-checkouts"]);
+  }
+  async function markReturned(id: string) {
+    const { error } = await supabase.from("inventory_checkouts").update({ returned_at: new Date().toISOString().slice(0, 10) }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Marked returned");
+    inv(["admin-inventory-checkouts"]);
+  }
+
+  const outByItem = new Map<string, number>();
+  for (const c of checkouts.data ?? []) {
+    if (!c.returned_at) outByItem.set(c.item_id, (outByItem.get(c.item_id) ?? 0) + c.quantity);
+  }
+
+  return (
+    <div className="space-y-5">
+      <Panel title="Add inventory item">
+        <div className="flex flex-wrap items-end gap-2 p-4">
+          <input placeholder="Item name" className={`${invField} min-w-48 flex-1`} value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} />
+          <select className={invField} value={newItem.category} onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}>
+            {INV_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+          </select>
+          <input type="number" min="1" className={`${invField} w-24`} placeholder="Count" value={newItem.total_count} onChange={(e) => setNewItem({ ...newItem, total_count: e.target.value })} />
+          <input placeholder="Notes" className={`${invField} min-w-40`} value={newItem.notes} onChange={(e) => setNewItem({ ...newItem, notes: e.target.value })} />
+          <button onClick={addItem} className={btn}>Add item</button>
+        </div>
+      </Panel>
+
+      <Panel title={`Inventory (${items.data?.length ?? 0} item types)`}>
+        <table className="w-full text-sm">
+          <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground"><tr>
+            <th className="px-4 py-2">Item</th><th className="px-4">Category</th><th className="px-4">Total</th><th className="px-4">Checked out</th><th className="px-4">Available</th><th className="px-4">Action</th>
+          </tr></thead>
+          <tbody>
+            {(items.data ?? []).map((it) => {
+              const out = outByItem.get(it.id) ?? 0;
+              return (
+                <tr key={it.id} className="border-t border-border">
+                  <td className="px-4 py-2 font-medium">{it.name}{it.notes && <div className="text-xs text-muted-foreground">{it.notes}</div>}</td>
+                  <td className="px-4">{it.category}</td>
+                  <td className="px-4">{it.total_count}</td>
+                  <td className="px-4">{out}</td>
+                  <td className="px-4">{it.total_count - out}</td>
+                  <td className="px-4 flex gap-2">
+                    <button onClick={() => setCheckoutFor({ id: it.id, name: it.name })} className="text-xs text-primary hover:underline">Check out</button>
+                    <button onClick={() => removeItem(it.id)} className="text-xs text-destructive hover:underline">Delete</button>
+                  </td>
+                </tr>
+              );
+            })}
+            {items.data?.length === 0 && <tr><td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">No inventory items yet.</td></tr>}
+          </tbody>
+        </table>
+      </Panel>
+
+      <Panel title="Library card — check-out history">
+        <table className="w-full text-sm">
+          <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground"><tr>
+            <th className="px-4 py-2">Item</th><th className="px-4">Qty</th><th className="px-4">Where</th><th className="px-4">Left on</th><th className="px-4">Due back</th><th className="px-4">Returned</th><th className="px-4">Action</th>
+          </tr></thead>
+          <tbody>
+            {(checkouts.data ?? []).map((c) => {
+              const itemName = items.data?.find((i) => i.id === c.item_id)?.name ?? "—";
+              return (
+                <tr key={c.id} className="border-t border-border">
+                  <td className="px-4 py-2 font-medium">{itemName}</td>
+                  <td className="px-4">{c.quantity}</td>
+                  <td className="px-4">{(c.productions as { name: string } | null)?.name || c.checked_out_to || "—"}</td>
+                  <td className="px-4">{c.checked_out_at}</td>
+                  <td className="px-4">{c.expected_return_at || "—"}</td>
+                  <td className="px-4">{c.returned_at ? <Badge>Confirmed</Badge> : <Badge>Pending</Badge>}</td>
+                  <td className="px-4">{!c.returned_at && <button onClick={() => markReturned(c.id)} className="text-xs text-primary hover:underline">Mark returned</button>}</td>
+                </tr>
+              );
+            })}
+            {checkouts.data?.length === 0 && <tr><td colSpan={7} className="px-4 py-6 text-center text-muted-foreground">No check-outs yet.</td></tr>}
+          </tbody>
+        </table>
+      </Panel>
+
+      {checkoutFor && <CheckoutDialog item={checkoutFor} onClose={() => setCheckoutFor(null)} onDone={() => inv(["admin-inventory-checkouts"])} />}
+    </div>
+  );
+}
+
+function CheckoutDialog({ item, onClose, onDone }: { item: { id: string; name: string }; onClose: () => void; onDone: () => void }) {
+  const [f, setF] = useState({ quantity: "1", checkedOutTo: "", returnBy: "" });
+  const [busy, setBusy] = useState(false);
+
+  async function submit() {
+    setBusy(true);
+    const { error } = await supabase.from("inventory_checkouts").insert({
+      item_id: item.id, quantity: Number(f.quantity) || 1, checked_out_to: f.checkedOutTo,
+      expected_return_at: f.returnBy || null,
+    });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Checked out");
+    onDone();
+    onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-4" onClick={onClose}>
+      <div className="w-full max-w-md rounded-sm border border-border bg-card p-5" onClick={(e) => e.stopPropagation()}>
+        <h3 className="font-script text-3xl text-primary">Check out {item.name}</h3>
+        <div className="mt-4 grid gap-3">
+          <label className="block"><span className="text-xs uppercase tracking-wider text-muted-foreground">Quantity</span>
+            <input type="number" min="1" className={`${invField} mt-1 w-full`} value={f.quantity} onChange={(e) => setF({ ...f, quantity: e.target.value })} /></label>
+          <label className="block"><span className="text-xs uppercase tracking-wider text-muted-foreground">Where it's going</span>
+            <input className={`${invField} mt-1 w-full`} placeholder="Production name, person, location…" value={f.checkedOutTo} onChange={(e) => setF({ ...f, checkedOutTo: e.target.value })} /></label>
+          <label className="block"><span className="text-xs uppercase tracking-wider text-muted-foreground">Expected return date</span>
+            <input type="date" className={`${invField} mt-1 w-full`} value={f.returnBy} onChange={(e) => setF({ ...f, returnBy: e.target.value })} /></label>
+        </div>
+        <div className="mt-4 flex justify-end gap-2">
+          <button onClick={onClose} className="px-3 py-2 text-xs uppercase text-muted-foreground">Cancel</button>
+          <button disabled={busy} onClick={submit} className={`${btn} disabled:opacity-60`}>{busy ? "Saving…" : "Check out"}</button>
+        </div>
+      </div>
+    </div>
   );
 }

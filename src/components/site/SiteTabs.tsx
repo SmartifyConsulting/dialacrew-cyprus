@@ -523,7 +523,8 @@ export function AssetsTab({ p, isProducer, bookings, crewNames }: Ctx & { bookin
   const assets = useCrewAssets(true).data ?? [];
   const selected = useBookingAssets(true).data ?? [];
   const inv = useInvalidate();
-  const rows = bookings.filter((b) => b.productionId === p.id);
+  const rows = bookings.filter((b) => b.productionId === p.id && b.status !== "cancelled");
+  const [swapping, setSwapping] = useState<Booking | null>(null);
 
   async function toggle(b: Booking, a: (typeof assets)[number], on: boolean) {
     const { error } = on
@@ -532,16 +533,32 @@ export function AssetsTab({ p, isProducer, bookings, crewNames }: Ctx & { bookin
     if (error) toast.error(error.message); else inv(["booking-assets"]);
   }
 
+  const grandTotal = rows.reduce((sum, b) => {
+    const lines = selected.filter((s) => s.booking_id === b.id).map((s) => ({ dailyFee: Number(s.daily_fee), days: s.days }));
+    return sum + providerTotal(b.crewRate, b.days, lines);
+  }, 0);
+
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">{isProducer ? "Tick the kit and props from each provider's inventory that Dial a Crew has selected for this job. Each fee is added to that provider's total." : "Kit and props selected for this job."}</p>
+      {isProducer && rows.length > 0 && (
+        <div className="flex items-center justify-between rounded-sm border border-primary/40 bg-primary/10 px-4 py-3">
+          <span className="text-sm font-semibold uppercase tracking-wider">Running cost as selected</span>
+          <span className="font-display text-2xl font-bold text-primary">{zar(grandTotal)}</span>
+        </div>
+      )}
       {rows.length === 0 && <p className="text-sm text-muted-foreground">No crew booked yet.</p>}
       {rows.map((b) => {
         const own = assets.filter((a) => a.crew_id === b.crewId);
         const sel = selected.filter((s) => s.booking_id === b.id);
         const lines = sel.map((s) => ({ dailyFee: Number(s.daily_fee), days: s.days }));
         return (
-          <Panel key={b.id} title={`${crewNames[b.crewId] ?? "Provider"} — ${b.role}`} right={<span className="text-sm">Assets {zar(assetsTotal(lines))}{isProducer && <> · Total {zar(providerTotal(b.crewRate, b.days, lines))}</>}</span>}>
+          <Panel key={b.id} title={`${crewNames[b.crewId ?? ""] ?? "Provider"} — ${b.role}`} right={
+            <div className="flex items-center gap-3">
+              <span className="text-sm">Assets {zar(assetsTotal(lines))}{isProducer && <> · Total {zar(providerTotal(b.crewRate, b.days, lines))}</>}</span>
+              {isProducer && <button onClick={() => setSwapping(b)} className="text-xs text-primary hover:underline">Swap</button>}
+            </div>
+          }>
             <ul className="divide-y divide-border">
               {own.length === 0 && <li className="p-4 text-sm text-muted-foreground">This provider hasn't listed any kit or props yet.</li>}
               {own.filter((a) => isProducer || sel.some((s) => s.asset_id === a.id)).map((a) => {
@@ -558,6 +575,60 @@ export function AssetsTab({ p, isProducer, bookings, crewNames }: Ctx & { bookin
           </Panel>
         );
       })}
+      {swapping && <SwapDialog booking={swapping} currentName={crewNames[swapping.crewId ?? ""] ?? "this provider"} onClose={() => setSwapping(null)} onDone={() => inv(["bookings"])} />}
+    </div>
+  );
+}
+
+function SwapDialog({ booking, currentName, onClose, onDone }: { booking: Booking; currentName: string; onClose: () => void; onDone: () => void }) {
+  const [q, setQ] = useState(booking.role);
+  const candidates = useQuery({
+    queryKey: ["swap-candidates", q],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("crew_members").select("id, name, role, department, day_rate, available").ilike("role", `%${q}%`).neq("id", booking.crewId ?? "").limit(20);
+      if (error) throw error; return data ?? [];
+    },
+  });
+  const [busy, setBusy] = useState(false);
+
+  async function swap(newCrewId: string, dayRate: number) {
+    setBusy(true);
+    try {
+      const { error: cancelErr } = await supabase.from("bookings").update({ status: "cancelled", cancelled_reason: `Swapped out for a different ${booking.role}` }).eq("id", booking.id);
+      if (cancelErr) throw cancelErr;
+      const { error: insertErr } = await supabase.from("bookings").insert({
+        production_id: booking.productionId, crew_id: newCrewId, role: booking.role, status: "confirmed",
+        booking_date: booking.bookingDate ?? null, call_time: booking.callTime ?? null, wrap_time: booking.wrapTime ?? null,
+        crew_rate: dayRate, client_charge: dayRate, days: booking.days,
+      });
+      if (insertErr) throw insertErr;
+      toast.success("Crew member swapped");
+      onDone();
+      onClose();
+    } catch (e) { toast.error((e as Error).message); }
+    setBusy(false);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-4" onClick={onClose}>
+      <div className="w-full max-w-lg rounded-sm border border-border bg-card p-5" onClick={(e) => e.stopPropagation()}>
+        <h3 className="font-script text-3xl text-primary">Swap out {currentName}</h3>
+        <p className="mt-1 text-xs text-muted-foreground">The current booking will be cancelled and a new one created for whoever you pick, at their own day rate.</p>
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by role…" className="mt-3 w-full rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring" />
+        <ul className="mt-3 max-h-80 divide-y divide-border overflow-y-auto">
+          {(candidates.data ?? []).map((c) => (
+            <li key={c.id} className="flex items-center justify-between py-2">
+              <div>
+                <div className="text-sm font-semibold">{c.name}</div>
+                <div className="text-xs text-muted-foreground">{c.role} · {c.department} · {zar(c.day_rate)}/day {!c.available && "· Booked"}</div>
+              </div>
+              <button disabled={busy} onClick={() => swap(c.id, c.day_rate)} className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold uppercase text-primary-foreground disabled:opacity-60">Use this person</button>
+            </li>
+          ))}
+          {candidates.data?.length === 0 && <li className="py-4 text-center text-sm text-muted-foreground">No matches.</li>}
+        </ul>
+        <div className="mt-3 text-right"><button onClick={onClose} className="text-xs uppercase text-muted-foreground">Cancel</button></div>
+      </div>
     </div>
   );
 }
@@ -601,7 +672,7 @@ export function CommercialsTab({ p, bookings, crewNames, requests }: Ctx & { boo
           <tbody>
             {rows.map(({ b, assets, cost, charge }) => (
               <tr key={b.id} className="border-t border-border">
-                <td className="px-4 py-2.5 font-medium">{b.role}</td><td className="px-4">{crewNames[b.crewId]}</td><td className="px-4">{b.days}</td>
+                <td className="px-4 py-2.5 font-medium">{b.role}</td><td className="px-4">{crewNames[b.crewId ?? ""] ?? "Open"}</td><td className="px-4">{b.days}</td>
                 {!clientView && <><td className="px-4 text-muted-foreground">{zar(b.crewRate)}</td><td className="px-4">{zar(assets)}</td><td className="px-4 font-semibold">{zar(cost)}</td></>}
                 <td className="px-4">{zar(charge)}</td><td className="px-4"><Badge>{b.status}</Badge></td>
               </tr>
