@@ -51,6 +51,13 @@ export function useInvalidate() {
   return (...keys: unknown[][]) => keys.forEach((k) => qc.invalidateQueries({ queryKey: k }));
 }
 
+export function useOnTimePct(crewId: string | undefined) {
+  return useQuery({
+    queryKey: ["on-time", crewId], enabled: !!crewId,
+    queryFn: async () => { const { data, error } = await supabase.rpc("crew_on_time_pct", { _crew_id: crewId! }); if (error) throw error; return data as number | null; },
+  });
+}
+
 export function useMyCrewId(enabled: boolean) {
   return useQuery({
     queryKey: ["my-crew-id"], enabled,

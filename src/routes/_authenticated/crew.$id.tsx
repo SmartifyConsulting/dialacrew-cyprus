@@ -8,8 +8,8 @@ import { Page } from "@/components/AppShell";
 import { Avatar } from "@/components/site/SiteTabs";
 import { useRole, useSession } from "@/lib/auth";
 import { zar } from "@/lib/demo-data";
-import { uploadFile, useInvalidate, useReviews } from "@/lib/site";
-import { useNegotiations, useProposeRate, useRespondToBooking, useRespondToNegotiation } from "@/lib/db";
+import { uploadFile, useInvalidate, useOnTimePct, useReviews } from "@/lib/site";
+import { useNegotiations, useProposeRate, useRequestOvertime, useRespondToBooking, useRespondToNegotiation } from "@/lib/db";
 
 export const Route = createFileRoute("/_authenticated/crew/$id")({
   head: () => ({
@@ -54,6 +54,7 @@ function CrewProfile() {
     queryFn: async () => { const { data, error } = await supabase.from("crew_assets").select("*").eq("crew_id", id).order("name"); if (error) throw error; return data ?? []; },
   });
   const reviews = useReviews(id).data ?? [];
+  const onTimePct = useOnTimePct(id);
 
   const m = c.data;
   if (!m) return <Page open title={c.isLoading ? "Loading…" : "Profile not found"}>{null}</Page>;
@@ -112,8 +113,8 @@ function CrewProfile() {
               <section className="border-t border-border pt-5"><h3 className="mb-2 flex items-center gap-2 font-semibold"><Briefcase className="h-4 w-4" /> Experience</h3>
                 <p className="whitespace-pre-wrap text-sm text-muted-foreground">{m.experience_notes || m.bio || "No experience added yet"}</p>
               </section>
-              <section className="grid grid-cols-3 gap-4 border-t border-border pt-5">
-                {[[String(done), "Projects completed"], [String(m.team_led), "Team members led"], [`${m.safety_record}%`, "Safety record"]].map(([v, l]) => (
+              <section className="grid grid-cols-4 gap-4 border-t border-border pt-5">
+                {[[String(done), "Projects completed"], [String(m.team_led), "Team members led"], [`${m.safety_record}%`, "Safety record"], [onTimePct.data != null ? `${onTimePct.data}%` : "—", "On-time"]].map(([v, l]) => (
                   <div key={l}><div className="font-display text-3xl font-bold">{v}</div><div className="text-xs text-muted-foreground">{l}</div></div>
                 ))}
               </section>
@@ -165,9 +166,23 @@ function ProjectRow({ job: j, userId, canRespond, isProducer, onChange }: { job:
   const negotiations = useNegotiations(j.id, negOpen);
   const propose = useProposeRate();
   const respondNeg = useRespondToNegotiation();
+  const requestOT = useRequestOvertime();
   const [proposedRate, setProposedRate] = useState(String(j.crew_rate));
+  const [otOpen, setOtOpen] = useState(false);
+  const [ot, setOt] = useState({ hours: "1", amount: "", reason: "" });
   const canAct = canRespond || isProducer;
   const pending = j.status === "pencil" || j.status === "awaiting_crew_confirmation";
+  const onJob = j.status === "confirmed" || j.status === "in_progress";
+
+  async function submitOvertime() {
+    const hours = Number(ot.hours), amount = Number(ot.amount);
+    if (!hours || !amount) { toast.error("Enter hours and amount"); return; }
+    try {
+      await requestOT.mutateAsync({ bookingId: j.id, production: pr?.name ?? "", who: "", hours, amount, reason: ot.reason || "No reason given" });
+      toast.success("Overtime request sent. If the producer doesn't respond, you may proceed at your own risk — Book a Crew isn't responsible for unauthorised overtime.");
+      setOtOpen(false); setOt({ hours: "1", amount: "", reason: "" });
+    } catch (e) { toast.error((e as Error).message); }
+  }
 
   async function accept() {
     try { await respond.mutateAsync({ id: j.id, status: "confirmed" }); toast.success("Booking confirmed"); onChange(); }
@@ -208,6 +223,22 @@ function ProjectRow({ job: j, userId, canRespond, isProducer, onChange }: { job:
       )}
       {canAct && pending && !canRespond && (
         <button onClick={() => setNegOpen(!negOpen)} className="mt-2 text-xs text-primary hover:underline">{negOpen ? "Hide rate negotiation" : "Negotiate rate"}</button>
+      )}
+      {canRespond && onJob && (
+        <button onClick={() => setOtOpen(!otOpen)} className="mt-2 text-xs text-primary hover:underline">{otOpen ? "Hide overtime request" : "Request overtime"}</button>
+      )}
+      {otOpen && (
+        <div className="mt-2 space-y-2 rounded-sm border border-border bg-muted/30 p-3">
+          <div className="grid grid-cols-2 gap-2">
+            <label className="block"><span className="text-xs uppercase tracking-wider text-muted-foreground">Extra hours</span>
+              <input type="number" min="0.5" step="0.5" className="mt-1 w-full rounded-sm border border-input bg-background px-2 py-1 text-xs" value={ot.hours} onChange={(e) => setOt({ ...ot, hours: e.target.value })} /></label>
+            <label className="block"><span className="text-xs uppercase tracking-wider text-muted-foreground">Amount (R)</span>
+              <input type="number" className="mt-1 w-full rounded-sm border border-input bg-background px-2 py-1 text-xs" value={ot.amount} onChange={(e) => setOt({ ...ot, amount: e.target.value })} /></label>
+          </div>
+          <input placeholder="Reason" className="w-full rounded-sm border border-input bg-background px-2 py-1 text-xs" value={ot.reason} onChange={(e) => setOt({ ...ot, reason: e.target.value })} />
+          <p className="text-xs text-muted-foreground">Sent to the producer for authorisation. If they don't respond, you may proceed at your own risk — Book a Crew isn't responsible for unauthorised overtime.</p>
+          <button onClick={submitOvertime} className="rounded-sm bg-primary px-2 py-1 text-xs font-semibold uppercase text-primary-foreground">Send request</button>
+        </div>
       )}
       {negOpen && (
         <div className="mt-2 space-y-2 rounded-sm border border-border bg-muted/30 p-3">

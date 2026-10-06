@@ -8,7 +8,7 @@ const toProduction = (r: any): Production => ({
   id: r.id, name: r.name, client: r.client, type: r.type, location: r.location, date: r.date ?? "",
   days: r.days, status: r.status, budget: Number(r.budget), crewBooked: r.crew_booked,
   crewNeeded: r.crew_needed, securedFunds: Number(r.secured_funds),
-  address: r.address ?? "", summary: r.summary ?? "", latitude: r.latitude, longitude: r.longitude, geofenceM: r.geofence_m ?? 200,
+  address: r.address ?? "", summary: r.summary ?? "", latitude: r.latitude, longitude: r.longitude, geofenceM: r.geofence_m ?? 10,
 });
 const toCrew = (r: any): Crew & { pencilled: boolean } => ({
   id: r.id, name: r.name, role: r.role, department: r.department, location: r.location,
@@ -94,7 +94,21 @@ export const useRespondToBooking = () => {
   });
 };
 
-export type RateNegotiation = { id: string; booking_id: string; proposed_by: string; proposed_rate: number; status: "pending" | "accepted" | "declined" | "countered"; note: string; created_at: string };
+export const useRequestOvertime = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (f: { bookingId: string; production: string; who: string; hours: number; amount: number; reason: string }) => {
+      const { error } = await supabase.from("change_requests").insert({
+        kind: "Overtime", booking_id: f.bookingId, production: f.production, who: f.who,
+        detail: `${f.hours}h overtime — ${f.reason}`, amount: f.amount,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["requests"] }),
+  });
+};
+
+export type RateNegotiation ={ id: string; booking_id: string; proposed_by: string; proposed_rate: number; status: "pending" | "accepted" | "declined" | "countered"; note: string; created_at: string };
 
 export const useNegotiations = (bookingId: string, enabled = true) => useQuery({
   queryKey: ["negotiations", bookingId],

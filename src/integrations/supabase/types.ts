@@ -147,6 +147,8 @@ export type Database = {
           production: string
           state: string
           who: string
+          booking_id: string | null
+          requested_by: string | null
         }
         Insert: {
           amount?: number
@@ -157,6 +159,8 @@ export type Database = {
           production: string
           state?: string
           who: string
+          booking_id?: string | null
+          requested_by?: string | null
         }
         Update: {
           amount?: number
@@ -167,8 +171,18 @@ export type Database = {
           production?: string
           state?: string
           who?: string
+          booking_id?: string | null
+          requested_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "change_requests_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       clients: {
         Row: {
@@ -958,6 +972,7 @@ export type Database = {
     }
     Functions: {
       claim_crew_profile: { Args: never; Returns: string }
+      crew_on_time_pct: { Args: { _crew_id: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

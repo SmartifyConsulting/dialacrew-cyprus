@@ -8,6 +8,7 @@ import { AudioRecorder } from "@/components/AudioRecorder";
 import { zar, type Booking, type Production } from "@/lib/demo-data";
 import { assetsTotal, providerTotal } from "@/lib/costing";
 import { distanceMeters, getPosition, isOnSite } from "@/lib/geo";
+import { isOnline, pendingCount, queueCheckin, syncQueue } from "@/lib/offline-checkin";
 import {
   signedUrl, uploadFile, useBookingAssets, useCrewAssets, useDocs, useInvalidate, usePosts, useRegister,
   useReviews, useSignedUrl, useSiteMembers, useTasks,
@@ -32,12 +33,12 @@ function FileLink({ path, name }: { path: string; name: string }) {
 export function OverviewTab({ p, isProducer }: Ctx) {
   const members = useSiteMembers(p.id).data ?? [];
   const inv = useInvalidate();
-  const [f, setF] = useState({ address: p.address ?? "", summary: p.summary ?? "", latitude: p.latitude?.toString() ?? "", longitude: p.longitude?.toString() ?? "", geofence: String(p.geofenceM ?? 200) });
+  const [f, setF] = useState({ address: p.address ?? "", summary: p.summary ?? "", latitude: p.latitude?.toString() ?? "", longitude: p.longitude?.toString() ?? "", geofence: String(p.geofenceM ?? 10) });
   const [rating, setRating] = useState<{ crewId: string; name: string } | null>(null);
 
   async function save() {
     const { error } = await supabase.from("productions").update({
-      address: f.address, summary: f.summary, geofence_m: Number(f.geofence) || 200,
+      address: f.address, summary: f.summary, geofence_m: Number(f.geofence) || 10,
       latitude: f.latitude ? Number(f.latitude) : null, longitude: f.longitude ? Number(f.longitude) : null,
     }).eq("id", p.id);
     if (error) { toast.error(error.message); return; }
@@ -232,21 +233,47 @@ export function RegisterTab({ p, isProducer, userId, myName, myCrewId }: Ctx) {
   const inv = useInvalidate();
   const [auto, setAuto] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [pending, setPending] = useState(pendingCount());
   const rows = reg.data ?? [];
   const lastByCrew = new Map<string, (typeof rows)[number]>();
   for (const r of rows) if (r.crew_id && !lastByCrew.has(r.crew_id)) lastByCrew.set(r.crew_id, r);
   const myLast = myCrewId ? lastByCrew.get(myCrewId) : undefined;
   const hasSite = p.latitude != null && p.longitude != null;
-  const radius = p.geofenceM ?? 200;
+  const radius = p.geofenceM ?? 10;
+
+  async function trySync() {
+    const { synced } = await syncQueue();
+    setPending(pendingCount());
+    if (synced > 0) { toast.success(`Synced ${synced} offline check-in${synced > 1 ? "s" : ""}`); inv(["register", p.id]); }
+  }
+
+  useEffect(() => {
+    if (isOnline() && pendingCount() > 0) trySync();
+    const onOnline = () => trySync();
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function mark(kind: "in" | "out", crewId: string, name: string, source: string, coords?: GeolocationCoordinates) {
     const distance = coords && hasSite ? distanceMeters(coords.latitude, coords.longitude, p.latitude!, p.longitude!) : null;
-    const { error } = await supabase.from("site_attendance").insert({
+    const row = {
       production_id: p.id, crew_id: crewId, user_id: userId, person_name: name, kind, source,
       latitude: coords?.latitude ?? null, longitude: coords?.longitude ?? null,
       distance_m: distance, on_site: distance == null ? null : isOnSite(distance, radius),
-    });
-    if (error) throw error;
+    };
+    if (!isOnline()) {
+      queueCheckin(row);
+      setPending(pendingCount());
+      return distance;
+    }
+    const { error } = await supabase.from("site_attendance").insert(row);
+    if (error) {
+      // Network/transient failure while reportedly online — queue rather than lose the event.
+      queueCheckin(row);
+      setPending(pendingCount());
+      return distance;
+    }
     inv(["register", p.id]);
     return distance;
   }
@@ -257,7 +284,8 @@ export function RegisterTab({ p, isProducer, userId, myName, myCrewId }: Ctx) {
     try {
       const pos = await getPosition();
       const d = await mark(kind, myCrewId, myName, "gps", pos.coords);
-      if (kind === "in" && d != null && !isOnSite(d, radius)) toast.warning(`Checked in, but you are ${d}m from the site.`);
+      if (!isOnline()) toast.warning(`${kind === "in" ? "Check-in" : "Check-out"} saved offline — will sync when you're back online.`);
+      else if (kind === "in" && d != null && !isOnSite(d, radius)) toast.warning(`Checked in, but you are ${d}m from the site.`);
       else toast.success(kind === "in" ? "Checked in" : "Checked out");
     } catch (e) { toast.error((e as Error).message); }
     setBusy(false);
@@ -291,6 +319,12 @@ export function RegisterTab({ p, isProducer, userId, myName, myCrewId }: Ctx) {
             <button disabled={busy} onClick={() => selfMark("out")} className="inline-flex items-center gap-1 rounded-sm border border-border px-3 py-2 text-xs font-semibold uppercase"><LogOut className="h-4 w-4" /> Check out</button>
             <label className="ml-auto flex items-center gap-2 text-sm"><input type="checkbox" className="accent-primary" checked={auto} disabled={!hasSite} onChange={(e) => setAuto(e.target.checked)} /> Automatic tracking while this page is open</label>
           </div>
+          {pending > 0 && (
+            <div className="flex items-center justify-between border-t border-border bg-primary/10 px-4 py-2 text-xs">
+              <span>{pending} check-in{pending > 1 ? "s" : ""} saved offline, not yet synced.</span>
+              <button onClick={trySync} className="font-semibold uppercase text-primary hover:underline">Sync now</button>
+            </div>
+          )}
         </Panel>
       )}
       <Panel title="Who's on site" right={<span className="text-xs text-muted-foreground">Radius {radius}m</span>}>
