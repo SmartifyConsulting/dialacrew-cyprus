@@ -34,6 +34,7 @@ const navByRole = {
   ],
   admin: [
     { to: "/admin", label: "Admin" },
+    { to: "/memory", label: "AI MemoryBank" },
     { to: "/profile", label: "My Profile" },
   ],
 } as const;

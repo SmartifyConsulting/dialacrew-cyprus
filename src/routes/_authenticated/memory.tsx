@@ -6,6 +6,7 @@ import { Brain, RefreshCw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Page, Panel } from "@/components/AppShell";
+import { useRole, useSession } from "@/lib/auth";
 import { matchBrief, refreshMemory, type MatchResult } from "@/lib/memory.functions";
 
 export const Route = createFileRoute("/_authenticated/memory")({
@@ -28,6 +29,9 @@ const field = "w-full rounded-sm border border-input bg-background px-3 py-2 tex
 
 function MemoryPage() {
   const qc = useQueryClient();
+  const { session } = useSession();
+  const role = useRole(session?.user.id);
+  const allowed = role.data === "producer" || role.data === "admin";
   const clients = useQuery({
     queryKey: ["clients"],
     queryFn: async () => { const { data, error } = await supabase.from("clients").select("id, name, company").order("company"); if (error) throw error; return data ?? []; },
@@ -57,7 +61,7 @@ function MemoryPage() {
   const mem = memories.data?.find((m) => m.client === f.client);
 
   return (
-    <Page title="AI MemoryBank" subtitle="Describe a brief — the AI matches crew and kit, using what it has learned about each client.">
+    <Page open={allowed} title="AI MemoryBank" subtitle="Describe a brief — the AI matches crew and kit, using what it has learned about each client.">
       <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <Panel title="Brief matcher">
           <form onSubmit={run} className="grid gap-3 p-4">
