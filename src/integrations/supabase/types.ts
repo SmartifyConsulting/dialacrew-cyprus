@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+          record_id: string | null
+          record_table: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          record_id?: string | null
+          record_table: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          record_id?: string | null
+          record_table?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       booking_assets: {
         Row: {
           asset_id: string
@@ -59,90 +92,90 @@ export type Database = {
       bookings: {
         Row: {
           attendance: string | null
+          auto_approved: boolean
+          booking_date: string | null
+          call_time: string | null
+          cancellation_pct: number | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          cancelled_reason: string | null
+          client_approved: boolean | null
           client_charge: number
+          client_reviewed_at: string | null
           created_at: string
+          created_by: string | null
           crew_id: string | null
           crew_rate: number
           days: number
           id: string
+          job_completed_at: string | null
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          pencil_expires_at: string | null
+          pencil_priority: number | null
+          postponed_to: string | null
           production_id: string
+          review_deadline: string | null
           role: string
           status: Database["public"]["Enums"]["booking_status"]
-          booking_date: string | null
-          call_time: string | null
           wrap_time: string | null
-          pencil_priority: number | null
-          pencil_expires_at: string | null
-          created_by: string | null
-          cancelled_reason: string | null
-          cancelled_by: string | null
-          cancelled_at: string | null
-          payment_status: Database["public"]["Enums"]["payment_status"]
-          job_completed_at: string | null
-          review_deadline: string | null
-          client_approved: boolean | null
-          client_reviewed_at: string | null
-          auto_approved: boolean
-          cancellation_pct: number | null
-          postponed_to: string | null
         }
         Insert: {
           attendance?: string | null
+          auto_approved?: boolean
+          booking_date?: string | null
+          call_time?: string | null
+          cancellation_pct?: number | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cancelled_reason?: string | null
+          client_approved?: boolean | null
           client_charge?: number
+          client_reviewed_at?: string | null
           created_at?: string
+          created_by?: string | null
           crew_id?: string | null
           crew_rate?: number
           days?: number
           id?: string
+          job_completed_at?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          pencil_expires_at?: string | null
+          pencil_priority?: number | null
+          postponed_to?: string | null
           production_id: string
+          review_deadline?: string | null
           role: string
           status?: Database["public"]["Enums"]["booking_status"]
-          booking_date?: string | null
-          call_time?: string | null
           wrap_time?: string | null
-          pencil_priority?: number | null
-          pencil_expires_at?: string | null
-          created_by?: string | null
-          cancelled_reason?: string | null
-          cancelled_by?: string | null
-          cancelled_at?: string | null
-          payment_status?: Database["public"]["Enums"]["payment_status"]
-          job_completed_at?: string | null
-          review_deadline?: string | null
-          client_approved?: boolean | null
-          client_reviewed_at?: string | null
-          auto_approved?: boolean
-          cancellation_pct?: number | null
-          postponed_to?: string | null
         }
         Update: {
           attendance?: string | null
+          auto_approved?: boolean
+          booking_date?: string | null
+          call_time?: string | null
+          cancellation_pct?: number | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cancelled_reason?: string | null
+          client_approved?: boolean | null
           client_charge?: number
+          client_reviewed_at?: string | null
           created_at?: string
+          created_by?: string | null
           crew_id?: string | null
           crew_rate?: number
           days?: number
           id?: string
+          job_completed_at?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          pencil_expires_at?: string | null
+          pencil_priority?: number | null
+          postponed_to?: string | null
           production_id?: string
+          review_deadline?: string | null
           role?: string
           status?: Database["public"]["Enums"]["booking_status"]
-          booking_date?: string | null
-          call_time?: string | null
           wrap_time?: string | null
-          pencil_priority?: number | null
-          pencil_expires_at?: string | null
-          created_by?: string | null
-          cancelled_reason?: string | null
-          cancelled_by?: string | null
-          cancelled_at?: string | null
-          payment_status?: Database["public"]["Enums"]["payment_status"]
-          job_completed_at?: string | null
-          review_deadline?: string | null
-          client_approved?: boolean | null
-          client_reviewed_at?: string | null
-          auto_approved?: boolean
-          cancellation_pct?: number | null
-          postponed_to?: string | null
         }
         Relationships: [
           {
@@ -164,39 +197,39 @@ export type Database = {
       change_requests: {
         Row: {
           amount: number
+          booking_id: string | null
           created_at: string
           detail: string
           id: string
           kind: string
           production: string
+          requested_by: string | null
           state: string
           who: string
-          booking_id: string | null
-          requested_by: string | null
         }
         Insert: {
           amount?: number
+          booking_id?: string | null
           created_at?: string
           detail: string
           id?: string
           kind: string
           production: string
+          requested_by?: string | null
           state?: string
           who: string
-          booking_id?: string | null
-          requested_by?: string | null
         }
         Update: {
           amount?: number
+          booking_id?: string | null
           created_at?: string
           detail?: string
           id?: string
           kind?: string
           production?: string
+          requested_by?: string | null
           state?: string
           who?: string
-          booking_id?: string | null
-          requested_by?: string | null
         }
         Relationships: [
           {
@@ -237,6 +270,109 @@ export type Database = {
           phone?: string
         }
         Relationships: []
+      }
+      companies: {
+        Row: {
+          address: string | null
+          billing_email: string | null
+          created_at: string
+          id: string
+          name: string
+          phone: string | null
+        }
+        Insert: {
+          address?: string | null
+          billing_email?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          phone?: string | null
+        }
+        Update: {
+          address?: string | null
+          billing_email?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          phone?: string | null
+        }
+        Relationships: []
+      }
+      company_invites: {
+        Row: {
+          accepted_at: string | null
+          company_id: string
+          company_role: Database["public"]["Enums"]["company_role"]
+          created_at: string
+          email: string
+          id: string
+          invited_by: string
+          status: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          company_id: string
+          company_role?: Database["public"]["Enums"]["company_role"]
+          created_at?: string
+          email: string
+          id?: string
+          invited_by?: string
+          status?: string
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          company_id?: string
+          company_role?: Database["public"]["Enums"]["company_role"]
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by?: string
+          status?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_invites_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_users: {
+        Row: {
+          company_id: string
+          company_role: Database["public"]["Enums"]["company_role"]
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          company_role?: Database["public"]["Enums"]["company_role"]
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          company_role?: Database["public"]["Enums"]["company_role"]
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_users_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       crew_assets: {
         Row: {
@@ -285,22 +421,22 @@ export type Database = {
           experience: number
           experience_notes: string
           id: string
+          instagram_url: string | null
           kit: string | null
           location: string
           name: string
           pencilled: boolean
           phone: string
           photo_url: string | null
+          portfolio_url: string | null
           rating: number
           role: string
           safety_record: number
           skills: string[]
           team_led: number
           user_id: string | null
-          portfolio_url: string | null
-          youtube_url: string | null
           vimeo_url: string | null
-          instagram_url: string | null
+          youtube_url: string | null
         }
         Insert: {
           available?: boolean
@@ -313,22 +449,22 @@ export type Database = {
           experience?: number
           experience_notes?: string
           id?: string
+          instagram_url?: string | null
           kit?: string | null
           location?: string
           name: string
           pencilled?: boolean
           phone?: string
           photo_url?: string | null
+          portfolio_url?: string | null
           rating?: number
           role: string
           safety_record?: number
           skills?: string[]
           team_led?: number
           user_id?: string | null
-          portfolio_url?: string | null
-          youtube_url?: string | null
           vimeo_url?: string | null
-          instagram_url?: string | null
+          youtube_url?: string | null
         }
         Update: {
           available?: boolean
@@ -341,22 +477,22 @@ export type Database = {
           experience?: number
           experience_notes?: string
           id?: string
+          instagram_url?: string | null
           kit?: string | null
           location?: string
           name?: string
           pencilled?: boolean
           phone?: string
           photo_url?: string | null
+          portfolio_url?: string | null
           rating?: number
           role?: string
           safety_record?: number
           skills?: string[]
           team_led?: number
           user_id?: string | null
-          portfolio_url?: string | null
-          youtube_url?: string | null
           vimeo_url?: string | null
-          instagram_url?: string | null
+          youtube_url?: string | null
         }
         Relationships: []
       }
@@ -408,6 +544,242 @@ export type Database = {
           },
         ]
       }
+      disputes: {
+        Row: {
+          admin_decision: string | null
+          amount_disputed: number
+          booking_id: string
+          created_at: string
+          description: string
+          evidence: string | null
+          id: string
+          opened_by: string
+          resolution: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+        }
+        Insert: {
+          admin_decision?: string | null
+          amount_disputed?: number
+          booking_id: string
+          created_at?: string
+          description: string
+          evidence?: string | null
+          id?: string
+          opened_by?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Update: {
+          admin_decision?: string | null
+          amount_disputed?: number
+          booking_id?: string
+          created_at?: string
+          description?: string
+          evidence?: string | null
+          id?: string
+          opened_by?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disputes_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      favourites: {
+        Row: {
+          created_at: string
+          crew_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          crew_id: string
+          id?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          crew_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favourites_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_checkouts: {
+        Row: {
+          checked_out_at: string
+          checked_out_to: string
+          created_at: string
+          expected_return_at: string | null
+          id: string
+          item_id: string
+          production_id: string | null
+          quantity: number
+          returned_at: string | null
+        }
+        Insert: {
+          checked_out_at?: string
+          checked_out_to?: string
+          created_at?: string
+          expected_return_at?: string | null
+          id?: string
+          item_id: string
+          production_id?: string | null
+          quantity?: number
+          returned_at?: string | null
+        }
+        Update: {
+          checked_out_at?: string
+          checked_out_to?: string
+          created_at?: string
+          expected_return_at?: string | null
+          id?: string
+          item_id?: string
+          production_id?: string | null
+          quantity?: number
+          returned_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_checkouts_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_checkouts_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_items: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          name: string
+          notes: string
+          total_count: number
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string
+          total_count?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string
+          total_count?: number
+        }
+        Relationships: []
+      }
+      invoices: {
+        Row: {
+          booking_id: string
+          created_at: string
+          crew_id: string
+          day_rate: number
+          days: number
+          equipment_amount: number
+          id: string
+          invoice_number: string
+          overtime_amount: number
+          production_id: string
+          status: string
+          subtotal: number
+          total: number
+          vat_amount: number
+          vat_rate: number
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          crew_id: string
+          day_rate?: number
+          days?: number
+          equipment_amount?: number
+          id?: string
+          invoice_number?: string
+          overtime_amount?: number
+          production_id: string
+          status?: string
+          subtotal?: number
+          total?: number
+          vat_amount?: number
+          vat_rate?: number
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          crew_id?: string
+          day_rate?: number
+          days?: number
+          equipment_amount?: number
+          id?: string
+          invoice_number?: string
+          overtime_amount?: number
+          production_id?: string
+          status?: string
+          subtotal?: number
+          total?: number
+          vat_amount?: number
+          vat_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       join_requests: {
         Row: {
           created_at: string
@@ -437,6 +809,181 @@ export type Database = {
           phone?: string
         }
         Relationships: []
+      }
+      legal_acceptances: {
+        Row: {
+          accepted_at: string
+          document_id: string
+          id: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          document_id: string
+          id?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string
+          document_id?: string
+          id?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_acceptances_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "legal_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legal_documents: {
+        Row: {
+          active: boolean
+          content: string
+          created_at: string
+          doc_type: string
+          id: string
+          title: string
+          version: string
+        }
+        Insert: {
+          active?: boolean
+          content?: string
+          created_at?: string
+          doc_type: string
+          id?: string
+          title: string
+          version: string
+        }
+        Update: {
+          active?: boolean
+          content?: string
+          created_at?: string
+          doc_type?: string
+          id?: string
+          title?: string
+          version?: string
+        }
+        Relationships: []
+      }
+      membership_plans: {
+        Row: {
+          active: boolean
+          created_at: string
+          currency: string
+          id: string
+          membership_type: Database["public"]["Enums"]["app_role"]
+          price_cents: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          currency?: string
+          id?: string
+          membership_type: Database["public"]["Enums"]["app_role"]
+          price_cents?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          currency?: string
+          id?: string
+          membership_type?: Database["public"]["Enums"]["app_role"]
+          price_cents?: number
+        }
+        Relationships: []
+      }
+      memberships: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          membership_type: Database["public"]["Enums"]["app_role"]
+          plan_id: string | null
+          started_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          membership_type: Database["public"]["Enums"]["app_role"]
+          plan_id?: string | null
+          started_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          membership_type?: Database["public"]["Enums"]["app_role"]
+          plan_id?: string | null
+          started_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memberships_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "membership_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          body: string
+          booking_id: string | null
+          created_at: string
+          id: string
+          production_id: string
+          sender_id: string
+          sender_name: string
+        }
+        Insert: {
+          body: string
+          booking_id?: string | null
+          created_at?: string
+          id?: string
+          production_id: string
+          sender_id?: string
+          sender_name?: string
+        }
+        Update: {
+          body?: string
+          booking_id?: string | null
+          created_at?: string
+          id?: string
+          production_id?: string
+          sender_id?: string
+          sender_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
@@ -476,11 +1023,30 @@ export type Database = {
           },
         ]
       }
+      platform_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       productions: {
         Row: {
           address: string
           budget: number
           client: string
+          company_id: string | null
           created_at: string
           crew_booked: number
           crew_needed: number
@@ -496,12 +1062,12 @@ export type Database = {
           status: string
           summary: string
           type: string
-          company_id: string | null
         }
         Insert: {
           address?: string
           budget?: number
           client: string
+          company_id?: string | null
           created_at?: string
           crew_booked?: number
           crew_needed?: number
@@ -517,12 +1083,12 @@ export type Database = {
           status?: string
           summary?: string
           type?: string
-          company_id?: string | null
         }
         Update: {
           address?: string
           budget?: number
           client?: string
+          company_id?: string | null
           created_at?: string
           crew_booked?: number
           crew_needed?: number
@@ -538,48 +1104,93 @@ export type Database = {
           status?: string
           summary?: string
           type?: string
-          company_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "productions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           created_at: string
           email: string
           full_name: string
           id: string
           phone: string | null
           role: string
+          skills: string[]
           suspended: boolean
           whatsapp_number: string | null
-          skills: string[]
-          avatar_url: string | null
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
           email: string
           full_name?: string
           id: string
           phone?: string | null
           role?: string
+          skills?: string[]
           suspended?: boolean
           whatsapp_number?: string | null
-          skills?: string[]
-          avatar_url?: string | null
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
           email?: string
           full_name?: string
           id?: string
           phone?: string | null
           role?: string
+          skills?: string[]
           suspended?: boolean
           whatsapp_number?: string | null
-          skills?: string[]
-          avatar_url?: string | null
         }
         Relationships: []
+      }
+      rate_negotiations: {
+        Row: {
+          booking_id: string
+          created_at: string
+          id: string
+          note: string
+          proposed_by: string
+          proposed_rate: number
+          status: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          id?: string
+          note?: string
+          proposed_by?: string
+          proposed_rate: number
+          status?: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          id?: string
+          note?: string
+          proposed_by?: string
+          proposed_rate?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rate_negotiations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       service_providers: {
         Row: {
@@ -834,401 +1445,33 @@ export type Database = {
         }
         Relationships: []
       }
-      companies: {
-        Row: {
-          id: string
-          name: string
-          billing_email: string | null
-          phone: string | null
-          address: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          name: string
-          billing_email?: string | null
-          phone?: string | null
-          address?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          name?: string
-          billing_email?: string | null
-          phone?: string | null
-          address?: string | null
-          created_at?: string
-        }
-        Relationships: []
-      }
-      company_users: {
-        Row: {
-          id: string
-          company_id: string
-          user_id: string
-          company_role: Database["public"]["Enums"]["company_role"]
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          company_id: string
-          user_id: string
-          company_role?: Database["public"]["Enums"]["company_role"]
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          company_id?: string
-          user_id?: string
-          company_role?: Database["public"]["Enums"]["company_role"]
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "company_users_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      membership_plans: {
-        Row: {
-          id: string
-          membership_type: Database["public"]["Enums"]["app_role"]
-          price_cents: number
-          currency: string
-          active: boolean
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          membership_type: Database["public"]["Enums"]["app_role"]
-          price_cents?: number
-          currency?: string
-          active?: boolean
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          membership_type?: Database["public"]["Enums"]["app_role"]
-          price_cents?: number
-          currency?: string
-          active?: boolean
-          created_at?: string
-        }
-        Relationships: []
-      }
-      memberships: {
-        Row: {
-          id: string
-          user_id: string
-          membership_type: Database["public"]["Enums"]["app_role"]
-          status: string
-          plan_id: string | null
-          started_at: string | null
-          expires_at: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          membership_type: Database["public"]["Enums"]["app_role"]
-          status?: string
-          plan_id?: string | null
-          started_at?: string | null
-          expires_at?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          membership_type?: Database["public"]["Enums"]["app_role"]
-          status?: string
-          plan_id?: string | null
-          started_at?: string | null
-          expires_at?: string | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "memberships_plan_id_fkey"
-            columns: ["plan_id"]
-            isOneToOne: false
-            referencedRelation: "membership_plans"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      company_invites: {
-        Row: { id: string; company_id: string; email: string; company_role: Database["public"]["Enums"]["company_role"]; token: string; status: string; invited_by: string; created_at: string; accepted_at: string | null }
-        Insert: { id?: string; company_id: string; email: string; company_role?: Database["public"]["Enums"]["company_role"]; token?: string; status?: string; invited_by?: string; created_at?: string; accepted_at?: string | null }
-        Update: { id?: string; company_id?: string; email?: string; company_role?: Database["public"]["Enums"]["company_role"]; token?: string; status?: string; invited_by?: string; created_at?: string; accepted_at?: string | null }
-        Relationships: [
-          { foreignKeyName: "company_invites_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
-        ]
-      }
-      messages: {
-        Row: { id: string; production_id: string; booking_id: string | null; sender_id: string; sender_name: string; body: string; created_at: string }
-        Insert: { id?: string; production_id: string; booking_id?: string | null; sender_id?: string; sender_name?: string; body: string; created_at?: string }
-        Update: { id?: string; production_id?: string; booking_id?: string | null; sender_id?: string; sender_name?: string; body?: string; created_at?: string }
-        Relationships: []
-      }
       whatsapp_outbox: {
-        Row: { id: string; user_id: string; phone: string | null; title: string; body: string; status: string; created_at: string }
-        Insert: { id?: string; user_id: string; phone?: string | null; title: string; body: string; status?: string; created_at?: string }
-        Update: { id?: string; user_id?: string; phone?: string | null; title?: string; body?: string; status?: string; created_at?: string }
-        Relationships: []
-      }
-      legal_documents: {
-        Row: { id: string; doc_type: string; version: string; title: string; content: string; active: boolean; created_at: string }
-        Insert: { id?: string; doc_type: string; version: string; title: string; content?: string; active?: boolean; created_at?: string }
-        Update: { id?: string; doc_type?: string; version?: string; title?: string; content?: string; active?: boolean; created_at?: string }
-        Relationships: []
-      }
-      legal_acceptances: {
-        Row: { id: string; user_id: string; document_id: string; accepted_at: string; user_agent: string | null }
-        Insert: { id?: string; user_id: string; document_id: string; accepted_at?: string; user_agent?: string | null }
-        Update: { id?: string; user_id?: string; document_id?: string; accepted_at?: string; user_agent?: string | null }
-        Relationships: []
-      }
-      favourites: {
-        Row: { id: string; user_id: string; crew_id: string; created_at: string }
-        Insert: { id?: string; user_id?: string; crew_id: string; created_at?: string }
-        Update: { id?: string; user_id?: string; crew_id?: string; created_at?: string }
-        Relationships: []
-      }
-      inventory_items: {
-        Row: { id: string; name: string; category: string; total_count: number; notes: string; created_at: string }
-        Insert: { id?: string; name: string; category?: string; total_count?: number; notes?: string; created_at?: string }
-        Update: { id?: string; name?: string; category?: string; total_count?: number; notes?: string; created_at?: string }
-        Relationships: []
-      }
-      inventory_checkouts: {
-        Row: { id: string; item_id: string; quantity: number; production_id: string | null; checked_out_to: string; checked_out_at: string; expected_return_at: string | null; returned_at: string | null; created_at: string }
-        Insert: { id?: string; item_id: string; quantity?: number; production_id?: string | null; checked_out_to?: string; checked_out_at?: string; expected_return_at?: string | null; returned_at?: string | null; created_at?: string }
-        Update: { id?: string; item_id?: string; quantity?: number; production_id?: string | null; checked_out_to?: string; checked_out_at?: string; expected_return_at?: string | null; returned_at?: string | null; created_at?: string }
-        Relationships: [
-          { foreignKeyName: "inventory_checkouts_item_id_fkey"; columns: ["item_id"]; isOneToOne: false; referencedRelation: "inventory_items"; referencedColumns: ["id"] },
-          { foreignKeyName: "inventory_checkouts_production_id_fkey"; columns: ["production_id"]; isOneToOne: false; referencedRelation: "productions"; referencedColumns: ["id"] },
-        ]
-      }
-      invoices: {
         Row: {
+          body: string
+          created_at: string
           id: string
-          invoice_number: string
-          booking_id: string
-          crew_id: string
-          production_id: string
-          day_rate: number
-          days: number
-          overtime_amount: number
-          equipment_amount: number
-          subtotal: number
-          vat_rate: number
-          vat_amount: number
-          total: number
+          phone: string | null
           status: string
-          created_at: string
+          title: string
+          user_id: string
         }
         Insert: {
-          id?: string
-          invoice_number?: string
-          booking_id: string
-          crew_id: string
-          production_id: string
-          day_rate?: number
-          days?: number
-          overtime_amount?: number
-          equipment_amount?: number
-          subtotal?: number
-          vat_rate?: number
-          vat_amount?: number
-          total?: number
-          status?: string
+          body: string
           created_at?: string
+          id?: string
+          phone?: string | null
+          status?: string
+          title: string
+          user_id: string
         }
         Update: {
+          body?: string
+          created_at?: string
           id?: string
-          invoice_number?: string
-          booking_id?: string
-          crew_id?: string
-          production_id?: string
-          day_rate?: number
-          days?: number
-          overtime_amount?: number
-          equipment_amount?: number
-          subtotal?: number
-          vat_rate?: number
-          vat_amount?: number
-          total?: number
+          phone?: string | null
           status?: string
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "invoices_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "invoices_crew_id_fkey"
-            columns: ["crew_id"]
-            isOneToOne: false
-            referencedRelation: "crew_members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "invoices_production_id_fkey"
-            columns: ["production_id"]
-            isOneToOne: false
-            referencedRelation: "productions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      disputes: {
-        Row: {
-          id: string
-          booking_id: string
-          opened_by: string
-          amount_disputed: number
-          description: string
-          evidence: string | null
-          status: string
-          admin_decision: string | null
-          resolution: string | null
-          resolved_by: string | null
-          resolved_at: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          booking_id: string
-          opened_by?: string
-          amount_disputed?: number
-          description: string
-          evidence?: string | null
-          status?: string
-          admin_decision?: string | null
-          resolution?: string | null
-          resolved_by?: string | null
-          resolved_at?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          booking_id?: string
-          opened_by?: string
-          amount_disputed?: number
-          description?: string
-          evidence?: string | null
-          status?: string
-          admin_decision?: string | null
-          resolution?: string | null
-          resolved_by?: string | null
-          resolved_at?: string | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "disputes_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      audit_logs: {
-        Row: {
-          id: string
-          user_id: string | null
-          action: string
-          record_table: string
-          record_id: string | null
-          old_value: Json | null
-          new_value: Json | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id?: string | null
-          action: string
-          record_table: string
-          record_id?: string | null
-          old_value?: Json | null
-          new_value?: Json | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string | null
-          action?: string
-          record_table?: string
-          record_id?: string | null
-          old_value?: Json | null
-          new_value?: Json | null
-          created_at?: string
-        }
-        Relationships: []
-      }
-      rate_negotiations: {
-        Row: {
-          id: string
-          booking_id: string
-          proposed_by: string
-          proposed_rate: number
-          status: string
-          note: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          booking_id: string
-          proposed_by?: string
-          proposed_rate: number
-          status?: string
-          note?: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          booking_id?: string
-          proposed_by?: string
-          proposed_rate?: number
-          status?: string
-          note?: string
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "rate_negotiations_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      platform_settings: {
-        Row: {
-          key: string
-          value: Json
-          updated_at: string
-        }
-        Insert: {
-          key: string
-          value: Json
-          updated_at?: string
-        }
-        Update: {
-          key?: string
-          value?: Json
-          updated_at?: string
+          title?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1237,17 +1480,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      claim_crew_profile: { Args: never; Returns: string }
-      crew_on_time_pct: { Args: { _crew_id: string }; Returns: number }
-      get_invite: { Args: { _token: string }; Returns: { company_name: string; company_role: Database["public"]["Enums"]["company_role"]; email: string; valid: boolean }[] }
-      claim_gig: { Args: { _booking: string }; Returns: undefined }
-      open_gigs: { Args: never; Returns: { id: string; role: string; days: number; crew_rate: number; booking_date: string | null; call_time: string | null; production_id: string; production_name: string; location: string; address: string; latitude: number | null; longitude: number | null }[] }
-      mark_payment_received: { Args: { _booking: string }; Returns: undefined }
       approve_job: { Args: { _booking: string }; Returns: undefined }
       auto_approve_reviews: { Args: never; Returns: undefined }
+      cancel_booking: {
+        Args: { _booking: string; _postponed_to?: string; _reason: string }
+        Returns: undefined
+      }
+      claim_crew_profile: { Args: never; Returns: string }
+      claim_gig: { Args: { _booking: string }; Returns: undefined }
+      crew_on_time_pct: { Args: { _crew_id: string }; Returns: number }
+      expire_pencils: { Args: never; Returns: undefined }
       generate_invoice: { Args: { _booking: string }; Returns: string }
-      release_payment: { Args: { _booking: string }; Returns: string }
-      cancel_booking: { Args: { _booking: string; _reason: string; _postponed_to?: string | null }; Returns: undefined }
+      get_invite: {
+        Args: { _token: string }
+        Returns: {
+          company_name: string
+          company_role: Database["public"]["Enums"]["company_role"]
+          email: string
+          valid: boolean
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1255,8 +1507,35 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_company_member: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_company_owner: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_site_member: { Args: { _prod: string }; Returns: boolean }
+      mark_payment_received: { Args: { _booking: string }; Returns: undefined }
       my_crew_id: { Args: never; Returns: string }
+      open_gigs: {
+        Args: never
+        Returns: {
+          address: string
+          booking_date: string
+          call_time: string
+          crew_rate: number
+          days: number
+          id: string
+          latitude: number
+          location: string
+          longitude: number
+          production_id: string
+          production_name: string
+          role: string
+        }[]
+      }
+      release_payment: { Args: { _booking: string }; Returns: string }
       site_members: {
         Args: { _prod: string }
         Returns: {
@@ -1273,9 +1552,29 @@ export type Database = {
     }
     Enums: {
       app_role: "producer" | "crew" | "client" | "admin"
+      booking_status:
+        | "draft"
+        | "pencil"
+        | "awaiting_crew_confirmation"
+        | "confirmed"
+        | "in_progress"
+        | "awaiting_review"
+        | "payment_released"
+        | "completed"
+        | "cancelled"
+        | "disputed"
+        | "open"
       company_role: "owner" | "producer" | "production_manager" | "accounts"
-      booking_status: "draft" | "pencil" | "awaiting_crew_confirmation" | "confirmed" | "in_progress" | "awaiting_review" | "payment_released" | "completed" | "cancelled" | "disputed" | "open"
-      payment_status: "not_required" | "payment_required" | "payment_received" | "funds_held" | "awaiting_release" | "release_authorised" | "payment_released" | "payment_failed" | "payment_disputed"
+      payment_status:
+        | "not_required"
+        | "payment_required"
+        | "payment_received"
+        | "funds_held"
+        | "awaiting_release"
+        | "release_authorised"
+        | "payment_released"
+        | "payment_failed"
+        | "payment_disputed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1404,9 +1703,31 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["producer", "crew", "client", "admin"],
+      booking_status: [
+        "draft",
+        "pencil",
+        "awaiting_crew_confirmation",
+        "confirmed",
+        "in_progress",
+        "awaiting_review",
+        "payment_released",
+        "completed",
+        "cancelled",
+        "disputed",
+        "open",
+      ],
       company_role: ["owner", "producer", "production_manager", "accounts"],
-      booking_status: ["draft", "pencil", "awaiting_crew_confirmation", "confirmed", "in_progress", "awaiting_review", "payment_released", "completed", "cancelled", "disputed", "open"],
-      payment_status: ["not_required", "payment_required", "payment_received", "funds_held", "awaiting_release", "release_authorised", "payment_released", "payment_failed", "payment_disputed"],
+      payment_status: [
+        "not_required",
+        "payment_required",
+        "payment_received",
+        "funds_held",
+        "awaiting_release",
+        "release_authorised",
+        "payment_released",
+        "payment_failed",
+        "payment_disputed",
+      ],
     },
   },
 } as const
