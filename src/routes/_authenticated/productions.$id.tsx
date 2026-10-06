@@ -5,6 +5,7 @@ import { Badge, Page } from "@/components/AppShell";
 import { useRole, useSession } from "@/lib/auth";
 import { useBookings, useCrew, useProductions, useRequests } from "@/lib/db";
 import { useMyCrewId, useMyName } from "@/lib/site";
+import { RetroTab } from "@/components/site/RetroTab";
 import { AssetsTab, CommercialsTab, DocumentsTab, MessagesTab, OverviewTab, PostsTab, RegisterTab, TasksTab } from "@/components/site/SiteTabs";
 
 export const Route = createFileRoute("/_authenticated/productions/$id")({
@@ -21,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/productions/$id")({
   component: ProductionSite,
 });
 
-const TABS = ["Overview", "Posts", "Messages", "Register", "Tasks", "Documents", "Assets", "Commercials"] as const;
+const TABS = ["Overview", "Posts", "Messages", "Register", "Tasks", "Documents", "Assets", "Commercials", "Review"] as const;
 
 function ProductionSite() {
   const { id } = Route.useParams();
@@ -40,7 +41,7 @@ function ProductionSite() {
   if (!p) return <Page open title={prods.isLoading ? "Loading…" : "Production not found"}>{null}</Page>;
   const crewNames = Object.fromEntries(crew.map((c) => [c.id, c.name]));
   const ctx = { p, isProducer, userId, myName, myCrewId };
-  const tabs = TABS.filter((t) => t !== "Commercials" || isProducer);
+  const tabs = TABS.filter((t) => (t !== "Commercials" && t !== "Review") || isProducer);
 
   return (
     <Page open title={p.name} subtitle={`${p.client} · ${p.type} · ${p.date} · ${p.days} day(s)`} actions={<Badge>{p.status}</Badge>}>
@@ -57,6 +58,7 @@ function ProductionSite() {
       {tab === "Register" && <RegisterTab {...ctx} />}
       {tab === "Tasks" && <TasksTab {...ctx} />}
       {tab === "Documents" && <DocumentsTab {...ctx} />}
+      {tab === "Review" && isProducer && <RetroTab p={p} />}
       {tab === "Assets" && <AssetsTab {...ctx} bookings={bookings} crewNames={crewNames} />}
       {tab === "Commercials" && isProducer && <CommercialsTab {...ctx} bookings={bookings} crewNames={crewNames} requests={requests} />}
     </Page>

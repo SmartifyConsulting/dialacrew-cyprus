@@ -22,6 +22,7 @@ const navByRole = {
     { to: "/dashboard", label: "Dashboard" },
     { to: "/productions", label: "Productions" },
     { to: "/crew", label: "Find Crew" },
+    { to: "/memory", label: "AI MemoryBank" },
     { to: "/profile", label: "My company" },
   ],
   crew: [

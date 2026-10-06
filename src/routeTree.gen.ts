@@ -23,6 +23,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedMemoryRouteImport } from './routes/_authenticated/memory'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedCrewIndexRouteImport } from './routes/_authenticated/crew.index'
 import { Route as AuthenticatedCrewIdRouteImport } from './routes/_authenticated/crew.$id'
@@ -98,6 +99,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMemoryRoute = AuthenticatedMemoryRouteImport.update({
+  id: '/memory',
+  path: '/memory',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -140,6 +146,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/memory': typeof AuthenticatedMemoryRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/crew/$id': typeof AuthenticatedCrewIdRoute
   '/productions/$id': typeof AuthenticatedProductionsIdRoute
@@ -160,6 +167,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/memory': typeof AuthenticatedMemoryRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/crew/$id': typeof AuthenticatedCrewIdRoute
   '/productions/$id': typeof AuthenticatedProductionsIdRoute
@@ -182,6 +190,7 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/memory': typeof AuthenticatedMemoryRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/crew/$id': typeof AuthenticatedCrewIdRoute
   '/_authenticated/productions/$id': typeof AuthenticatedProductionsIdRoute
@@ -204,6 +213,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin'
     | '/dashboard'
+    | '/memory'
     | '/profile'
     | '/crew/$id'
     | '/productions/$id'
@@ -224,6 +234,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin'
     | '/dashboard'
+    | '/memory'
     | '/profile'
     | '/crew/$id'
     | '/productions/$id'
@@ -245,6 +256,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
+    | '/_authenticated/memory'
     | '/_authenticated/profile'
     | '/_authenticated/crew/$id'
     | '/_authenticated/productions/$id'
@@ -367,6 +379,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/memory': {
+      id: '/_authenticated/memory'
+      path: '/memory'
+      fullPath: '/memory'
+      preLoaderRoute: typeof AuthenticatedMemoryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/profile': {
       id: '/_authenticated/profile'
       path: '/profile'
@@ -408,6 +427,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedMemoryRoute: typeof AuthenticatedMemoryRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedCrewIdRoute: typeof AuthenticatedCrewIdRoute
   AuthenticatedProductionsIdRoute: typeof AuthenticatedProductionsIdRoute
@@ -418,6 +438,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedMemoryRoute: AuthenticatedMemoryRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedCrewIdRoute: AuthenticatedCrewIdRoute,
   AuthenticatedProductionsIdRoute: AuthenticatedProductionsIdRoute,
