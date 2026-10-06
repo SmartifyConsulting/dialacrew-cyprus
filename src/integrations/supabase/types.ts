@@ -101,6 +101,36 @@ export type Database = {
         }
         Relationships: []
       }
+      clients: {
+        Row: {
+          company: string
+          created_at: string
+          email: string
+          id: string
+          name: string
+          notes: string
+          phone: string
+        }
+        Insert: {
+          company?: string
+          created_at?: string
+          email?: string
+          id?: string
+          name: string
+          notes?: string
+          phone?: string
+        }
+        Update: {
+          company?: string
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          notes?: string
+          phone?: string
+        }
+        Relationships: []
+      }
       crew_members: {
         Row: {
           available: boolean
@@ -191,6 +221,45 @@ export type Database = {
           secured_funds?: number
           status?: string
           type?: string
+        }
+        Relationships: []
+      }
+      service_providers: {
+        Row: {
+          available: boolean
+          created_at: string
+          email: string
+          id: string
+          location: string
+          name: string
+          notes: string
+          phone: string
+          rate: number
+          service_type: string
+        }
+        Insert: {
+          available?: boolean
+          created_at?: string
+          email?: string
+          id?: string
+          location?: string
+          name: string
+          notes?: string
+          phone?: string
+          rate?: number
+          service_type?: string
+        }
+        Update: {
+          available?: boolean
+          created_at?: string
+          email?: string
+          id?: string
+          location?: string
+          name?: string
+          notes?: string
+          phone?: string
+          rate?: number
+          service_type?: string
         }
         Relationships: []
       }
