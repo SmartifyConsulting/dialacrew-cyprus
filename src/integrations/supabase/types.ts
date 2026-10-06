@@ -14,7 +14,186 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bookings: {
+        Row: {
+          attendance: string | null
+          client_charge: number
+          created_at: string
+          crew_id: string
+          crew_rate: number
+          days: number
+          id: string
+          production_id: string
+          role: string
+          status: string
+        }
+        Insert: {
+          attendance?: string | null
+          client_charge?: number
+          created_at?: string
+          crew_id: string
+          crew_rate?: number
+          days?: number
+          id?: string
+          production_id: string
+          role: string
+          status?: string
+        }
+        Update: {
+          attendance?: string | null
+          client_charge?: number
+          created_at?: string
+          crew_id?: string
+          crew_rate?: number
+          days?: number
+          id?: string
+          production_id?: string
+          role?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      change_requests: {
+        Row: {
+          amount: number
+          created_at: string
+          detail: string
+          id: string
+          kind: string
+          production: string
+          state: string
+          who: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          detail: string
+          id?: string
+          kind: string
+          production: string
+          state?: string
+          who: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          detail?: string
+          id?: string
+          kind?: string
+          production?: string
+          state?: string
+          who?: string
+        }
+        Relationships: []
+      }
+      crew_members: {
+        Row: {
+          available: boolean
+          created_at: string
+          day_rate: number
+          department: string
+          experience: number
+          id: string
+          kit: string | null
+          location: string
+          name: string
+          pencilled: boolean
+          rating: number
+          role: string
+        }
+        Insert: {
+          available?: boolean
+          created_at?: string
+          day_rate?: number
+          department: string
+          experience?: number
+          id?: string
+          kit?: string | null
+          location?: string
+          name: string
+          pencilled?: boolean
+          rating?: number
+          role: string
+        }
+        Update: {
+          available?: boolean
+          created_at?: string
+          day_rate?: number
+          department?: string
+          experience?: number
+          id?: string
+          kit?: string | null
+          location?: string
+          name?: string
+          pencilled?: boolean
+          rating?: number
+          role?: string
+        }
+        Relationships: []
+      }
+      productions: {
+        Row: {
+          budget: number
+          client: string
+          created_at: string
+          crew_booked: number
+          crew_needed: number
+          date: string | null
+          days: number
+          id: string
+          location: string
+          name: string
+          secured_funds: number
+          status: string
+          type: string
+        }
+        Insert: {
+          budget?: number
+          client: string
+          created_at?: string
+          crew_booked?: number
+          crew_needed?: number
+          date?: string | null
+          days?: number
+          id?: string
+          location?: string
+          name: string
+          secured_funds?: number
+          status?: string
+          type?: string
+        }
+        Update: {
+          budget?: number
+          client?: string
+          created_at?: string
+          crew_booked?: number
+          crew_needed?: number
+          date?: string | null
+          days?: number
+          id?: string
+          location?: string
+          name?: string
+          secured_funds?: number
+          status?: string
+          type?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
