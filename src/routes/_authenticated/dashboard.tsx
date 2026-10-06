@@ -3,7 +3,7 @@ import { Badge, Page, Panel } from "@/components/AppShell";
 import { zar } from "@/lib/demo-data";
 import { useBookings, useCrew, useProductions, useRequests, useSetRequestState } from "@/lib/db";
 
-export const Route = createFileRoute("/dashboard")({
+export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
       { title: "Producer Dashboard — Book a Crew" },
