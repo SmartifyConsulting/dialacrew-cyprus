@@ -496,6 +496,7 @@ export type Database = {
           status: string
           summary: string
           type: string
+          company_id: string | null
         }
         Insert: {
           address?: string
@@ -516,6 +517,7 @@ export type Database = {
           status?: string
           summary?: string
           type?: string
+          company_id?: string | null
         }
         Update: {
           address?: string
@@ -536,6 +538,7 @@ export type Database = {
           status?: string
           summary?: string
           type?: string
+          company_id?: string | null
         }
         Relationships: []
       }
@@ -952,6 +955,14 @@ export type Database = {
           },
         ]
       }
+      company_invites: {
+        Row: { id: string; company_id: string; email: string; company_role: Database["public"]["Enums"]["company_role"]; token: string; status: string; invited_by: string; created_at: string; accepted_at: string | null }
+        Insert: { id?: string; company_id: string; email: string; company_role?: Database["public"]["Enums"]["company_role"]; token?: string; status?: string; invited_by?: string; created_at?: string; accepted_at?: string | null }
+        Update: { id?: string; company_id?: string; email?: string; company_role?: Database["public"]["Enums"]["company_role"]; token?: string; status?: string; invited_by?: string; created_at?: string; accepted_at?: string | null }
+        Relationships: [
+          { foreignKeyName: "company_invites_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
+      }
       messages: {
         Row: { id: string; production_id: string; booking_id: string | null; sender_id: string; sender_name: string; body: string; created_at: string }
         Insert: { id?: string; production_id: string; booking_id?: string | null; sender_id?: string; sender_name?: string; body: string; created_at?: string }
@@ -1207,6 +1218,7 @@ export type Database = {
     Functions: {
       claim_crew_profile: { Args: never; Returns: string }
       crew_on_time_pct: { Args: { _crew_id: string }; Returns: number }
+      get_invite: { Args: { _token: string }; Returns: { company_name: string; company_role: Database["public"]["Enums"]["company_role"]; email: string; valid: boolean }[] }
       mark_payment_received: { Args: { _booking: string }; Returns: undefined }
       approve_job: { Args: { _booking: string }; Returns: undefined }
       auto_approve_reviews: { Args: never; Returns: undefined }

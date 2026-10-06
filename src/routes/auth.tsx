@@ -22,7 +22,8 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const inviteToken = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("invite") : null;
+  const [mode, setMode] = useState<"signin" | "signup">(inviteToken ? "signup" : "signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -33,8 +34,19 @@ function AuthPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [wait, setWait] = useState(0);
+  const [invite, setInvite] = useState<{ company_name: string; company_role: string; email: string; valid: boolean } | null>(null);
   const pwRef = useRef<HTMLInputElement>(null);
   const producerSignupEnabled = usePlatformSetting("producer_self_signup_enabled").data === true;
+
+  useEffect(() => {
+    if (!inviteToken) return;
+    supabase.rpc("get_invite", { _token: inviteToken }).then(({ data }) => {
+      const row = data?.[0];
+      if (row?.valid) { setInvite(row); setEmail(row.email); }
+      else toast.error("This invite link is invalid or has already been used.");
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => { if (data.session) navigate({ to: "/dashboard", replace: true }); });
@@ -81,7 +93,8 @@ function AuthPage() {
             emailRedirectTo: window.location.origin,
             data: {
               full_name: fullName, phone, role,
-              ...(role === "producer" ? { company_name: companyName } : {}),
+              ...(role === "producer" && !invite ? { company_name: companyName } : {}),
+              ...(invite ? { invite_token: inviteToken } : {}),
             },
           },
         });
@@ -152,25 +165,32 @@ function AuthPage() {
         <form onSubmit={submit} className="mt-6 space-y-4 rounded-sm border border-border bg-card p-6">
           {mode === "signup" && (
             <>
+              {invite && (
+                <div className="rounded-sm border border-primary/40 bg-primary/10 p-3 text-sm">
+                  You've been invited to join <strong>{invite.company_name}</strong> as {invite.company_role.replace("_", " ")}.
+                </div>
+              )}
               <div><label className={labelClass} htmlFor="name">Full name</label>
                 <input id="name" required value={fullName} onChange={(e) => setFullName(e.target.value)} className={fieldClass} /></div>
               <div><label className={labelClass} htmlFor="phone">Phone</label>
                 <input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className={fieldClass} /></div>
-              <div><span className={labelClass}>I am</span>
-                <div className={`grid gap-2 ${producerSignupEnabled ? "grid-cols-2" : "grid-cols-1"}`}>
-                  {(producerSignupEnabled ? (["crew", "producer"] as const) : (["crew"] as const)).map((r) => (
-                    <button key={r} type="button" onClick={() => setRole(r)}
-                      className={`rounded-sm border py-2 text-sm font-semibold uppercase tracking-wider ${role === r ? "border-primary bg-primary/15 text-primary" : "border-input text-muted-foreground"}`}>
-                      {r === "crew" ? "Crew member" : "Producer"}
-                    </button>
-                  ))}
+              {!invite && (
+                <div><span className={labelClass}>I am</span>
+                  <div className={`grid gap-2 ${producerSignupEnabled ? "grid-cols-2" : "grid-cols-1"}`}>
+                    {(producerSignupEnabled ? (["crew", "producer"] as const) : (["crew"] as const)).map((r) => (
+                      <button key={r} type="button" onClick={() => setRole(r)}
+                        className={`rounded-sm border py-2 text-sm font-semibold uppercase tracking-wider ${role === r ? "border-primary bg-primary/15 text-primary" : "border-input text-muted-foreground"}`}>
+                        {r === "crew" ? "Crew member" : "Producer"}
+                      </button>
+                    ))}
+                  </div>
+                  {!producerSignupEnabled && (
+                    <p className="mt-1 text-xs text-muted-foreground">Producer accounts are set up by an existing producer.</p>
+                  )}
+                  <p className="mt-1 text-xs text-muted-foreground">Client sign-up is disabled for now.</p>
                 </div>
-                {!producerSignupEnabled && (
-                  <p className="mt-1 text-xs text-muted-foreground">Producer accounts are set up by an existing producer.</p>
-                )}
-                <p className="mt-1 text-xs text-muted-foreground">Client sign-up is disabled for now.</p>
-              </div>
-              {producerSignupEnabled && role === "producer" && (
+              )}
+              {!invite && producerSignupEnabled && role === "producer" && (
                 <div><label className={labelClass} htmlFor="companyName">Company name</label>
                   <input id="companyName" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} className={fieldClass} /></div>
               )}

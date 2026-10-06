@@ -66,6 +66,19 @@ export function useMemberships(userId: string | undefined) {
   });
 }
 
+export type CompanyInvite = { id: string; email: string; company_role: string; status: string; created_at: string; token: string };
+
+export function useCompanyInvites(companyId: string | undefined) {
+  return useQuery({
+    queryKey: ["company-invites", companyId], enabled: !!companyId,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("company_invites").select("*").eq("company_id", companyId!).order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as CompanyInvite[];
+    },
+  });
+}
+
 export function usePlatformSetting(key: string) {
   return useQuery({
     queryKey: ["platform_setting", key],
