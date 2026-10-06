@@ -27,7 +27,9 @@ function AuthPage() {
   const [mode, setMode] = useState<"signin" | "signup">(inviteToken ? "signup" : "signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [dialCode, setDialCode] = useState("+27");
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<"crew" | "client" | "producer">("crew");
   const [companyName, setCompanyName] = useState("");
@@ -99,7 +101,9 @@ function AuthPage() {
           options: {
             emailRedirectTo: window.location.origin,
             data: {
-              full_name: fullName, phone, role,
+              full_name: `${firstName.trim()} ${lastName.trim()}`.trim(),
+              first_name: firstName.trim(), last_name: lastName.trim(),
+              phone: phone.trim() ? `${dialCode} ${phone.trim().replace(/^0+/, "")}` : "", role,
               ...(role === "producer" && !invite ? { company_name: companyName } : {}),
               ...(role === "crew" && !invite ? { skills } : {}),
               ...(invite ? { invite_token: inviteToken } : {}),
