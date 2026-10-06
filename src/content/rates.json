@@ -1,0 +1,508 @@
+{
+ "intro": [
+  "As at April 2018Daily RatesWeekly Rates",
+  "(based on a 6 day week)"
+ ],
+ "groups": [
+  {
+   "dept": "ACCOUNTS DEPARTMENT",
+   "rows": [
+    [
+     "Production Accountant",
+     "R 0.00",
+     "R 2,400.00",
+     "R 9,000.00",
+     "R 15,000.00"
+    ],
+    [
+     "Accounts Assistant",
+     "R 0.00",
+     "R 1,800.00",
+     "R 5,500.00",
+     "R 8,000.00"
+    ]
+   ]
+  },
+  {
+   "dept": "ART DEPARTMENT",
+   "rows": [
+    [
+     "Production Designer",
+     "R 2,500.00",
+     "R 5,500.00",
+     "R 15,000.00",
+     "R 30,000.00"
+    ],
+    [
+     "Art Director",
+     "R 2,500.00",
+     "R 5,500.00",
+     "R 9,000.00",
+     "R 35,000.00"
+    ],
+    [
+     "Art Department Coordinator",
+     "R 1,500.00",
+     "R 2,000.00",
+     "R 7,500.00",
+     "R 11,000.00"
+    ],
+    [
+     "Props Master",
+     "R 2,000.00",
+     "R 4,000.00",
+     "R 9,000.00",
+     "R 24,000.00"
+    ],
+    [
+     "Props Buyer",
+     "R 1,500.00",
+     "R 3,000.00",
+     "R 6,000.00",
+     "R 18,000.00"
+    ],
+    [
+     "Props Assistant",
+     "R 1,200.00",
+     "R 2,500.00",
+     "R 5,500.00",
+     "R 9,000.00"
+    ],
+    [
+     "Props Standby",
+     "R 1,200.00",
+     "R 3,000.00",
+     "R 6,000.00",
+     "R 14,000.00"
+    ],
+    [
+     "Set Dresser",
+     "R 1,500.00",
+     "R 4,000.00",
+     "R 7,500.00",
+     "R 18,000.00"
+    ],
+    [
+     "Set Standby",
+     "R 1,200.00",
+     "R 2,800.00",
+     "R 6,000.00",
+     "R 14,000.00"
+    ],
+    [
+     "Product Stylist",
+     "R 4,200.00",
+     "R 5,600.00",
+     "-",
+     "-"
+    ]
+   ]
+  },
+  {
+   "dept": "CAMERA DEPARTMENT",
+   "rows": [
+    [
+     "D.O.P./Lighting Cameraman",
+     "R 4,500.00",
+     "R 11,000.00",
+     "R 25,000.00",
+     "R 55,000.00"
+    ],
+    [
+     "Camera Operator",
+     "R 2,800.00",
+     "R 7,500.00",
+     "R 15,000.00",
+     "R 45,000.00"
+    ],
+    [
+     "Steadicam Operator",
+     "R 4,000.00",
+     "R 5,500.00",
+     "R 17,500.00",
+     "R 30,000.00"
+    ],
+    [
+     "Focus /1st Assistant Camera",
+     "R 2,200.00",
+     "R 3,200.00",
+     "R 10,000.00",
+     "R 22,000.00"
+    ],
+    [
+     "Loader /2nd Assistant Camera",
+     "R 1,400.00",
+     "R 2,000.00",
+     "R 5,500.00",
+     "R 9,000.00"
+    ],
+    [
+     "Camera Assistant",
+     "R 1,200.00",
+     "R 2,800.00",
+     "R 5,500.00",
+     "R 6,500.00"
+    ],
+    [
+     "Video Take Off",
+     "R 1,400.00",
+     "R 2,000.00",
+     "R 6,000.00",
+     "R 9,000.00"
+    ],
+    [
+     "DIT",
+     "R 2,000.00",
+     "R 3,500.00",
+     "R 11,000.00",
+     "R 21,000.00"
+    ],
+    [
+     "Data Wrangler",
+     "R 1,500.00",
+     "R 2,500.00",
+     "R 8,000.00",
+     "R 15,000.00"
+    ],
+    [
+     "Drone Operator",
+     "R 3,000.00",
+     "R 8,500.00",
+     "-",
+     "-"
+    ]
+   ]
+  },
+  {
+   "dept": "CASTING DEPARTMENT",
+   "rows": [
+    [
+     "Cast Coordinator",
+     "R 1,500.00",
+     "R 2,500.00",
+     "R 7,500.00",
+     "R 12,000.00"
+    ],
+    [
+     "Extras Coordinator",
+     "R 1,200.00",
+     "R 1,800.00",
+     "R 7,000.00",
+     "R 9,000.00"
+    ]
+   ]
+  },
+  {
+   "dept": "COSTUME/WARDROBE DEPARTMENT",
+   "rows": [
+    [
+     "Costume Designer",
+     "R 2,500.00",
+     "R 4,500.00",
+     "R 12,000.00",
+     "R 26,000.00"
+    ],
+    [
+     "Wardrobe",
+     "R 2,200.00",
+     "R 4,000.00",
+     "R 9,500.00",
+     "R 24,000.00"
+    ],
+    [
+     "Wardrobe Assistant",
+     "R 1,200.00",
+     "R 2,000.00",
+     "R 7,000.00",
+     "R 10,000.00"
+    ]
+   ]
+  },
+  {
+   "dept": "DIRECTOR DEPARTMENT",
+   "rows": [
+    [
+     "1st Assistant Director",
+     "R 2,000.00",
+     "R 6,000.00",
+     "R 10,000.00",
+     "R 32,500.00"
+    ],
+    [
+     "2nd Assistant Director",
+     "R 1,500.00",
+     "R 2,500.00",
+     "R 7,500.00",
+     "R 12,500.00"
+    ],
+    [
+     "3rd Assistant Director",
+     "R 1,000.00",
+     "R 1,200.00",
+     "R 5,500.00",
+     "R 7,500.00"
+    ],
+    [
+     "Floor Managers",
+     "R 2,000.00",
+     "R 2,800.00",
+     "R 8,500.00",
+     "R 13,000.00"
+    ]
+   ]
+  },
+  {
+   "dept": "GRIP DEPARTMENT",
+   "rows": [
+    [
+     "Grip",
+     "R 2,000.00",
+     "R 3,300.00",
+     "R 10,000.00",
+     "R 18,000.00"
+    ],
+    [
+     "Best Boy Grip",
+     "R 1,500.00",
+     "R 2,000.00",
+     "R 6,500.00",
+     "R 10,000.00"
+    ],
+    [
+     "Grip Assistant",
+     "R 1,200.00",
+     "R 1,600.00",
+     "R 7,000.00",
+     "R 9,000.00"
+    ]
+   ]
+  },
+  {
+   "dept": "LIGHTING DEPARTMENT",
+   "rows": [
+    [
+     "Gaffer",
+     "R 2,000.00",
+     "R 3,200.00",
+     "R 10,000.00",
+     "R 18,000.00"
+    ],
+    [
+     "Best Boy Gaffer",
+     "R 1,500.00",
+     "R 2,000.00",
+     "R 7,500.00",
+     "R 10,000.00"
+    ],
+    [
+     "Spark",
+     "R 1,000.00",
+     "R 1,800.00",
+     "R 6,000.00",
+     "R 9,000.00"
+    ],
+    [
+     "Genny Operator",
+     "R 1,500.00",
+     "R 1,800.00",
+     "R 6,500.00",
+     "R 9,000.00"
+    ]
+   ]
+  },
+  {
+   "dept": "LOCATIONS DEPARTMENT",
+   "rows": [
+    [
+     "Location Manager",
+     "R 2,400.00",
+     "R 4,000.00",
+     "R 12,000.00",
+     "R 24,000.00"
+    ],
+    [
+     "Location Scout",
+     "R 1,800.00",
+     "R 3,200.00",
+     "R 9,000.00",
+     "R 24,000.00"
+    ],
+    [
+     "Location Assistant",
+     "R 1,200.00",
+     "R 1,800.00",
+     "R 6,000.00",
+     "R 9,000.00"
+    ]
+   ]
+  },
+  {
+   "dept": "MAKE-UP AND HAIR DEPARTMENT",
+   "rows": [
+    [
+     "Make-Up/Hair",
+     "R 1,800.00",
+     "R 4,000.00",
+     "R 7,500.00",
+     "R 21,000.00"
+    ],
+    [
+     "Make-Up Assistant",
+     "R 1,200.00",
+     "R 2,000.00",
+     "R 6,500.00",
+     "R 10,000.00"
+    ],
+    [
+     "Hair Dresser",
+     "R 2,000.00",
+     "R 4,000.00",
+     "R 8,000.00",
+     "R 24,000.00"
+    ]
+   ]
+  },
+  {
+   "dept": "PRODUCTION DEPARTMENT",
+   "rows": [
+    [
+     "Producer",
+     "R 2,600.00",
+     "R 4,500.00",
+     "-",
+     "-"
+    ],
+    [
+     "Line Producer",
+     "R 3,000.00",
+     "R 4,500.00",
+     "R 10,000.00",
+     "R 23,000.00"
+    ],
+    [
+     "Production Manager",
+     "R 1,800.00",
+     "R 3,800.00",
+     "R 9,000.00",
+     "R 20,000.00"
+    ],
+    [
+     "Production Coordinator",
+     "R 1,500.00",
+     "R 2,500.00",
+     "R 6,500.00",
+     "R 10,000.00"
+    ],
+    [
+     "Production Secretary",
+     "R 1,000.00",
+     "R 1,500.00",
+     "R 6,000.00",
+     "R 9,000.00"
+    ],
+    [
+     "Production Assistant",
+     "R 850.00",
+     "R 1,250.00",
+     "R 5,000.00",
+     "R 6,500.00"
+    ]
+   ]
+  },
+  {
+   "dept": "SCRIPT DEPARTMENT",
+   "rows": [
+    [
+     "Continuity/Script Supervisor",
+     "R 2,000.00",
+     "R 5,800.00",
+     "R 10,500.00",
+     "R 24,000.00"
+    ]
+   ]
+  },
+  {
+   "dept": "SOUND",
+   "rows": [
+    [
+     "Sound",
+     "R 2,000.00",
+     "R 3,500.00",
+     "R 10,000.00",
+     "R 18,000.00"
+    ],
+    [
+     "Boomswinger",
+     "R 1,500.00",
+     "R 2,200.00",
+     "R 7,500.00",
+     "R 12,000.00"
+    ]
+   ]
+  },
+  {
+   "dept": "TRANSPORT DEPARTMENT",
+   "rows": [
+    [
+     "Transport Manager",
+     "R 2,000.00",
+     "R 3,000.00",
+     "R 9,000.00",
+     "R 15,000.00"
+    ],
+    [
+     "Transport Coordinator",
+     "R 1,800.00",
+     "R 2,500.00",
+     "R 9,000.00",
+     "R 12,000.00"
+    ],
+    [
+     "Chaperone",
+     "R 1,200.00",
+     "R 1,700.00",
+     "R 6,500.00",
+     "R 10,000.00"
+    ],
+    [
+     "Driver",
+     "R 1,000.00",
+     "R 1,700.00",
+     "R 5,500.00",
+     "R 10,000.00"
+    ]
+   ]
+  },
+  {
+   "dept": "UNIT DEPARTMENT",
+   "rows": [
+    [
+     "Unit Manager",
+     "R 1,800.00",
+     "R 3,200.00",
+     "R 9,000.00",
+     "R 16,500.00"
+    ],
+    [
+     "Unit Assistant",
+     "R 1,000.00",
+     "R 1,800.00",
+     "R 6,000.00",
+     "R 10,500.00"
+    ],
+    [
+     "Medic",
+     "R 2,250.00",
+     "R 2,500.00",
+     "R 10,000.00",
+     "R 12,500.00"
+    ]
+   ]
+  }
+ ],
+ "notes": [
+  "Please note that the above rates are a guideline only and will be dependent on crew availability.",
+  "Minimum and maximum rates are based on levels of experience. In order to be able to consider a varied range of candidates we advise that you make provision for more than the minimum rate.",
+  "Gear is negotiated separately on a job to job basis, and is not accounted for in the above rates."
+ ]
+}

@@ -29,6 +29,13 @@
       "when": 1791294365015,
       "tag": "0003_site_files_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791300000000,
+      "tag": "0004_join_requests",
+      "breakpoints": true
     }
   ]
 }

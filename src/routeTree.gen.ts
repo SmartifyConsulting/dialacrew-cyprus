@@ -12,8 +12,14 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as BookRouteImport } from './routes/book'
+import { Route as CastingRouteImport } from './routes/casting'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as JoinRouteImport } from './routes/join'
+import { Route as LocationsRouteImport } from './routes/locations'
+import { Route as RatesRouteImport } from './routes/rates'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedCrewIndexRouteImport } from './routes/_authenticated/crew.index'
@@ -35,14 +41,44 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BookRoute = BookRouteImport.update({
+  id: '/book',
+  path: '/book',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CastingRoute = CastingRouteImport.update({
+  id: '/casting',
+  path: '/casting',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   id: '/forgot-password',
   path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JoinRoute = JoinRouteImport.update({
+  id: '/join',
+  path: '/join',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LocationsRoute = LocationsRouteImport.update({
+  id: '/locations',
+  path: '/locations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RatesRoute = RatesRouteImport.update({
+  id: '/rates',
+  path: '/rates',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -81,8 +117,14 @@ const AuthenticatedProductionsIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/book': typeof BookRoute
+  '/casting': typeof CastingRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/join': typeof JoinRoute
+  '/locations': typeof LocationsRoute
+  '/rates': typeof RatesRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/terms': typeof TermsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/crew/$id': typeof AuthenticatedCrewIdRoute
@@ -93,8 +135,14 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/book': typeof BookRoute
+  '/casting': typeof CastingRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/join': typeof JoinRoute
+  '/locations': typeof LocationsRoute
+  '/rates': typeof RatesRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/terms': typeof TermsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/crew/$id': typeof AuthenticatedCrewIdRoute
@@ -107,8 +155,14 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/book': typeof BookRoute
+  '/casting': typeof CastingRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/join': typeof JoinRoute
+  '/locations': typeof LocationsRoute
+  '/rates': typeof RatesRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/terms': typeof TermsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/crew/$id': typeof AuthenticatedCrewIdRoute
@@ -121,8 +175,14 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/book'
+    | '/casting'
     | '/forgot-password'
+    | '/join'
+    | '/locations'
+    | '/rates'
     | '/reset-password'
+    | '/terms'
     | '/dashboard'
     | '/profile'
     | '/crew/$id'
@@ -133,8 +193,14 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/book'
+    | '/casting'
     | '/forgot-password'
+    | '/join'
+    | '/locations'
+    | '/rates'
     | '/reset-password'
+    | '/terms'
     | '/dashboard'
     | '/profile'
     | '/crew/$id'
@@ -146,8 +212,14 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/book'
+    | '/casting'
     | '/forgot-password'
+    | '/join'
+    | '/locations'
+    | '/rates'
     | '/reset-password'
+    | '/terms'
     | '/_authenticated/dashboard'
     | '/_authenticated/profile'
     | '/_authenticated/crew/$id'
@@ -160,8 +232,14 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  BookRoute: typeof BookRoute
+  CastingRoute: typeof CastingRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
+  JoinRoute: typeof JoinRoute
+  LocationsRoute: typeof LocationsRoute
+  RatesRoute: typeof RatesRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  TermsRoute: typeof TermsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -187,6 +265,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/book': {
+      id: '/book'
+      path: '/book'
+      fullPath: '/book'
+      preLoaderRoute: typeof BookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/casting': {
+      id: '/casting'
+      path: '/casting'
+      fullPath: '/casting'
+      preLoaderRoute: typeof CastingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/forgot-password': {
       id: '/forgot-password'
       path: '/forgot-password'
@@ -194,11 +286,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/join': {
+      id: '/join'
+      path: '/join'
+      fullPath: '/join'
+      preLoaderRoute: typeof JoinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/locations': {
+      id: '/locations'
+      path: '/locations'
+      fullPath: '/locations'
+      preLoaderRoute: typeof LocationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rates': {
+      id: '/rates'
+      path: '/rates'
+      fullPath: '/rates'
+      preLoaderRoute: typeof RatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/dashboard': {
@@ -271,8 +391,14 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  BookRoute: BookRoute,
+  CastingRoute: CastingRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
+  JoinRoute: JoinRoute,
+  LocationsRoute: LocationsRoute,
+  RatesRoute: RatesRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  TermsRoute: TermsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
