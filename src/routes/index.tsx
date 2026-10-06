@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { TopNav } from "@/components/AppShell";
 import logo from "@/assets/bookacrew-logo.png.asset.json";
 
@@ -106,12 +106,14 @@ function Index() {
 
       <footer className="border-t border-border bg-background py-8">
         <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 px-4 text-center">
-          <div className="flex gap-4">
+          <div className="flex flex-wrap justify-center gap-4">
             {social.map((s) => (
               <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" className="text-sm uppercase tracking-widest text-muted-foreground hover:text-primary">{s.label}</a>
             ))}
+            <Link to="/terms" className="text-sm uppercase tracking-widest text-muted-foreground hover:text-primary">Terms &amp; Conditions</Link>
+            <Link to="/privacy" className="text-sm uppercase tracking-widest text-muted-foreground hover:text-primary">Privacy Policy</Link>
           </div>
-          <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Dial a Crew Cyprus</p>
+          <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Dial a Crew Cyprus. All rights reserved.</p>
         </div>
       </footer>
     </div>

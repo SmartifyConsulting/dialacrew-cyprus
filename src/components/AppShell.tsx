@@ -17,7 +17,6 @@ const siteNav = [
   { label: "LOCATION", to: "/locations", hash: undefined },
   { label: "GALLERY", to: "/", hash: "gallery" },
   { label: "RATES", to: "/rates", hash: undefined },
-  { label: "T & C", to: "/terms", hash: undefined },
   { label: "CONTACT", to: "/", hash: "contact" },
 ] as const;
 
