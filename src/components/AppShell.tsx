@@ -55,7 +55,7 @@ export function TopNav() {
               <Link
                 key={n.label}
                 to={n.to}
-                hash={n.hash}
+                {...(n.hash ? { hash: n.hash } : {})}
                 onClick={() => setOpen(false)}
                 activeOptions={{ exact: true, includeHash: true }}
                 className="border-y border-primary-foreground/80 py-3 text-center font-sans text-[15px] font-light uppercase text-primary-foreground/80 hover:text-primary-foreground lg:w-[70px]"

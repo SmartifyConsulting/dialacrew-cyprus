@@ -55,9 +55,9 @@ function Join() {
         <form onSubmit={submit} noValidate className="mx-auto mt-12 max-w-[890px] space-y-3">
           <input name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden />
           <input name="name" placeholder="Name *" className={field} />
-          {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+          {errors["name"] && <p className="text-sm text-destructive">{errors["name"]}</p>}
           <input name="email" type="email" placeholder="Email *" className={field} />
-          {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+          {errors["email"] && <p className="text-sm text-destructive">{errors["email"]}</p>}
           <input name="job_description" placeholder="Job Description" className={field} />
           <input name="phone" type="tel" placeholder="Phone" className={field} />
           <textarea name="message" placeholder="Message" rows={5} className={field} />
