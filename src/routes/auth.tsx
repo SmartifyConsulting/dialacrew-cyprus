@@ -285,3 +285,11 @@ function AuthPage() {
     </div>
   );
 }
+
+const DIAL_CODES = [
+  { code: "+27", label: "ZA +27" }, { code: "+357", label: "CY +357" }, { code: "+44", label: "UK +44" },
+  { code: "+1", label: "US +1" }, { code: "+264", label: "NA +264" }, { code: "+267", label: "BW +267" },
+  { code: "+263", label: "ZW +263" }, { code: "+254", label: "KE +254" }, { code: "+234", label: "NG +234" },
+  { code: "+61", label: "AU +61" }, { code: "+49", label: "DE +49" }, { code: "+33", label: "FR +33" },
+  { code: "+971", label: "AE +971" },
+];
