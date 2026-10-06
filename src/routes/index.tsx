@@ -9,8 +9,12 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "HOME | dialacrew" },
-      { name: "description", content: "With film and video content more popular than ever in Cyprus, we connect businesses with the creative professionals needed to make content." },
-      { property: "og:title", content: "Dial a Crew Cyprus" },
+      {
+        name: "description",
+        content:
+          "With film and video content more popular than ever, we connect businesses with the creative professionals needed to make content.",
+      },
+      { property: "og:title", content: "Book a Crew" },
       { property: "og:description", content: "Connecting businesses with film and video crew in Cyprus." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -23,7 +27,7 @@ export const Route = createFileRoute("/")({
 
 // Copy verbatim from https://ma9599.wixsite.com/dialacrew
 const story =
-  "With film and video content more popular than ever in Cyprus, we have created an agency that will help connect businesses with the creative professionals needed to make content to delight your target audiences. No matter what goals you want to achieve, we'll help you find the qualified professionals and resources you need to make your ideas become a reality .";
+  "With film and video content more popular than ever, we have created an agency that will help connect businesses with the creative professionals needed to make content to delight your target audiences. No matter what goals you want to achieve, we'll help you find the qualified professionals and resources you need to make your ideas become a reality .";
 
 const services = SERVICE_SKILLS;
 
@@ -64,7 +68,9 @@ function Index() {
         <h2 className="text-center font-script text-7xl text-foreground md:text-8xl">Service offering</h2>
         <div className="mt-12 grid grid-cols-1 gap-x-10 gap-y-4 sm:grid-cols-2 md:grid-cols-3">
           {services.map((s) => (
-            <div key={s} className="border-b border-primary/60 pb-2 text-lg font-light text-foreground">{s}</div>
+            <div key={s} className="border-b border-primary/60 pb-2 text-lg font-light text-foreground">
+              {s}
+            </div>
           ))}
         </div>
       </section>
@@ -81,20 +87,31 @@ function Index() {
       <section id="contact" className="scroll-mt-28 bg-primary py-16 text-primary-foreground">
         <div className="mx-auto max-w-5xl px-4">
           <h2 className="text-center font-script text-6xl md:text-7xl">Contact Us Now</h2>
-          <p className="mt-4 text-center text-lg">Office : +357 22 546 345  Mobile +357 99 604740</p>
+          <p className="mt-4 text-center text-lg">Office : +357 22 546 345 Mobile +357 99 604740</p>
           <div className="mt-12 grid gap-10 text-center md:grid-cols-3">
             <div>
               <h3 className="font-display text-xl font-semibold uppercase tracking-widest">SAY HELLO</h3>
-              <p className="mt-3">Phone: <a href="tel:+35799604740">+35799604740</a></p>
-              <p>Email: <a href="mailto:info@dialacrew.com" className="underline">info@dialacrew.com</a></p>
+              <p className="mt-3">
+                Phone: <a href="tel:+35799604740">+35799604740</a>
+              </p>
+              <p>
+                Email:{" "}
+                <a href="mailto:info@dialacrew.com" className="underline">
+                  info@dialacrew.com
+                </a>
+              </p>
             </div>
             <div>
               <h3 className="font-display text-xl font-semibold uppercase tracking-widest">OUR ADDRESS</h3>
-              <p className="mt-3">32 Stasikratous</p><p>Nicosia</p><p>Cyprus</p>
+              <p className="mt-3">32 Stasikratous</p>
+              <p>Nicosia</p>
+              <p>Cyprus</p>
             </div>
             <div>
               <h3 className="font-display text-xl font-semibold uppercase tracking-widest">OPENING HOURS</h3>
-              <p className="mt-3">Mon - Fri: 7am - 10pm</p><p>Saturday: 8am - 10pm</p><p>Sunday: 8am - 11pm</p>
+              <p className="mt-3">Mon - Fri: 7am - 10pm</p>
+              <p>Saturday: 8am - 10pm</p>
+              <p>Sunday: 8am - 11pm</p>
             </div>
           </div>
         </div>
@@ -104,12 +121,26 @@ function Index() {
         <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 px-4 text-center">
           <div className="flex flex-wrap justify-center gap-4">
             {social.map((s) => (
-              <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" className="text-sm uppercase tracking-widest text-muted-foreground hover:text-primary">{s.label}</a>
+              <a
+                key={s.label}
+                href={s.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm uppercase tracking-widest text-muted-foreground hover:text-primary"
+              >
+                {s.label}
+              </a>
             ))}
-            <Link to="/terms" className="text-sm uppercase tracking-widest text-muted-foreground hover:text-primary">Terms &amp; Conditions</Link>
-            <Link to="/privacy" className="text-sm uppercase tracking-widest text-muted-foreground hover:text-primary">Privacy Policy</Link>
+            <Link to="/terms" className="text-sm uppercase tracking-widest text-muted-foreground hover:text-primary">
+              Terms &amp; Conditions
+            </Link>
+            <Link to="/privacy" className="text-sm uppercase tracking-widest text-muted-foreground hover:text-primary">
+              Privacy Policy
+            </Link>
           </div>
-          <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Dial a Crew Cyprus. All rights reserved.</p>
+          <p className="text-xs text-muted-foreground">
+            © {new Date().getFullYear()} Dial a Crew Cyprus. All rights reserved.
+          </p>
         </div>
       </footer>
     </div>
