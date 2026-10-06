@@ -15,7 +15,9 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedCrewIndexRouteImport } from './routes/_authenticated/crew.index'
+import { Route as AuthenticatedCrewIdRouteImport } from './routes/_authenticated/crew.$id'
 import { Route as AuthenticatedProductionsIndexRouteImport } from './routes/_authenticated/productions.index'
 import { Route as AuthenticatedProductionsIdRouteImport } from './routes/_authenticated/productions.$id'
 
@@ -48,9 +50,19 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCrewIndexRoute = AuthenticatedCrewIndexRouteImport.update({
   id: '/crew/',
   path: '/crew/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCrewIdRoute = AuthenticatedCrewIdRouteImport.update({
+  id: '/crew/$id',
+  path: '/crew/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedProductionsIndexRoute =
@@ -72,6 +84,8 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/crew/$id': typeof AuthenticatedCrewIdRoute
   '/productions/$id': typeof AuthenticatedProductionsIdRoute
   '/crew/': typeof AuthenticatedCrewIndexRoute
   '/productions/': typeof AuthenticatedProductionsIndexRoute
@@ -82,6 +96,8 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/crew/$id': typeof AuthenticatedCrewIdRoute
   '/productions/$id': typeof AuthenticatedProductionsIdRoute
   '/crew': typeof AuthenticatedCrewIndexRoute
   '/productions': typeof AuthenticatedProductionsIndexRoute
@@ -94,6 +110,8 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/crew/$id': typeof AuthenticatedCrewIdRoute
   '/_authenticated/productions/$id': typeof AuthenticatedProductionsIdRoute
   '/_authenticated/crew/': typeof AuthenticatedCrewIndexRoute
   '/_authenticated/productions/': typeof AuthenticatedProductionsIndexRoute
@@ -106,6 +124,8 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/reset-password'
     | '/dashboard'
+    | '/profile'
+    | '/crew/$id'
     | '/productions/$id'
     | '/crew/'
     | '/productions/'
@@ -116,6 +136,8 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/reset-password'
     | '/dashboard'
+    | '/profile'
+    | '/crew/$id'
     | '/productions/$id'
     | '/crew'
     | '/productions'
@@ -127,6 +149,8 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/reset-password'
     | '/_authenticated/dashboard'
+    | '/_authenticated/profile'
+    | '/_authenticated/crew/$id'
     | '/_authenticated/productions/$id'
     | '/_authenticated/crew/'
     | '/_authenticated/productions/'
@@ -184,11 +208,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/crew/': {
       id: '/_authenticated/crew/'
       path: '/crew'
       fullPath: '/crew/'
       preLoaderRoute: typeof AuthenticatedCrewIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/crew/$id': {
+      id: '/_authenticated/crew/$id'
+      path: '/crew/$id'
+      fullPath: '/crew/$id'
+      preLoaderRoute: typeof AuthenticatedCrewIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/productions/': {
@@ -210,6 +248,8 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedCrewIdRoute: typeof AuthenticatedCrewIdRoute
   AuthenticatedProductionsIdRoute: typeof AuthenticatedProductionsIdRoute
   AuthenticatedCrewIndexRoute: typeof AuthenticatedCrewIndexRoute
   AuthenticatedProductionsIndexRoute: typeof AuthenticatedProductionsIndexRoute
@@ -217,6 +257,8 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedCrewIdRoute: AuthenticatedCrewIdRoute,
   AuthenticatedProductionsIdRoute: AuthenticatedProductionsIdRoute,
   AuthenticatedCrewIndexRoute: AuthenticatedCrewIndexRoute,
   AuthenticatedProductionsIndexRoute: AuthenticatedProductionsIndexRoute,
