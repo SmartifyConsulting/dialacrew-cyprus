@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Fragment } from "react";
 import { SitePage } from "@/components/SitePage";
 import rates from "@/content/rates.json";
 
@@ -33,14 +34,14 @@ function Rates() {
           </thead>
           <tbody>
             {rates.groups.map((g) => (
-              <>
-                <tr key={g.dept}><td colSpan={5} className="pt-6 pb-2 font-display text-base font-semibold uppercase tracking-widest text-primary">{g.dept}</td></tr>
+              <Fragment key={g.dept}>
+                <tr><td colSpan={5} className="pt-6 pb-2 font-display text-base font-semibold uppercase tracking-widest text-primary">{g.dept}</td></tr>
                 {g.rows.map((r) => (
                   <tr key={g.dept + r[0]} className="border-b border-border">
                     {r.map((c, i) => <td key={i} className={`py-1.5 ${i ? "whitespace-nowrap pr-4" : "pr-4"}`}>{c}</td>)}
                   </tr>
                 ))}
-              </>
+              </Fragment>
             ))}
           </tbody>
         </table>
