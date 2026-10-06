@@ -202,7 +202,7 @@ function Kit({ crewId, items, canEdit, onChange }: { crewId: string; items: { id
   async function add() {
     if (!n.name.trim()) return;
     const { error } = await supabase.from("crew_assets").insert({ crew_id: crewId, name: n.name.trim(), category: n.category, daily_fee: Number(n.fee) || 0 });
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     setN({ name: "", category: "Equipment", fee: "" }); onChange();
   }
   async function remove(id: string) { const { error } = await supabase.from("crew_assets").delete().eq("id", id); if (error) toast.error(error.message); onChange(); }

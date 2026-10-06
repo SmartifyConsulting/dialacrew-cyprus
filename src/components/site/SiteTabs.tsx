@@ -40,7 +40,7 @@ export function OverviewTab({ p, isProducer }: Ctx) {
       address: f.address, summary: f.summary, geofence_m: Number(f.geofence) || 200,
       latitude: f.latitude ? Number(f.latitude) : null, longitude: f.longitude ? Number(f.longitude) : null,
     }).eq("id", p.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Site details saved");
     inv(["productions"]);
   }
@@ -119,7 +119,7 @@ function RateDialog({ crewId, name, productionId, onClose }: { crewId: string; n
     const { error } = await supabase.from("crew_reviews").upsert(
       { crew_id: crewId, production_id: productionId, rating: stars, comment, reviewer_id: u.user!.id, reviewer_name: prof?.full_name ?? "" },
       { onConflict: "crew_id,production_id,reviewer_id" });
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success(`Rating saved for ${name}`);
     inv(["reviews"], ["crew"]);
     onClose();
@@ -345,7 +345,7 @@ export function TasksTab({ p, userId }: Ctx) {
   async function add() {
     if (!f.title.trim()) return;
     const { error } = await supabase.from("site_tasks").insert({ production_id: p.id, title: f.title.trim(), assigned_crew_id: f.crew || null, due_date: f.due || null, created_by: userId });
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     setF({ title: "", crew: "", due: "" }); inv(["tasks", p.id]);
   }
   async function toggle(id: string, done: boolean) { await supabase.from("site_tasks").update({ done }).eq("id", id); inv(["tasks", p.id]); }
