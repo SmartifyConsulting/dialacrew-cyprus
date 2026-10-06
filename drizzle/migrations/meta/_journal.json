@@ -36,6 +36,20 @@
       "when": 1791300000000,
       "tag": "0004_join_requests",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791300100000,
+      "tag": "0005_add_admin_role",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791300200000,
+      "tag": "0006_companies_memberships",
+      "breakpoints": true
     }
   ]
 }

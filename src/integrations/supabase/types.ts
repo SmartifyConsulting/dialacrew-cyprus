@@ -742,6 +742,151 @@ export type Database = {
         }
         Relationships: []
       }
+      companies: {
+        Row: {
+          id: string
+          name: string
+          billing_email: string | null
+          phone: string | null
+          address: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          billing_email?: string | null
+          phone?: string | null
+          address?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          billing_email?: string | null
+          phone?: string | null
+          address?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      company_users: {
+        Row: {
+          id: string
+          company_id: string
+          user_id: string
+          company_role: Database["public"]["Enums"]["company_role"]
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          user_id: string
+          company_role?: Database["public"]["Enums"]["company_role"]
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          user_id?: string
+          company_role?: Database["public"]["Enums"]["company_role"]
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_users_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      membership_plans: {
+        Row: {
+          id: string
+          membership_type: Database["public"]["Enums"]["app_role"]
+          price_cents: number
+          currency: string
+          active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          membership_type: Database["public"]["Enums"]["app_role"]
+          price_cents?: number
+          currency?: string
+          active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          membership_type?: Database["public"]["Enums"]["app_role"]
+          price_cents?: number
+          currency?: string
+          active?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
+      memberships: {
+        Row: {
+          id: string
+          user_id: string
+          membership_type: Database["public"]["Enums"]["app_role"]
+          status: string
+          plan_id: string | null
+          started_at: string | null
+          expires_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          membership_type: Database["public"]["Enums"]["app_role"]
+          status?: string
+          plan_id?: string | null
+          started_at?: string | null
+          expires_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          membership_type?: Database["public"]["Enums"]["app_role"]
+          status?: string
+          plan_id?: string | null
+          started_at?: string | null
+          expires_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memberships_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "membership_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_settings: {
+        Row: {
+          key: string
+          value: Json
+          updated_at: string
+        }
+        Insert: {
+          key: string
+          value: Json
+          updated_at?: string
+        }
+        Update: {
+          key?: string
+          value?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -772,7 +917,8 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "producer" | "crew" | "client"
+      app_role: "producer" | "crew" | "client" | "admin"
+      company_role: "owner" | "producer" | "production_manager" | "accounts"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -900,7 +1046,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["producer", "crew", "client"],
+      app_role: ["producer", "crew", "client", "admin"],
+      company_role: ["owner", "producer", "production_manager", "accounts"],
     },
   },
 } as const

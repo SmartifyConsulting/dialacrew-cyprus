@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "producer" | "crew" | "client";
+export type AppRole = "producer" | "crew" | "client" | "admin";
 
 export function useSession() {
   const [session, setSession] = useState<Session | null>(null);
@@ -19,15 +19,60 @@ export function useSession() {
   return { session, ready };
 }
 
-export function useRole(userId: string | undefined) {
+export function useRoles(userId: string | undefined) {
   return useQuery({
-    queryKey: ["role", userId],
+    queryKey: ["roles", userId],
     enabled: !!userId,
     queryFn: async () => {
       const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", userId!);
       if (error) throw error;
-      const roles = (data ?? []).map((r) => r.role as AppRole);
-      return roles.includes("producer") ? "producer" : roles.includes("crew") ? "crew" : roles[0] ?? "client";
+      return (data ?? []).map((r) => r.role as AppRole);
+    },
+  });
+}
+
+export function useRole(userId: string | undefined) {
+  const { data: roles, ...rest } = useRoles(userId);
+  const priority: AppRole[] = ["admin", "producer", "crew", "client"];
+  const data = roles ? priority.find((r) => roles.includes(r)) ?? roles[0] ?? "client" : undefined;
+  return { ...rest, data };
+}
+
+export function useCompany(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["company", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("company_users")
+        .select("company_role, companies(id, name, billing_email, phone, address)")
+        .eq("user_id", userId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useMemberships(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["memberships", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("memberships").select("*").eq("user_id", userId!);
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function usePlatformSetting(key: string) {
+  return useQuery({
+    queryKey: ["platform_setting", key],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("platform_settings").select("value").eq("key", key).maybeSingle();
+      if (error) throw error;
+      return data?.value ?? null;
     },
   });
 }

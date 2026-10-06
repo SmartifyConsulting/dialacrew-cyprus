@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { TopNav } from "@/components/AppShell";
 import { PasswordInput, fieldClass, labelClass, submitClass } from "@/components/PasswordInput";
-import { mapAuthError, passwordChecks } from "@/lib/auth";
+import { mapAuthError, passwordChecks, usePlatformSetting } from "@/lib/auth";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -26,11 +26,13 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  const [role, setRole] = useState<"crew" | "client">("crew");
+  const [role, setRole] = useState<"crew" | "client" | "producer">("crew");
+  const [companyName, setCompanyName] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [wait, setWait] = useState(0);
   const pwRef = useRef<HTMLInputElement>(null);
+  const producerSignupEnabled = usePlatformSetting("producer_self_signup_enabled").data === true;
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => { if (data.session) navigate({ to: "/dashboard", replace: true }); });
@@ -69,7 +71,13 @@ function AuthPage() {
       } else {
         const { error } = await supabase.auth.signUp({
           email, password,
-          options: { emailRedirectTo: window.location.origin, data: { full_name: fullName, phone, role } },
+          options: {
+            emailRedirectTo: window.location.origin,
+            data: {
+              full_name: fullName, phone, role,
+              ...(role === "producer" ? { company_name: companyName } : {}),
+            },
+          },
         });
         if (error) throw error;
       }
@@ -104,16 +112,22 @@ function AuthPage() {
               <div><label className={labelClass} htmlFor="phone">Phone</label>
                 <input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className={fieldClass} /></div>
               <div><span className={labelClass}>I am</span>
-                <div className="grid grid-cols-2 gap-2">
-                  {(["crew", "client"] as const).map((r) => (
+                <div className={`grid gap-2 ${producerSignupEnabled ? "grid-cols-3" : "grid-cols-2"}`}>
+                  {(producerSignupEnabled ? (["crew", "client", "producer"] as const) : (["crew", "client"] as const)).map((r) => (
                     <button key={r} type="button" onClick={() => setRole(r)}
                       className={`rounded-sm border py-2 text-sm font-semibold uppercase tracking-wider ${role === r ? "border-primary bg-primary/15 text-primary" : "border-input text-muted-foreground"}`}>
-                      {r === "crew" ? "Crew member" : "Client"}
+                      {r === "crew" ? "Crew member" : r === "client" ? "Client" : "Producer"}
                     </button>
                   ))}
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">Producer accounts are set up by an existing producer.</p>
+                {!producerSignupEnabled && (
+                  <p className="mt-1 text-xs text-muted-foreground">Producer accounts are set up by an existing producer.</p>
+                )}
               </div>
+              {producerSignupEnabled && role === "producer" && (
+                <div><label className={labelClass} htmlFor="companyName">Company name</label>
+                  <input id="companyName" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} className={fieldClass} /></div>
+              )}
             </>
           )}
           <div><label className={labelClass} htmlFor="email">Email</label>
