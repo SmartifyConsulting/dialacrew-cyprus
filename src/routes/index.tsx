@@ -51,7 +51,7 @@ function Index() {
       <section className="relative bg-cover bg-center" style={{ backgroundImage: `url(${HERO_BG})` }}>
         <div className="absolute inset-0 bg-background/40" />
         <div className="relative mx-auto flex min-h-[760px] max-w-5xl flex-col items-center justify-center px-4 py-16">
-          <img src={logo.url} alt="Dial a Crew Cyprus" className="w-[490px] md:w-[680px]" />
+          <img src={logo.url} alt="Book a Crew" className="w-[392px] md:w-[544px]" />
         </div>
       </section>
 
