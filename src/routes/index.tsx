@@ -8,14 +8,10 @@ const HERO_BG = "https://static.wixstatic.com/media/20efcd_c74b87f40292491e9dbcf
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "HOME | dialacrew" },
-      {
-        name: "description",
-        content:
-          "With film and video content more popular than ever, we connect businesses with the creative professionals needed to make content.",
-      },
-      { property: "og:title", content: "Book a Crew" },
-      { property: "og:description", content: "Connecting businesses with film and video crew." },
+      { title: "Book a Crew | Film, TV & Commercial Production Crew" },
+      { name: "description", content: "Book professional film, TV and commercial crew, kit and locations — and manage every production from call sheet to final invoice." },
+      { property: "og:title", content: "Book a Crew | Professional Production Crew on Demand" },
+      { property: "og:description", content: "Find and book directors, camera, sound, lighting and production crew for your next shoot." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { property: "og:image", content: HERO_BG },
