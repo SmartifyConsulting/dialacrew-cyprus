@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Badge, Page, Panel } from "@/components/AppShell";
-import { productions as seed, zar, type Production } from "@/lib/demo-data";
+import { zar } from "@/lib/demo-data";
+import { useCreateProduction, useProductions } from "@/lib/db";
 
 export const Route = createFileRoute("/productions/")({
   head: () => ({
@@ -18,14 +19,15 @@ export const Route = createFileRoute("/productions/")({
 const field = "w-full rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
 
 function Productions() {
-  const [list, setList] = useState<Production[]>(seed);
+  const list = useProductions().data ?? [];
+  const create = useCreateProduction();
   const [open, setOpen] = useState(false);
   const [f, setF] = useState({ name: "", client: "", type: "Commercial", location: "", date: "", days: 1, budget: 0 });
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!f.name || !f.client) return;
-    setList([{ id: `n${Date.now()}`, ...f, status: "Upcoming", crewBooked: 0, crewNeeded: 0, securedFunds: 0 }, ...list]);
+    create.mutate(f);
     setOpen(false);
     setF({ name: "", client: "", type: "Commercial", location: "", date: "", days: 1, budget: 0 });
   };

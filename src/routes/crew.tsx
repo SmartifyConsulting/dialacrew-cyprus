@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Page } from "@/components/AppShell";
-import { crew, zar } from "@/lib/demo-data";
+import { zar } from "@/lib/demo-data";
+import { useCrew, useTogglePencil } from "@/lib/db";
 
 export const Route = createFileRoute("/crew")({
   head: () => ({
@@ -15,16 +16,16 @@ export const Route = createFileRoute("/crew")({
   component: CrewPage,
 });
 
-const departments = ["All", ...Array.from(new Set(crew.map((c) => c.department)))];
-
 function CrewPage() {
   const [q, setQ] = useState("");
   const [dept, setDept] = useState("All");
   const [availOnly, setAvailOnly] = useState(false);
-  const [pencilled, setPencilled] = useState<string[]>([]);
+  const crew = useCrew().data ?? [];
+  const toggle = useTogglePencil();
+  const departments = ["All", ...Array.from(new Set(crew.map((c) => c.department)))];
   const list = useMemo(() => crew.filter((c) =>
     (dept === "All" || c.department === dept) && (!availOnly || c.available) &&
-    `${c.name} ${c.role} ${c.location}`.toLowerCase().includes(q.toLowerCase())), [q, dept, availOnly]);
+    `${c.name} ${c.role} ${c.location}`.toLowerCase().includes(q.toLowerCase())), [crew, q, dept, availOnly]);
 
   return (
     <Page title="Crew" subtitle={`${crew.length} professionals · rates shown are internal and never visible to clients`}>
@@ -37,7 +38,7 @@ function CrewPage() {
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {list.map((c) => {
-          const p = pencilled.includes(c.id);
+          const p = c.pencilled;
           return (
             <div key={c.id} className="rounded-sm border border-border bg-card p-4">
               <div className="flex items-start gap-3">
@@ -55,7 +56,7 @@ function CrewPage() {
               <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
                 <div className="text-sm"><span className="font-display text-lg font-semibold">{zar(c.dayRate)}</span><span className="text-muted-foreground"> /day · ★ {c.rating}</span></div>
                 <button
-                  onClick={() => setPencilled((x) => p ? x.filter((i) => i !== c.id) : [...x, c.id])}
+                  onClick={() => toggle.mutate({ id: c.id, pencilled: !p })}
                   className={`rounded-sm px-3 py-1.5 text-xs font-semibold uppercase tracking-wider ${p ? "border border-primary text-primary" : "bg-primary text-primary-foreground"}`}>
                   {p ? "Pencilled ✓" : "Pencil"}
                 </button>
