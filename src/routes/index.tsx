@@ -69,6 +69,11 @@ function Index() {
             </div>
           ))}
         </div>
+        <div className="mt-12 text-center">
+          <Link to="/book" className="inline-block bg-primary px-10 py-4 font-display text-lg uppercase tracking-widest text-primary-foreground hover:opacity-90">
+            Book
+          </Link>
+        </div>
       </section>
 
       <section id="gallery" className="scroll-mt-28 py-16">

@@ -10,7 +10,6 @@ const siteNav = [
   { label: "HOME", to: "/", hash: undefined },
   { label: "ABOUT", to: "/", hash: "about" },
   { label: "SERVICES", to: "/", hash: "services" },
-  { label: "BOOK", to: "/book", hash: undefined },
   { label: "GALLERY", to: "/", hash: "gallery" },
   { label: "RATES", to: "/rates", hash: undefined },
   { label: "CONTACT", to: "/", hash: "contact" },
