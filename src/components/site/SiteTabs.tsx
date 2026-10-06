@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { CheckCircle2, Circle, Download, FileText, LogIn, LogOut, MapPin, Mic, Paperclip, Star, Trash2, Users } from "lucide-react";
@@ -13,6 +14,7 @@ import {
   signedUrl, uploadFile, useBookingAssets, useCrewAssets, useDocs, useInvalidate, useMessages, usePosts, useRegister,
   useReviews, useSignedUrl, useSiteMembers, useTasks,
 } from "@/lib/site";
+import { useCreateOpenGig } from "@/lib/db";
 
 type Ctx = { p: Production; isProducer: boolean; userId: string; myName: string; myCrewId: string | null };
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
@@ -35,6 +37,26 @@ export function OverviewTab({ p, isProducer }: Ctx) {
   const inv = useInvalidate();
   const [f, setF] = useState({ address: p.address ?? "", summary: p.summary ?? "", latitude: p.latitude?.toString() ?? "", longitude: p.longitude?.toString() ?? "", geofence: String(p.geofenceM ?? 10) });
   const [rating, setRating] = useState<{ crewId: string; name: string } | null>(null);
+  const [posting, setPosting] = useState(false);
+  const createGig = useCreateOpenGig();
+  const [gf, setGf] = useState({ role: "", date: p.date ?? "", callTime: "", wrapTime: "", rate: "" });
+  const openGigs = useQuery({
+    queryKey: ["production-open-gigs", p.id],
+    queryFn: async () => { const { data, error } = await supabase.from("bookings").select("id, role, booking_date, crew_rate").eq("production_id", p.id).eq("status", "open"); if (error) throw error; return data ?? []; },
+    enabled: isProducer,
+  });
+
+  async function postGig() {
+    if (!gf.role.trim() || !gf.date) { toast.error("Role and date are required"); return; }
+    const rate = Number(gf.rate) || 0;
+    try {
+      await createGig.mutateAsync({ productionId: p.id, role: gf.role.trim(), bookingDate: gf.date, callTime: gf.callTime, wrapTime: gf.wrapTime, crewRate: rate, clientCharge: rate, days: 1 });
+      toast.success("Open gig posted — any crew member can grab it");
+      setGf({ role: "", date: p.date ?? "", callTime: "", wrapTime: "", rate: "" });
+      setPosting(false);
+      inv(["production-open-gigs", p.id]);
+    } catch (e) { toast.error((e as Error).message); }
+  }
 
   async function save() {
     const { error } = await supabase.from("productions").update({

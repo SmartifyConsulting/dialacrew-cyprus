@@ -61,7 +61,7 @@ export type Database = {
           attendance: string | null
           client_charge: number
           created_at: string
-          crew_id: string
+          crew_id: string | null
           crew_rate: number
           days: number
           id: string
@@ -90,7 +90,7 @@ export type Database = {
           attendance?: string | null
           client_charge?: number
           created_at?: string
-          crew_id: string
+          crew_id?: string | null
           crew_rate?: number
           days?: number
           id?: string
@@ -119,7 +119,7 @@ export type Database = {
           attendance?: string | null
           client_charge?: number
           created_at?: string
-          crew_id?: string
+          crew_id?: string | null
           crew_rate?: number
           days?: number
           id?: string
@@ -552,6 +552,8 @@ export type Database = {
           role: string
           suspended: boolean
           whatsapp_number: string | null
+          skills: string[]
+          avatar_url: string | null
         }
         Insert: {
           created_at?: string
@@ -562,6 +564,8 @@ export type Database = {
           role?: string
           suspended?: boolean
           whatsapp_number?: string | null
+          skills?: string[]
+          avatar_url?: string | null
         }
         Update: {
           created_at?: string
@@ -572,6 +576,8 @@ export type Database = {
           role?: string
           suspended?: boolean
           whatsapp_number?: string | null
+          skills?: string[]
+          avatar_url?: string | null
         }
         Relationships: []
       }
@@ -1219,6 +1225,8 @@ export type Database = {
       claim_crew_profile: { Args: never; Returns: string }
       crew_on_time_pct: { Args: { _crew_id: string }; Returns: number }
       get_invite: { Args: { _token: string }; Returns: { company_name: string; company_role: Database["public"]["Enums"]["company_role"]; email: string; valid: boolean }[] }
+      claim_gig: { Args: { _booking: string }; Returns: undefined }
+      open_gigs: { Args: never; Returns: { id: string; role: string; days: number; crew_rate: number; booking_date: string | null; call_time: string | null; production_id: string; production_name: string; location: string; address: string; latitude: number | null; longitude: number | null }[] }
       mark_payment_received: { Args: { _booking: string }; Returns: undefined }
       approve_job: { Args: { _booking: string }; Returns: undefined }
       auto_approve_reviews: { Args: never; Returns: undefined }
@@ -1251,7 +1259,7 @@ export type Database = {
     Enums: {
       app_role: "producer" | "crew" | "client" | "admin"
       company_role: "owner" | "producer" | "production_manager" | "accounts"
-      booking_status: "draft" | "pencil" | "awaiting_crew_confirmation" | "confirmed" | "in_progress" | "awaiting_review" | "payment_released" | "completed" | "cancelled" | "disputed"
+      booking_status: "draft" | "pencil" | "awaiting_crew_confirmation" | "confirmed" | "in_progress" | "awaiting_review" | "payment_released" | "completed" | "cancelled" | "disputed" | "open"
       payment_status: "not_required" | "payment_required" | "payment_received" | "funds_held" | "awaiting_release" | "release_authorised" | "payment_released" | "payment_failed" | "payment_disputed"
     }
     CompositeTypes: {
@@ -1382,7 +1390,7 @@ export const Constants = {
     Enums: {
       app_role: ["producer", "crew", "client", "admin"],
       company_role: ["owner", "producer", "production_manager", "accounts"],
-      booking_status: ["draft", "pencil", "awaiting_crew_confirmation", "confirmed", "in_progress", "awaiting_review", "payment_released", "completed", "cancelled", "disputed"],
+      booking_status: ["draft", "pencil", "awaiting_crew_confirmation", "confirmed", "in_progress", "awaiting_review", "payment_released", "completed", "cancelled", "disputed", "open"],
       payment_status: ["not_required", "payment_required", "payment_received", "funds_held", "awaiting_release", "release_authorised", "payment_released", "payment_failed", "payment_disputed"],
     },
   },

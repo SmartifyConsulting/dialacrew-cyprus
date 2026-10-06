@@ -1,10 +1,12 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Camera } from "lucide-react";
 import { Page, Panel, Badge } from "@/components/AppShell";
 import { useCompany, useCompanyInvites, useRole, useSession } from "@/lib/auth";
-import { useMyCrewId } from "@/lib/site";
+import { useMyCrewId, uploadFile } from "@/lib/site";
+import { Avatar } from "@/components/site/SiteTabs";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/profile")({
@@ -31,10 +33,47 @@ function MyProfile() {
 
   return (
     <Page open title="My profile">
-      <p className="text-muted-foreground">
-        {role.isLoading || crewId.isLoading ? "Loading…" : "Profiles are for crew and service providers."}
-      </p>
+      <div className="mx-auto max-w-md">
+        <AvatarCard userId={session?.user.id} />
+        <p className="mt-5 text-center text-muted-foreground">
+          {role.isLoading || crewId.isLoading ? "Loading…" : "Profiles are for crew and service providers."}
+        </p>
+      </div>
     </Page>
+  );
+}
+
+function AvatarCard({ userId }: { userId: string | undefined }) {
+  const qc = useQueryClient();
+  const me = useQuery({
+    queryKey: ["my-avatar", userId], enabled: !!userId,
+    queryFn: async () => { const { data, error } = await supabase.from("profiles").select("full_name, avatar_url").eq("id", userId!).maybeSingle(); if (error) throw error; return data; },
+  });
+
+  async function change(file?: File) {
+    if (!file || !userId) return;
+    try {
+      const path = await uploadFile(`avatars/${userId}`, file, file.name);
+      const { error } = await supabase.from("profiles").update({ avatar_url: path }).eq("id", userId);
+      if (error) throw error;
+      toast.success("Profile picture updated");
+      qc.invalidateQueries({ queryKey: ["my-avatar", userId] });
+    } catch (e) { toast.error((e as Error).message); }
+  }
+
+  return (
+    <div className="flex items-center gap-4 rounded-sm border border-border bg-card p-4">
+      <div className="relative">
+        <Avatar name={me.data?.full_name || "?"} path={me.data?.avatar_url ?? null} size={64} />
+        <label className="absolute bottom-0 right-0 grid h-6 w-6 cursor-pointer place-items-center rounded-full bg-primary text-primary-foreground" aria-label="Change photo">
+          <Camera className="h-3.5 w-3.5" /><input type="file" accept="image/*" hidden onChange={(e) => change(e.target.files?.[0])} />
+        </label>
+      </div>
+      <div className="text-sm">
+        <div className="font-semibold">{me.data?.full_name || "Your profile"}</div>
+        <div className="text-xs text-muted-foreground">Click the camera icon to update your profile picture.</div>
+      </div>
+    </div>
   );
 }
 
@@ -82,6 +121,7 @@ function CompanyPanel({ userId }: { userId: string | undefined }) {
 
   return (
     <Page open title="My Company" subtitle={company.data.companies?.name ?? ""}>
+      <div className="mb-5"><AvatarCard userId={userId} /></div>
       <div className="grid gap-5 lg:grid-cols-2">
         <Panel title="Your role">
           <div className="p-4 text-sm">

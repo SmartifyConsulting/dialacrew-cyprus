@@ -68,6 +68,39 @@ export const useSetRequestState = () => {
   });
 };
 
+export type OpenGig = {
+  id: string; role: string; days: number; crew_rate: number; booking_date: string | null; call_time: string | null;
+  production_id: string; production_name: string; location: string; address: string; latitude: number | null; longitude: number | null;
+};
+
+export const useOpenGigs = () => useQuery({
+  queryKey: ["open-gigs"],
+  queryFn: async () => { const { data, error } = await supabase.rpc("open_gigs"); if (error) throw error; return (data ?? []) as OpenGig[]; },
+});
+
+export const useClaimGig = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (bookingId: string) => { const { error } = await supabase.rpc("claim_gig", { _booking: bookingId }); if (error) throw error; },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["open-gigs"] }); qc.invalidateQueries({ queryKey: ["bookings"] }); },
+  });
+};
+
+export const useCreateOpenGig = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (f: { productionId: string; role: string; bookingDate: string; callTime?: string; wrapTime?: string; crewRate: number; clientCharge: number; days: number }) => {
+      const { error } = await supabase.from("bookings").insert({
+        production_id: f.productionId, crew_id: null, role: f.role, status: "open",
+        booking_date: f.bookingDate || null, call_time: f.callTime || null, wrap_time: f.wrapTime || null,
+        crew_rate: f.crewRate, client_charge: f.clientCharge, days: f.days,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["bookings"] }); qc.invalidateQueries({ queryKey: ["open-gigs"] }); },
+  });
+};
+
 export const useCreatePencil = () => {
   const qc = useQueryClient();
   return useMutation({

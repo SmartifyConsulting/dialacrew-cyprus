@@ -7,6 +7,7 @@ import { TopNav } from "@/components/AppShell";
 import { PasswordInput, fieldClass, labelClass, submitClass } from "@/components/PasswordInput";
 import { mapAuthError, passwordChecks, usePlatformSetting } from "@/lib/auth";
 import { DEV_ACCOUNTS } from "@/lib/dev-accounts";
+import { SERVICE_SKILLS } from "@/lib/skills";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -30,6 +31,8 @@ function AuthPage() {
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<"crew" | "client" | "producer">("crew");
   const [companyName, setCompanyName] = useState("");
+  const [skills, setSkills] = useState<string[]>([]);
+  const [customSkill, setCustomSkill] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -81,6 +84,10 @@ function AuthPage() {
       setError("Please accept the Terms & Conditions and Privacy Policy to continue.");
       return;
     }
+    if (mode === "signup" && !invite && role === "crew" && skills.length === 0) {
+      setError("Pick at least one skill you offer (or add your own).");
+      return;
+    }
     setBusy(true);
     try {
       if (mode === "signin") {
@@ -94,6 +101,7 @@ function AuthPage() {
             data: {
               full_name: fullName, phone, role,
               ...(role === "producer" && !invite ? { company_name: companyName } : {}),
+              ...(role === "crew" && !invite ? { skills } : {}),
               ...(invite ? { invite_token: inviteToken } : {}),
             },
           },
@@ -193,6 +201,37 @@ function AuthPage() {
               {!invite && producerSignupEnabled && role === "producer" && (
                 <div><label className={labelClass} htmlFor="companyName">Company name</label>
                   <input id="companyName" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} className={fieldClass} /></div>
+              )}
+              {!invite && role === "crew" && (
+                <div>
+                  <span className={labelClass}>Which services do you offer? (pick as many as apply)</span>
+                  <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                    {SERVICE_SKILLS.map((s) => {
+                      const on = skills.includes(s);
+                      return (
+                        <button key={s} type="button" onClick={() => setSkills(on ? skills.filter((x) => x !== s) : [...skills, s])}
+                          className={`rounded-sm border px-2 py-1.5 text-left text-xs ${on ? "border-primary bg-primary/15 text-primary" : "border-input text-muted-foreground"}`}>
+                          {s}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-2 flex gap-2">
+                    <input value={customSkill} onChange={(e) => setCustomSkill(e.target.value)} placeholder="Not listed? Add your own (e.g. Trapeze Artist)" className={fieldClass}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); const v = customSkill.trim(); if (v && !skills.includes(v)) setSkills([...skills, v]); setCustomSkill(""); } }} />
+                    <button type="button" onClick={() => { const v = customSkill.trim(); if (v && !skills.includes(v)) setSkills([...skills, v]); setCustomSkill(""); }}
+                      className="rounded-sm border border-input px-3 text-xs font-semibold uppercase text-muted-foreground hover:border-primary hover:text-primary">Add</button>
+                  </div>
+                  {skills.filter((s) => !SERVICE_SKILLS.includes(s)).length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {skills.filter((s) => !SERVICE_SKILLS.includes(s)).map((s) => (
+                        <span key={s} className="flex items-center gap-1 rounded-sm bg-primary/15 px-2 py-1 text-xs text-primary">
+                          {s} <button type="button" onClick={() => setSkills(skills.filter((x) => x !== s))} aria-label={`Remove ${s}`}>×</button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
             </>
           )}

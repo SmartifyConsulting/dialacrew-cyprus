@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { TopNav } from "@/components/AppShell";
 import logo from "@/assets/bookacrew-logo.png.asset.json";
+import { SERVICE_SKILLS } from "@/lib/skills";
 
 const HERO_BG = "https://static.wixstatic.com/media/20efcd_c74b87f40292491e9dbcf1db2483f78c~mv2.jpg";
 
@@ -24,12 +25,7 @@ export const Route = createFileRoute("/")({
 const story =
   "With film and video content more popular than ever in Cyprus, we have created an agency that will help connect businesses with the creative professionals needed to make content to delight your target audiences. No matter what goals you want to achieve, we'll help you find the qualified professionals and resources you need to make your ideas become a reality .";
 
-const services = [
-  "Art Department", "Wardrobe", "Line Producers", "Make Up Artists", "DIT", "Adobe Premiere Editors",
-  "Directors", "VFX Supervisors", "Gaffers", "Designers", "Assistant Directors", "Autodesk Flame Artists",
-  "Sparks", "Autodesk Smoke Artists", "Data Wranglers", "Da Vinci Resolve Colour Artists",
-  "Director of Photography", "Stills Photographers", "Behind the Scense", "Casting Agent", "Location Scouts",
-];
+const services = SERVICE_SKILLS;
 
 const gallery = [
   "20efcd_db152710e0a5462593057d2c8b6399b0~mv2_d_6000_4000_s_4_2.jpg",
@@ -55,7 +51,7 @@ function Index() {
       <section className="relative bg-cover bg-center" style={{ backgroundImage: `url(${HERO_BG})` }}>
         <div className="absolute inset-0 bg-background/40" />
         <div className="relative mx-auto flex min-h-[760px] max-w-5xl flex-col items-center justify-center px-4 py-16">
-          <img src={logo.url} alt="Dial a Crew Cyprus" className="w-72 md:w-[400px]" />
+          <img src={logo.url} alt="Dial a Crew Cyprus" className="w-[490px] md:w-[680px]" />
         </div>
       </section>
 
@@ -74,7 +70,7 @@ function Index() {
       </section>
 
       <section id="gallery" className="scroll-mt-28 py-16">
-        <h2 className="text-center font-script text-7xl text-foreground md:text-8xl">GALLERY</h2>
+        <h2 className="text-center font-script text-7xl text-foreground md:text-8xl">Gallery</h2>
         <div className="mx-auto mt-12 grid max-w-5xl grid-cols-2 gap-1 px-4 md:grid-cols-3">
           {gallery.map((src) => (
             <img key={src} src={src} alt="" loading="lazy" className="aspect-square w-full object-cover" />
