@@ -2,6 +2,52 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Badge, Page, Panel } from "@/components/AppShell";
 import { zar } from "@/lib/demo-data";
 import { useBookings, useCrew, useProductions, useRequests, useSetRequestState } from "@/lib/db";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useRole, useSession } from "@/lib/auth";
+import { useMyCrewId } from "@/lib/site";
+
+function DashboardRouter() {
+  const { session } = useSession();
+  const role = useRole(session?.user.id);
+  if (role.isLoading) return <Page open title="Dashboard"><p className="text-muted-foreground">Loading…</p></Page>;
+  if (role.data === "crew") return <CrewDashboard />;
+  return <Dashboard />;
+}
+
+function CrewDashboard() {
+  const crewId = useMyCrewId(true).data;
+  const jobs = useQuery({
+    queryKey: ["crew-jobs", crewId], enabled: !!crewId,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("bookings").select("id, role, status, booking_date, call_time, production_id, productions(name, client, address, location)").eq("crew_id", crewId!).order("booking_date");
+      if (error) throw error; return data ?? [];
+    },
+  }).data ?? [];
+  const live = jobs.filter((j) => !["cancelled", "completed", "payment_released"].includes(j.status));
+  return (
+    <Page open title="Dashboard" subtitle="Your jobs and call times">
+      <Panel title={`My jobs (${live.length})`}>
+        <ul className="divide-y divide-border text-sm">
+          {live.length === 0 && <li className="p-4 text-muted-foreground">No jobs yet. Open Find Gigs to grab one.</li>}
+          {live.map((j) => {
+            const pr = j.productions as { name?: string; client?: string; address?: string; location?: string } | null;
+            return (
+              <li key={j.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <Link to="/productions/$id" params={{ id: j.production_id }} className="font-semibold hover:text-primary">{pr?.name ?? "Production"}</Link>
+                  <div className="text-xs text-muted-foreground">{j.role} · {pr?.address || pr?.location || ""}</div>
+                </div>
+                <div className="text-xs text-muted-foreground">{j.booking_date ?? ""}{j.call_time ? ` · call ${j.call_time.slice(0, 5)}` : ""}</div>
+                <Badge>{j.status}</Badge>
+              </li>
+            );
+          })}
+        </ul>
+      </Panel>
+    </Page>
+  );
+}
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -12,7 +58,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
       { property: "og:description", content: "Your production operations in one view." },
     ],
   }),
-  component: Dashboard,
+  component: DashboardRouter,
 });
 
 function Dashboard() {
