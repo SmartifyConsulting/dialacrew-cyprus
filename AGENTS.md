@@ -24,3 +24,5 @@
 - `/` and `/auth` both render the shared AuthForm (home is sign-in/sign-up only); TopNav shows no public marketing menu, only role-based links from `navByRole` — one sign-in path, one menu definition.
 - Remaining public pages (/book, /join, /casting, /locations, /rates, /terms) share SitePage + TopNav; cloned copy lives verbatim in route data or src/content/ — keeps the source wording auditable in one place.
 - Client MemoryBank (company_memory) is rebuilt by AI from production_retrospectives + crew_reviews + bookings in src/lib/memory.functions.ts; AI calls go through src/lib/ai.server.ts — one learning path for retros, matcher and relearn.
+- Production site page = fixed Overview widget on the left + tabbed feed on the right; tab lists per role live in productions.$id.tsx (CREW_TABS / MANAGER_TABS) — one place decides who sees what.
+- Any site member can rate co-workers (crew_reviews RLS via is_site_member, never self) — ratings are peer-driven, not producer-only.
