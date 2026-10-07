@@ -134,6 +134,7 @@ const tone: Record<string, string> = {
   Active: "bg-success/20 text-success",
   Pencil: "bg-primary/20 text-primary", pencil: "bg-primary/20 text-primary",
   Upcoming: "bg-primary/20 text-primary",
+  Draft: "bg-chart-3/20 text-chart-3",
   Pending: "bg-chart-3/20 text-chart-3",
   awaiting_crew_confirmation: "bg-chart-3/20 text-chart-3",
   in_progress: "bg-success/20 text-success",

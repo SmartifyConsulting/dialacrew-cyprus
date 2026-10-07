@@ -1,7 +1,7 @@
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Sparkles, Save, Trash2, Upload, Star } from "lucide-react";
+import { Sparkles, Save, Trash2, Star, CheckCircle2, Plus, ArrowLeftRight } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Panel } from "@/components/AppShell";
@@ -51,6 +51,8 @@ export function ScenarioPlanner({ p }: { p: Production }) {
   const [busy, setBusy] = useState(false);
   const [ai, setAi] = useState<MatchResult | null>(null);
   const [filter, setFilter] = useState("");
+  const [activeId, setActiveId] = useState<string>(""); // "" = new scenario
+  const [committing, setCommitting] = useState(false);
 
   const rates = useMemo(() => Object.fromEntries(crew.map((c) => [c.id, c.dayRate])), [crew]);
   const fees = useMemo(() => Object.fromEntries((assets.data ?? []).map((a) => [a.id, a.daily_fee])), [assets.data]);
@@ -86,16 +88,55 @@ export function ScenarioPlanner({ p }: { p: Production }) {
 
   async function save() {
     if (!Object.keys(sel).length) { toast.error("Select at least one crew member."); return; }
-    const { error } = await supabase.from("brief_matches").insert({ client: scenarioKey(p.id), brief: name.trim() || "Untitled scenario", result: { selection: sel, total } });
-    if (error) { toast.error(error.message); return; }
-    toast.success(`Saved "${name}"`);
+    const clean = name.trim() || "Untitled scenario";
+    const dup = scenarios.data?.find((x) => x.name.toLowerCase() === clean.toLowerCase() && x.id !== activeId);
+    if (dup) { toast.error(`"${clean}" already exists — pick it from the dropdown to update it, or use another name.`); return; }
+    const result = { selection: sel, total };
+    const res = activeId
+      ? await supabase.from("brief_matches").update({ brief: clean, result }).eq("id", activeId).select("id").single()
+      : await supabase.from("brief_matches").insert({ client: scenarioKey(p.id), brief: clean, result }).select("id").single();
+    if (res.error) { toast.error(res.error.message); return; }
+    setActiveId(res.data.id);
+    toast.success(activeId ? `Updated "${clean}"` : `Saved "${clean}"`);
     qc.invalidateQueries({ queryKey: ["scenarios", p.id] });
-    const n = (scenarios.data?.length ?? 0) + 2;
-    setName(`Scenario ${String.fromCharCode(64 + Math.min(n, 26))}`);
+  }
+  function pick(id: string) {
+    setActiveId(id);
+    if (!id) { setSel({}); setName(`Scenario ${String.fromCharCode(65 + Math.min(scenarios.data?.length ?? 0, 25))}`); return; }
+    const s = scenarios.data?.find((x) => x.id === id);
+    if (s) { setSel(s.selection); setName(s.name); }
+  }
+  function swap(from: string, to: string) {
+    if (!to) return;
+    setSel((s) => { const n = { ...s }; delete n[from]; n[to] = []; return n; });
+    toast.success(`Swapped ${crewName(from)} for ${crewName(to)}`);
+  }
+  // Commit: pencil the chosen group's crew + kit on the production, then drop the other sandbox groups.
+  async function commit(s: Scenario) {
+    if (!confirm(`Commit "${s.name}"? Its crew will be pencilled in and the other scenarios removed.`)) return;
+    setCommitting(true);
+    try {
+      const rows = Object.keys(s.selection).map((crewId) => ({
+        production_id: p.id, crew_id: crewId, role: crew.find((c) => c.id === crewId)?.role ?? "Crew", status: "pencil" as const,
+        booking_date: p.date || null, crew_rate: rates[crewId] ?? 0, client_charge: rates[crewId] ?? 0, days,
+      }));
+      const { data: made, error } = await supabase.from("bookings").insert(rows).select("id, crew_id");
+      if (error) throw error;
+      const kitRows = (made ?? []).flatMap((b) => (s.selection[b.crew_id ?? ""] ?? []).map((a) => ({ booking_id: b.id, asset_id: a, daily_fee: fees[a] ?? 0, days })));
+      if (kitRows.length) { const k = await supabase.from("booking_assets").insert(kitRows); if (k.error) throw k.error; }
+      const others = (scenarios.data ?? []).filter((x) => x.id !== s.id).map((x) => x.id);
+      if (others.length) await supabase.from("brief_matches").delete().in("id", others);
+      if (p.status === "Draft") await supabase.from("productions").update({ status: "Upcoming" }).eq("id", p.id);
+      toast.success(`"${s.name}" committed — crew pencilled in`);
+      ["scenarios", "bookings", "productions", "production-open-gigs"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+      qc.invalidateQueries({ queryKey: ["scenarios", p.id] });
+    } catch (e) { toast.error((e as Error).message); }
+    finally { setCommitting(false); }
   }
   async function remove(id: string) {
     const { error } = await supabase.from("brief_matches").delete().eq("id", id);
     if (error) { toast.error(error.message); return; }
+    if (id === activeId) pick("");
     qc.invalidateQueries({ queryKey: ["scenarios", p.id] });
   }
 
@@ -119,7 +160,16 @@ export function ScenarioPlanner({ p }: { p: Production }) {
         </div>
       </Panel>
 
-      <Panel title={`Build a scenario · ${days} day(s)`} right={<input className="w-40 rounded-sm border border-input bg-background px-2 py-1 text-xs" placeholder="Filter crew" value={filter} onChange={(e) => setFilter(e.target.value)} />}>
+      <Panel title={`Sandbox · ${days} day(s)`} right={<input className="w-40 rounded-sm border border-input bg-background px-2 py-1 text-xs" placeholder="Filter crew" value={filter} onChange={(e) => setFilter(e.target.value)} />}>
+        <div className="flex flex-wrap items-center gap-2 border-b border-border p-4">
+          <select className="rounded-sm border border-input bg-background px-2 py-2 text-sm" value={activeId} onChange={(e) => pick(e.target.value)} aria-label="Scenario">
+            <option value="">+ New scenario</option>
+            {(scenarios.data ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+          <input className="min-w-40 flex-1 rounded-sm border border-input bg-background px-2 py-2 text-sm" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} aria-label="Scenario name" placeholder="Scenario name" />
+          {activeId && <button className={ghost} onClick={() => pick("")}><Plus className="h-3 w-3" /> New</button>}
+        </div>
+        <div className="border-b border-border px-4 py-3"><BudgetBar used={total} budget={p.budget} /></div>
         <ul className="max-h-[520px] divide-y divide-border overflow-y-auto">
           {shown.map((c) => {
             const on = !!sel[c.id];
@@ -136,6 +186,17 @@ export function ScenarioPlanner({ p }: { p: Production }) {
                   </div>
                   {on && <span className="text-sm font-semibold">{zar(line)}</span>}
                 </label>
+                {on && (
+                  <div className="ml-7 mt-2 flex items-center gap-2 text-xs">
+                    <ArrowLeftRight className="h-3 w-3 text-muted-foreground" />
+                    <select className="rounded-sm border border-input bg-background px-2 py-1 text-xs" value="" onChange={(e) => swap(c.id, e.target.value)} aria-label={`Swap ${c.name}`}>
+                      <option value="">Swap for…</option>
+                      {crew.filter((o) => !sel[o.id] && o.id !== c.id).sort((a, b) => Number(b.department === c.department) - Number(a.department === c.department)).map((o) => (
+                        <option key={o.id} value={o.id}>{o.name} · {o.role} · {zar(o.dayRate)}/day</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 {on && kit.length > 0 && (
                   <div className="ml-7 mt-2 flex flex-wrap gap-2">
                     {kit.map((a) => {
@@ -158,8 +219,7 @@ export function ScenarioPlanner({ p }: { p: Production }) {
             <div><span className="text-muted-foreground">Estimate:</span> <b>{zar(total)}</b> for {Object.keys(sel).length} crew</div>
             <div className={`text-xs ${variance < 0 ? "text-destructive" : "text-success"}`}>{variance < 0 ? `${zar(-variance)} over` : `${zar(variance)} under`} budget of {zar(p.budget)}</div>
           </div>
-          <input className="ml-auto w-48 rounded-sm border border-input bg-background px-2 py-2 text-sm" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} aria-label="Scenario name" />
-          <button onClick={save} className={btn}><Save className="h-4 w-4" /> Save draft</button>
+          <button onClick={save} className={`${btn} ml-auto`}><Save className="h-4 w-4" /> {activeId ? "Update scenario" : "Save scenario"}</button>
         </div>
       </Panel>
 
@@ -168,7 +228,7 @@ export function ScenarioPlanner({ p }: { p: Production }) {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="text-left text-xs uppercase tracking-wider text-muted-foreground">
-                <tr><th className="px-4 py-2">Draft</th><th className="px-2">Crew</th><th className="px-2">Kit items</th><th className="px-2">Estimate</th><th className="px-2">vs budget</th><th /></tr>
+                <tr><th className="px-4 py-2">Draft</th><th className="px-2">Crew</th><th className="px-2">Kit items</th><th className="px-2">Estimate</th><th className="px-2 w-40">Budget used</th><th /></tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {scenarios.data.map((s) => {
@@ -181,9 +241,10 @@ export function ScenarioPlanner({ p }: { p: Production }) {
                       <td className="px-2">{Object.keys(s.selection).length}</td>
                       <td className="px-2">{kitCount}</td>
                       <td className="px-2 font-semibold">{zar(cost)}</td>
-                      <td className={`px-2 ${v < 0 ? "text-destructive" : "text-success"}`}>{v < 0 ? "−" : "+"}{zar(Math.abs(v))}</td>
+                      <td className="px-2"><BudgetBar used={cost} budget={p.budget} compact /><div className={`text-[10px] ${v < 0 ? "text-destructive" : "text-muted-foreground"}`}>{v < 0 ? `${zar(-v)} over` : `${zar(v)} left`}</div></td>
                       <td className="whitespace-nowrap px-2 text-right">
-                        <button className={ghost} onClick={() => { setSel(s.selection); setName(`${s.name} (copy)`); toast.success(`Loaded "${s.name}"`); }}><Upload className="h-3 w-3" /> Load</button>{" "}
+                        <button className={ghost} onClick={() => pick(s.id)}>Edit</button>{" "}
+                        <button className={ghost} disabled={committing} onClick={() => commit(s)}><CheckCircle2 className="h-3 w-3" /> Commit</button>{" "}
                         <button className={ghost} aria-label="Delete draft" onClick={() => remove(s.id)}><Trash2 className="h-3 w-3" /></button>
                       </td>
                     </tr>
@@ -194,6 +255,23 @@ export function ScenarioPlanner({ p }: { p: Production }) {
           </div>
         )}
       </Panel>
+    </div>
+  );
+}
+
+/** Budget usage %: green under 85%, amber 85–100%, red over budget. */
+export function budgetPct(used: number, budget: number) { return budget > 0 ? Math.round((used / budget) * 100) : 0; }
+
+function BudgetBar({ used, budget, compact }: { used: number; budget: number; compact?: boolean }) {
+  const pct = budgetPct(used, budget);
+  const tone = pct > 100 ? "bg-destructive" : pct >= 85 ? "bg-chart-3" : "bg-success";
+  return (
+    <div>
+      {!compact && <div className="mb-1 flex justify-between text-xs"><span className="text-muted-foreground">Budget used</span><span className="font-semibold">{pct}% · {zar(used)} of {zar(budget)}</span></div>}
+      <div className={`${compact ? "h-1.5" : "h-2.5"} overflow-hidden rounded-full bg-muted`} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+        <div className={`h-full ${tone}`} style={{ width: `${Math.min(100, pct)}%` }} />
+      </div>
+      {compact && <div className="text-[10px] font-semibold">{pct}%</div>}
     </div>
   );
 }
