@@ -21,5 +21,6 @@
 - Crew-to-site member lists come from the `site_members()` RPC so co-workers never see each other's rates.
 - Provider job totals use `providerTotal()` in src/lib/costing.ts (day rate × days + selected asset fees) — one formula for Assets and Commercials.
 - Files live in the private `site-files` bucket under `<productionId>/…` or `crew/<crewId>/…`, opened via signed URLs.
-- Public Book a Crew marketing pages (/, /book, /join, /casting, /locations, /rates, /terms) share SitePage + TopNav; cloned copy lives verbatim in route data or src/content/ — keeps the source wording auditable in one place.
+- `/` and `/auth` both render the shared AuthForm (home is sign-in/sign-up only); TopNav shows no public marketing menu, only role-based links from `navByRole` — one sign-in path, one menu definition.
+- Remaining public pages (/book, /join, /casting, /locations, /rates, /terms) share SitePage + TopNav; cloned copy lives verbatim in route data or src/content/ — keeps the source wording auditable in one place.
 - Client MemoryBank (company_memory) is rebuilt by AI from production_retrospectives + crew_reviews + bookings in src/lib/memory.functions.ts; AI calls go through src/lib/ai.server.ts — one learning path for retros, matcher and relearn.
