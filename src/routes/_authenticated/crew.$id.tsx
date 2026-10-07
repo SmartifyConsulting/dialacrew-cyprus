@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Award, Briefcase, Camera, Mail, MapPin, Package, Phone, Plus, Star, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +15,7 @@ import {
 } from "@/lib/db";
 
 export const Route = createFileRoute("/_authenticated/crew/$id")({
+  validateSearch: (s: Record<string, unknown>): { tab?: string } => (typeof s.tab === "string" ? { tab: s.tab } : {}),
   head: () => ({
     meta: [
       { title: "Crew profile — Book a Crew" },
@@ -38,7 +39,10 @@ function CrewProfile() {
   const { session } = useSession();
   const role = useRole(session?.user.id);
   const inv = useInvalidate();
-  const [tab, setTab] = useState<(typeof TABS)[number]>("About");
+  const { tab: tabParam } = Route.useSearch();
+  const initialTab: (typeof TABS)[number] = tabParam === "gigs" ? "Find Gigs" : tabParam === "kit" ? "Kit & props" : "About";
+  const [tab, setTab] = useState<(typeof TABS)[number]>(initialTab);
+  useEffect(() => { setTab(initialTab); }, [initialTab]);
   const [editing, setEditing] = useState(false);
 
   const c = useQuery({

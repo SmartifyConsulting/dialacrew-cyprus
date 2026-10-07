@@ -16,8 +16,10 @@ const navByRole = {
     { to: "/profile", label: "My company" },
   ],
   crew: [
+    { to: "/dashboard", label: "Dashboard" },
     { to: "/profile", label: "My Profile" },
-    { to: "/crew", label: "Directory" },
+    { to: "/profile", label: "Find Gigs", tab: "gigs" },
+    { to: "/profile", label: "Kit", tab: "kit" },
   ],
   client: [
     { to: "/profile", label: "My Profile" },
@@ -38,7 +40,7 @@ export function TopNav() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const items = navByRole[(role.data ?? "client") as keyof typeof navByRole] ?? navByRole.client;
+  const items = (navByRole[(role.data ?? "client") as keyof typeof navByRole] ?? navByRole.client) as readonly { to: string; label: string; tab?: string }[];
 
   async function signOut() {
     await queryClient.cancelQueries();
@@ -71,7 +73,7 @@ export function TopNav() {
             </button>
             <nav className={`${open ? "flex" : "hidden"} flex-col gap-1 pt-1 md:flex md:flex-row md:flex-wrap md:pt-0`}>
               {items.map((n) => (
-                <Link key={n.to} to={n.to} onClick={() => setOpen(false)} className="rounded-sm px-3 py-1 font-display text-xs uppercase tracking-widest text-muted-foreground hover:text-primary" activeProps={{ className: "text-primary" }}>
+                <Link key={n.label} to={n.to} search={n.tab ? { tab: n.tab } : {}} activeOptions={{ includeSearch: true }} onClick={() => setOpen(false)} className="rounded-sm px-3 py-1 font-display text-xs uppercase tracking-widest text-muted-foreground hover:text-primary" activeProps={{ className: "text-primary" }}>
                   {n.label}
                 </Link>
               ))}

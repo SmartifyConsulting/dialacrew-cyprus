@@ -10,6 +10,7 @@ import { Avatar } from "@/components/site/SiteTabs";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/profile")({
+  validateSearch: (s: Record<string, unknown>): { tab?: string } => (typeof s.tab === "string" ? { tab: s.tab } : {}),
   head: () => ({
     meta: [
       { title: "My profile — Book a Crew" },
@@ -27,7 +28,8 @@ function MyProfile() {
   const { session } = useSession();
   const role = useRole(session?.user.id);
   const crewId = useMyCrewId(role.data === "crew");
-  if (role.data === "crew" && crewId.data) return <Navigate to="/crew/$id" params={{ id: crewId.data }} replace />;
+  const { tab } = Route.useSearch();
+  if (role.data === "crew" && crewId.data) return <Navigate to="/crew/$id" params={{ id: crewId.data }} search={tab ? { tab } : {}} replace />;
 
   if (role.data === "producer") return <CompanyPanel userId={session?.user.id} />;
 
