@@ -1,46 +1,59 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
+import { Briefcase, Building2, Home, Search, Shield, Star, User, type LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRole, useSession } from "@/lib/auth";
 import { NotificationBell } from "@/components/NotificationBell";
 
-// Signed-in production tools, per the actual workflow each role uses.
-// The public marketing menu (Home, About, Services, Gallery, Rates, Contact) is intentionally hidden.
-const navByRole = {
+type NavItem = { to: string; label: string; icon: LucideIcon };
+// One menu definition per role, used by both the top bar and the phone bottom bar.
+export const navByRole: Record<string, NavItem[]> = {
   producer: [
-    { to: "/dashboard", label: "Dashboard" },
-    { to: "/productions", label: "Productions" },
-    { to: "/crew", label: "Find Crew" },
-    { to: "/memory", label: "AI MemoryBank" },
-    { to: "/profile", label: "My company" },
+    { to: "/dashboard", label: "Home", icon: Home },
+    { to: "/crew", label: "Find Crew", icon: Search },
+    { to: "/productions", label: "Projects", icon: Briefcase },
+    { to: "/profile", label: "My Company", icon: Building2 },
   ],
   crew: [
-    { to: "/dashboard", label: "Dashboard" },
-    { to: "/profile", label: "My Profile" },
-    { to: "/profile", label: "Find Gigs", tab: "gigs" },
-    { to: "/profile", label: "Kit", tab: "kit" },
+    { to: "/dashboard", label: "Home", icon: Home },
+    { to: "/gigs", label: "Find Gigs", icon: Search },
+    { to: "/reviews", label: "Reviews", icon: Star },
+    { to: "/profile", label: "My Profile", icon: User },
   ],
-  client: [
-    { to: "/profile", label: "My Profile" },
-  ],
+  client: [{ to: "/profile", label: "My Profile", icon: User }],
   admin: [
-    { to: "/dashboard", label: "Dashboard" },
-    { to: "/productions", label: "Productions" },
-    { to: "/crew", label: "Find Crew" },
-    { to: "/memory", label: "AI MemoryBank" },
-    { to: "/admin", label: "Admin" },
-    { to: "/profile", label: "My Profile" },
+    { to: "/dashboard", label: "Home", icon: Home },
+    { to: "/crew", label: "Find Crew", icon: Search },
+    { to: "/productions", label: "Projects", icon: Briefcase },
+    { to: "/profile", label: "My Company", icon: Building2 },
+    { to: "/admin", label: "Admin", icon: Shield },
   ],
-} as const;
+};
+
+function BottomNav({ items }: { items: NavItem[] }) {
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-sidebar md:hidden" aria-label="Main menu">
+      <ul className="flex">
+        {items.map((n) => (
+          <li key={n.label} className="flex-1">
+            <Link to={n.to} className="flex flex-col items-center gap-0.5 py-2 text-[10px] uppercase tracking-wider text-muted-foreground" activeProps={{ className: "text-primary" }}>
+              <n.icon className="h-5 w-5" />{n.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
 
 export function TopNav() {
   const { session, ready } = useSession();
   const role = useRole(session?.user.id);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
-  const items = (navByRole[(role.data ?? "client") as keyof typeof navByRole] ?? navByRole.client) as readonly { to: string; label: string; tab?: string }[];
+  const [, setOpen] = useState(false);
+  const items = navByRole[role.data ?? "client"] ?? navByRole["client"]!;
 
   async function signOut() {
     await queryClient.cancelQueries();
