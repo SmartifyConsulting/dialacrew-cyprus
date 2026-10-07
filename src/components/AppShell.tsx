@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { Briefcase, Building2, Home, Search, Shield, Star, User, type LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRole, useSession } from "@/lib/auth";
@@ -52,7 +52,6 @@ export function TopNav() {
   const role = useRole(session?.user.id);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [, setOpen] = useState(false);
   const items = navByRole[role.data ?? "client"] ?? navByRole["client"]!;
 
   async function signOut() {
