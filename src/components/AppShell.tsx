@@ -79,21 +79,17 @@ export function TopNav() {
         </div>
       </div>
       {ready && session && (
-        <div className="border-b border-border bg-sidebar">
-          <div className="mx-auto max-w-7xl px-4 py-1.5">
-            <button className="font-display text-xs uppercase tracking-widest text-muted-foreground md:hidden" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label="Menu">
-              {open ? "Close menu" : "Menu"}
-            </button>
-            <nav className={`${open ? "flex" : "hidden"} flex-col gap-1 pt-1 md:flex md:flex-row md:flex-wrap md:pt-0`}>
-              {items.map((n) => (
-                <Link key={n.label} to={n.to} search={n.tab ? { tab: n.tab } : {}} activeOptions={{ includeSearch: true }} onClick={() => setOpen(false)} className="rounded-sm px-3 py-1 font-display text-xs uppercase tracking-widest text-muted-foreground hover:text-primary" activeProps={{ className: "text-primary" }}>
-                  {n.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
+        <div className="hidden border-b border-border bg-sidebar md:block">
+          <nav className="mx-auto flex max-w-7xl flex-wrap gap-1 px-4 py-1.5">
+            {items.map((n) => (
+              <Link key={n.label} to={n.to} className="rounded-sm px-3 py-1 font-display text-xs uppercase tracking-widest text-muted-foreground hover:text-primary" activeProps={{ className: "text-primary" }}>
+                {n.label}
+              </Link>
+            ))}
+          </nav>
         </div>
       )}
+      {ready && session && <BottomNav items={items} />}
     </header>
   );
 }
