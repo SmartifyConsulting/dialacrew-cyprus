@@ -5,17 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRole, useSession } from "@/lib/auth";
 import { NotificationBell } from "@/components/NotificationBell";
 
-// Public Dial a Crew menu — exact labels and order from the original site.
-const siteNav = [
-  { label: "HOME", to: "/", hash: undefined },
-  { label: "ABOUT", to: "/", hash: "about" },
-  { label: "SERVICES", to: "/", hash: "services" },
-  { label: "GALLERY", to: "/", hash: "gallery" },
-  { label: "RATES", to: "/rates", hash: undefined },
-  { label: "CONTACT", to: "/", hash: "contact" },
-] as const;
-
 // Signed-in production tools, per the actual workflow each role uses.
+// The public marketing menu (Home, About, Services, Gallery, Rates, Contact) is intentionally hidden.
 const navByRole = {
   producer: [
     { to: "/dashboard", label: "Dashboard" },
@@ -32,8 +23,11 @@ const navByRole = {
     { to: "/profile", label: "My Profile" },
   ],
   admin: [
-    { to: "/admin", label: "Admin" },
+    { to: "/dashboard", label: "Dashboard" },
+    { to: "/productions", label: "Productions" },
+    { to: "/crew", label: "Find Crew" },
     { to: "/memory", label: "AI MemoryBank" },
+    { to: "/admin", label: "Admin" },
     { to: "/profile", label: "My Profile" },
   ],
 } as const;
@@ -44,55 +38,44 @@ export function TopNav() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const items = navByRole[(role.data ?? "client") as keyof typeof navByRole] ?? navByRole.client;
 
   async function signOut() {
     await queryClient.cancelQueries();
     queryClient.clear();
     await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
+    navigate({ to: "/", replace: true });
   }
 
   return (
     <header className="sticky top-0 z-30">
       <div className="bg-primary text-primary-foreground">
-        <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-4">
-          <button className="font-display text-sm uppercase tracking-wider lg:hidden" onClick={() => setOpen((o) => !o)} aria-label="Menu">
-            {open ? "Close" : "Menu"}
-          </button>
-          <nav className={`${open ? "flex" : "hidden"} absolute left-0 right-0 top-full flex-col bg-primary px-4 pb-4 lg:static lg:flex lg:flex-1 lg:flex-row lg:justify-center lg:gap-[10px] lg:p-0`}>
-            {siteNav.map((n) => (
-              <Link
-                key={n.label}
-                to={n.to}
-                {...(n.hash ? { hash: n.hash } : {})}
-                onClick={() => setOpen(false)}
-                activeOptions={{ exact: true, includeHash: true }}
-                className="border-y border-primary-foreground/80 py-3 text-center font-sans text-[15px] font-light uppercase text-primary-foreground/80 hover:text-primary-foreground lg:w-[70px]"
-              >
-                {n.label}
-              </Link>
-            ))}
-          </nav>
-          <div className="ml-auto flex items-center gap-3 lg:ml-0">
-            {ready && !session && (
-              <Link to="/auth" className="rounded-sm bg-primary-foreground px-3 py-1.5 font-display text-xs uppercase tracking-widest text-primary">Sign in</Link>
+        <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
+          <Link to={session ? "/dashboard" : "/"} className="font-script text-3xl leading-none">Book a Crew</Link>
+          <div className="ml-auto flex items-center gap-3">
+            {ready && session && (
+              <>
+                <NotificationBell userId={session.user.id} />
+                <span className="hidden text-xs font-semibold uppercase tracking-widest md:block">{role.data ? `${role.data} view` : ""}</span>
+                <button onClick={signOut} className="rounded-sm border border-primary-foreground/60 px-3 py-1 font-display text-xs uppercase tracking-widest hover:bg-primary-foreground/10">Sign out</button>
+              </>
             )}
           </div>
         </div>
       </div>
       {ready && session && (
         <div className="border-b border-border bg-sidebar">
-          <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-1 px-4 py-1.5">
-            {(navByRole[role.data ?? "client"] ?? navByRole.client).map((n) => (
-              <Link key={n.to} to={n.to} className="rounded-sm px-3 py-1 font-display text-xs uppercase tracking-widest text-muted-foreground hover:text-primary" activeProps={{ className: "text-primary" }}>
-                {n.label}
-              </Link>
-            ))}
-            <div className="ml-auto flex items-center gap-3">
-              <NotificationBell userId={session.user.id} />
-              <span className="hidden text-xs font-semibold uppercase tracking-widest text-muted-foreground md:block">{role.data ? `${role.data} view` : ""}</span>
-              <button onClick={signOut} className="rounded-sm border border-border px-3 py-1 font-display text-xs uppercase tracking-widest text-foreground hover:text-primary">Sign out</button>
-            </div>
+          <div className="mx-auto max-w-7xl px-4 py-1.5">
+            <button className="font-display text-xs uppercase tracking-widest text-muted-foreground md:hidden" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label="Menu">
+              {open ? "Close menu" : "Menu"}
+            </button>
+            <nav className={`${open ? "flex" : "hidden"} flex-col gap-1 pt-1 md:flex md:flex-row md:flex-wrap md:pt-0`}>
+              {items.map((n) => (
+                <Link key={n.to} to={n.to} onClick={() => setOpen(false)} className="rounded-sm px-3 py-1 font-display text-xs uppercase tracking-widest text-muted-foreground hover:text-primary" activeProps={{ className: "text-primary" }}>
+                  {n.label}
+                </Link>
+              ))}
+            </nav>
           </div>
         </div>
       )}
