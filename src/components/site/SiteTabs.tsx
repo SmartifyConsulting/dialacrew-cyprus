@@ -36,6 +36,7 @@ export function OverviewTab({ p, isProducer }: Ctx) {
   const inv = useInvalidate();
   const [f, setF] = useState({ address: p.address ?? "", summary: p.summary ?? "", latitude: p.latitude?.toString() ?? "", longitude: p.longitude?.toString() ?? "", geofence: String(p.geofenceM ?? 10) });
   const [posting, setPosting] = useState(false);
+  const [editing, setEditing] = useState(false);
   const createGig = useCreateOpenGig();
   const [gf, setGf] = useState({ role: "", date: p.date ?? "", callTime: "", wrapTime: "", rate: "" });
   const openGigs = useQuery({
@@ -63,11 +64,19 @@ export function OverviewTab({ p, isProducer }: Ctx) {
     }).eq("id", p.id);
     if (error) { toast.error(error.message); return; }
     toast.success("Site details saved");
+    setEditing(false);
     inv(["productions"]);
   }
   async function useHere() {
     try { const pos = await getPosition(); setF({ ...f, latitude: pos.coords.latitude.toFixed(6), longitude: pos.coords.longitude.toFixed(6) }); }
     catch (e) { toast.error((e as Error).message); }
+  }
+
+  const filled = !!(p.address || p.latitude) && !!p.summary;
+  if (!isProducer || (filled && !editing)) {
+    return isProducer ? (
+      <button onClick={() => setEditing(true)} className="w-full rounded-sm border border-border px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:border-primary hover:text-primary">Edit site details</button>
+    ) : null;
   }
 
   return (
@@ -218,7 +227,7 @@ export function PostsTab({ p, userId, myName, isProducer }: Ctx) {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
+    <div className="w-full space-y-4">
       <div className="rounded-sm border border-border bg-card p-4">
         <textarea rows={3} className={`${input} w-full`} placeholder="Share an update with everyone on this job…" value={body} onChange={(e) => setBody(e.target.value)} />
         {recording && <div className="mt-2"><AudioRecorder onCancel={() => setRecording(false)} onDone={(blob, transcript) => { setRecording(false); setAudio({ blob, transcript }); if (transcript) setBody((b) => (b ? `${b}\n${transcript}` : transcript)); }} /></div>}
@@ -284,7 +293,7 @@ export function MessagesTab({ p, userId, myName }: Ctx & { bookings: Booking[]; 
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
+    <div className="w-full space-y-4">
       <div className="space-y-2 rounded-sm border border-border bg-card p-4">
         {(messages.data ?? []).length === 0 && <p className="text-center text-sm text-muted-foreground">No messages yet.</p>}
         {(messages.data ?? []).map((m) => (
