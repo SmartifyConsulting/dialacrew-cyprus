@@ -14,6 +14,8 @@
 ## Architecture rules
 
 - Roles live in `user_roles` (enum `app_role`) checked via `has_role()`; never on `profiles` — prevents privilege escalation.
+- Signed-in menus come from one `navByRole` map in AppShell, shown as the desktop top bar and the phone bottom bar — one menu definition per role.
+- Production crew scenarios are sandbox rows in `brief_matches` keyed `scenario:<productionId>`; committing pencils that group and deletes the others — no extra table needed.
 - Signup role comes from a DB trigger: first account is producer, others may self-pick only crew or client — users can never grant themselves producer.
 - Signed-in pages live under `src/routes/_authenticated/`; non-producer gating is in `Page` (AppShell) and enforced by RLS — the UI gate is cosmetic, RLS is the real guard.
 - Production site data (posts, tasks, documents, register, assets) is gated by `is_site_member()` (producer or booked crew via `crew_members.user_id`) — RLS is the guard, not the UI.

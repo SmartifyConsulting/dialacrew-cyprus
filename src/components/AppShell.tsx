@@ -1,46 +1,58 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
+import { Briefcase, Building2, Home, Search, Shield, Star, User, type LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRole, useSession } from "@/lib/auth";
 import { NotificationBell } from "@/components/NotificationBell";
 
-// Signed-in production tools, per the actual workflow each role uses.
-// The public marketing menu (Home, About, Services, Gallery, Rates, Contact) is intentionally hidden.
-const navByRole = {
+type NavItem = { to: string; label: string; icon: LucideIcon };
+// One menu definition per role, used by both the top bar and the phone bottom bar.
+export const navByRole: Record<string, NavItem[]> = {
   producer: [
-    { to: "/dashboard", label: "Dashboard" },
-    { to: "/productions", label: "Productions" },
-    { to: "/crew", label: "Find Crew" },
-    { to: "/memory", label: "AI MemoryBank" },
-    { to: "/profile", label: "My company" },
+    { to: "/dashboard", label: "Home", icon: Home },
+    { to: "/crew", label: "Find Crew", icon: Search },
+    { to: "/productions", label: "Projects", icon: Briefcase },
+    { to: "/profile", label: "My Company", icon: Building2 },
   ],
   crew: [
-    { to: "/dashboard", label: "Dashboard" },
-    { to: "/profile", label: "My Profile" },
-    { to: "/profile", label: "Find Gigs", tab: "gigs" },
-    { to: "/profile", label: "Kit", tab: "kit" },
+    { to: "/dashboard", label: "Home", icon: Home },
+    { to: "/gigs", label: "Find Gigs", icon: Search },
+    { to: "/reviews", label: "Reviews", icon: Star },
+    { to: "/profile", label: "My Profile", icon: User },
   ],
-  client: [
-    { to: "/profile", label: "My Profile" },
-  ],
+  client: [{ to: "/profile", label: "My Profile", icon: User }],
   admin: [
-    { to: "/dashboard", label: "Dashboard" },
-    { to: "/productions", label: "Productions" },
-    { to: "/crew", label: "Find Crew" },
-    { to: "/memory", label: "AI MemoryBank" },
-    { to: "/admin", label: "Admin" },
-    { to: "/profile", label: "My Profile" },
+    { to: "/dashboard", label: "Home", icon: Home },
+    { to: "/crew", label: "Find Crew", icon: Search },
+    { to: "/productions", label: "Projects", icon: Briefcase },
+    { to: "/profile", label: "My Company", icon: Building2 },
+    { to: "/admin", label: "Admin", icon: Shield },
   ],
-} as const;
+};
+
+function BottomNav({ items }: { items: NavItem[] }) {
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-sidebar md:hidden" aria-label="Main menu">
+      <ul className="flex">
+        {items.map((n) => (
+          <li key={n.label} className="flex-1">
+            <Link to={n.to} className="flex flex-col items-center gap-0.5 py-2 text-[10px] uppercase tracking-wider text-muted-foreground" activeProps={{ className: "text-primary" }}>
+              <n.icon className="h-5 w-5" />{n.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
 
 export function TopNav() {
   const { session, ready } = useSession();
   const role = useRole(session?.user.id);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
-  const items = (navByRole[(role.data ?? "client") as keyof typeof navByRole] ?? navByRole.client) as readonly { to: string; label: string; tab?: string }[];
+  const items = navByRole[role.data ?? "client"] ?? navByRole["client"]!;
 
   async function signOut() {
     await queryClient.cancelQueries();
@@ -66,21 +78,17 @@ export function TopNav() {
         </div>
       </div>
       {ready && session && (
-        <div className="border-b border-border bg-sidebar">
-          <div className="mx-auto max-w-7xl px-4 py-1.5">
-            <button className="font-display text-xs uppercase tracking-widest text-muted-foreground md:hidden" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label="Menu">
-              {open ? "Close menu" : "Menu"}
-            </button>
-            <nav className={`${open ? "flex" : "hidden"} flex-col gap-1 pt-1 md:flex md:flex-row md:flex-wrap md:pt-0`}>
-              {items.map((n) => (
-                <Link key={n.label} to={n.to} search={n.tab ? { tab: n.tab } : {}} activeOptions={{ includeSearch: true }} onClick={() => setOpen(false)} className="rounded-sm px-3 py-1 font-display text-xs uppercase tracking-widest text-muted-foreground hover:text-primary" activeProps={{ className: "text-primary" }}>
-                  {n.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
+        <div className="hidden border-b border-border bg-sidebar md:block">
+          <nav className="mx-auto flex max-w-7xl flex-wrap gap-1 px-4 py-1.5">
+            {items.map((n) => (
+              <Link key={n.label} to={n.to} className="rounded-sm px-3 py-1 font-display text-xs uppercase tracking-widest text-muted-foreground hover:text-primary" activeProps={{ className: "text-primary" }}>
+                {n.label}
+              </Link>
+            ))}
+          </nav>
         </div>
       )}
+      {ready && session && <BottomNav items={items} />}
     </header>
   );
 }
@@ -126,6 +134,7 @@ const tone: Record<string, string> = {
   Active: "bg-success/20 text-success",
   Pencil: "bg-primary/20 text-primary", pencil: "bg-primary/20 text-primary",
   Upcoming: "bg-primary/20 text-primary",
+  Draft: "bg-chart-3/20 text-chart-3",
   Pending: "bg-chart-3/20 text-chart-3",
   awaiting_crew_confirmation: "bg-chart-3/20 text-chart-3",
   in_progress: "bg-success/20 text-success",

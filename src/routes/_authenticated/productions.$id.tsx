@@ -8,9 +8,10 @@ import { useMyCrewId, useMyName } from "@/lib/site";
 import { RetroTab } from "@/components/site/RetroTab";
 import { ScenarioPlanner } from "@/components/site/ScenarioPlanner";
 import { ProjectInsights } from "@/components/site/ProjectInsights";
-import { AssetsTab, CommercialsTab, DocumentsTab, MembersList, MessagesTab, OverviewTab, PostsTab, RegisterTab, TasksTab } from "@/components/site/SiteTabs";
+import { AssetsTab, CommercialsTab, DocumentsTab, MembersList, OverviewTab, PostsTab, RegisterTab, TasksTab } from "@/components/site/SiteTabs";
 
 export const Route = createFileRoute("/_authenticated/productions/$id")({
+  validateSearch: (s: Record<string, unknown>): { tab?: string } => (typeof s["tab"] === "string" ? { tab: s["tab"] } : {}),
   head: () => ({
     meta: [
       { title: "Production site — Book a Crew" },
@@ -27,7 +28,7 @@ export const Route = createFileRoute("/_authenticated/productions/$id")({
 // Crew see only Posts, Members, Tasks, Kit (Overview is the fixed left widget).
 // Find Crew (scenario planner) opens from the header button beside the status badge.
 const CREW_TABS = ["Posts", "Members", "Tasks", "Kit"] as const;
-const MANAGER_TABS = ["Posts", "Members", "Tasks", "Kit", "Messages", "Documents", "Budget", "Review"] as const;
+const MANAGER_TABS = ["Posts", "Members", "Tasks", "Kit", "Documents", "Budget", "Review"] as const;
 type Tab = (typeof MANAGER_TABS)[number] | "Find Crew";
 
 function ProductionSite() {
@@ -42,7 +43,8 @@ function ProductionSite() {
   const requests = useRequests().data ?? [];
   const myCrewId = useMyCrewId(!!userId && role.data === "crew").data ?? null;
   const myName = useMyName(userId || undefined).data ?? "";
-  const [tab, setTab] = useState<Tab>("Posts");
+  const { tab: tabParam } = Route.useSearch();
+  const [tab, setTab] = useState<Tab>(tabParam === "find-crew" ? "Find Crew" : "Posts");
   const p = prods.data?.find((x) => x.id === id);
   if (!p) return <Page open title={prods.isLoading ? "Loading…" : "Production not found"}>{null}</Page>;
   const crewNames = Object.fromEntries(crew.map((c) => [c.id, c.name]));
@@ -81,7 +83,6 @@ function ProductionSite() {
           {tab === "Members" && <div className="space-y-5"><MembersList {...ctx} /><RegisterTab {...ctx} /></div>}
           {tab === "Tasks" && <TasksTab {...ctx} />}
           {tab === "Kit" && <AssetsTab {...ctx} bookings={bookings} crewNames={crewNames} />}
-          {tab === "Messages" && isProducer && <MessagesTab {...ctx} bookings={bookings} crewNames={crewNames} />}
           {tab === "Documents" && isProducer && <DocumentsTab {...ctx} />}
           {tab === "Budget" && isProducer && <CommercialsTab {...ctx} bookings={bookings} crewNames={crewNames} requests={requests} />}
           {tab === "Find Crew" && isProducer && <ScenarioPlanner p={p} />}

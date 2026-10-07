@@ -9,3 +9,10 @@ describe("scenario cost", () => {
     expect(scenarioCost({ a: [] }, 3, { a: 1000 }, { k1: 900 })).toBe(3000);
   });
 });
+
+import { budgetPct } from "@/components/site/ScenarioPlanner";
+import { gigCountry } from "@/components/FindGigs";
+describe("budget bar and gig country", () => {
+  it("shows % of budget used", () => { expect(budgetPct(85000, 100000)).toBe(85); expect(budgetPct(120000, 100000)).toBe(120); });
+  it("reads country from the end of the address", () => { expect(gigCountry({ address: "12 Long St, Cape Town, South Africa", location: "" })).toBe("South Africa"); });
+});

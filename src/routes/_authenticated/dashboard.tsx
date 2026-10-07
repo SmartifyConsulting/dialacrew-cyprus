@@ -10,7 +10,7 @@ import { useMyCrewId } from "@/lib/site";
 function DashboardRouter() {
   const { session } = useSession();
   const role = useRole(session?.user.id);
-  if (role.isLoading) return <Page open title="Dashboard"><p className="text-muted-foreground">Loading…</p></Page>;
+  if (role.isLoading) return <Page open title="Home"><p className="text-muted-foreground">Loading…</p></Page>;
   if (role.data === "crew") return <CrewDashboard />;
   return <Dashboard />;
 }
@@ -26,7 +26,7 @@ function CrewDashboard() {
   }).data ?? [];
   const live = jobs.filter((j) => !["cancelled", "completed", "payment_released"].includes(j.status));
   return (
-    <Page open title="Dashboard" subtitle="Your jobs and call times">
+    <Page open title="Home" subtitle="Your jobs and call times">
       <Panel title={`My jobs (${live.length})`}>
         <ul className="divide-y divide-border text-sm">
           {live.length === 0 && <li className="p-4 text-muted-foreground">No jobs yet. Open Find Gigs to grab one.</li>}
@@ -83,7 +83,7 @@ function Dashboard() {
   const today = bookings.filter((b) => b.productionId === "p1");
 
   return (
-    <Page title="Dashboard" subtitle="Tuesday 6 October 2026 · Producer: Clevercat Productions"
+    <Page title="Home" subtitle="Tuesday 6 October 2026 · Producer: Clevercat Productions"
       actions={<Link to="/productions" className="rounded-sm bg-primary px-4 py-2 font-display text-sm font-semibold uppercase tracking-widest text-primary-foreground">+ New production</Link>}>
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-border bg-border md:grid-cols-4 lg:grid-cols-8">
         {stats.map(([l, v]) => (

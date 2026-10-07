@@ -23,8 +23,10 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedGigsRouteImport } from './routes/_authenticated/gigs'
 import { Route as AuthenticatedMemoryRouteImport } from './routes/_authenticated/memory'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedReviewsRouteImport } from './routes/_authenticated/reviews'
 import { Route as AuthenticatedCrewIndexRouteImport } from './routes/_authenticated/crew.index'
 import { Route as AuthenticatedCrewIdRouteImport } from './routes/_authenticated/crew.$id'
 import { Route as AuthenticatedProductionsIndexRouteImport } from './routes/_authenticated/productions.index'
@@ -99,6 +101,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedGigsRoute = AuthenticatedGigsRouteImport.update({
+  id: '/gigs',
+  path: '/gigs',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMemoryRoute = AuthenticatedMemoryRouteImport.update({
   id: '/memory',
   path: '/memory',
@@ -107,6 +114,11 @@ const AuthenticatedMemoryRoute = AuthenticatedMemoryRouteImport.update({
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedReviewsRoute = AuthenticatedReviewsRouteImport.update({
+  id: '/reviews',
+  path: '/reviews',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedCrewIndexRoute = AuthenticatedCrewIndexRouteImport.update({
@@ -146,8 +158,10 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/gigs': typeof AuthenticatedGigsRoute
   '/memory': typeof AuthenticatedMemoryRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/reviews': typeof AuthenticatedReviewsRoute
   '/crew/$id': typeof AuthenticatedCrewIdRoute
   '/productions/$id': typeof AuthenticatedProductionsIdRoute
   '/crew/': typeof AuthenticatedCrewIndexRoute
@@ -167,8 +181,10 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/gigs': typeof AuthenticatedGigsRoute
   '/memory': typeof AuthenticatedMemoryRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/reviews': typeof AuthenticatedReviewsRoute
   '/crew/$id': typeof AuthenticatedCrewIdRoute
   '/productions/$id': typeof AuthenticatedProductionsIdRoute
   '/crew': typeof AuthenticatedCrewIndexRoute
@@ -190,8 +206,10 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/gigs': typeof AuthenticatedGigsRoute
   '/_authenticated/memory': typeof AuthenticatedMemoryRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/reviews': typeof AuthenticatedReviewsRoute
   '/_authenticated/crew/$id': typeof AuthenticatedCrewIdRoute
   '/_authenticated/productions/$id': typeof AuthenticatedProductionsIdRoute
   '/_authenticated/crew/': typeof AuthenticatedCrewIndexRoute
@@ -213,8 +231,10 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin'
     | '/dashboard'
+    | '/gigs'
     | '/memory'
     | '/profile'
+    | '/reviews'
     | '/crew/$id'
     | '/productions/$id'
     | '/crew/'
@@ -234,8 +254,10 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin'
     | '/dashboard'
+    | '/gigs'
     | '/memory'
     | '/profile'
+    | '/reviews'
     | '/crew/$id'
     | '/productions/$id'
     | '/crew'
@@ -256,8 +278,10 @@ export interface FileRouteTypes {
     | '/terms'
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
+    | '/_authenticated/gigs'
     | '/_authenticated/memory'
     | '/_authenticated/profile'
+    | '/_authenticated/reviews'
     | '/_authenticated/crew/$id'
     | '/_authenticated/productions/$id'
     | '/_authenticated/crew/'
@@ -379,6 +403,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/gigs': {
+      id: '/_authenticated/gigs'
+      path: '/gigs'
+      fullPath: '/gigs'
+      preLoaderRoute: typeof AuthenticatedGigsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/memory': {
       id: '/_authenticated/memory'
       path: '/memory'
@@ -391,6 +422,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/reviews': {
+      id: '/_authenticated/reviews'
+      path: '/reviews'
+      fullPath: '/reviews'
+      preLoaderRoute: typeof AuthenticatedReviewsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/crew/': {
@@ -427,8 +465,10 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedGigsRoute: typeof AuthenticatedGigsRoute
   AuthenticatedMemoryRoute: typeof AuthenticatedMemoryRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedReviewsRoute: typeof AuthenticatedReviewsRoute
   AuthenticatedCrewIdRoute: typeof AuthenticatedCrewIdRoute
   AuthenticatedProductionsIdRoute: typeof AuthenticatedProductionsIdRoute
   AuthenticatedCrewIndexRoute: typeof AuthenticatedCrewIndexRoute
@@ -438,8 +478,10 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedGigsRoute: AuthenticatedGigsRoute,
   AuthenticatedMemoryRoute: AuthenticatedMemoryRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedReviewsRoute: AuthenticatedReviewsRoute,
   AuthenticatedCrewIdRoute: AuthenticatedCrewIdRoute,
   AuthenticatedProductionsIdRoute: AuthenticatedProductionsIdRoute,
   AuthenticatedCrewIndexRoute: AuthenticatedCrewIndexRoute,
