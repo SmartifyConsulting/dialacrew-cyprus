@@ -218,7 +218,7 @@ export function PostsTab({ p, userId, myName, isProducer }: Ctx) {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
+    <div className="w-full space-y-4">
       <div className="rounded-sm border border-border bg-card p-4">
         <textarea rows={3} className={`${input} w-full`} placeholder="Share an update with everyone on this job…" value={body} onChange={(e) => setBody(e.target.value)} />
         {recording && <div className="mt-2"><AudioRecorder onCancel={() => setRecording(false)} onDone={(blob, transcript) => { setRecording(false); setAudio({ blob, transcript }); if (transcript) setBody((b) => (b ? `${b}\n${transcript}` : transcript)); }} /></div>}
@@ -284,7 +284,7 @@ export function MessagesTab({ p, userId, myName }: Ctx & { bookings: Booking[]; 
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
+    <div className="w-full space-y-4">
       <div className="space-y-2 rounded-sm border border-border bg-card p-4">
         {(messages.data ?? []).length === 0 && <p className="text-center text-sm text-muted-foreground">No messages yet.</p>}
         {(messages.data ?? []).map((m) => (
