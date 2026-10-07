@@ -32,7 +32,7 @@ export const Route = createFileRoute("/_authenticated/crew/$id")({
 type Cert = { name: string; issuer: string; date: string };
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
 const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold uppercase tracking-wider text-primary-foreground";
-const TABS = ["About", "Certifications", "Projects", "Find Gigs", "Reviews", "Kit & props"] as const;
+const TABS = ["About", "Certifications", "Projects", "Kit & props"] as const;
 
 function CrewProfile() {
   const { id } = Route.useParams();
@@ -40,7 +40,7 @@ function CrewProfile() {
   const role = useRole(session?.user.id);
   const inv = useInvalidate();
   const { tab: tabParam } = Route.useSearch();
-  const initialTab: (typeof TABS)[number] = tabParam === "gigs" ? "Find Gigs" : tabParam === "kit" ? "Kit & props" : "About";
+  const initialTab: (typeof TABS)[number] = tabParam === "kit" ? "Kit & props" : "About";
   const [tab, setTab] = useState<(typeof TABS)[number]>(initialTab);
   useEffect(() => { setTab(initialTab); }, [initialTab]);
   const [editing, setEditing] = useState(false);
@@ -144,18 +144,6 @@ function CrewProfile() {
               {(jobs.data ?? []).length === 0 && <li className="py-3 text-sm text-muted-foreground">No projects yet.</li>}
               {(jobs.data ?? []).map((j) => (
                 <ProjectRow key={j.id} job={j} userId={session?.user.id} canRespond={canEdit && m.user_id === session?.user.id} isProducer={role.data === "producer"} onChange={() => { jobs.refetch(); }} />
-              ))}
-            </ul>
-          )}
-          {tab === "Find Gigs" && <FindGigsTab canClaim={canEdit && m.user_id === session?.user.id} />}
-          {tab === "Reviews" && (
-            <ul className="space-y-4">
-              {reviews.length === 0 && <li className="text-sm text-muted-foreground">No reviews yet. Producers can rate crew from a production's Overview tab after the job.</li>}
-              {reviews.map((r) => (
-                <li key={r.id} className="border-b border-border pb-3">
-                  <div className="flex items-center gap-1">{[1, 2, 3, 4, 5].map((n) => <Star key={n} className={`h-4 w-4 ${n <= r.rating ? "fill-primary text-primary" : "text-muted-foreground"}`} />)}<span className="ml-2 text-xs text-muted-foreground">{r.reviewer_name} · {new Date(r.created_at).toLocaleDateString("en-ZA")}</span></div>
-                  {r.comment && <p className="mt-1 text-sm">{r.comment}</p>}
-                </li>
               ))}
             </ul>
           )}
@@ -339,12 +327,16 @@ function ProjectRow({ job: j, userId, canRespond, isProducer, onChange }: { job:
   );
 }
 
-function FindGigsTab({ canClaim }: { canClaim: boolean }) {
+/** Country of a gig = last comma-separated part of its address (or location). */
+export const gigCountry = (g: { address: string; location: string }) => ((g.address || g.location || "").split(",").pop() ?? "").trim();
+
+export function FindGigsTab({ canClaim }: { canClaim: boolean }) {
   const gigs = useOpenGigs();
   const claim = useClaimGig();
   const [q, setQ] = useState("");
   const [near, setNear] = useState<{ lat: number; lng: number } | null>(null);
   const [radiusKm, setRadiusKm] = useState("100");
+  const [country, setCountry] = useState("");
 
   async function useMyLocation() {
     try {
@@ -362,9 +354,11 @@ function FindGigsTab({ canClaim }: { canClaim: boolean }) {
     return Math.round(2 * R * Math.asin(Math.sqrt(a)));
   }
 
+  const countries = [...new Set((gigs.data ?? []).map(gigCountry).filter(Boolean))].sort();
   const list = (gigs.data ?? []).filter((g) => {
     const text = `${g.production_name} ${g.role} ${g.location} ${g.address}`.toLowerCase();
     if (q && !text.includes(q.toLowerCase())) return false;
+    if (country && gigCountry(g) !== country) return false;
     if (near && g.latitude != null && g.longitude != null) {
       const d = distanceKm(g.latitude, g.longitude);
       if (d > (Number(radiusKm) || 100)) return false;
@@ -382,6 +376,10 @@ function FindGigsTab({ canClaim }: { canClaim: boolean }) {
       <p className="text-sm text-muted-foreground">Open gigs aren't assigned to anyone specific yet — first to grab it gets it. Available anywhere in the world; filter by location below.</p>
       <div className="flex flex-wrap gap-2">
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search role, production, city, country…" className={`${input} min-w-56 flex-1`} />
+        <select value={country} onChange={(e) => setCountry(e.target.value)} className={input} aria-label="Country">
+          <option value="">All countries</option>
+          {countries.map((c) => <option key={c}>{c}</option>)}
+        </select>
         <input type="number" value={radiusKm} onChange={(e) => setRadiusKm(e.target.value)} className={`${input} w-28`} placeholder="Radius (km)" disabled={!near} />
         <button onClick={useMyLocation} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold uppercase hover:border-primary">
           {near ? "Near me ✓" : "Filter near me"}
