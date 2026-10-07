@@ -35,8 +35,9 @@ export function AudioRecorder({ onDone, onCancel }: { onDone: (blob: Blob, trans
           const blob = new Blob(chunks.current, { type: mime });
           try {
             const { text } = await transcribe({ data: { audio: await toBase64(blob), mime } });
-            onDone(blob, text);
+            if (!cancelled.current) onDone(blob, text);
           } catch (e) {
+            if (cancelled.current) return;
             toast.error((e as Error).message || "Could not transcribe. The audio will still be attached.");
             onDone(blob, "");
           }
@@ -54,19 +55,33 @@ export function AudioRecorder({ onDone, onCancel }: { onDone: (blob: Blob, trans
   }, []);
 
   const stop = () => { setState("busy"); rec.current?.stop(); };
-  const cancel = () => { cancelled.current = true; rec.current?.state === "recording" && rec.current.stop(); onCancel(); };
+  const cancel = () => {
+    cancelled.current = true;
+    chunks.current = [];
+    if (rec.current?.state === "recording") rec.current.stop();
+    toast("Recording discarded");
+    onCancel();
+  };
   const mm = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
+  const cancelBtn = (
+    <button onClick={cancel} type="button" className="flex items-center gap-1 rounded-sm border border-border px-3 py-1.5 text-xs font-semibold uppercase text-muted-foreground hover:border-destructive hover:text-destructive">
+      <X className="h-3 w-3" /> Cancel
+    </button>
+  );
 
   return (
-    <div className="flex items-center gap-3 rounded-sm border border-primary bg-primary/10 px-3 py-2">
+    <div className="flex flex-wrap items-center gap-3 rounded-sm border border-primary bg-primary/10 px-3 py-2">
       {state === "rec" ? (
         <>
           <span className="flex items-center gap-2 text-sm font-semibold text-primary"><Mic className="h-4 w-4 animate-pulse" /> Recording {mm}</span>
-          <button onClick={stop} className="ml-auto flex items-center gap-1 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold uppercase text-primary-foreground"><Square className="h-3 w-3" /> Stop & transcribe</button>
-          <button onClick={cancel} aria-label="Cancel recording" className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+          <button onClick={stop} type="button" className="ml-auto flex items-center gap-1 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold uppercase text-primary-foreground"><Square className="h-3 w-3" /> Stop & transcribe</button>
+          {cancelBtn}
         </>
       ) : (
-        <span className="flex items-center gap-2 text-sm text-primary"><Loader2 className="h-4 w-4 animate-spin" /> Transcribing…</span>
+        <>
+          <span className="flex items-center gap-2 text-sm text-primary"><Loader2 className="h-4 w-4 animate-spin" /> Transcribing…</span>
+          <span className="ml-auto">{cancelBtn}</span>
+        </>
       )}
     </div>
   );

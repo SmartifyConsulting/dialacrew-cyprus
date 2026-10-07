@@ -1,0 +1,199 @@
+import { useServerFn } from "@tanstack/react-start";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Sparkles, Save, Trash2, Upload, Star } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { Panel } from "@/components/AppShell";
+import { useCrew } from "@/lib/db";
+import { matchBrief, type MatchResult } from "@/lib/memory.functions";
+import { providerTotal } from "@/lib/costing";
+import { zar, type Production } from "@/lib/demo-data";
+
+type Selection = Record<string, string[]>; // crewId -> selected asset ids
+type Asset = { id: string; crew_id: string; name: string; category: string; daily_fee: number };
+type Scenario = { id: string; name: string; selection: Selection; total: number; created_at: string };
+
+const field = "w-full rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
+const btn = "inline-flex items-center gap-1.5 rounded-sm bg-primary px-3 py-2 text-xs font-semibold uppercase tracking-wider text-primary-foreground disabled:opacity-50";
+const ghost = "inline-flex items-center gap-1 rounded-sm border border-border px-2 py-1 text-xs hover:border-primary hover:text-primary";
+
+/** Scenario key: drafts for a production are stored as brief_matches rows under this client key. */
+export const scenarioKey = (productionId: string) => `scenario:${productionId}`;
+
+/** Cost of one scenario: each chosen crew member's day rate × days plus their chosen kit fees × days. */
+export function scenarioCost(sel: Selection, days: number, rates: Record<string, number>, fees: Record<string, number>) {
+  return Object.entries(sel).reduce((sum, [crewId, kit]) =>
+    sum + providerTotal(rates[crewId] ?? 0, days, kit.map((a) => ({ dailyFee: fees[a] ?? 0, days }))), 0);
+}
+
+export function ScenarioPlanner({ p }: { p: Production }) {
+  const qc = useQueryClient();
+  const match = useServerFn(matchBrief);
+  const crew = useCrew().data ?? [];
+  const days = Math.max(1, p.days || 1);
+  const assets = useQuery({
+    queryKey: ["all-crew-assets"],
+    queryFn: async () => { const { data, error } = await supabase.from("crew_assets").select("id, crew_id, name, category, daily_fee"); if (error) throw error; return (data ?? []).map((a) => ({ ...a, daily_fee: Number(a.daily_fee) })) as Asset[]; },
+  });
+  const scenarios = useQuery({
+    queryKey: ["scenarios", p.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("brief_matches").select("id, brief, result, created_at").eq("client", scenarioKey(p.id)).order("created_at");
+      if (error) throw error;
+      return (data ?? []).map((r) => ({ id: r.id, name: r.brief, created_at: r.created_at, ...(r.result as { selection: Selection; total: number }) })) as Scenario[];
+    },
+  });
+
+  const [sel, setSel] = useState<Selection>({});
+  const [name, setName] = useState("Scenario A");
+  const [brief, setBrief] = useState(p.summary ?? "");
+  const [busy, setBusy] = useState(false);
+  const [ai, setAi] = useState<MatchResult | null>(null);
+  const [filter, setFilter] = useState("");
+
+  const rates = useMemo(() => Object.fromEntries(crew.map((c) => [c.id, c.dayRate])), [crew]);
+  const fees = useMemo(() => Object.fromEntries((assets.data ?? []).map((a) => [a.id, a.daily_fee])), [assets.data]);
+  const kitBy = useMemo(() => {
+    const m: Record<string, Asset[]> = {};
+    for (const a of assets.data ?? []) (m[a.crew_id] ??= []).push(a);
+    return m;
+  }, [assets.data]);
+  const crewName = (id: string) => crew.find((c) => c.id === id)?.name ?? "Unknown";
+  const total = scenarioCost(sel, days, rates, fees);
+  const variance = p.budget - total;
+
+  const toggleCrew = (id: string) => setSel((s) => { const n = { ...s }; if (n[id]) delete n[id]; else n[id] = []; return n; });
+  const toggleKit = (crewId: string, assetId: string) => setSel((s) => {
+    const cur = s[crewId] ?? [];
+    return { ...s, [crewId]: cur.includes(assetId) ? cur.filter((x) => x !== assetId) : [...cur, assetId] };
+  });
+
+  async function suggest() {
+    if (brief.trim().length < 10) { toast.error("Describe the brief in a sentence or two."); return; }
+    setBusy(true);
+    try {
+      const r = await match({ data: { client: p.client, brief, days, location: p.address || p.location } });
+      setAi(r);
+      const next: Selection = {};
+      for (const c of r.crew) next[c.crew_id] = [];
+      for (const k of r.kit) { const owner = assets.data?.find((a) => a.id === k.asset_id)?.crew_id; if (owner) (next[owner] ??= []).push(k.asset_id); }
+      setSel(next);
+      toast.success("AI selection loaded — adjust crew and kit, then save as a draft");
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Matching failed."); }
+    finally { setBusy(false); }
+  }
+
+  async function save() {
+    if (!Object.keys(sel).length) { toast.error("Select at least one crew member."); return; }
+    const { error } = await supabase.from("brief_matches").insert({ client: scenarioKey(p.id), brief: name.trim() || "Untitled scenario", result: { selection: sel, total } });
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Saved "${name}"`);
+    qc.invalidateQueries({ queryKey: ["scenarios", p.id] });
+    const n = (scenarios.data?.length ?? 0) + 2;
+    setName(`Scenario ${String.fromCharCode(64 + Math.min(n, 26))}`);
+  }
+  async function remove(id: string) {
+    const { error } = await supabase.from("brief_matches").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    qc.invalidateQueries({ queryKey: ["scenarios", p.id] });
+  }
+
+  const shown = crew.filter((c) => !filter || `${c.name} ${c.role} ${c.department}`.toLowerCase().includes(filter.toLowerCase()));
+  const aiWhy = Object.fromEntries((ai?.crew ?? []).map((c) => [c.crew_id, c]));
+
+  return (
+    <div className="w-full space-y-5">
+      <Panel title="Find crew · AI MemoryBank">
+        <div className="grid gap-3 p-4">
+          <p className="text-xs text-muted-foreground">Uses what the AI has learned about {p.client}. The AI picks crew and kit; you can change anything before saving.</p>
+          <textarea className={`${field} min-h-24`} maxLength={4000} value={brief} onChange={(e) => setBrief(e.target.value)} placeholder="Describe the brief: look, shots, crew size…" />
+          <button onClick={suggest} disabled={busy} className={`${btn} justify-center`}><Sparkles className="h-4 w-4" />{busy ? "Matching…" : "Suggest crew & kit"}</button>
+          {ai && (
+            <div className="space-y-2 rounded-sm border border-border p-3 text-sm">
+              <p>{ai.analysis}</p>
+              {ai.memory_insights?.length > 0 && <ul className="list-disc pl-5 text-xs text-muted-foreground">{ai.memory_insights.map((m) => <li key={m}>{m}</li>)}</ul>}
+              {ai.warnings.length > 0 && <ul className="list-disc pl-5 text-xs text-destructive">{ai.warnings.map((w) => <li key={w}>{w}</li>)}</ul>}
+            </div>
+          )}
+        </div>
+      </Panel>
+
+      <Panel title={`Build a scenario · ${days} day(s)`} right={<input className="w-40 rounded-sm border border-input bg-background px-2 py-1 text-xs" placeholder="Filter crew" value={filter} onChange={(e) => setFilter(e.target.value)} />}>
+        <ul className="max-h-[520px] divide-y divide-border overflow-y-auto">
+          {shown.map((c) => {
+            const on = !!sel[c.id];
+            const kit = kitBy[c.id] ?? [];
+            const line = on ? providerTotal(c.dayRate, days, (sel[c.id] ?? []).map((a) => ({ dailyFee: fees[a] ?? 0, days }))) : 0;
+            return (
+              <li key={c.id} className={`px-4 py-2.5 ${on ? "bg-primary/5" : ""}`}>
+                <label className="flex cursor-pointer items-center gap-3">
+                  <input type="checkbox" checked={on} onChange={() => toggleCrew(c.id)} className="h-4 w-4 accent-primary" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-semibold">{c.name} <span className="font-normal text-muted-foreground">· {aiWhy[c.id]?.suggested_role ?? c.role}</span></div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground"><Star className="h-3 w-3 text-primary" /> {c.rating.toFixed(1)} · {zar(c.dayRate)}/day · {c.available ? "Available" : "Unavailable"}</div>
+                    {aiWhy[c.id] && <div className="text-xs text-primary">AI: {aiWhy[c.id]?.why}</div>}
+                  </div>
+                  {on && <span className="text-sm font-semibold">{zar(line)}</span>}
+                </label>
+                {on && kit.length > 0 && (
+                  <div className="ml-7 mt-2 flex flex-wrap gap-2">
+                    {kit.map((a) => {
+                      const k = (sel[c.id] ?? []).includes(a.id);
+                      return (
+                        <button key={a.id} type="button" onClick={() => toggleKit(c.id, a.id)}
+                          className={`rounded-sm border px-2 py-1 text-xs ${k ? "border-primary bg-primary/15 text-primary" : "border-border text-muted-foreground hover:border-primary"}`}>
+                          {k ? "✓ " : "+ "}{a.name} · {zar(a.daily_fee)}/day
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+        <div className="flex flex-wrap items-center gap-3 border-t border-border p-4">
+          <div className="text-sm">
+            <div><span className="text-muted-foreground">Estimate:</span> <b>{zar(total)}</b> for {Object.keys(sel).length} crew</div>
+            <div className={`text-xs ${variance < 0 ? "text-destructive" : "text-success"}`}>{variance < 0 ? `${zar(-variance)} over` : `${zar(variance)} under`} budget of {zar(p.budget)}</div>
+          </div>
+          <input className="ml-auto w-48 rounded-sm border border-input bg-background px-2 py-2 text-sm" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} aria-label="Scenario name" />
+          <button onClick={save} className={btn}><Save className="h-4 w-4" /> Save draft</button>
+        </div>
+      </Panel>
+
+      <Panel title={`Compare scenarios (${scenarios.data?.length ?? 0})`}>
+        {!scenarios.data?.length ? <p className="p-4 text-sm text-muted-foreground">No drafts yet. Save one above, then build another with a different group to compare.</p> : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-left text-xs uppercase tracking-wider text-muted-foreground">
+                <tr><th className="px-4 py-2">Draft</th><th className="px-2">Crew</th><th className="px-2">Kit items</th><th className="px-2">Estimate</th><th className="px-2">vs budget</th><th /></tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {scenarios.data.map((s) => {
+                  const cost = scenarioCost(s.selection, days, rates, fees);
+                  const v = p.budget - cost;
+                  const kitCount = Object.values(s.selection).reduce((a, k) => a + k.length, 0);
+                  return (
+                    <tr key={s.id}>
+                      <td className="px-4 py-2"><div className="font-semibold">{s.name}</div><div className="text-xs text-muted-foreground">{Object.keys(s.selection).map(crewName).join(", ")}</div></td>
+                      <td className="px-2">{Object.keys(s.selection).length}</td>
+                      <td className="px-2">{kitCount}</td>
+                      <td className="px-2 font-semibold">{zar(cost)}</td>
+                      <td className={`px-2 ${v < 0 ? "text-destructive" : "text-success"}`}>{v < 0 ? "−" : "+"}{zar(Math.abs(v))}</td>
+                      <td className="whitespace-nowrap px-2 text-right">
+                        <button className={ghost} onClick={() => { setSel(s.selection); setName(`${s.name} (copy)`); toast.success(`Loaded "${s.name}"`); }}><Upload className="h-3 w-3" /> Load</button>{" "}
+                        <button className={ghost} aria-label="Delete draft" onClick={() => remove(s.id)}><Trash2 className="h-3 w-3" /></button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
+    </div>
+  );
+}

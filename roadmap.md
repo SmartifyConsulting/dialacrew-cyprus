@@ -7,3 +7,6 @@
 - [x] Role-based menus (producer, admin, crew)
 - [x] Crew top menu: Dashboard, My Profile, Find Gigs, Kit (no Directory); crew dashboard replaces the blocked screen
 - [x] Production page: fixed Overview left, tabs right; Members (was Register) with Rate Me; Kit (was Assets); Budget (was Commercials); Find Crew AI matcher
+- [x] Cancel option while recording a voice note
+- [x] Production Summary + Project Risks under Overview
+- [x] Find Crew button by status badge; scenario drafts (crew + kit) with cost comparison
