@@ -33,10 +33,8 @@ function FileLink({ path, name }: { path: string; name: string }) {
 
 /* ---------------- Overview ---------------- */
 export function OverviewTab({ p, isProducer }: Ctx) {
-  const members = useSiteMembers(p.id).data ?? [];
   const inv = useInvalidate();
   const [f, setF] = useState({ address: p.address ?? "", summary: p.summary ?? "", latitude: p.latitude?.toString() ?? "", longitude: p.longitude?.toString() ?? "", geofence: String(p.geofenceM ?? 10) });
-  const [rating, setRating] = useState<{ crewId: string; name: string } | null>(null);
   const [posting, setPosting] = useState(false);
   const createGig = useCreateOpenGig();
   const [gf, setGf] = useState({ role: "", date: p.date ?? "", callTime: "", wrapTime: "", rate: "" });
