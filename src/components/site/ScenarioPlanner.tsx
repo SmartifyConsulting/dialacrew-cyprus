@@ -132,7 +132,7 @@ export function ScenarioPlanner({ p }: { p: Production }) {
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-semibold">{c.name} <span className="font-normal text-muted-foreground">· {aiWhy[c.id]?.suggested_role ?? c.role}</span></div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground"><Star className="h-3 w-3 text-primary" /> {c.rating.toFixed(1)} · {zar(c.dayRate)}/day · {c.available ? "Available" : "Unavailable"}</div>
-                    {aiWhy[c.id] && <div className="text-xs text-primary">AI: {aiWhy[c.id].why}</div>}
+                    {aiWhy[c.id] && <div className="text-xs text-primary">AI: {aiWhy[c.id]?.why}</div>}
                   </div>
                   {on && <span className="text-sm font-semibold">{zar(line)}</span>}
                 </label>
