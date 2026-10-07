@@ -29,6 +29,13 @@
       "when": 1791294365015,
       "tag": "0003_site_files_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791392630316,
+      "tag": "0004_site_members_rate_each_other",
+      "breakpoints": true
     }
   ]
 }
