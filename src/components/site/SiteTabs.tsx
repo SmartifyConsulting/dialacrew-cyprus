@@ -73,9 +73,9 @@ export function OverviewTab({ p, isProducer }: Ctx) {
   }
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
+    <div className="space-y-5">
       <div className="space-y-5">
-        <Panel title="Basic information">
+        <Panel title="Overview">
           <div className="space-y-3 p-4 text-sm">
             {isProducer ? (
               <>
@@ -105,6 +105,16 @@ export function OverviewTab({ p, isProducer }: Ctx) {
           </div>
         </Panel>
       </div>
+    </div>
+  );
+}
+
+/* ---------------- Members (with Rate Me for everyone) ---------------- */
+export function MembersList({ p, userId }: Ctx) {
+  const members = useSiteMembers(p.id).data ?? [];
+  const [rating, setRating] = useState<{ crewId: string; name: string } | null>(null);
+  return (
+    <div>
       <Panel title={`Members on the job (${members.length})`}>
         <ul className="divide-y divide-border">
           {members.length === 0 && <li className="p-4 text-sm text-muted-foreground">No crew booked yet.</li>}
@@ -115,7 +125,7 @@ export function OverviewTab({ p, isProducer }: Ctx) {
                 <Link to="/crew/$id" params={{ id: m.crew_id }} className="block truncate text-sm font-semibold hover:text-primary">{m.name}</Link>
                 <div className="truncate text-xs text-muted-foreground">{m.role} · {m.department}</div>
               </div>
-              {isProducer && <button onClick={() => setRating({ crewId: m.crew_id, name: m.name })} className="text-xs text-primary hover:underline">Rate</button>}
+              {m.user_id !== userId && <button onClick={() => setRating({ crewId: m.crew_id, name: m.name })} className="rounded-sm border border-primary px-2 py-1 text-xs font-semibold uppercase text-primary hover:bg-primary/10">Rate me</button>}
             </li>
           ))}
         </ul>
