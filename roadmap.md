@@ -10,8 +10,8 @@
 - [x] Cancel option while recording a voice note
 - [x] Production Summary + Project Risks under Overview
 - [x] Find Crew button by status badge; scenario drafts (crew + kit) with cost comparison
-- [ ] Nav: crew Home/Find Gigs/Reviews/My Profile; team Home/Find Crew/Projects/My Company; no MemoryBank/Kit in menu
-- [ ] Mobile bottom menu; mobile project cards
-- [ ] Find Gigs page with country filter; Reviews page; remove both from profile tabs
-- [ ] New production = draft sandbox; scenario dropdown (no duplicates), budget progress bar, swap crew, commit team & drop others
-- [ ] Remove Messages tab from production page
+- [x] Nav: crew Home/Find Gigs/Reviews/My Profile; team Home/Find Crew/Projects/My Company; no MemoryBank/Kit in menu
+- [x] Mobile bottom menu; mobile project cards
+- [x] Find Gigs page with country filter; Reviews page; remove both from profile tabs
+- [x] New production = draft sandbox; scenario dropdown (no duplicates), budget progress bar, swap crew, commit team & drop others
+- [x] Remove Messages tab from production page
