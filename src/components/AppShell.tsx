@@ -33,11 +33,11 @@ export const navByRole: Record<string, NavItem[]> = {
 
 function BottomNav({ items }: { items: NavItem[] }) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-sidebar md:hidden" aria-label="Main menu">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-black md:hidden" aria-label="Main menu">
       <ul className="flex">
         {items.map((n) => (
           <li key={n.label} className="flex-1">
-            <Link to={n.to} className="flex flex-col items-center gap-0.5 py-2 text-[10px] uppercase tracking-wider text-muted-foreground" activeProps={{ className: "text-primary" }}>
+            <Link to={n.to} className="flex flex-col items-center gap-0.5 py-2 text-[10px] uppercase tracking-wider text-white/70" activeProps={{ className: "text-primary" }}>
               <n.icon className="h-5 w-5" />{n.label}
             </Link>
           </li>
@@ -63,25 +63,25 @@ export function TopNav() {
 
   return (
     <header className="sticky top-0 z-30">
-      <div className="bg-primary text-primary-foreground">
+      <div className="bg-black text-white">
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
           <Link to={session ? "/dashboard" : "/"} className="font-script text-3xl leading-none">Book a Crew</Link>
           <div className="ml-auto flex items-center gap-3">
             {ready && session && (
               <>
                 <NotificationBell userId={session.user.id} />
-                <span className="hidden text-xs font-semibold uppercase tracking-widest md:block">{role.data ? `${role.data} view` : ""}</span>
-                <button onClick={signOut} className="rounded-sm border border-primary-foreground/60 px-3 py-1 font-display text-xs uppercase tracking-widest hover:bg-primary-foreground/10">Sign out</button>
+                <span className="hidden text-xs font-semibold uppercase tracking-widest text-white/70 md:block">{role.data ? `${role.data} view` : ""}</span>
+                <button onClick={signOut} className="rounded-sm border border-white/30 px-3 py-1 font-display text-xs uppercase tracking-widest hover:bg-white/10">Sign out</button>
               </>
             )}
           </div>
         </div>
       </div>
       {ready && session && (
-        <div className="hidden border-b border-border bg-sidebar md:block">
+        <div className="hidden border-b border-white/10 bg-black md:block">
           <nav className="mx-auto flex max-w-7xl flex-wrap gap-1 px-4 py-1.5">
             {items.map((n) => (
-              <Link key={n.label} to={n.to} className="rounded-sm px-3 py-1 font-display text-xs uppercase tracking-widest text-muted-foreground hover:text-primary" activeProps={{ className: "text-primary" }}>
+              <Link key={n.label} to={n.to} className="rounded-sm px-3 py-1 font-display text-xs uppercase tracking-widest text-white/70 hover:text-primary" activeProps={{ className: "text-primary" }}>
                 {n.label}
               </Link>
             ))}
