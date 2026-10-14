@@ -66,7 +66,7 @@ function PaymentsPage() {
                   {b.status === "awaiting_review" && (
                     <button className="rounded-xl bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground" onClick={() => approve.mutate(b.id, { onSuccess: () => toast.success("Job approved"), onError: (e) => toast.error(e.message) })}>Approve</button>
                   )}
-                  {b.status === "awaiting_release" && (
+                  {(b.status as string) === "awaiting_release" && (
                     <button className="rounded-xl bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground" onClick={() => release.mutate(b.id, { onSuccess: () => toast.success("Payment released"), onError: (e) => toast.error(e.message) })}>Release payment</button>
                   )}
                 </div>
