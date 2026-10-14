@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { TopNav } from "@/components/AppShell";
 import { AuthForm } from "@/components/AuthForm";
-import logo from "@/assets/bookacrew-logo.png.asset.json";
+import logo from "@/assets/bookacrew-sa-logo.png.asset.json";
 
 const HERO_BG = "https://static.wixstatic.com/media/20efcd_c74b87f40292491e9dbcf1db2483f78c~mv2.jpg";
 
