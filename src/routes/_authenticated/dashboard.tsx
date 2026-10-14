@@ -1,8 +1,8 @@
 import { overtimeAmount, shiftLabel, type OvertimeShift } from "@/lib/costing";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check } from "lucide-react";
-import { Badge, ClientBadge, Page, Panel } from "@/components/AppShell";
-import { zar } from "@/lib/demo-data";
+import { Badge, ClientBadge, Page, Panel, clientColor } from "@/components/AppShell";
+import { zar, type Production } from "@/lib/demo-data";
 import { useBookings, useCrew, useProductions, useRequestOvertime, useRequests, useRespondToBooking, useSetRequestState } from "@/lib/db";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -142,6 +142,58 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardRouter,
 });
 
+const isoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+// Compact current-month grid with a colored dot per client shooting that day — a quick-glance version
+// of the full /calendar page, not a replacement for it.
+function MiniCalendar({ productions }: { productions: Production[] }) {
+  const today = new Date();
+  const byDay = new Map<string, string[]>();
+  for (const p of productions) {
+    if (!p.date) continue;
+    const start = new Date(p.date + "T00:00:00");
+    for (let i = 0; i < Math.max(1, p.days); i++) {
+      const d = new Date(start); d.setDate(d.getDate() + i);
+      const k = isoDate(d);
+      const bg = clientColor(p.client).split(" ")[0]!;
+      const list = byDay.get(k) ?? [];
+      if (!list.includes(bg)) list.push(bg);
+      byDay.set(k, list);
+    }
+  }
+  const first = new Date(today.getFullYear(), today.getMonth(), 1);
+  const offset = (first.getDay() + 6) % 7;
+  const daysIn = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const cells = Array.from({ length: Math.ceil((offset + daysIn) / 7) * 7 }, (_, i) => {
+    const n = i - offset + 1;
+    return n >= 1 && n <= daysIn ? new Date(today.getFullYear(), today.getMonth(), n) : null;
+  });
+  const todayIso = isoDate(today);
+
+  return (
+    <Panel title="Calendar" right={<Link to="/calendar" className="text-xs font-semibold text-primary hover:underline">Open</Link>}>
+      <div className="p-3">
+        <div className="mb-1 grid grid-cols-7 text-center text-[10px] text-muted-foreground">
+          {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <div key={i}>{d}</div>)}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {cells.map((d, i) => {
+            const dots = d ? byDay.get(isoDate(d)) ?? [] : [];
+            return (
+              <div key={i} className={`flex h-9 flex-col items-center justify-center rounded-md text-[11px] ${d && isoDate(d) === todayIso ? "bg-primary/10 font-semibold text-primary" : "text-muted-foreground"}`}>
+                {d && <span>{d.getDate()}</span>}
+                <span className="mt-0.5 flex h-1.5 gap-0.5">
+                  {dots.slice(0, 3).map((c, j) => <span key={j} className={`h-1.5 w-1.5 rounded-full ${c}`} />)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
 function Dashboard() {
   const { session } = useSession();
   const name = useMyName(session?.user.id).data ?? "";
@@ -154,9 +206,14 @@ function Dashboard() {
   const respondToBooking = useRespondToBooking();
   const crewName = (id: string | null) => (id ? crew.find((c) => c.id === id)?.name ?? "—" : "Open gig");
   const CrewLink = ({ id }: { id: string | null }) => id ? <Link to="/crew/$id" params={{ id }} className="hover:text-primary hover:underline">{crewName(id)}</Link> : <>{crewName(id)}</>;
+  const crewIdByName = (name: string) => crew.find((c) => c.name === name)?.id ?? null;
+  const NameLink = ({ id, name }: { id: string | null; name: string }) => id ? <Link to="/crew/$id" params={{ id }} className="hover:text-primary hover:underline">{name}</Link> : <>{name}</>;
   const prodName = (id: string) => productions.find((p) => p.id === id)?.name ?? "Production";
   const clientByProdId = (id: string) => productions.find((p) => p.id === id)?.client;
   const clientByProdName = (name: string) => productions.find((p) => p.name === name)?.client;
+  const prodIdByName = (name: string) => productions.find((p) => p.name === name)?.id;
+  const ClientLink = ({ productionId, name }: { productionId: string | undefined; name: string }) =>
+    productionId ? <Link to="/productions/$id" params={{ id: productionId }}><ClientBadge name={name} /></Link> : <ClientBadge name={name} />;
   const count = (s: string) => bookings.filter((b) => b.status === s).length;
   const secured = productions.reduce((a, p) => a + p.securedFunds, 0);
   const totalBudget = productions.reduce((a, p) => a + p.budget, 0);
@@ -177,8 +234,8 @@ function Dashboard() {
   const today = onSet ? bookings.filter((b) => b.productionId === onSet.id) : [];
   const dateLabel = new Date().toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const activity = [
-    ...reqs.filter((r) => r.state !== "Pending").map((r) => ({ id: `r${r.id}`, text: `${r.kind} for ${r.who} ${r.state.toLowerCase()}`, sub: r.production, client: clientByProdName(r.production), at: r.createdAt })),
-    ...bookings.filter((b) => b.status === "confirmed").map((b) => ({ id: `b${b.id}`, text: `${crewName(b.crewId)} confirmed as ${b.role}`, sub: prodName(b.productionId), client: clientByProdId(b.productionId), at: b.createdAt ?? "" })),
+    ...reqs.filter((r) => r.state !== "Pending").map((r) => ({ id: `r${r.id}`, before: `${r.kind} for `, crewId: crewIdByName(r.who), who: r.who, after: ` ${r.state.toLowerCase()}`, sub: r.production, client: clientByProdName(r.production), productionId: prodIdByName(r.production), at: r.createdAt })),
+    ...bookings.filter((b) => b.status === "confirmed").map((b) => ({ id: `b${b.id}`, before: "", crewId: b.crewId, who: crewName(b.crewId), after: ` confirmed as ${b.role}`, sub: prodName(b.productionId), client: clientByProdId(b.productionId), productionId: b.productionId as string | undefined, at: b.createdAt ?? "" })),
   ].sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, 8);
   const activityStamp = (iso: string) => {
     if (!iso) return "";
@@ -190,7 +247,7 @@ function Dashboard() {
 
   return (
     <Page title={`${greet}${first ? `, ${first}` : ""}`} subtitle={dateLabel}
-      actions={<Link to="/productions" className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm">+ New production</Link>}>
+      actions={<Link to="/productions" search={{ new: true }} className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm">+ New production</Link>}>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {kpis.map((k) => (
           <div key={k.l} className="rounded-xl border border-border bg-card p-4 shadow-sm">
@@ -210,7 +267,7 @@ function Dashboard() {
                 <li key={r.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm"><span className="font-semibold text-primary">{r.kind}</span> · {r.detail}</div>
-                    <div className="flex flex-wrap items-center gap-1 truncate text-xs text-muted-foreground">{r.who} · {clientByProdName(r.production) && <ClientBadge name={clientByProdName(r.production)!} />} {r.production} · {zar(r.amount)}</div>
+                    <div className="flex flex-wrap items-center gap-1 truncate text-xs text-muted-foreground"><NameLink id={crewIdByName(r.who)} name={r.who} /> · {clientByProdName(r.production) && <ClientLink productionId={prodIdByName(r.production)} name={clientByProdName(r.production)!} />} {r.production} · {zar(r.amount)}</div>
                   </div>
                   <div className="flex shrink-0 gap-2">
                     <button onClick={() => setState.mutate({ id: r.id, state: "Approved" })} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Approve</button>
@@ -224,7 +281,7 @@ function Dashboard() {
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium"><CrewLink id={b.crewId} /> accepted your {b.pencilPriority === 2 ? "2nd" : "1st"} pencil</div>
                     <div className="flex flex-wrap items-center gap-1 truncate text-xs text-muted-foreground">
-                      {clientByProdId(b.productionId) && <ClientBadge name={clientByProdId(b.productionId)!} />} {prodName(b.productionId)} · {b.role}{b.bookingDate ? ` · ${b.bookingDate}` : ""} · {zar(b.crewRate)} a day
+                      {clientByProdId(b.productionId) && <ClientLink productionId={b.productionId} name={clientByProdId(b.productionId)!} />} {prodName(b.productionId)} · {b.role}{b.bookingDate ? ` · ${b.bookingDate}` : ""} · {zar(b.crewRate)} a day
                     </div>
                   </div>
                   <button onClick={() => respondToBooking.mutate({ id: b.id, status: "confirmed" })} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Confirm booking</button>
@@ -248,10 +305,10 @@ function Dashboard() {
               {filteredProductions.map((p) => {
                 const pct = p.crewNeeded ? Math.min(100, Math.round((p.crewBooked / p.crewNeeded) * 100)) : 0;
                 return (
-                  <Link key={p.id} to="/productions/$id" params={{ id: p.id }} className="block rounded-lg border border-border bg-background p-4 transition hover:border-primary">
+                  <Link key={p.id} to="/productions/$id" params={{ id: p.id }} className="group block rounded-lg border border-border bg-background p-4 transition hover:border-primary">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="truncate font-semibold">{p.name}</div>
+                        <div className="truncate font-semibold group-hover:text-primary">{p.name}</div>
                         <div className="mt-1 flex items-center gap-2"><ClientBadge name={p.client} /><span className="truncate text-xs text-muted-foreground">{p.date}</span></div>
                       </div>
                       <Badge>{p.status}</Badge>
@@ -279,6 +336,7 @@ function Dashboard() {
         </div>
 
         <div className="space-y-5">
+          <MiniCalendar productions={productions} />
           <Panel title="Live activity" right={<span className="text-xs text-muted-foreground">Across web and mobile</span>}>
             <ul className="divide-y divide-border text-sm">
               {activity.length === 0 && <li className="p-4 text-muted-foreground">No activity yet.</li>}
@@ -286,8 +344,8 @@ function Dashboard() {
                 <li key={a.id} className="flex gap-3 px-4 py-2.5">
                   <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
                   <span className="min-w-0 flex-1">
-                    <span className="block">{a.text}</span>
-                    <span className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">{a.client && <ClientBadge name={a.client} />} {a.sub}</span>
+                    <span className="block">{a.before}<NameLink id={a.crewId} name={a.who} />{a.after}</span>
+                    <span className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">{a.client && <ClientLink productionId={a.productionId} name={a.client} />} {a.sub}</span>
                   </span>
                   <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">{activityStamp(a.at)}</span>
                 </li>

@@ -10,6 +10,7 @@ import { useCreatePencil, useCrew, useProductions } from "@/lib/db";
 import { useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/_authenticated/productions/")({
+  validateSearch: (s: Record<string, unknown>): { new?: boolean } => (s["new"] ? { new: true } : {}),
   head: () => ({
     meta: [
       { title: "Productions — Book a Crew" },
@@ -143,6 +144,7 @@ function Productions() {
   const list = useProductions().data ?? [];
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const { new: openOnLoad } = Route.useSearch();
   const clientsQuery = useQuery({
     queryKey: ["clients"],
     queryFn: async () => { const { data, error } = await supabase.from("clients").select("id, name, company").order("company"); if (error) throw error; return data ?? []; },
@@ -150,13 +152,15 @@ function Productions() {
   const clients = clientsQuery.data ?? [];
   const crew = useCrew().data ?? [];
   const createPencil = useCreatePencil();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(!!openOnLoad);
   const blankForm = { name: "", client: "", type: "Commercial", location: "", startDate: "", endDate: "", budget: 0 };
   const [f, setF] = useState(blankForm);
   const [roleCrew, setRoleCrew] = useState<Record<string, string>>({});
 
   // Shoot days is inclusive of both the start and end date.
   const days = f.startDate && f.endDate ? Math.max(1, Math.round((+new Date(f.endDate) - +new Date(f.startDate)) / 86400000) + 1) : 1;
+
+  const closeModal = () => { setOpen(false); if (openOnLoad) navigate({ to: "/productions", search: {}, replace: true }); };
 
   // New productions start as a Draft so the team can sandbox crew groups against the budget before committing.
   const submit = async (e: React.FormEvent) => {
@@ -186,11 +190,11 @@ function Productions() {
     <Page title="Productions" subtitle="Start from the client brief, then break it down into crew and resources."
       actions={<button onClick={() => setOpen(true)} className="rounded-sm bg-primary px-4 py-2 font-display text-sm font-semibold text-primary-foreground">+ New production</button>}>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={closeModal}>
           <form onSubmit={submit} onClick={(e) => e.stopPropagation()} className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-sm border border-border bg-card p-5 shadow-lg">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="font-display text-lg font-semibold">New production</h2>
-              <button type="button" onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground" aria-label="Close">✕</button>
+              <button type="button" onClick={closeModal} className="text-muted-foreground hover:text-foreground" aria-label="Close">✕</button>
             </div>
             <div className="rounded-sm border border-border p-4">
               <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Production info</h3>
@@ -225,7 +229,7 @@ function Productions() {
               </div>
             </div>
             <div className="mt-4 flex justify-end gap-2">
-              <button type="button" onClick={() => setOpen(false)} className="rounded-sm border border-border px-4 py-2 text-sm font-semibold">Cancel</button>
+              <button type="button" onClick={closeModal} className="rounded-sm border border-border px-4 py-2 text-sm font-semibold">Cancel</button>
               <button className="rounded-sm bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Create draft</button>
             </div>
           </form>

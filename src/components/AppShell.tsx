@@ -117,21 +117,22 @@ export function TopNav() {
         </aside>
       )}
       <header className={`sticky top-0 z-30 ${signedIn ? "md:pl-60" : ""}`}>
-        <div className={signedIn ? "border-b border-border bg-card md:bg-card" : "bg-nav text-nav-foreground"}>
+        <div className={signedIn ? "border-b border-border bg-card md:hidden" : "bg-nav text-nav-foreground"}>
           <div className={`flex items-center gap-4 px-4 py-8 ${signedIn ? "" : "mx-auto max-w-7xl"}`}>
-            {signedIn && <Link to="/dashboard" className="shrink-0 md:hidden"><img src={logo.url} alt="Book a Crew" className="h-20 w-auto" /></Link>}
+            {signedIn && <Link to="/dashboard" className="shrink-0"><img src={logo.url} alt="Book a Crew" className="h-20 w-auto" /></Link>}
             <div className="ml-auto flex items-center gap-3">
-              {signedIn && (
-                <>
-                  <NotificationBell userId={session.user.id} />
-                  <button onClick={signOut} className="rounded-sm border border-border px-3 py-1 font-display text-xs font-semibold md:hidden">Sign out</button>
-                </>
-              )}
+              {signedIn && <button onClick={signOut} className="rounded-sm border border-border px-3 py-1 font-display text-xs font-semibold">Sign out</button>}
             </div>
           </div>
         </div>
         {signedIn && <BottomNav items={items} />}
       </header>
+      {/* A single bell, pinned to the grey canvas (not a white header bar) at every breakpoint. */}
+      {signedIn && (
+        <div className="fixed right-4 top-4 z-30 md:right-6">
+          <NotificationBell userId={session.user.id} />
+        </div>
+      )}
     </>
   );
 }
@@ -156,7 +157,7 @@ export function Page({ title, subtitle, actions, children, open }: { title: stri
     <div className="min-h-screen bg-background">
       <TopNav />
       <div className="md:pl-60">
-      <main className="mx-auto max-w-7xl px-4 py-6 pb-36 md:pb-6">
+      <main className="mx-auto max-w-7xl px-4 py-6 pb-36 md:pb-6 md:pt-4">
         <RoleGate open={open}>
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
             <div>
@@ -225,7 +226,7 @@ function registerClient(name: string) {
   .sort()
   .forEach(registerClient);
 
-function clientColor(name: string) {
+export function clientColor(name: string) {
   const existing = clientColorAssignments.get(name);
   if (existing) return existing;
   // Unregistered client (added after this list was last updated): hash into the palette so it's at

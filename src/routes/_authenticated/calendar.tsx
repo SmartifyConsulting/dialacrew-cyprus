@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Page } from "@/components/AppShell";
+import { Page, clientColor } from "@/components/AppShell";
 import { useBookings, useProductions } from "@/lib/db";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
@@ -26,7 +26,7 @@ function CalendarPage() {
   const [month, setMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
 
   // map each day to the productions shooting on it (start date + days)
-  const byDay = new Map<string, { id: string; name: string; crew: number }[]>();
+  const byDay = new Map<string, { id: string; name: string; client: string; crew: number }[]>();
   for (const p of prods) {
     if (!p.date) continue;
     const start = new Date(p.date + "T00:00:00");
@@ -34,7 +34,7 @@ function CalendarPage() {
       const d = new Date(start); d.setDate(d.getDate() + i);
       const k = iso(d);
       const crew = bookings.filter((b) => b.productionId === p.id && b.status !== "cancelled").length;
-      byDay.set(k, [...(byDay.get(k) ?? []), { id: p.id, name: p.name, crew }]);
+      byDay.set(k, [...(byDay.get(k) ?? []), { id: p.id, name: p.name, client: p.client, crew }]);
     }
   }
 
@@ -65,7 +65,7 @@ function CalendarPage() {
             <div key={i} className="min-h-24 bg-card p-1.5">
               {d && <p className={`mb-1 text-xs font-semibold ${iso(d) === today ? "text-primary" : "text-muted-foreground"}`}>{d.getDate()}</p>}
               {items.map((it) => (
-                <Link key={it.id} to="/productions/$id" params={{ id: it.id }} className="mb-1 block truncate rounded-md bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary hover:bg-primary/20">
+                <Link key={it.id} to="/productions/$id" params={{ id: it.id }} className={`mb-1 block truncate rounded-md px-1.5 py-0.5 text-xs font-medium hover:opacity-90 ${clientColor(it.client)}`}>
                   {it.name}{it.crew ? ` · ${it.crew} crew` : ""}
                 </Link>
               ))}
