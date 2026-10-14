@@ -29,6 +29,7 @@ function CrewPage() {
   const [favOnly, setFavOnly] = useState(false);
   const [page, setPage] = useState(0);
   const [pencilling, setPencilling] = useState<{ id: string; name: string; role: string; dayRate: number } | null>(null);
+  const [open, setOpen] = useState<NonNullable<ReturnType<typeof useCrewSearch>["data"]>["rows"][number] | null>(null);
   const departments = useDepartments().data ?? ["All"];
   const favourites = useFavourites(session?.user.id);
   const toggleFav = useToggleFavourite();
@@ -57,36 +58,56 @@ function CrewPage() {
         {list.map((c) => {
           const isFav = (favourites.data ?? []).includes(c.id);
           return (
-            <div key={c.id} className="rounded-sm border border-border bg-card p-4">
+            <div key={c.id} role="button" tabIndex={0} onClick={() => setOpen(c)} onKeyDown={(e) => e.key === "Enter" && setOpen(c)}
+              className="cursor-pointer rounded-xl border border-border bg-card p-4 shadow-sm transition hover:border-primary">
               <div className="flex items-start gap-3">
-                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-primary font-display text-lg font-bold text-primary-foreground">
+                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-primary/10 font-display text-lg font-bold text-primary">
                   {c.name.split(" ").map((n) => n[0]).join("")}
                 </div>
-                <div className="flex-1">
-                  <Link to="/crew/$id" params={{ id: c.id }} className="font-semibold hover:text-primary hover:underline">{c.name}</Link>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-semibold">{c.name}</div>
                   <div className="text-sm text-primary">{c.role}</div>
-                  <div className="text-xs text-muted-foreground">{c.department} · {c.location} · {c.experience} yrs</div>
+                  <div className="truncate text-xs text-muted-foreground">{c.department} · {c.location} · {c.experience} yrs</div>
                 </div>
-                <button aria-label={isFav ? "Remove favourite" : "Add favourite"} onClick={() => toggleFavourite(c.id)}>
+                <button aria-label={isFav ? "Remove favourite" : "Add favourite"} onClick={(e) => { e.stopPropagation(); toggleFavourite(c.id); }}>
                   <Heart className={`h-5 w-5 ${isFav ? "fill-primary text-primary" : "text-muted-foreground"}`} />
                 </button>
               </div>
-              <div className="mt-2 text-right text-xs font-semibold uppercase">
-                <span className={c.available ? "text-success" : "text-destructive"}>{c.available ? "Available" : "Booked"}</span>
+              <div className="mt-3 flex items-center justify-between">
+                <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${c.available ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>{c.available ? "● Available" : "● Booked"}</span>
+                <span className="text-xs text-muted-foreground">★ {c.rating}</span>
               </div>
-              {c.kit && <div className="mt-3 text-xs text-muted-foreground">Kit: {c.kit}</div>}
               <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
-                <div className="text-sm"><span className="font-display text-lg font-semibold">{zar(c.dayRate)}</span><span className="text-muted-foreground"> /day · ★ {c.rating}</span></div>
-                <button
-                  onClick={() => setPencilling({ id: c.id, name: c.name, role: c.role, dayRate: c.dayRate })}
-                  className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary-foreground">
-                  Pencil
-                </button>
+                <div className="text-sm"><span className="font-display text-lg font-semibold">{zar(c.dayRate)}</span><span className="text-muted-foreground"> /day</span></div>
+                <button onClick={(e) => { e.stopPropagation(); setPencilling({ id: c.id, name: c.name, role: c.role, dayRate: c.dayRate }); }}
+                  className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Pencil</button>
               </div>
             </div>
           );
         })}
       </div>
+      {open && (
+        <div className="fixed inset-0 z-50 bg-foreground/30" onClick={() => setOpen(null)}>
+          <aside className="absolute inset-y-0 right-0 w-full max-w-md overflow-y-auto bg-card p-6 shadow-xl animate-in slide-in-from-right" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setOpen(null)} className="float-right text-sm text-muted-foreground">Close ✕</button>
+            <div className="grid h-16 w-16 place-items-center rounded-full bg-primary/10 font-display text-2xl font-bold text-primary">{open.name.split(" ").map((n) => n[0]).join("")}</div>
+            <h2 className="mt-3 font-display text-2xl font-semibold">{open.name}</h2>
+            <div className="text-primary">{open.role}</div>
+            <div className="mt-1 text-sm text-muted-foreground">{open.department} · {open.location}</div>
+            <span className={`mt-3 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${open.available ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>{open.available ? "Available" : "Booked"}</span>
+            <dl className="mt-5 grid grid-cols-3 gap-3 text-center">
+              {[["Day rate", zar(open.dayRate)], ["Rating", `★ ${open.rating}`], ["Experience", `${open.experience} yrs`]].map(([l, v]) => (
+                <div key={l} className="rounded-lg bg-muted p-3"><dt className="text-[11px] text-muted-foreground">{l}</dt><dd className="mt-1 font-semibold">{v}</dd></div>
+              ))}
+            </dl>
+            {open.kit && <div className="mt-5"><div className="text-xs font-semibold text-muted-foreground">Kit</div><p className="mt-1 text-sm">{open.kit}</p></div>}
+            <div className="mt-6 flex gap-2">
+              <button onClick={() => { setPencilling({ id: open.id, name: open.name, role: open.role, dayRate: open.dayRate }); setOpen(null); }} className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Pencil</button>
+              <Link to="/crew/$id" params={{ id: open.id }} className="flex-1 rounded-md border border-border px-4 py-2 text-center text-sm font-semibold">Full profile</Link>
+            </div>
+          </aside>
+        </div>
+      )}
       {list.length === 0 && !search.isLoading && <p className="py-8 text-center text-sm text-muted-foreground">No crew match these filters.</p>}
       {total > PAGE_SIZE && (
         <div className="mt-5 flex items-center justify-center gap-3 text-sm">
