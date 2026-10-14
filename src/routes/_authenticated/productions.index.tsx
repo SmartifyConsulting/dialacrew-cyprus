@@ -218,7 +218,7 @@ function Productions() {
                     <span className="text-xs text-muted-foreground">{role}</span>
                     <select className={`${field} mt-1`} value={roleCrew[role] ?? ""} onChange={(e) => setRoleCrew({ ...roleCrew, [role]: e.target.value })}>
                       <option value="">Unassigned</option>
-                      {crew.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      {crew.map((c) => <option key={c.id} value={c.id}>{c.name} · ★{c.rating.toFixed(1)} · {zar(c.dayRate)}/day</option>)}
                     </select>
                   </label>
                 ))}
