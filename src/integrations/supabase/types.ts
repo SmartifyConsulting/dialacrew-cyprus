@@ -1860,6 +1860,7 @@ export type Database = {
           valid: boolean
         }[]
       }
+      gig_setting: { Args: { _default: number; _key: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
