@@ -1,3 +1,4 @@
+import { overtimeAmount, shiftLabel, type OvertimeShift } from "@/lib/costing";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -188,7 +189,8 @@ function ProjectRow({ job: j, userId, canRespond, isProducer, onChange }: { job:
   const requestOT = useRequestOvertime();
   const [proposedRate, setProposedRate] = useState(String(j.crew_rate));
   const [otOpen, setOtOpen] = useState(false);
-  const [ot, setOt] = useState({ hours: "1", amount: "", reason: "" });
+  const [ot, setOt] = useState<{ hours: string; shift: OvertimeShift; reason: string }>({ hours: "1", shift: "day", reason: "" });
+  const otAmount = overtimeAmount(Number(j.crew_rate ?? 0), Number(ot.hours) || 0, j.booking_date, ot.shift);
   const canAct = canRespond || isProducer;
   const pending = j.status === "pencil" || j.status === "awaiting_crew_confirmation";
   const onJob = j.status === "confirmed" || j.status === "in_progress";
@@ -217,12 +219,12 @@ function ProjectRow({ job: j, userId, canRespond, isProducer, onChange }: { job:
   }
 
   async function submitOvertime() {
-    const hours = Number(ot.hours), amount = Number(ot.amount);
-    if (!hours || !amount) { toast.error("Enter hours and amount"); return; }
+    const hours = Number(ot.hours), amount = otAmount;
+    if (!hours) { toast.error("Enter the extra hours"); return; }
     try {
-      await requestOT.mutateAsync({ bookingId: j.id, production: pr?.name ?? "", who: "", hours, amount, reason: ot.reason || "No reason given" });
+      await requestOT.mutateAsync({ bookingId: j.id, production: pr?.name ?? "", who: "", hours, amount, reason: `${shiftLabel(j.booking_date, ot.shift)} · ${ot.reason || "No reason given"}` });
       toast.success("Overtime request sent. If the producer doesn't respond, you may proceed at your own risk — Book a Crew isn't responsible for unauthorised overtime.");
-      setOtOpen(false); setOt({ hours: "1", amount: "", reason: "" });
+      setOtOpen(false); setOt({ hours: "1", shift: "day", reason: "" });
     } catch (e) { toast.error((e as Error).message); }
   }
 
@@ -294,10 +296,11 @@ function ProjectRow({ job: j, userId, canRespond, isProducer, onChange }: { job:
           <div className="grid grid-cols-2 gap-2">
             <label className="block"><span className="text-xs uppercase tracking-wider text-muted-foreground">Extra hours</span>
               <input type="number" min="0.5" step="0.5" className="mt-1 w-full rounded-sm border border-input bg-background px-2 py-1 text-xs" value={ot.hours} onChange={(e) => setOt({ ...ot, hours: e.target.value })} /></label>
-            <label className="block"><span className="text-xs uppercase tracking-wider text-muted-foreground">Amount (R)</span>
-              <input type="number" className="mt-1 w-full rounded-sm border border-input bg-background px-2 py-1 text-xs" value={ot.amount} onChange={(e) => setOt({ ...ot, amount: e.target.value })} /></label>
+            <label className="block"><span className="text-xs uppercase tracking-wider text-muted-foreground">Shift</span>
+              <select className="mt-1 w-full rounded-sm border border-input bg-background px-2 py-1 text-xs" value={ot.shift} onChange={(e) => setOt({ ...ot, shift: e.target.value as OvertimeShift })}><option value="day">Day</option><option value="night">Night (4pm–morning)</option></select></label>
           </div>
           <input placeholder="Reason" className="w-full rounded-sm border border-input bg-background px-2 py-1 text-xs" value={ot.reason} onChange={(e) => setOt({ ...ot, reason: e.target.value })} />
+          <p className="text-xs font-semibold">{shiftLabel(j.booking_date, ot.shift)}: R{otAmount.toLocaleString()}</p>
           <p className="text-xs text-muted-foreground">Sent to the producer for authorisation. If they don't respond, you may proceed at your own risk — Book a Crew isn't responsible for unauthorised overtime.</p>
           <button onClick={submitOvertime} className="rounded-sm bg-primary px-2 py-1 text-xs font-semibold uppercase text-primary-foreground">Send request</button>
         </div>

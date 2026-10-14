@@ -1,3 +1,4 @@
+import { overtimeAmount, shiftLabel, type OvertimeShift } from "@/lib/costing";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Badge, Page, Panel } from "@/components/AppShell";
 import { zar } from "@/lib/demo-data";
@@ -35,18 +36,17 @@ function CrewDashboard() {
   const { session } = useSession();
   const myName = useMyName(session?.user.id).data ?? "Crew";
   const requestOT = useRequestOvertime();
-  const [ot, setOt] = useState({ hours: 1, reason: "" });
+  const [ot, setOt] = useState<{ hours: number; reason: string; shift: OvertimeShift }>({ hours: 1, reason: "", shift: "day" });
   const earned = (s: string[]) => jobs.filter((j) => s.includes(j.status)).reduce((a, j) => a + Number(j.crew_rate ?? 0) * Number(j.days ?? 1), 0);
   const paid = earned(["payment_released", "completed"]);
   const pendingPay = earned(["confirmed", "in_progress", "awaiting_review"]);
   async function logOvertime() {
     if (!todayJob) return;
     const pr = todayJob.productions as { name?: string } | null;
-    const hourly = Number(todayJob.crew_rate ?? 0) / 10;
     try {
-      await requestOT.mutateAsync({ bookingId: todayJob.id, production: pr?.name ?? "", who: myName, hours: ot.hours, amount: Math.round(hourly * 1.5 * ot.hours), reason: ot.reason || "Ran past wrap" });
+      await requestOT.mutateAsync({ bookingId: todayJob.id, production: pr?.name ?? "", who: myName, hours: ot.hours, amount: overtimeAmount(Number(todayJob.crew_rate ?? 0), ot.hours, todayJob.booking_date, ot.shift), reason: `${shiftLabel(todayJob.booking_date, ot.shift)} · ${ot.reason || "Ran past wrap"}` });
       toast.success("Overtime sent to the producer for approval");
-      setOt({ hours: 1, reason: "" });
+      setOt({ hours: 1, reason: "", shift: "day" });
     } catch (e) { toast.error((e as Error).message); }
   }
   async function respond(id: string, accept: boolean) {
@@ -99,10 +99,11 @@ function CrewDashboard() {
           <Panel title="Log overtime">
             <div className="flex flex-wrap items-end gap-2 p-4">
               <label className="text-xs text-muted-foreground">Hours<input type="number" min={0.5} step={0.5} value={ot.hours} onChange={(e) => setOt({ ...ot, hours: Number(e.target.value) })} className="mt-1 block w-20 rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground" /></label>
+              <label className="text-xs text-muted-foreground">Shift<select value={ot.shift} onChange={(e) => setOt({ ...ot, shift: e.target.value as OvertimeShift })} className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"><option value="day">Day</option><option value="night">Night (4pm–morning)</option></select></label>
               <label className="flex-1 text-xs text-muted-foreground">Reason<input value={ot.reason} onChange={(e) => setOt({ ...ot, reason: e.target.value })} placeholder="Ran past wrap" className="mt-1 block w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground" /></label>
               <button disabled={requestOT.isPending || ot.hours <= 0} onClick={logOvertime} className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60">Send</button>
             </div>
-            <p className="px-4 pb-3 text-xs text-muted-foreground">Paid at 1.5× your hourly rate (day rate ÷ 10) once the producer approves.</p>
+            <p className="px-4 pb-3 text-xs text-muted-foreground">{shiftLabel(todayJob.booking_date, ot.shift)}: {zar(overtimeAmount(Number(todayJob.crew_rate ?? 0), ot.hours, todayJob.booking_date, ot.shift))}. Weekends 1.5×, nights from 4pm 2×. Paid once the producer approves.</p>
           </Panel>
         )}
       </div>
