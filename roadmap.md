@@ -19,3 +19,5 @@
 - [x] Phase 2: Find Crew redesign (availability labels, slide-in profile panel)
 - [x] Phase 3: Production hub restyle (Members check-in status, overtime approvals)
 - [x] Phase 4: Crew phone polish (GPS check-in, overtime logger, earnings)
+- [x] Overtime: weekend 1.5×, night shift 2× (auto-calculated)
+- [x] 1st / 2nd pencil choice when pencilling crew

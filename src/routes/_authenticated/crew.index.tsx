@@ -125,7 +125,7 @@ function PencilDialog({ crew, onClose }: { crew: { id: string; name: string; rol
   const productions = useProductions().data ?? [];
   const create = useCreatePencil();
   const active = productions.filter((p) => p.status !== "Wrapped");
-  const [f, setF] = useState({ productionId: active[0]?.id ?? "", role: crew.role, date: active[0]?.date ?? "", callTime: "", wrapTime: "", days: 1 });
+  const [f, setF] = useState({ productionId: active[0]?.id ?? "", role: crew.role, date: active[0]?.date ?? "", callTime: "", wrapTime: "", days: 1, priority: 1 as 1 | 2 });
   const field = "w-full rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
 
   async function submit() {
@@ -133,9 +133,9 @@ function PencilDialog({ crew, onClose }: { crew: { id: string; name: string; rol
     try {
       await create.mutateAsync({
         productionId: f.productionId, crewId: crew.id, role: f.role, bookingDate: f.date,
-        callTime: f.callTime, wrapTime: f.wrapTime, crewRate: crew.dayRate, clientCharge: crew.dayRate, days: f.days,
+        callTime: f.callTime, wrapTime: f.wrapTime, crewRate: crew.dayRate, clientCharge: crew.dayRate, days: f.days, priority: f.priority,
       });
-      toast.success(`Pencilled ${crew.name} — expires in 3 days unless confirmed`);
+      toast.success(`${f.priority === 1 ? "1st" : "2nd"} pencil sent to ${crew.name} — expires in 3 days unless confirmed`);
       onClose();
     } catch (e) { toast.error((e as Error).message); }
   }
@@ -146,6 +146,15 @@ function PencilDialog({ crew, onClose }: { crew: { id: string; name: string; rol
         <h3 className="font-script text-3xl text-primary">Pencil {crew.name}</h3>
         <p className="mt-1 text-xs text-muted-foreground">Expires automatically after 3 days unless the crew member confirms.</p>
         <div className="mt-4 grid gap-3">
+          <div className="grid grid-cols-2 gap-2">
+            {([1, 2] as const).map((n) => (
+              <button key={n} type="button" onClick={() => setF({ ...f, priority: n })}
+                className={`rounded-md border px-3 py-2 text-left text-sm ${f.priority === n ? "border-primary bg-primary/10 text-primary" : "border-border"}`}>
+                <span className="block font-semibold">{n === 1 ? "1st pencil" : "2nd pencil"}</span>
+                <span className="text-xs text-muted-foreground">{n === 1 ? "First choice, they're on hold for you" : "Backup if your first choice falls through"}</span>
+              </button>
+            ))}
+          </div>
           <label className="block"><span className="text-xs uppercase tracking-wider text-muted-foreground">Production</span>
             <select className={`${field} mt-1`} value={f.productionId} onChange={(e) => { const p = active.find((x) => x.id === e.target.value); setF({ ...f, productionId: e.target.value, date: p?.date ?? f.date }); }}>
               {active.length === 0 && <option value="">No open productions</option>}

@@ -24,7 +24,7 @@ function CrewDashboard() {
   const jobs = useQuery({
     queryKey: ["crew-jobs", crewId], enabled: !!crewId,
     queryFn: async () => {
-      const { data, error } = await supabase.from("bookings").select("id, role, status, booking_date, call_time, production_id, crew_rate, days, productions(name, client, address, location)").eq("crew_id", crewId!).order("booking_date");
+      const { data, error } = await supabase.from("bookings").select("id, role, status, booking_date, call_time, production_id, crew_rate, days, pencil_priority, productions(name, client, address, location)").eq("crew_id", crewId!).order("booking_date");
       if (error) throw error; return data ?? [];
     },
   }).data ?? [];
@@ -79,7 +79,7 @@ function CrewDashboard() {
               const pr = j.productions as { name?: string } | null;
               return (
                 <li key={j.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-                  <div className="min-w-0 flex-1"><div className="font-semibold">{pr?.name ?? "Production"}</div><div className="text-xs text-muted-foreground">{j.role} · {j.booking_date ?? ""}</div></div>
+                  <div className="min-w-0 flex-1"><div className="font-semibold">{pr?.name ?? "Production"}</div><div className="text-xs text-muted-foreground">{j.pencil_priority === 2 ? "2nd pencil" : "1st pencil"} · {j.role} · {j.booking_date ?? ""}</div></div>
                   <button onClick={() => respond(j.id, true)} className="rounded-md bg-success px-3 py-1.5 text-xs font-semibold uppercase text-primary-foreground">Accept</button>
                   <button onClick={() => respond(j.id, false)} className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold uppercase">Decline</button>
                 </li>
