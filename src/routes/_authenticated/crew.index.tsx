@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Heart } from "lucide-react";
+import { Heart, Trash2, Users } from "lucide-react";
 import { Page } from "@/components/AppShell";
-import { useSession } from "@/lib/auth";
+import { useRole, useSession } from "@/lib/auth";
 import { zar } from "@/lib/demo-data";
-import { useCreatePencil, useCrewSearch, useDepartments, useFavourites, useProductions, useToggleFavourite } from "@/lib/db";
+import { useCreateCrewGroup, useCreatePencil, useCrewSearch, useDeleteCrewGroup, useCrewGroups, useDepartments, useFavourites, useProductions, useToggleFavourite } from "@/lib/db";
 
 export const Route = createFileRoute("/_authenticated/crew/")({
   head: () => ({
@@ -23,6 +23,8 @@ const PAGE_SIZE = 24;
 
 function CrewPage() {
   const { session } = useSession();
+  const role = useRole(session?.user.id);
+  const isProducer = role.data === "producer" || (role.data as string) === "admin";
   const [q, setQ] = useState("");
   const [dept, setDept] = useState("All");
   const [availOnly, setAvailOnly] = useState(false);
@@ -30,9 +32,16 @@ function CrewPage() {
   const [page, setPage] = useState(0);
   const [pencilling, setPencilling] = useState<{ id: string; name: string; role: string; dayRate: number } | null>(null);
   const [open, setOpen] = useState<NonNullable<ReturnType<typeof useCrewSearch>["data"]>["rows"][number] | null>(null);
+  const [mixOpen, setMixOpen] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const [picked, setPicked] = useState<string[]>([]);
+  const [mixName, setMixName] = useState("");
   const departments = useDepartments().data ?? ["All"];
   const favourites = useFavourites(session?.user.id);
   const toggleFav = useToggleFavourite();
+  const groups = useCrewGroups();
+  const createGroup = useCreateCrewGroup();
+  const deleteGroup = useDeleteCrewGroup();
   const search = useCrewSearch({ q, department: dept, availableOnly: availOnly, favouritesOnly: favOnly, favouriteIds: favourites.data, page });
   const list = search.data?.rows ?? [];
   const total = search.data?.total ?? 0;
@@ -44,23 +53,68 @@ function CrewPage() {
     try { await toggleFav.mutateAsync({ crewId: id, on }); } catch (e) { toast.error((e as Error).message); }
   }
 
+  function startPicking() { setPicking(true); setPicked([]); setMixName(""); setMixOpen(false); }
+  function cancelPicking() { setPicking(false); setPicked([]); setMixName(""); }
+  async function saveMix() {
+    if (!mixName.trim()) { toast.error("Name this mix"); return; }
+    if (picked.length < 2) { toast.error("Pick at least two crew members"); return; }
+    try {
+      await createGroup.mutateAsync({ name: mixName.trim(), crewIds: picked });
+      toast.success(`"${mixName.trim()}" saved — pick it from Favourite Mix next time you're crewing a job`);
+      cancelPicking();
+    } catch (e) { toast.error((e as Error).message); }
+  }
+
   return (
     <Page title="Crew" subtitle={`${total} professional${total === 1 ? "" : "s"} · rates shown are internal and never visible to clients`}>
-      <div className="mb-4 flex flex-wrap gap-3">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, role, location…" className="min-w-64 flex-1 rounded-sm border border-input bg-card px-3 py-2 text-sm outline-none focus:border-ring" />
         <select value={dept} onChange={(e) => setDept(e.target.value)} className="rounded-sm border border-input bg-card px-3 py-2 text-sm">
           {departments.map((d) => <option key={d}>{d}</option>)}
         </select>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={availOnly} onChange={(e) => setAvailOnly(e.target.checked)} className="accent-primary" /> Available only</label>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={favOnly} onChange={(e) => setFavOnly(e.target.checked)} className="accent-primary" /> Favourites only</label>
+        {isProducer && !picking && (
+          <div className="relative ml-auto">
+            <button onClick={() => setMixOpen(!mixOpen)} className="flex items-center gap-1.5 rounded-sm border border-border bg-card px-3 py-2 text-sm font-semibold hover:border-primary" aria-label="Favourite Mix">
+              <Users className="h-4 w-4" /> Favourite Mix
+            </button>
+            {mixOpen && (
+              <div className="absolute right-0 z-20 mt-1 w-72 rounded-sm border border-border bg-card shadow-md">
+                <ul className="max-h-56 divide-y divide-border overflow-y-auto">
+                  {(groups.data ?? []).length === 0 && <li className="p-3 text-xs text-muted-foreground">No mixes saved yet.</li>}
+                  {(groups.data ?? []).map((g) => (
+                    <li key={g.id} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
+                      <span className="min-w-0 truncate">{g.name} <span className="text-xs text-muted-foreground">({g.memberIds.length})</span></span>
+                      <button onClick={() => deleteGroup.mutate(g.id)} className="shrink-0 text-muted-foreground hover:text-destructive" aria-label={`Delete ${g.name}`}><Trash2 className="h-3.5 w-3.5" /></button>
+                    </li>
+                  ))}
+                </ul>
+                <button onClick={startPicking} className="block w-full border-t border-border px-3 py-2 text-left text-xs font-semibold text-primary hover:underline">+ Create a new mix</button>
+              </div>
+            )}
+          </div>
+        )}
+        {picking && (
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <span className="text-xs text-muted-foreground">{picked.length} selected</span>
+            <input value={mixName} onChange={(e) => setMixName(e.target.value)} placeholder="Name this mix" className="rounded-sm border border-input bg-card px-2 py-1.5 text-sm" />
+            <button onClick={saveMix} disabled={createGroup.isPending} className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-60">{createGroup.isPending ? "Saving…" : "Save mix"}</button>
+            <button onClick={cancelPicking} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold">Cancel</button>
+          </div>
+        )}
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {list.map((c) => {
           const isFav = (favourites.data ?? []).includes(c.id);
+          const isPicked = picked.includes(c.id);
           return (
-            <div key={c.id} role="button" tabIndex={0} onClick={() => setOpen(c)} onKeyDown={(e) => e.key === "Enter" && setOpen(c)}
-              className="cursor-pointer rounded-xl border border-border bg-card p-4 shadow-sm transition hover:border-primary">
+            <div key={c.id} role="button" tabIndex={0}
+              onClick={() => picking ? setPicked((s) => isPicked ? s.filter((x) => x !== c.id) : [...s, c.id]) : setOpen(c)}
+              onKeyDown={(e) => e.key === "Enter" && (picking ? setPicked((s) => isPicked ? s.filter((x) => x !== c.id) : [...s, c.id]) : setOpen(c))}
+              className={`cursor-pointer rounded-xl border bg-card p-4 shadow-sm transition ${picking ? (isPicked ? "border-primary bg-primary/5" : "border-border hover:border-primary") : "border-border hover:border-primary"}`}>
               <div className="flex items-start gap-3">
+                {picking && <input type="checkbox" checked={isPicked} onChange={() => {}} className="mt-1 h-4 w-4 accent-primary" />}
                 <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-primary/10 font-display text-lg font-bold text-primary">
                   {c.name.split(" ").map((n) => n[0]).join("")}
                 </div>
@@ -69,9 +123,11 @@ function CrewPage() {
                   <div className="text-sm text-primary">{c.role}</div>
                   <div className="truncate text-xs text-muted-foreground">{c.department} · {c.location} · {c.experience} yrs</div>
                 </div>
-                <button aria-label={isFav ? "Remove favourite" : "Add favourite"} onClick={(e) => { e.stopPropagation(); toggleFavourite(c.id); }}>
-                  <Heart className={`h-5 w-5 ${isFav ? "fill-primary text-primary" : "text-muted-foreground"}`} />
-                </button>
+                {!picking && (
+                  <button aria-label={isFav ? "Remove favourite" : "Add favourite"} onClick={(e) => { e.stopPropagation(); toggleFavourite(c.id); }}>
+                    <Heart className={`h-5 w-5 ${isFav ? "fill-primary text-primary" : "text-muted-foreground"}`} />
+                  </button>
+                )}
               </div>
               <div className="mt-3 flex items-center justify-between">
                 <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${c.available ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>{c.available ? "● Available" : "● Booked"}</span>
@@ -79,8 +135,10 @@ function CrewPage() {
               </div>
               <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
                 <div className="text-sm"><span className="font-display text-lg font-semibold">{zar(c.dayRate)}</span><span className="text-muted-foreground"> /day</span></div>
-                <button onClick={(e) => { e.stopPropagation(); setPencilling({ id: c.id, name: c.name, role: c.role, dayRate: c.dayRate }); }}
-                  className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Pencil</button>
+                {!picking && (
+                  <button onClick={(e) => { e.stopPropagation(); setPencilling({ id: c.id, name: c.name, role: c.role, dayRate: c.dayRate }); }}
+                    className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Pencil</button>
+                )}
               </div>
             </div>
           );

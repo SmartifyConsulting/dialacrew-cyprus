@@ -1292,6 +1292,57 @@ export type Database = {
           },
         ]
       }
+      crew_groups: {
+        Row: {
+          id: string
+          name: string
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      crew_group_members: {
+        Row: {
+          group_id: string
+          crew_id: string
+        }
+        Insert: {
+          group_id: string
+          crew_id: string
+        }
+        Update: {
+          group_id?: string
+          crew_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crew_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "crew_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crew_group_members_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null

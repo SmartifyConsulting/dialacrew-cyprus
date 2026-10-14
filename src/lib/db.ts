@@ -48,6 +48,52 @@ export const useRequests = () => useQuery({
   queryFn: () => run(supabase.from("change_requests").select("*").order("id"), (r) => ({ ...r, amount: Number(r.amount), createdAt: r.created_at }) as ChangeRequest),
 });
 
+// Favourite Mix: a named, reusable group of crew members a producer has picked out as working well together.
+export type CrewGroup = { id: string; name: string; memberIds: string[]; createdAt: string };
+
+export const useCrewGroups = () => useQuery({
+  queryKey: ["crew-groups"],
+  queryFn: async () => {
+    const [groupsRes, membersRes] = await Promise.all([
+      supabase.from("crew_groups").select("id, name, created_at").order("name"),
+      supabase.from("crew_group_members").select("group_id, crew_id"),
+    ]);
+    if (groupsRes.error) throw groupsRes.error;
+    if (membersRes.error) throw membersRes.error;
+    return (groupsRes.data ?? []).map((g): CrewGroup => ({
+      id: g.id, name: g.name, createdAt: g.created_at,
+      memberIds: (membersRes.data ?? []).filter((m) => m.group_id === g.id).map((m) => m.crew_id),
+    }));
+  },
+});
+
+export const useCreateCrewGroup = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (f: { name: string; crewIds: string[] }) => {
+      const { data, error } = await supabase.from("crew_groups").insert({ name: f.name }).select("id").single();
+      if (error) throw error;
+      if (f.crewIds.length) {
+        const { error: memErr } = await supabase.from("crew_group_members").insert(f.crewIds.map((crew_id) => ({ group_id: data.id, crew_id })));
+        if (memErr) throw memErr;
+      }
+      return data.id as string;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["crew-groups"] }),
+  });
+};
+
+export const useDeleteCrewGroup = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("crew_groups").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["crew-groups"] }),
+  });
+};
+
 export const useCreateProduction = () => {
   const qc = useQueryClient();
   return useMutation({
