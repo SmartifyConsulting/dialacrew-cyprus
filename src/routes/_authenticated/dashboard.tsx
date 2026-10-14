@@ -189,48 +189,46 @@ function Dashboard() {
         ))}
       </div>
 
-      <div className="mt-5">
-        <Panel title="Needs you" right={<span className="text-xs text-muted-foreground">{pendingReqs.length + waitingCrew.length} open</span>}>
-          <ul className="divide-y divide-border">
-            {pendingReqs.length + waitingCrew.length === 0 && <li className="p-4 text-sm text-muted-foreground">All caught up.</li>}
-            {pendingReqs.map((r) => (
-              <li key={r.id} className="px-4 py-3">
-                <div className="flex justify-between text-xs font-semibold text-primary"><span>{r.kind}</span><span>{zar(r.amount)}</span></div>
-                <div className="mt-1 text-sm">{r.detail}</div>
-                <div className="text-xs text-muted-foreground">{r.who} · {r.production}</div>
-                <div className="mt-2 flex gap-2">
-                  <button onClick={() => setState.mutate({ id: r.id, state: "Approved" })} className="rounded-md bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">Approve</button>
-                  <button onClick={() => setState.mutate({ id: r.id, state: "Declined" })} className="rounded-md border border-border px-3 py-1 text-xs font-semibold">Decline</button>
-                </div>
-              </li>
-            ))}
-            {waitingCrew.map((b) => (
-              <li key={b.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-                {b.status === "awaiting_crew_confirmation" && (
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-success/20 text-success"><Check className="h-3.5 w-3.5" /></span>
-                )}
-                <div className="min-w-0 flex-1">
-                  <div className="font-medium">
-                    {crewName(b.crewId)}{" "}
-                    {b.status === "awaiting_crew_confirmation" ? `accepted your ${b.pencilPriority === 2 ? "2nd" : "1st"} pencil` : `· ${b.pencilPriority === 2 ? "2nd" : "1st"} pencil sent`}
-                  </div>
-                  <div className="truncate text-xs text-muted-foreground">
-                    {prodName(b.productionId)} · {b.role}{b.bookingDate ? ` · ${b.bookingDate}` : ""} · {zar(b.crewRate)} a day
-                  </div>
-                </div>
-                {b.status === "awaiting_crew_confirmation" ? (
-                  <button onClick={() => respondToBooking.mutate({ id: b.id, status: "confirmed" })} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Confirm booking</button>
-                ) : (
-                  <Badge>{b.status}</Badge>
-                )}
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      </div>
-
       <div className="mt-5 grid gap-5 lg:grid-cols-3">
         <div className="space-y-5 lg:col-span-2">
+          <Panel title="Needs you" right={<span className="text-xs text-muted-foreground">{pendingReqs.length + waitingCrew.length} open</span>}>
+            <ul className="divide-y divide-border">
+              {pendingReqs.length + waitingCrew.length === 0 && <li className="p-4 text-sm text-muted-foreground">All caught up.</li>}
+              {pendingReqs.map((r) => (
+                <li key={r.id} className="px-4 py-3">
+                  <div className="flex justify-between text-xs font-semibold text-primary"><span>{r.kind}</span><span>{zar(r.amount)}</span></div>
+                  <div className="mt-1 text-sm">{r.detail}</div>
+                  <div className="text-xs text-muted-foreground">{r.who} · {r.production}</div>
+                  <div className="mt-2 flex gap-2">
+                    <button onClick={() => setState.mutate({ id: r.id, state: "Approved" })} className="rounded-md bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">Approve</button>
+                    <button onClick={() => setState.mutate({ id: r.id, state: "Declined" })} className="rounded-md border border-border px-3 py-1 text-xs font-semibold">Decline</button>
+                  </div>
+                </li>
+              ))}
+              {waitingCrew.map((b) => (
+                <li key={b.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                  {b.status === "awaiting_crew_confirmation" && (
+                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-success/20 text-success"><Check className="h-3.5 w-3.5" /></span>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium">
+                      {crewName(b.crewId)}{" "}
+                      {b.status === "awaiting_crew_confirmation" ? `accepted your ${b.pencilPriority === 2 ? "2nd" : "1st"} pencil` : `· ${b.pencilPriority === 2 ? "2nd" : "1st"} pencil sent`}
+                    </div>
+                    <div className="truncate text-xs text-muted-foreground">
+                      {prodName(b.productionId)} · {b.role}{b.bookingDate ? ` · ${b.bookingDate}` : ""} · {zar(b.crewRate)} a day
+                    </div>
+                  </div>
+                  {b.status === "awaiting_crew_confirmation" ? (
+                    <button onClick={() => respondToBooking.mutate({ id: b.id, status: "confirmed" })} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Confirm booking</button>
+                  ) : (
+                    <Badge>{b.status}</Badge>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </Panel>
+
           <Panel title="Productions">
             <div className="grid gap-3 p-4 sm:grid-cols-2">
               {productions.length === 0 && <p className="text-sm text-muted-foreground">No productions yet.</p>}
