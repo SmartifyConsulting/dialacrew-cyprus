@@ -150,8 +150,7 @@ export function AuthForm() {
         </div>
       </div>
     )}
-    <h1 className="text-center font-script text-6xl text-primary">{mode === "signin" ? "Welcome back" : "Join the crew"}</h1>
-    <div className="mt-6 grid grid-cols-2 border border-border">
+    <div className="grid grid-cols-2 border border-border">
       {(["signin", "signup"] as const).map((m) => (
         <button key={m} type="button" onClick={() => { setMode(m); setError(""); }}
           className={`py-2 font-display text-sm ${mode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>

@@ -38,8 +38,8 @@ function BottomNav({ items }: { items: NavItem[] }) {
       <ul className="flex">
         {items.map((n) => (
           <li key={n.label} className="flex-1">
-            <Link to={n.to} className="flex flex-col items-center gap-0.5 py-2 font-sans text-[11px] font-medium text-nav-foreground/80" activeProps={{ className: "!text-nav-foreground font-semibold" }}>
-              <n.icon className="h-5 w-5" />{n.label}
+            <Link to={n.to} className="flex flex-col items-center gap-1 py-5 font-sans text-sm font-medium text-nav-foreground/80" activeProps={{ className: "!text-nav-foreground font-semibold" }}>
+              <n.icon className="h-8 w-8" />{n.label}
             </Link>
           </li>
         ))}
@@ -83,8 +83,8 @@ export function TopNav() {
       )}
       <header className={`sticky top-0 z-30 ${signedIn ? "md:pl-60" : ""}`}>
         <div className={signedIn ? "border-b border-border bg-card md:bg-card" : "bg-nav text-nav-foreground"}>
-          <div className={`flex items-center gap-4 px-4 py-3 ${signedIn ? "" : "mx-auto max-w-7xl"}`}>
-            <Link to={session ? "/dashboard" : "/"} className={`shrink-0 ${signedIn ? "md:hidden" : ""}`}><img src={logo.url} alt="Book a Crew" className="h-10 w-auto" /></Link>
+          <div className={`flex items-center gap-4 px-4 py-8 ${signedIn ? "" : "mx-auto max-w-7xl"}`}>
+            <Link to={session ? "/dashboard" : "/"} className={`shrink-0 ${signedIn ? "md:hidden" : ""}`}><img src={logo.url} alt="Book a Crew" className="h-20 w-auto" /></Link>
             <div className="ml-auto flex items-center gap-3">
               {signedIn && (
                 <>
@@ -121,7 +121,7 @@ export function Page({ title, subtitle, actions, children, open }: { title: stri
     <div className="min-h-screen bg-background">
       <TopNav />
       <div className="md:pl-60">
-      <main className="mx-auto max-w-7xl px-4 py-6 pb-24 md:pb-6">
+      <main className="mx-auto max-w-7xl px-4 py-6 pb-36 md:pb-6">
         <RoleGate open={open}>
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
             <div>
