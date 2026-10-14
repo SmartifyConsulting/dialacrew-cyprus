@@ -1,11 +1,34 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode } from "react";
 import { Briefcase, Building2, Home, Search, Shield, Star, User, type LucideIcon, Wallet, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRole, useSession } from "@/lib/auth";
 import { NotificationBell } from "@/components/NotificationBell";
+import { useSignedUrl } from "@/lib/site";
 import logo from "@/assets/bookacrew-sa-logo.png.asset.json";
+
+function useMyProfile(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["nav-avatar", userId], enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select("full_name, email, avatar_url").eq("id", userId!).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+function initials(name: string) {
+  return name.split(" ").filter(Boolean).map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "?";
+}
+
+function NavAvatar({ name, path, size = 40 }: { name: string; path?: string | null; size?: number }) {
+  const url = useSignedUrl(path).data;
+  return url
+    ? <img src={url} alt={name} style={{ width: size, height: size }} className="shrink-0 rounded-full object-cover" />
+    : <span style={{ width: size, height: size }} className="grid shrink-0 place-items-center rounded-full bg-primary text-sm font-bold text-primary-foreground">{initials(name)}</span>;
+}
 
 type NavItem = { to: string; label: string; icon: LucideIcon };
 // One menu definition per role, used by both the top bar and the phone bottom bar.
@@ -13,8 +36,8 @@ export const navByRole: Record<string, NavItem[]> = {
   producer: [
     { to: "/dashboard", label: "Dashboard", icon: Home },
     { to: "/calendar", label: "Calendar", icon: CalendarDays },
-    { to: "/productions", label: "Bookings", icon: Briefcase },
-    { to: "/crew", label: "Search", icon: Search },
+    { to: "/productions", label: "Productions", icon: Briefcase },
+    { to: "/crew", label: "Find Crew", icon: Search },
     { to: "/payments", label: "Payments", icon: Wallet },
     { to: "/profile", label: "Profile", icon: Building2 },
   ],
@@ -29,8 +52,8 @@ export const navByRole: Record<string, NavItem[]> = {
   admin: [
     { to: "/dashboard", label: "Dashboard", icon: Home },
     { to: "/calendar", label: "Calendar", icon: CalendarDays },
-    { to: "/productions", label: "Bookings", icon: Briefcase },
-    { to: "/crew", label: "Search", icon: Search },
+    { to: "/productions", label: "Productions", icon: Briefcase },
+    { to: "/crew", label: "Find Crew", icon: Search },
     { to: "/payments", label: "Payments", icon: Wallet },
     { to: "/profile", label: "Profile", icon: Building2 },
     { to: "/admin", label: "Admin", icon: Shield },
@@ -56,6 +79,7 @@ function BottomNav({ items }: { items: NavItem[] }) {
 export function TopNav() {
   const { session, ready } = useSession();
   const role = useRole(session?.user.id);
+  const me = useMyProfile(session?.user.id);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const items = navByRole[role.data ?? "client"] ?? navByRole["client"]!;
@@ -81,8 +105,14 @@ export function TopNav() {
             ))}
           </nav>
           <div className="border-t border-nav-foreground/10 p-4">
-            <p className="mb-2 text-xs font-medium capitalize text-nav-foreground/60">{role.data ? `${role.data} view` : ""}</p>
-            <button onClick={signOut} className="w-full rounded-xl border border-nav-foreground/30 px-3 py-2 font-sans text-sm font-medium text-nav-foreground hover:bg-nav-foreground/10">Sign out</button>
+            <Link to="/profile" className="flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-nav-foreground/10">
+              <NavAvatar name={me.data?.full_name || me.data?.email || "?"} path={me.data?.avatar_url ?? null} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-nav-foreground">{me.data?.full_name || me.data?.email || "Your account"}</p>
+                <p className="truncate text-xs font-medium capitalize text-nav-foreground/60">{role.data ? `${role.data}` : ""}</p>
+              </div>
+            </Link>
+            <button onClick={signOut} className="mt-3 w-full rounded-xl border border-nav-foreground/30 px-3 py-2 font-sans text-sm font-medium text-nav-foreground hover:bg-nav-foreground/10">Sign out</button>
           </div>
         </aside>
       )}

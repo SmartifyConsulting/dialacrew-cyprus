@@ -150,16 +150,16 @@ export function AuthForm() {
         </div>
       </div>
     )}
-    <div className="grid grid-cols-2 border border-border">
+    <div className="grid grid-cols-2 overflow-hidden rounded-sm border border-border bg-card">
       {(["signin", "signup"] as const).map((m) => (
         <button key={m} type="button" onClick={() => { setMode(m); setError(""); }}
-          className={`py-2 font-display text-sm ${mode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
+          className={`py-2 font-display text-sm font-semibold ${mode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}>
           {m === "signin" ? "Sign in" : "Sign up"}
         </button>
       ))}
     </div>
 
-    <form onSubmit={submit} className="mt-6 space-y-4 rounded-sm border border-border bg-card p-6">
+    <form onSubmit={submit} className="mt-4 space-y-4 rounded-sm border border-border bg-card p-6">
       {mode === "signup" && (
         <>
           {invite && (

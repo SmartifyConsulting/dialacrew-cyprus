@@ -26,8 +26,10 @@ function Index() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <TopNav />
-      <section className="relative flex-1 bg-cover bg-center" style={{ backgroundImage: `url(${HERO_BG})` }}>
-        <div className="absolute inset-0 bg-background/85" />
+      <section
+        className="relative flex-1 bg-background"
+        style={{ backgroundImage: "radial-gradient(color-mix(in oklch, var(--foreground) 7%, transparent) 1px, transparent 1px)", backgroundSize: "20px 20px" }}
+      >
         <div className="relative mx-auto flex max-w-md flex-col items-center px-4 py-10">
           <img src={logoUrl} alt="Book a Crew" className="mb-6 w-[260px] md:w-[320px]" />
           <AuthForm />
