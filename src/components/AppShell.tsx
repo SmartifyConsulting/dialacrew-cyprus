@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { type ReactNode } from "react";
-import { Briefcase, Building2, Home, Search, Shield, Star, User, type LucideIcon, Wallet } from "lucide-react";
+import { Briefcase, Building2, Home, Search, Shield, Star, User, type LucideIcon, Wallet, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRole, useSession } from "@/lib/auth";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -12,6 +12,7 @@ type NavItem = { to: string; label: string; icon: LucideIcon };
 export const navByRole: Record<string, NavItem[]> = {
   producer: [
     { to: "/dashboard", label: "Dashboard", icon: Home },
+    { to: "/calendar", label: "Calendar", icon: CalendarDays },
     { to: "/productions", label: "Bookings", icon: Briefcase },
     { to: "/crew", label: "Search", icon: Search },
     { to: "/payments", label: "Payments", icon: Wallet },
@@ -19,6 +20,7 @@ export const navByRole: Record<string, NavItem[]> = {
   ],
   crew: [
     { to: "/dashboard", label: "Dashboard", icon: Home },
+    { to: "/calendar", label: "Calendar", icon: CalendarDays },
     { to: "/gigs", label: "Find Gigs", icon: Search },
     { to: "/reviews", label: "Reviews", icon: Star },
     { to: "/profile", label: "Profile", icon: User },
@@ -26,6 +28,7 @@ export const navByRole: Record<string, NavItem[]> = {
   client: [{ to: "/profile", label: "My Profile", icon: User }],
   admin: [
     { to: "/dashboard", label: "Dashboard", icon: Home },
+    { to: "/calendar", label: "Calendar", icon: CalendarDays },
     { to: "/productions", label: "Bookings", icon: Briefcase },
     { to: "/crew", label: "Search", icon: Search },
     { to: "/payments", label: "Payments", icon: Wallet },
