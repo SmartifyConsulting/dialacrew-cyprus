@@ -17,5 +17,5 @@
 - [x] Remove Messages tab from production page
 - [x] Phase 1: producer Home redesign (greeting, KPI cards, Needs you, activity, project cards)
 - [x] Phase 2: Find Crew redesign (availability labels, slide-in profile panel)
-- [ ] Phase 3: Production hub restyle (Members check-in status, overtime approvals)
-- [ ] Phase 4: Crew phone polish (GPS check-in, overtime logger, earnings)
+- [x] Phase 3: Production hub restyle (Members check-in status, overtime approvals)
+- [x] Phase 4: Crew phone polish (GPS check-in, overtime logger, earnings)
