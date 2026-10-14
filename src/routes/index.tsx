@@ -30,9 +30,9 @@ function Index() {
         className="relative flex-1 bg-background"
         style={{ backgroundImage: "radial-gradient(color-mix(in oklch, var(--foreground) 7%, transparent) 1px, transparent 1px)", backgroundSize: "20px 20px" }}
       >
-        <div className="relative mx-auto flex max-w-md flex-col items-center px-4 py-10">
-          <img src={logoUrl} alt="Book a Crew" className="mb-6 w-[260px] md:w-[320px]" />
-          <AuthForm />
+        <div className="relative mx-auto flex flex-col items-center px-4 py-10">
+          <img src={logoUrl} alt="Book a Crew" className="mb-6 w-[1040px] max-w-full md:w-[1280px]" />
+          <div className="w-full max-w-md"><AuthForm /></div>
         </div>
       </section>
     </div>
