@@ -416,6 +416,18 @@ export function RegisterTab({ p, isProducer, userId, myName, myCrewId }: Ctx) {
 
   return (
     <div className="space-y-5">
+      {isProducer && (() => {
+        const st = members.map((m) => { const l = lastByCrew.get(m.crew_id); return !l ? "na" : l.kind === "in" ? "on" : "out"; });
+        const cards: [string, number, string][] = [["On set", st.filter((s) => s === "on").length, "text-success"], ["Not arrived", st.filter((s) => s === "na").length, "text-destructive"], ["Wrapped", st.filter((s) => s === "out").length, "text-muted-foreground"]];
+        return (
+          <div className="grid grid-cols-3 gap-3">
+            {cards.map(([l, v, c]) => (
+              <div key={l} className="rounded-xl border border-border bg-card p-4 shadow-sm"><div className="text-xs text-muted-foreground">{l}</div><div className={`mt-1 font-display text-3xl font-semibold ${c}`}>{v}</div></div>
+            ))}
+          </div>
+        );
+      })()}
+      {isProducer && <OvertimeApprovals production={p.name} />}
       {!hasSite && <p className="rounded-sm border border-primary/40 bg-primary/10 p-3 text-sm">The site location isn't set yet{isProducer ? " — add it under Overview so check-ins can be verified." : ", so check-ins can't be verified yet."}</p>}
       {myCrewId && (
         <Panel title="My attendance">
