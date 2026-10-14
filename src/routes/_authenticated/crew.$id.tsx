@@ -3,7 +3,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Award, Briefcase, Camera, Mail, MapPin, Package, Phone, Plus, Star, Trash2 } from "lucide-react";
+import { friendlyError } from "@/lib/errors";
+import { Award, Briefcase, Camera, Eye, EyeOff, Lock, Mail, MapPin, Package, Phone, Plus, Star, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Page } from "@/components/AppShell";
 import { Avatar } from "@/components/site/SiteTabs";
@@ -32,7 +33,7 @@ export const Route = createFileRoute("/_authenticated/crew/$id")({
 
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
 const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground";
-const TABS = ["About", "Projects", "Kit & props"] as const;
+const TABS = ["About", "Projects", "Kit & props", "Banking"] as const;
 
 function CrewProfile() {
   const { id } = Route.useParams();
@@ -65,20 +66,20 @@ function CrewProfile() {
 
   const m = c.data;
   if (!m) return <Page open title={c.isLoading ? "Loading…" : "Profile not found"}>{null}</Page>;
-  const canEdit = role.data === "producer" || m.user_id === session?.user.id;
+  const canEdit = role.data === "producer" || role.data === "admin" || m.user_id === session?.user.id;
   const done = (jobs.data ?? []).filter((j) => (j.productions as { status?: string } | null)?.status === "Wrapped").length;
   const refresh = () => inv(["crew-profile", id], ["crew"], ["crew-assets", id], ["crew-assets"]);
 
   async function update(patch: Record<string, unknown>) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await supabase.from("crew_members").update(patch as any).eq("id", id);
-    if (error) { toast.error(error.message); return false; }
+    if (error) { toast.error(friendlyError(error)); return false; }
     refresh(); return true;
   }
   async function photo(file?: File) {
     if (!file) return;
     try { const path = await uploadFile(`crew/${id}`, file, file.name); await update({ photo_url: path }); toast.success("Photo updated"); }
-    catch (e) { toast.error((e as Error).message); }
+    catch (e) { toast.error(friendlyError(e)); }
   }
 
   return (
@@ -107,7 +108,7 @@ function CrewProfile() {
         </div>
 
         <nav className="flex gap-1 overflow-x-auto border-y border-border px-4">
-          {TABS.map((t) => <button key={t} onClick={() => setTab(t)} className={`whitespace-nowrap border-b-2 px-3 py-3 text-sm font-semibold ${tab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}>{t}</button>)}
+          {TABS.filter((t) => t !== "Banking" || canEdit).map((t) => <button key={t} onClick={() => setTab(t)} className={`whitespace-nowrap border-b-2 px-3 py-3 text-sm font-semibold ${tab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}>{t}</button>)}
         </nav>
 
         <div className="p-6">
@@ -146,6 +147,7 @@ function CrewProfile() {
             </ul>
           )}
           {tab === "Kit & props" && <Kit crewId={id} items={assets.data ?? []} canEdit={canEdit} onChange={refresh} />}
+          {tab === "Banking" && canEdit && <BankingTab crewId={id} />}
         </div>
       </div>
     </Page>
@@ -194,25 +196,25 @@ function ProjectRow({ job: j, userId, canRespond, isProducer, onChange }: { job:
 
   async function completeJob() {
     try { await markCompleted.mutateAsync(j.id); toast.success("Marked as completed — client has 24 hours to review"); onChange(); }
-    catch (e) { toast.error((e as Error).message); }
+    catch (e) { toast.error(friendlyError(e)); }
   }
   async function recordPayment() {
     try { await markPaid.mutateAsync(j.id); toast.success("Payment recorded — funds held"); onChange(); }
-    catch (e) { toast.error((e as Error).message); }
+    catch (e) { toast.error(friendlyError(e)); }
   }
   async function approveOnClientBehalf() {
     try { await approve.mutateAsync(j.id); toast.success("Job approved — ready to release payment"); onChange(); }
-    catch (e) { toast.error((e as Error).message); }
+    catch (e) { toast.error(friendlyError(e)); }
   }
   async function releaseFunds() {
     try { const invId = await release.mutateAsync(j.id); toast.success(`Payment released, invoice generated (${invId})`); onChange(); }
-    catch (e) { toast.error((e as Error).message); }
+    catch (e) { toast.error(friendlyError(e)); }
   }
   async function doCancelBooking() {
     const reason = window.prompt("Reason for cancelling this booking?");
     if (!reason) return;
     try { await cancelBooking.mutateAsync({ bookingId: j.id, reason }); toast.success("Booking cancelled"); onChange(); }
-    catch (e) { toast.error((e as Error).message); }
+    catch (e) { toast.error(friendlyError(e)); }
   }
 
   async function submitOvertime() {
@@ -222,26 +224,26 @@ function ProjectRow({ job: j, userId, canRespond, isProducer, onChange }: { job:
       await requestOT.mutateAsync({ bookingId: j.id, production: pr?.name ?? "", who: "", hours, amount, reason: `${shiftLabel(j.booking_date, ot.shift)} · ${ot.reason || "No reason given"}` });
       toast.success("Overtime request sent. If the producer doesn't respond, you may proceed at your own risk — Book a Crew isn't responsible for unauthorised overtime.");
       setOtOpen(false); setOt({ hours: "1", shift: "day", reason: "" });
-    } catch (e) { toast.error((e as Error).message); }
+    } catch (e) { toast.error(friendlyError(e)); }
   }
 
   async function accept() {
     try { await respond.mutateAsync({ id: j.id, status: "confirmed" }); toast.success("Booking confirmed"); onChange(); }
-    catch (e) { toast.error((e as Error).message); }
+    catch (e) { toast.error(friendlyError(e)); }
   }
   async function decline() {
     try { await respond.mutateAsync({ id: j.id, status: "cancelled", reason: "Declined by crew" }); toast.success("Booking declined"); onChange(); }
-    catch (e) { toast.error((e as Error).message); }
+    catch (e) { toast.error(friendlyError(e)); }
   }
   async function sendProposal() {
     const rate = Number(proposedRate);
     if (!rate || rate <= 0) return;
     try { await propose.mutateAsync({ bookingId: j.id, proposedRate: rate }); toast.success("Rate proposal sent"); }
-    catch (e) { toast.error((e as Error).message); }
+    catch (e) { toast.error(friendlyError(e)); }
   }
   async function respondProposal(id: string, status: "accepted" | "declined") {
     try { await respondNeg.mutateAsync({ id, bookingId: j.id, status }); toast.success(status === "accepted" ? "Rate accepted" : "Rate declined"); onChange(); }
-    catch (e) { toast.error((e as Error).message); }
+    catch (e) { toast.error(friendlyError(e)); }
   }
 
   return (
@@ -356,15 +358,151 @@ function EditForm({ m, onSave }: { m: { name: string; role: string; department: 
   );
 }
 
+type BankingDetails = {
+  accountHolderName: string; bankName: string; bankCountry: string; bankAddress: string;
+  accountNumber: string; iban: string; swiftBic: string; routingOrSortCode: string; currency: string; notes: string;
+};
+const blankBanking: BankingDetails = {
+  accountHolderName: "", bankName: "", bankCountry: "", bankAddress: "",
+  accountNumber: "", iban: "", swiftBic: "", routingOrSortCode: "", currency: "", notes: "",
+};
+
+// Banking details are encrypted at rest (pgcrypto, server-side key in Supabase Vault) and only ever
+// reach the client through SECURITY DEFINER RPCs that check the caller is this crew member or a
+// producer/admin. The password re-entry below is a step-up check in front of that — it doesn't touch
+// encryption, it just makes sure the person looking at the screen right now is really this account.
+function BankingTab({ crewId }: { crewId: string }) {
+  const { session } = useSession();
+  const [unlocked, setUnlocked] = useState(false);
+  const [password, setPassword] = useState("");
+  const [checking, setChecking] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [reveal, setReveal] = useState(false);
+  const [f, setF] = useState<BankingDetails>(blankBanking);
+  const [saving, setSaving] = useState(false);
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+
+  async function unlock() {
+    if (!session?.user.email) { toast.error("Can't verify your account — please sign in again."); return; }
+    if (!password) { toast.error("Enter your password"); return; }
+    setChecking(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email: session.user.email, password });
+      if (error) { toast.error("Incorrect password"); return; }
+      const { data, error: rpcError } = await supabase.rpc("get_banking_details", { _crew_id: crewId });
+      if (rpcError) throw rpcError;
+      const row = data?.[0];
+      if (row) {
+        setF({
+          accountHolderName: row.account_holder_name ?? "", bankName: row.bank_name ?? "", bankCountry: row.bank_country ?? "",
+          bankAddress: row.bank_address ?? "", accountNumber: row.account_number ?? "", iban: row.iban ?? "",
+          swiftBic: row.swift_bic ?? "", routingOrSortCode: row.routing_or_sort_code ?? "", currency: row.currency ?? "", notes: row.notes ?? "",
+        });
+        setUpdatedAt(row.updated_at ?? null);
+      }
+      setUnlocked(true);
+      setPassword("");
+    } catch (e) { toast.error(friendlyError(e)); }
+    finally { setChecking(false); }
+  }
+
+  async function save() {
+    if (!f.swiftBic.trim()) { toast.error("SWIFT/BIC is required for an international transfer"); return; }
+    setSaving(true);
+    try {
+      const { error } = await supabase.rpc("upsert_banking_details", {
+        _crew_id: crewId, _account_holder_name: f.accountHolderName, _bank_name: f.bankName, _bank_country: f.bankCountry,
+        _bank_address: f.bankAddress, _account_number: f.accountNumber, _iban: f.iban, _swift_bic: f.swiftBic,
+        _routing_or_sort_code: f.routingOrSortCode, _currency: f.currency, _notes: f.notes,
+      });
+      if (error) throw error;
+      toast.success("Banking details saved — encrypted at rest");
+      setEditing(false);
+    } catch (e) { toast.error(friendlyError(e)); }
+    finally { setSaving(false); }
+  }
+
+  const mask = (v: string) => (v ? `•••• ${v.slice(-4)}` : "—");
+
+  if (!unlocked) {
+    return (
+      <div className="mx-auto max-w-sm py-8 text-center">
+        <Lock className="mx-auto h-8 w-8 text-muted-foreground" />
+        <h3 className="mt-3 font-semibold">Confirm your password</h3>
+        <p className="mt-1 text-sm text-muted-foreground">Banking details are encrypted — re-enter your password to view or edit them.</p>
+        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && unlock()}
+          placeholder="Password" className={`${input} mt-4 w-full`} autoFocus />
+        <button disabled={checking} onClick={unlock} className={`${btn} mt-3 w-full disabled:opacity-60`}>{checking ? "Checking…" : "Unlock"}</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Lock className="h-3 w-3" /> Encrypted at rest · only you and producers can view this</p>
+        {!editing && <button onClick={() => setEditing(true)} className="text-xs font-semibold text-primary hover:underline">Edit</button>}
+      </div>
+      {editing ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block"><span className="text-xs text-muted-foreground">Account holder name *</span>
+            <input className={`${input} mt-1 w-full`} value={f.accountHolderName} onChange={(e) => setF({ ...f, accountHolderName: e.target.value })} /></label>
+          <label className="block"><span className="text-xs text-muted-foreground">Bank name</span>
+            <input className={`${input} mt-1 w-full`} value={f.bankName} onChange={(e) => setF({ ...f, bankName: e.target.value })} /></label>
+          <label className="block"><span className="text-xs text-muted-foreground">Bank country</span>
+            <input className={`${input} mt-1 w-full`} value={f.bankCountry} onChange={(e) => setF({ ...f, bankCountry: e.target.value })} /></label>
+          <label className="block"><span className="text-xs text-muted-foreground">Currency</span>
+            <input className={`${input} mt-1 w-full`} placeholder="e.g. USD, EUR, GBP" value={f.currency} onChange={(e) => setF({ ...f, currency: e.target.value })} /></label>
+          <label className="block sm:col-span-2"><span className="text-xs text-muted-foreground">Bank address</span>
+            <input className={`${input} mt-1 w-full`} value={f.bankAddress} onChange={(e) => setF({ ...f, bankAddress: e.target.value })} /></label>
+          <label className="block"><span className="text-xs text-muted-foreground">Account number</span>
+            <input className={`${input} mt-1 w-full`} value={f.accountNumber} onChange={(e) => setF({ ...f, accountNumber: e.target.value })} /></label>
+          <label className="block"><span className="text-xs text-muted-foreground">IBAN (if applicable)</span>
+            <input className={`${input} mt-1 w-full`} value={f.iban} onChange={(e) => setF({ ...f, iban: e.target.value })} /></label>
+          <label className="block"><span className="text-xs text-muted-foreground">SWIFT / BIC *</span>
+            <input className={`${input} mt-1 w-full`} value={f.swiftBic} onChange={(e) => setF({ ...f, swiftBic: e.target.value.toUpperCase() })} /></label>
+          <label className="block"><span className="text-xs text-muted-foreground">Routing / sort / branch code</span>
+            <input className={`${input} mt-1 w-full`} value={f.routingOrSortCode} onChange={(e) => setF({ ...f, routingOrSortCode: e.target.value })} /></label>
+          <label className="block sm:col-span-2"><span className="text-xs text-muted-foreground">Notes for the person paying you (optional)</span>
+            <textarea rows={2} className={`${input} mt-1 w-full`} value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} /></label>
+          <div className="flex gap-2 sm:col-span-2">
+            <button disabled={saving} onClick={save} className={`${btn} disabled:opacity-60`}>{saving ? "Saving…" : "Save"}</button>
+            <button onClick={() => setEditing(false)} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold">Cancel</button>
+          </div>
+        </div>
+      ) : (
+        <div className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+          <div><div className="text-xs text-muted-foreground">Account holder</div><div className="font-medium">{f.accountHolderName || "—"}</div></div>
+          <div><div className="text-xs text-muted-foreground">Bank</div><div className="font-medium">{f.bankName || "—"} {f.bankCountry && `· ${f.bankCountry}`}</div></div>
+          <div className="sm:col-span-2"><div className="text-xs text-muted-foreground">Bank address</div><div className="font-medium">{f.bankAddress || "—"}</div></div>
+          <div>
+            <div className="text-xs text-muted-foreground">Account number</div>
+            <div className="flex items-center gap-2 font-medium">
+              {reveal ? (f.accountNumber || "—") : mask(f.accountNumber)}
+              {f.accountNumber && <button onClick={() => setReveal(!reveal)} aria-label={reveal ? "Hide" : "Show"}>{reveal ? <EyeOff className="h-3.5 w-3.5 text-muted-foreground" /> : <Eye className="h-3.5 w-3.5 text-muted-foreground" />}</button>}
+            </div>
+          </div>
+          <div><div className="text-xs text-muted-foreground">IBAN</div><div className="font-medium">{reveal ? (f.iban || "—") : mask(f.iban)}</div></div>
+          <div><div className="text-xs text-muted-foreground">SWIFT / BIC</div><div className="font-medium">{f.swiftBic || "—"}</div></div>
+          <div><div className="text-xs text-muted-foreground">Routing / sort / branch code</div><div className="font-medium">{f.routingOrSortCode || "—"}</div></div>
+          <div><div className="text-xs text-muted-foreground">Currency</div><div className="font-medium">{f.currency || "—"}</div></div>
+          {f.notes && <div className="sm:col-span-2"><div className="text-xs text-muted-foreground">Notes</div><div className="font-medium">{f.notes}</div></div>}
+          {updatedAt && <div className="text-xs text-muted-foreground sm:col-span-2">Last updated {new Date(updatedAt).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" })}</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Kit({ crewId, items, canEdit, onChange }: { crewId: string; items: { id: string; name: string; category: string; daily_fee: number }[]; canEdit: boolean; onChange: () => void }) {
   const [n, setN] = useState({ name: "", category: "Equipment", fee: "" });
   async function add() {
     if (!n.name.trim()) return;
     const { error } = await supabase.from("crew_assets").insert({ crew_id: crewId, name: n.name.trim(), category: n.category, daily_fee: Number(n.fee) || 0 });
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     setN({ name: "", category: "Equipment", fee: "" }); onChange();
   }
-  async function remove(id: string) { const { error } = await supabase.from("crew_assets").delete().eq("id", id); if (error) toast.error(error.message); onChange(); }
+  async function remove(id: string) { const { error } = await supabase.from("crew_assets").delete().eq("id", id); if (error) toast.error(friendlyError(error)); onChange(); }
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">Equipment and props this provider can bring. Dial a Crew selects items per job and the fees are added to the provider's total.</p>

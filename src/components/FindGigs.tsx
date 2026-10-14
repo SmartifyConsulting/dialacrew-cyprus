@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { friendlyError } from "@/lib/errors";
 import { useClaimGig, useOpenGigs } from "@/lib/db";
 import { zar } from "@/lib/demo-data";
 
@@ -47,7 +48,7 @@ export function FindGigsTab({ canClaim }: { canClaim: boolean }) {
 
   async function grab(id: string, role: string) {
     try { await claim.mutateAsync(id); toast.success(`Grabbed — you're confirmed for ${role}`); }
-    catch (e) { toast.error((e as Error).message); }
+    catch (e) { toast.error(friendlyError(e)); }
   }
 
   return (

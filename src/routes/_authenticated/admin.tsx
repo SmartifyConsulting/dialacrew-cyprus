@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { friendlyError } from "@/lib/errors";
 import { Page, Badge, Panel } from "@/components/AppShell";
 import { useRole, useSession } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -186,7 +187,7 @@ function UsersTab() {
   });
   async function toggleSuspend(id: string, suspended: boolean) {
     const { error } = await supabase.from("profiles").update({ suspended: !suspended }).eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success(!suspended ? "User suspended" : "User reactivated");
     inv(["admin-users"]);
   }
@@ -324,7 +325,7 @@ function DisputesTab() {
     if (resolution == null) return;
     const uid = (await supabase.auth.getUser()).data.user?.id ?? null;
     const { error } = await supabase.from("disputes").update({ status, resolution, resolved_by: uid, resolved_at: new Date().toISOString() }).eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success("Dispute updated"); inv(["admin-disputes"]);
   }
   return (
@@ -360,7 +361,7 @@ function ReviewsTab() {
   });
   async function remove(id: string) {
     const { error } = await supabase.from("crew_reviews").delete().eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success("Review removed"); inv(["admin-reviews"], ["reviews"]);
   }
   return (
@@ -400,7 +401,7 @@ function MembershipsTab() {
   });
   async function updatePrice(id: string, cents: number) {
     const { error } = await supabase.from("membership_plans").update({ price_cents: cents }).eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success("Price updated"); inv(["admin-plans"]);
   }
   return (
@@ -477,19 +478,19 @@ function InventoryTab() {
   async function addItem() {
     if (!newItem.name.trim()) return;
     const { error } = await supabase.from("inventory_items").insert({ name: newItem.name.trim(), category: newItem.category, total_count: Number(newItem.total_count) || 1, notes: newItem.notes });
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success("Item added");
     setNewItem({ name: "", category: "Equipment", total_count: "1", notes: "" });
     inv(["admin-inventory-items"]);
   }
   async function removeItem(id: string) {
     const { error } = await supabase.from("inventory_items").delete().eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     inv(["admin-inventory-items"], ["admin-inventory-checkouts"]);
   }
   async function markReturned(id: string) {
     const { error } = await supabase.from("inventory_checkouts").update({ returned_at: new Date().toISOString().slice(0, 10) }).eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success("Marked returned");
     inv(["admin-inventory-checkouts"]);
   }
@@ -581,7 +582,7 @@ function CheckoutDialog({ item, onClose, onDone }: { item: { id: string; name: s
       expected_return_at: f.returnBy || null,
     });
     setBusy(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success("Checked out");
     onDone();
     onClose();

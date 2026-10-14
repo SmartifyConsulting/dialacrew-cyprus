@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
+import { friendlyError } from "@/lib/errors";
 import { AlertTriangle, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Panel } from "@/components/AppShell";
@@ -48,7 +49,7 @@ export function ProjectInsights({ p, isProducer }: { p: Production; isProducer: 
     setBusy(true);
     const { error } = await supabase.from("production_risks").insert({ production_id: p.id, text: text.trim() });
     setBusy(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     setText("");
     setAdding(false);
     qc.invalidateQueries({ queryKey: ["production-risks", p.id] });
@@ -56,7 +57,7 @@ export function ProjectInsights({ p, isProducer }: { p: Production; isProducer: 
 
   async function removeRisk(id: string) {
     const { error } = await supabase.from("production_risks").delete().eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     qc.invalidateQueries({ queryKey: ["production-risks", p.id] });
   }
 

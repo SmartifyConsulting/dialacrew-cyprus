@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { friendlyError } from "@/lib/errors";
 import { useEffect, useRef, useState } from "react";
 import { Copy, Pencil, Search, Trash2, Upload } from "lucide-react";
 import { Badge, ClientBadge, Page, Panel } from "@/components/AppShell";
@@ -49,7 +50,7 @@ function ClientPicker({ clients, value, onChange, onClientsChanged }: { clients:
     setBusy(true);
     const { error } = await supabase.from("clients").insert({ company: newClient.company.trim(), name: newClient.name.trim() || newClient.company.trim() });
     setBusy(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success(`${newClient.company} added`);
     onClientsChanged();
     onChange(newClient.company.trim());
@@ -90,7 +91,7 @@ function ClientPicker({ clients, value, onChange, onClientsChanged }: { clients:
     setBusy(true);
     const { error } = await supabase.from("clients").insert(records);
     setBusy(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success(`Imported ${records.length} client(s)`);
     onClientsChanged();
   }
@@ -206,10 +207,10 @@ function Productions() {
       const payload = { name: f.name, client: f.client, job_id: f.jobId.trim(), type: f.type, location: f.location, budget: f.budget, date: f.startDate || null, end_date: f.endDate || null, days };
       if (draftId) {
         const { error } = await supabase.from("productions").update(payload).eq("id", draftId);
-        if (error) { toast.error(error.message); return; }
+        if (error) { toast.error(friendlyError(error)); return; }
       } else {
         const { data, error } = await supabase.from("productions").insert({ ...payload, status: "Draft" }).select("id").single();
-        if (error) { toast.error(error.message); return; }
+        if (error) { toast.error(friendlyError(error)); return; }
         setDraftId(data.id);
       }
       qc.invalidateQueries({ queryKey: ["productions"] });
@@ -223,7 +224,7 @@ function Productions() {
   async function deleteProduction(p: (typeof list)[number]) {
     if (!window.confirm(`Delete "${p.name}"? This can't be undone.`)) return;
     const { error } = await supabase.from("productions").delete().eq("id", p.id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success(`${p.name} deleted`);
     qc.invalidateQueries({ queryKey: ["productions"] });
   }
@@ -245,7 +246,7 @@ function Productions() {
     const { data, error } = targetId
       ? await supabase.from("productions").update(payload).eq("id", targetId).select("id").single()
       : await supabase.from("productions").insert({ ...payload, status: "Draft" }).select("id").single();
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     const assigned = Object.entries(roleCrew).filter(([, crewId]) => crewId);
     for (const [role, crewId] of assigned) {
       const rate = crew.find((c) => c.id === crewId)?.dayRate ?? 0;

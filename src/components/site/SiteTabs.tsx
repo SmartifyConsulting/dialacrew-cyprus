@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { friendlyError } from "@/lib/errors";
 import { CheckCircle2, Circle, Download, FileText, LogIn, LogOut, MapPin, Mic, Paperclip, Plus, Star, Trash2, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge, Panel } from "@/components/AppShell";
@@ -126,7 +127,7 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
       ends_at: lf.endsAt ? new Date(lf.endsAt).toISOString() : null,
     });
     setBusy(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success("Location point added");
     setLf({ label: "", address: "", latitude: "", longitude: "", startsAt: "", endsAt: "" });
     setAdding(false);
@@ -135,7 +136,7 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
 
   async function removePoint(id: string) {
     const { error } = await supabase.from("production_locations").delete().eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     inv(["location-points", p.id]);
   }
 
@@ -249,7 +250,7 @@ export function OverviewTab({ p, isProducer }: Ctx) {
       setGf({ role: "", date: p.date ?? "", callTime: "", wrapTime: "", rate: "" });
       setPosting(false);
       inv(["production-open-gigs", p.id]);
-    } catch (e) { toast.error((e as Error).message); }
+    } catch (e) { toast.error(friendlyError(e)); }
   }
 
   async function save() {
@@ -257,12 +258,12 @@ export function OverviewTab({ p, isProducer }: Ctx) {
       address: f.address, summary: f.summary, geofence_m: Number(f.geofence) || 10,
       latitude: f.latitude ? Number(f.latitude) : null, longitude: f.longitude ? Number(f.longitude) : null,
     }).eq("id", p.id);
-    if (error) { toast.error(error.message); throw error; }
+    if (error) { toast.error(friendlyError(error)); throw error; }
     inv(["productions"]);
   }
   async function useHere() {
     try { const pos = await getPosition(); update({ latitude: pos.coords.latitude.toFixed(6), longitude: pos.coords.longitude.toFixed(6) }); }
-    catch (e) { toast.error((e as Error).message); }
+    catch (e) { toast.error(friendlyError(e)); }
   }
 
   // Autosave: once the producer edits any field here, persist it a moment after they stop typing —
@@ -380,7 +381,7 @@ function RateDialog({ crewId, name, productionId, onClose }: { crewId: string; n
     const { error } = await supabase.from("crew_reviews").upsert(
       { crew_id: crewId, production_id: productionId, rating: stars, comment, reviewer_id: u.user!.id, reviewer_name: prof?.full_name ?? "" },
       { onConflict: "crew_id,production_id,reviewer_id" });
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success(`Rating saved for ${name}`);
     inv(["reviews"], ["crew"]);
     onClose();
@@ -438,13 +439,13 @@ export function PostsTab({ p, userId, myName, isProducer }: Ctx) {
       setBody(""); setFiles([]); setAudio(null);
       inv(["posts", p.id]);
       toast.success("Posted — everyone on the job has been notified");
-    } catch (e) { toast.error((e as Error).message); }
+    } catch (e) { toast.error(friendlyError(e)); }
     setBusy(false);
   }
 
   async function remove(id: string) {
     const { error } = await supabase.from("site_posts").delete().eq("id", id);
-    if (error) toast.error(error.message); else inv(["posts", p.id]);
+    if (error) toast.error(friendlyError(error)); else inv(["posts", p.id]);
   }
 
   return (
@@ -509,7 +510,7 @@ export function MessagesTab({ p, userId, myName }: Ctx & { bookings: Booking[]; 
       const { error } = await supabase.from("messages").insert({ production_id: p.id, booking_id: bookingId === "all" ? null : bookingId, sender_id: userId, sender_name: myName, body: body.trim() });
       if (error) throw error;
       setBody(""); inv(["messages", p.id, bookingId]);
-    } catch (e) { toast.error((e as Error).message); }
+    } catch (e) { toast.error(friendlyError(e)); }
     setBusy(false);
   }
 
@@ -594,7 +595,7 @@ export function RegisterTab({ p, isProducer, userId, myName, myCrewId }: Ctx) {
       if (!isOnline()) toast.warning(`${kind === "in" ? "Check-in" : "Check-out"} saved offline — will sync when you're back online.`);
       else if (kind === "in" && d != null && !isOnSite(d, radius)) toast.warning(`Checked in, but you are ${d}m from the site.`);
       else toast.success(kind === "in" ? "Checked in" : "Checked out");
-    } catch (e) { toast.error((e as Error).message); }
+    } catch (e) { toast.error(friendlyError(e)); }
     setBusy(false);
   }
 
@@ -698,11 +699,11 @@ export function TasksTab({ p, userId }: Ctx) {
   async function add() {
     if (!f.title.trim()) return;
     const { error } = await supabase.from("site_tasks").insert({ production_id: p.id, title: f.title.trim(), assigned_crew_id: f.crew || null, due_date: f.due || null, created_by: userId });
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     setF({ title: "", crew: "", due: "" }); inv(["tasks", p.id]);
   }
   async function toggle(id: string, done: boolean) { await supabase.from("site_tasks").update({ done }).eq("id", id); inv(["tasks", p.id]); }
-  async function remove(id: string) { const { error } = await supabase.from("site_tasks").delete().eq("id", id); if (error) toast.error(error.message); inv(["tasks", p.id]); }
+  async function remove(id: string) { const { error } = await supabase.from("site_tasks").delete().eq("id", id); if (error) toast.error(friendlyError(error)); inv(["tasks", p.id]); }
   return (
     <Panel title="Tasks">
       <div className="flex flex-wrap gap-2 border-b border-border p-4">
@@ -743,10 +744,10 @@ export function DocumentsTab({ p, userId, myName }: Ctx) {
         if (error) throw error;
       }
       toast.success("Uploaded"); inv(["docs", p.id]);
-    } catch (e) { toast.error((e as Error).message); }
+    } catch (e) { toast.error(friendlyError(e)); }
     setBusy(false);
   }
-  async function remove(id: string) { const { error } = await supabase.from("site_documents").delete().eq("id", id); if (error) toast.error(error.message); inv(["docs", p.id]); }
+  async function remove(id: string) { const { error } = await supabase.from("site_documents").delete().eq("id", id); if (error) toast.error(friendlyError(error)); inv(["docs", p.id]); }
   return (
     <Panel title="Documents" right={
       <div className="flex items-center gap-2">
@@ -780,7 +781,7 @@ export function AssetsTab({ p, isProducer, bookings, crewNames }: Ctx & { bookin
     const { error } = on
       ? await supabase.from("booking_assets").insert({ booking_id: b.id, asset_id: a.id, daily_fee: a.daily_fee, days: b.days })
       : await supabase.from("booking_assets").delete().eq("booking_id", b.id).eq("asset_id", a.id);
-    if (error) toast.error(error.message); else inv(["booking-assets"]);
+    if (error) toast.error(friendlyError(error)); else inv(["booking-assets"]);
   }
 
   const grandTotal = rows.reduce((sum, b) => {
@@ -855,7 +856,7 @@ function SwapDialog({ booking, currentName, onClose, onDone }: { booking: Bookin
       toast.success("Crew member swapped");
       onDone();
       onClose();
-    } catch (e) { toast.error((e as Error).message); }
+    } catch (e) { toast.error(friendlyError(e)); }
     setBusy(false);
   }
 

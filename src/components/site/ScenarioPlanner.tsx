@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sparkles, Save, Trash2, Star, CheckCircle2, Plus, ArrowLeftRight, Users, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { friendlyError } from "@/lib/errors";
 import { supabase } from "@/integrations/supabase/client";
 import { Panel } from "@/components/AppShell";
 import { useBookings, useCrew, useCrewGroups } from "@/lib/db";
@@ -167,12 +168,12 @@ export function ScenarioPlanner({ p }: { p: Production }) {
       toast.success(`"${s.name}" committed — crew pencilled in`);
       ["scenarios", "bookings", "productions", "production-open-gigs"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
       qc.invalidateQueries({ queryKey: ["scenarios", p.id] });
-    } catch (e) { toast.error((e as Error).message); }
+    } catch (e) { toast.error(friendlyError(e)); }
     finally { setCommitting(false); }
   }
   async function remove(id: string) {
     const { error } = await supabase.from("brief_matches").delete().eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     if (id === activeId) pick("");
     qc.invalidateQueries({ queryKey: ["scenarios", p.id] });
   }

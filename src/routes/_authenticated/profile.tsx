@@ -2,6 +2,7 @@ import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
+import { friendlyError } from "@/lib/errors";
 import { Camera } from "lucide-react";
 import { Page, Panel, Badge } from "@/components/AppShell";
 import { useCompany, useCompanyInvites, useRole, useSession } from "@/lib/auth";
@@ -60,7 +61,7 @@ function AvatarCard({ userId }: { userId: string | undefined }) {
       if (error) throw error;
       toast.success("Profile picture updated");
       qc.invalidateQueries({ queryKey: ["my-avatar", userId] });
-    } catch (e) { toast.error((e as Error).message); }
+    } catch (e) { toast.error(friendlyError(e)); }
   }
 
   return (
@@ -102,7 +103,7 @@ function CompanyPanel({ userId }: { userId: string | undefined }) {
       toast.success("Invite created — copy the link below and send it to them");
       setEmail("");
       qc.invalidateQueries({ queryKey: ["company-invites", companyId] });
-    } catch (e) { toast.error((e as Error).message); }
+    } catch (e) { toast.error(friendlyError(e)); }
     setBusy(false);
   }
 

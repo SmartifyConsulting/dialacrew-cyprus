@@ -1717,6 +1717,38 @@ export type Database = {
       claim_crew_profile: { Args: never; Returns: string }
       claim_gig: { Args: { _booking: string }; Returns: undefined }
       crew_on_time_pct: { Args: { _crew_id: string }; Returns: number }
+      get_banking_details: {
+        Args: { _crew_id: string }
+        Returns: {
+          account_holder_name: string
+          bank_name: string
+          bank_country: string
+          bank_address: string
+          account_number: string
+          iban: string
+          swift_bic: string
+          routing_or_sort_code: string
+          currency: string
+          notes: string
+          updated_at: string
+        }[]
+      }
+      upsert_banking_details: {
+        Args: {
+          _crew_id: string
+          _account_holder_name: string
+          _bank_name: string
+          _bank_country: string
+          _bank_address: string
+          _account_number: string
+          _iban: string
+          _swift_bic: string
+          _routing_or_sort_code: string
+          _currency: string
+          _notes: string
+        }
+        Returns: undefined
+      }
       expire_pencils: { Args: never; Returns: undefined }
       generate_invoice: { Args: { _booking: string }; Returns: string }
       get_invite: {

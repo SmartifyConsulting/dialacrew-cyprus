@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { friendlyError } from "@/lib/errors";
 import { Heart, Trash2, Users } from "lucide-react";
 import { Page } from "@/components/AppShell";
 import { useRole, useSession } from "@/lib/auth";
@@ -50,7 +51,7 @@ function CrewPage() {
 
   async function toggleFavourite(id: string) {
     const on = !(favourites.data ?? []).includes(id);
-    try { await toggleFav.mutateAsync({ crewId: id, on }); } catch (e) { toast.error((e as Error).message); }
+    try { await toggleFav.mutateAsync({ crewId: id, on }); } catch (e) { toast.error(friendlyError(e)); }
   }
 
   function startPicking() { setPicking(true); setPicked([]); setMixName(""); setMixOpen(false); }
@@ -62,7 +63,7 @@ function CrewPage() {
       await createGroup.mutateAsync({ name: mixName.trim(), crewIds: picked });
       toast.success(`"${mixName.trim()}" saved — pick it from Favourite Mix next time you're crewing a job`);
       cancelPicking();
-    } catch (e) { toast.error((e as Error).message); }
+    } catch (e) { toast.error(friendlyError(e)); }
   }
 
   return (
@@ -195,7 +196,7 @@ function PencilDialog({ crew, onClose }: { crew: { id: string; name: string; rol
       });
       toast.success(`${f.priority === 1 ? "1st" : "2nd"} pencil sent to ${crew.name} — expires in 3 days unless confirmed`);
       onClose();
-    } catch (e) { toast.error((e as Error).message); }
+    } catch (e) { toast.error(friendlyError(e)); }
   }
 
   return (

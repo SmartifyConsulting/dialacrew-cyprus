@@ -12,6 +12,8 @@ export async function uploadFile(folder: string, file: Blob, name: string) {
 }
 
 export async function signedUrl(path: string) {
+  // Already a full URL (e.g. a sample avatar from an external placeholder service) — use it as-is.
+  if (/^https?:\/\//.test(path)) return path;
   const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, 3600);
   if (error) throw error;
   return data.signedUrl;

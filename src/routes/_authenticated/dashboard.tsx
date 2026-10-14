@@ -11,6 +11,7 @@ import { useRole, useSession } from "@/lib/auth";
 import { useMyCrewId, useMyName } from "@/lib/site";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { friendlyError } from "@/lib/errors";
 
 function DashboardRouter() {
   const { session } = useSession();
@@ -48,11 +49,11 @@ function CrewDashboard() {
       await requestOT.mutateAsync({ bookingId: todayJob.id, production: pr?.name ?? "", who: myName, hours: ot.hours, amount: overtimeAmount(Number(todayJob.crew_rate ?? 0), ot.hours, todayJob.booking_date, ot.shift), reason: `${shiftLabel(todayJob.booking_date, ot.shift)} · ${ot.reason || "Ran past wrap"}` });
       toast.success("Overtime sent to the producer for approval");
       setOt({ hours: 1, reason: "", shift: "day" });
-    } catch (e) { toast.error((e as Error).message); }
+    } catch (e) { toast.error(friendlyError(e)); }
   }
   async function respond(id: string, accept: boolean) {
     const { error } = await supabase.from("bookings").update({ status: accept ? "confirmed" : "cancelled" }).eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success(accept ? "Job accepted" : "Job declined");
     qc.invalidateQueries({ queryKey: ["crew-jobs"] });
   }
