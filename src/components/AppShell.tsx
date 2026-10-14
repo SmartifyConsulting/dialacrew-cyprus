@@ -199,22 +199,31 @@ export function Badge({ children }: { children: string }) {
 }
 
 // Fixed palette so each client name always lands on the same color — makes client identity scannable at a glance.
+// Green/emerald are deliberately excluded: that family is reserved for the Savanna Gin highlight, so no other
+// client (e.g. Kinetic Bank) can ever be confused for it.
 const CLIENT_COLORS = [
-  "bg-orange-500 text-white", "bg-blue-600 text-white", "bg-purple-600 text-white", "bg-emerald-600 text-white",
+  "bg-orange-500 text-white", "bg-blue-600 text-white", "bg-purple-600 text-white", "bg-fuchsia-600 text-white",
   "bg-pink-600 text-white", "bg-teal-600 text-white", "bg-red-600 text-white", "bg-indigo-600 text-white",
-  "bg-amber-600 text-white", "bg-cyan-600 text-white",
+  "bg-amber-600 text-white", "bg-cyan-600 text-white", "bg-rose-600 text-white", "bg-violet-600 text-white",
 ];
 
-// Pinned overrides take priority over the hashed palette — e.g. Savanna Gin is always green, everywhere.
+// Pinned overrides take priority over the assigned palette — e.g. Savanna Gin is always green, everywhere.
 const CLIENT_COLOR_OVERRIDES: Record<string, string> = {
   "Savanna Gin": "bg-green-600 text-white",
 };
 
+// Assigns each client name the next unused palette color the first time it's seen, and remembers it —
+// so two different clients can never end up sharing a badge color, unlike a hash that can collide.
+const clientColorAssignments = new Map<string, string>();
+
 function clientColor(name: string) {
   if (CLIENT_COLOR_OVERRIDES[name]) return CLIENT_COLOR_OVERRIDES[name];
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
-  return CLIENT_COLORS[h % CLIENT_COLORS.length];
+  const existing = clientColorAssignments.get(name);
+  if (existing) return existing;
+  const used = new Set(clientColorAssignments.values());
+  const next = CLIENT_COLORS.find((c) => !used.has(c)) ?? CLIENT_COLORS[clientColorAssignments.size % CLIENT_COLORS.length]!;
+  clientColorAssignments.set(name, next);
+  return next;
 }
 
 export function ClientBadge({ name }: { name: string }) {
