@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { PasswordInput, fieldClass, labelClass, submitClass } from "@/components/PasswordInput";
 import { mapAuthError, passwordChecks, usePlatformSetting } from "@/lib/auth";
-import { DEV_ACCOUNTS } from "@/lib/dev-accounts";
 import { SERVICE_SKILLS } from "@/lib/skills";
 
 /** Sign-in / sign-up card shared by the home page and /auth. */
@@ -113,44 +112,9 @@ export function AuthForm() {
     if (result.error) fail(result.error);
   }
 
-  async function quickSwitch(acct: (typeof DEV_ACCOUNTS)[number]) {
-    setError("");
-    let pw = acct.password;
-    if (!pw) {
-      const cacheKey = `devpw:${acct.email}`;
-      pw = sessionStorage.getItem(cacheKey);
-      if (!pw) {
-        pw = window.prompt(`Password for ${acct.email} (cached for this browser session only, never saved to disk):`);
-        if (!pw) return;
-        sessionStorage.setItem(cacheKey, pw);
-      }
-    }
-    setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email: acct.email, password: pw });
-    setBusy(false);
-    if (error) { sessionStorage.removeItem(`devpw:${acct.email}`); fail(error); }
-  }
-
   return (
     <div className="w-full">
-    {import.meta.env.DEV && (
-      <div className="mb-6 rounded-sm border border-dashed border-primary/50 bg-primary/5 p-3">
-        <p className="mb-2 text-xs font-semibold text-primary">Dev quick switch (local only)</p>
-        <div className="flex flex-wrap gap-2">
-          {DEV_ACCOUNTS.map((a) => (
-            <button key={a.email} type="button" disabled={busy} onClick={() => quickSwitch(a)}
-              className="rounded-sm border border-primary/40 bg-card px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 disabled:opacity-50">
-              {a.label}
-            </button>
-          ))}
-          <button type="button" disabled={busy} onClick={() => supabase.auth.signOut()}
-            className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted disabled:opacity-50">
-            Sign out
-          </button>
-        </div>
-      </div>
-    )}
-    <div className="grid grid-cols-2 overflow-hidden rounded-sm border border-border bg-card">
+    <div className="grid grid-cols-2 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
       {(["signin", "signup"] as const).map((m) => (
         <button key={m} type="button" onClick={() => { setMode(m); setError(""); }}
           className={`py-2 font-display text-sm font-semibold ${mode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}>
@@ -159,7 +123,7 @@ export function AuthForm() {
       ))}
     </div>
 
-    <form onSubmit={submit} className="mt-4 space-y-4 rounded-sm border border-border bg-card p-6">
+    <form onSubmit={submit} className="mt-4 space-y-4 rounded-xl border border-border bg-card p-6 shadow-sm">
       {mode === "signup" && (
         <>
           {invite && (
@@ -167,19 +131,6 @@ export function AuthForm() {
               You've been invited to join <strong>{invite.company_name}</strong> as {invite.company_role.replace("_", " ")}.
             </div>
           )}
-          <div className="grid grid-cols-2 gap-2">
-            <div><label className={labelClass} htmlFor="firstName">First name</label>
-              <input id="firstName" required value={firstName} onChange={(e) => setFirstName(e.target.value)} className={fieldClass} /></div>
-            <div><label className={labelClass} htmlFor="lastName">Last name</label>
-              <input id="lastName" required value={lastName} onChange={(e) => setLastName(e.target.value)} className={fieldClass} /></div>
-          </div>
-          <div><label className={labelClass} htmlFor="phone">Phone</label>
-            <div className="flex gap-2">
-              <select aria-label="Country code" value={dialCode} onChange={(e) => setDialCode(e.target.value)} className={`${fieldClass} w-28`}>
-                {DIAL_CODES.map((d) => <option key={d.code} value={d.code}>{d.label}</option>)}
-              </select>
-              <input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="82 123 4567" className={fieldClass} />
-            </div></div>
           {!invite && (
             <div><span className={labelClass}>I am</span>
               <div className={`grid gap-2 ${producerSignupEnabled ? "grid-cols-2" : "grid-cols-1"}`}>
@@ -195,6 +146,19 @@ export function AuthForm() {
               )}
             </div>
           )}
+          <div className="grid grid-cols-2 gap-2">
+            <div><label className={labelClass} htmlFor="firstName">First name</label>
+              <input id="firstName" required value={firstName} onChange={(e) => setFirstName(e.target.value)} className={fieldClass} /></div>
+            <div><label className={labelClass} htmlFor="lastName">Last name</label>
+              <input id="lastName" required value={lastName} onChange={(e) => setLastName(e.target.value)} className={fieldClass} /></div>
+          </div>
+          <div><label className={labelClass} htmlFor="phone">Phone</label>
+            <div className="flex gap-2">
+              <select aria-label="Country code" value={dialCode} onChange={(e) => setDialCode(e.target.value)} className={`${fieldClass} w-28`}>
+                {DIAL_CODES.map((d) => <option key={d.code} value={d.code}>{d.label}</option>)}
+              </select>
+              <input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="82 123 4567" className={fieldClass} />
+            </div></div>
           {!invite && producerSignupEnabled && role === "producer" && (
             <div><label className={labelClass} htmlFor="companyName">Company name</label>
               <input id="companyName" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} className={fieldClass} /></div>
@@ -263,7 +227,13 @@ export function AuthForm() {
     <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
       <span className="h-px flex-1 bg-border" />or<span className="h-px flex-1 bg-border" />
     </div>
-    <button type="button" onClick={google} className="w-full rounded-sm border border-border bg-card py-3 font-display text-sm font-semibold text-foreground hover:bg-muted">
+    <button type="button" onClick={google} className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card py-3 font-display text-sm font-semibold text-foreground shadow-sm hover:bg-muted">
+      <svg viewBox="0 0 48 48" className="h-5 w-5" aria-hidden="true">
+        <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z" />
+        <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.1 18.9 12 24 12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6.1 29.6 4 24 4c-7.7 0-14.3 4.3-17.7 10.7z" />
+        <path fill="#4CAF50" d="M24 44c5.5 0 10.4-1.9 14.3-5.1l-6.6-5.6c-2 1.5-4.6 2.5-7.7 2.5-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.6 39.6 16.2 44 24 44z" />
+        <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6.6 5.6C41.3 36.2 44 30.6 44 24c0-1.3-.1-2.7-.4-3.5z" />
+      </svg>
       Continue with Google
     </button>
     </div>
