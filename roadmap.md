@@ -21,3 +21,10 @@
 - [x] Phase 4: Crew phone polish (GPS check-in, overtime logger, earnings)
 - [x] Overtime: weekend 1.5×, night shift 2× (auto-calculated)
 - [x] 1st / 2nd pencil choice when pencilling crew
+- [x] Company Settings menu label uses company name
+- [x] Escrow.com: one pool per production, batch release at wrap
+- [ ] Grab a Gig marketplace (fee to secure, 24h no-show penalty)
+- [ ] Crew value dashboard (connections, earnings, Grab a Gig)
+- [ ] Social-media opt-in at signup + admin spotlight queue
+- [ ] Email-domain company onboarding, pending approval, 2 extra admins
+- [ ] Crew can never rate anyone
