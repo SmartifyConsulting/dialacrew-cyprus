@@ -199,12 +199,13 @@ export function Badge({ children }: { children: string }) {
 }
 
 // Fixed palette so each client name always lands on the same color — makes client identity scannable at a glance.
-// Green/emerald are deliberately excluded: that family is reserved for the Savanna Gin highlight, so no other
-// client (e.g. Kinetic Bank) can ever be confused for it.
+// Green/emerald are excluded: that family is reserved for the Savanna Gin highlight. Blue is excluded too:
+// it matches the app's primary brand color, so a client badge would be mistaken for a primary-styled element
+// (buttons, active status, links).
 const CLIENT_COLORS = [
-  "bg-orange-500 text-white", "bg-blue-600 text-white", "bg-purple-600 text-white", "bg-fuchsia-600 text-white",
+  "bg-orange-500 text-white", "bg-purple-600 text-white", "bg-fuchsia-600 text-white",
   "bg-pink-600 text-white", "bg-teal-600 text-white", "bg-red-600 text-white", "bg-indigo-600 text-white",
-  "bg-amber-600 text-white", "bg-cyan-600 text-white", "bg-rose-600 text-white", "bg-violet-600 text-white",
+  "bg-amber-600 text-white", "bg-rose-600 text-white", "bg-violet-600 text-white", "bg-stone-600 text-white",
 ];
 
 // Pinned overrides take priority over the assigned palette — e.g. Savanna Gin is always green, everywhere.

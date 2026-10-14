@@ -153,6 +153,7 @@ function Dashboard() {
   const setState = useSetRequestState();
   const respondToBooking = useRespondToBooking();
   const crewName = (id: string | null) => (id ? crew.find((c) => c.id === id)?.name ?? "—" : "Open gig");
+  const CrewLink = ({ id }: { id: string | null }) => id ? <Link to="/crew/$id" params={{ id }} className="hover:text-primary hover:underline">{crewName(id)}</Link> : <>{crewName(id)}</>;
   const prodName = (id: string) => productions.find((p) => p.id === id)?.name ?? "Production";
   const count = (s: string) => bookings.filter((b) => b.status === s).length;
   const secured = productions.reduce((a, p) => a + p.securedFunds, 0);
@@ -218,7 +219,7 @@ function Dashboard() {
                 <li key={b.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
                   <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-success/20 text-success"><Check className="h-3.5 w-3.5" /></span>
                   <div className="min-w-0 flex-1">
-                    <div className="font-medium">{crewName(b.crewId)} accepted your {b.pencilPriority === 2 ? "2nd" : "1st"} pencil</div>
+                    <div className="font-medium"><CrewLink id={b.crewId} /> accepted your {b.pencilPriority === 2 ? "2nd" : "1st"} pencil</div>
                     <div className="truncate text-xs text-muted-foreground">
                       <Highlight text={prodName(b.productionId)} /> · {b.role}{b.bookingDate ? ` · ${b.bookingDate}` : ""} · {zar(b.crewRate)} a day
                     </div>
@@ -265,7 +266,7 @@ function Dashboard() {
               {today.length === 0 && <li className="p-4 text-muted-foreground">Nobody on set today.</li>}
               {today.map((b) => (
                 <li key={b.id} className="flex items-center gap-3 px-4 py-2.5">
-                  <span className="flex-1 font-medium">{crewName(b.crewId)} <span className="font-normal text-muted-foreground">· {b.role}</span></span>
+                  <span className="flex-1 font-medium"><CrewLink id={b.crewId} /> <span className="font-normal text-muted-foreground">· {b.role}</span></span>
                   <Badge>{b.status}</Badge>
                   {b.attendance && <Badge>{b.attendance}</Badge>}
                 </li>

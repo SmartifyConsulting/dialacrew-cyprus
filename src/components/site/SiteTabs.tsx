@@ -454,7 +454,7 @@ export function RegisterTab({ p, isProducer, userId, myName, myCrewId }: Ctx) {
               const status = !l ? "Not arrived" : l.kind === "in" ? "On set" : "Wrapped";
               return (
                 <tr key={m.crew_id} className="border-t border-border">
-                  <td className="px-4 py-2 font-medium">{m.name}</td>
+                  <td className="px-4 py-2 font-medium"><Link to="/crew/$id" params={{ id: m.crew_id }} className="hover:text-primary">{m.name}</Link></td>
                   <td className="px-4"><Badge>{status}</Badge></td>
                   <td className="px-4 text-xs text-muted-foreground">{l ? `${l.kind === "in" ? "In" : "Out"} · ${when(l.created_at)}${l.distance_m != null ? ` · ${l.distance_m}m` : ""}` : "—"}</td>
                   {isProducer && <td className="px-4"><div className="flex gap-2">
@@ -602,7 +602,7 @@ export function AssetsTab({ p, isProducer, bookings, crewNames }: Ctx & { bookin
         const sel = selected.filter((s) => s.booking_id === b.id);
         const lines = sel.map((s) => ({ dailyFee: Number(s.daily_fee), days: s.days }));
         return (
-          <Panel key={b.id} title={`${crewNames[b.crewId ?? ""] ?? "Provider"} — ${b.role}`} right={
+          <Panel key={b.id} title={<>{b.crewId ? <Link to="/crew/$id" params={{ id: b.crewId }} className="hover:underline">{crewNames[b.crewId] ?? "Provider"}</Link> : "Provider"} — {b.role}</>} right={
             <div className="flex items-center gap-3">
               <span className="text-sm">Assets {zar(assetsTotal(lines))}{isProducer && <> · Total {zar(providerTotal(b.crewRate, b.days, lines))}</>}</span>
               {isProducer && <button onClick={() => setSwapping(b)} className="text-xs text-primary hover:underline">Swap</button>}
@@ -721,7 +721,9 @@ export function CommercialsTab({ p, bookings, crewNames, requests }: Ctx & { boo
           <tbody>
             {rows.map(({ b, assets, cost, charge }) => (
               <tr key={b.id} className="border-t border-border">
-                <td className="px-4 py-2.5 font-medium">{b.role}</td><td className="px-4">{crewNames[b.crewId ?? ""] ?? "Open"}</td><td className="px-4">{b.days}</td>
+                <td className="px-4 py-2.5 font-medium">{b.role}</td>
+                <td className="px-4">{b.crewId ? <Link to="/crew/$id" params={{ id: b.crewId }} className="hover:text-primary">{crewNames[b.crewId] ?? "Open"}</Link> : "Open"}</td>
+                <td className="px-4">{b.days}</td>
                 {!clientView && <><td className="px-4 text-muted-foreground">{zar(b.crewRate)}</td><td className="px-4">{zar(assets)}</td><td className="px-4 font-semibold">{zar(cost)}</td></>}
                 <td className="px-4">{zar(charge)}</td><td className="px-4"><Badge>{b.status}</Badge></td>
               </tr>
