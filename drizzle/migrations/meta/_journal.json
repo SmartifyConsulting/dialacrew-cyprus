@@ -50,6 +50,13 @@
       "when": 1792010032445,
       "tag": "0006_production_escrow",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792010284685,
+      "tag": "0007_community_gigs",
+      "breakpoints": true
     }
   ]
 }
