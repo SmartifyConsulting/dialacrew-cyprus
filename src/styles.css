@@ -1,8 +1,6 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
-@import "@fontsource-variable/sora";
-@import "@fontsource-variable/manrope";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -46,9 +44,11 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
   --color-success: var(--success);
-  --font-script: "Sora Variable", "Sora", system-ui, sans-serif;
-  --font-sans: "Manrope Variable", "Manrope", system-ui, -apple-system, sans-serif;
-  --font-display: "Sora Variable", "Sora", system-ui, sans-serif;
+  --font-script: "Yellowtail", cursive;
+  --font-sans: "Barlow", system-ui, sans-serif;
+  --font-display: "Barlow Condensed", "Barlow", system-ui, sans-serif;
+  --color-nav: var(--nav);
+  --color-nav-foreground: var(--nav-foreground);
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
@@ -69,6 +69,8 @@
 
 :root {
   --radius: 0.625rem;
+  --nav: oklch(0.1 0 0);
+  --nav-foreground: oklch(0.98 0 0);
   --background: oklch(0.975 0.004 260);
   --foreground: oklch(0.15 0 0);
   --card: oklch(1 0 0);
@@ -152,4 +154,8 @@
 
 @layer base {
   body { font-family: var(--font-sans); }
+}
+
+@layer base {
+  h1, h2, h3 { font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700; }
 }
