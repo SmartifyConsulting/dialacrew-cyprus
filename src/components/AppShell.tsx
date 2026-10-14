@@ -213,18 +213,35 @@ const CLIENT_COLOR_OVERRIDES: Record<string, string> = {
   "Savanna Gin": "bg-green-600 text-white",
 };
 
-// Assigns each client name the next unused palette color the first time it's seen, and remembers it —
-// so two different clients can never end up sharing a badge color, unlike a hash that can collide.
+// Every client name seen anywhere in the app is registered here up front (alphabetically), so the same
+// name always gets the same color on every screen and every reload — not just within one page's render
+// order. A name not yet registered falls back to a hash, then gets registered at that slot.
 const clientColorAssignments = new Map<string, string>();
+let nextSlot = 0;
+
+function registerClient(name: string) {
+  if (clientColorAssignments.has(name) || CLIENT_COLOR_OVERRIDES[name]) return;
+  clientColorAssignments.set(name, CLIENT_COLORS[nextSlot % CLIENT_COLORS.length]!);
+  nextSlot++;
+}
+
+// Known clients, kept alphabetical — add a new client's name here so it gets a stable, unique color
+// everywhere instead of relying on a hash (which can collide or drift if the palette changes).
+["Atlas Pictures", "Coastline Tourism", "Kinetic Bank", "Savanna Drinks Co.", "Urban Beat Records", "Velvet Studio"]
+  .sort()
+  .forEach(registerClient);
 
 function clientColor(name: string) {
   if (CLIENT_COLOR_OVERRIDES[name]) return CLIENT_COLOR_OVERRIDES[name];
   const existing = clientColorAssignments.get(name);
   if (existing) return existing;
-  const used = new Set(clientColorAssignments.values());
-  const next = CLIENT_COLORS.find((c) => !used.has(c)) ?? CLIENT_COLORS[clientColorAssignments.size % CLIENT_COLORS.length]!;
-  clientColorAssignments.set(name, next);
-  return next;
+  // Unregistered client (added after this list was last updated): hash into the palette so it's at
+  // least consistent for itself, and register it so every other screen now agrees too.
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  const color = CLIENT_COLORS[h % CLIENT_COLORS.length]!;
+  clientColorAssignments.set(name, color);
+  return color;
 }
 
 export function ClientBadge({ name }: { name: string }) {
