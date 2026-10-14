@@ -120,7 +120,8 @@ export function Page({ title, subtitle, actions, children, open }: { title: stri
   return (
     <div className="min-h-screen bg-background">
       <TopNav />
-      <main className="mx-auto max-w-7xl px-4 py-6">
+      <div className="md:pl-60">
+      <main className="mx-auto max-w-7xl px-4 py-6 pb-24 md:pb-6">
         <RoleGate open={open}>
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
             <div>
@@ -132,6 +133,7 @@ export function Page({ title, subtitle, actions, children, open }: { title: stri
           {children}
         </RoleGate>
       </main>
+      </div>
     </div>
   );
 }
