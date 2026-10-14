@@ -222,7 +222,7 @@ function Dashboard() {
                 <li key={b.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
                   <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-success/20 text-success"><Check className="h-3.5 w-3.5" /></span>
                   <div className="min-w-0 flex-1">
-                    <div className="font-medium"><CrewLink id={b.crewId} /> accepted your {b.pencilPriority === 2 ? "2nd" : "1st"} pencil</div>
+                    <div className="truncate text-sm font-medium"><CrewLink id={b.crewId} /> accepted your {b.pencilPriority === 2 ? "2nd" : "1st"} pencil</div>
                     <div className="flex flex-wrap items-center gap-1 truncate text-xs text-muted-foreground">
                       {clientByProdId(b.productionId) && <ClientBadge name={clientByProdId(b.productionId)!} />} {prodName(b.productionId)} · {b.role}{b.bookingDate ? ` · ${b.bookingDate}` : ""} · {zar(b.crewRate)} a day
                     </div>
