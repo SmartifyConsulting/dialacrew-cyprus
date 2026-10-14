@@ -42,6 +42,63 @@ const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-
 const when = (s: string) => new Date(s).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" });
 const initials = (n: string) => n.split(" ").map((x) => x[0]).join("").slice(0, 2).toUpperCase();
 
+type AddressSuggestion = { label: string; lat: string; lon: string };
+
+// Debounced address lookup against OpenStreetMap's free Nominatim search — no API key needed.
+// Falls back to a plain text input (with no suggestions) if the request fails.
+export function AddressAutocomplete({ value, onChange, onSelect, placeholder, className }: {
+  value: string; onChange: (v: string) => void; onSelect: (s: AddressSuggestion) => void; placeholder?: string; className?: string;
+}) {
+  const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const boxRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open || value.trim().length < 3) { setSuggestions([]); return; }
+    const t = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(value)}`);
+        const data = (await res.json()) as { display_name: string; lat: string; lon: string }[];
+        setSuggestions(data.map((d) => ({ label: d.display_name, lat: d.lat, lon: d.lon })));
+      } catch { setSuggestions([]); }
+      setLoading(false);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [value, open]);
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) { if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false); }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  return (
+    <div ref={boxRef} className="relative">
+      <input
+        className={className}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        autoComplete="off"
+      />
+      {open && (loading || suggestions.length > 0) && (
+        <div className="absolute z-20 mt-1 w-full rounded-sm border border-border bg-card shadow-md">
+          {loading && <div className="px-3 py-2 text-xs text-muted-foreground">Searching…</div>}
+          {!loading && suggestions.map((s, i) => (
+            <button key={i} type="button" onClick={() => { onSelect(s); setOpen(false); setSuggestions([]); }}
+              className="block w-full px-3 py-2 text-left text-xs hover:bg-muted">
+              {s.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FileLink({ path, name }: { path: string; name: string }) {
   return (
     <button onClick={async () => { try { window.open(await signedUrl(path), "_blank", "noopener"); } catch { toast.error("Could not open file"); } }}
@@ -57,20 +114,21 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
   const points = useLocationPoints(p.id).data ?? [];
   const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [lf, setLf] = useState({ label: "", address: "", startsAt: "", endsAt: "" });
+  const [lf, setLf] = useState({ label: "", address: "", latitude: "", longitude: "", startsAt: "", endsAt: "" });
 
   async function addPoint() {
     if (!lf.label.trim()) { toast.error("Give this location a name"); return; }
     setBusy(true);
     const { error } = await supabase.from("production_locations").insert({
       production_id: p.id, label: lf.label.trim(), address: lf.address.trim(),
+      latitude: lf.latitude ? Number(lf.latitude) : null, longitude: lf.longitude ? Number(lf.longitude) : null,
       starts_at: lf.startsAt ? new Date(lf.startsAt).toISOString() : null,
       ends_at: lf.endsAt ? new Date(lf.endsAt).toISOString() : null,
     });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Location point added");
-    setLf({ label: "", address: "", startsAt: "", endsAt: "" });
+    setLf({ label: "", address: "", latitude: "", longitude: "", startsAt: "", endsAt: "" });
     setAdding(false);
     inv(["location-points", p.id]);
   }
@@ -109,7 +167,9 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
       {isProducer && adding && (
         <div className="space-y-2 border-t border-border p-4">
           <input className={`${input} w-full`} placeholder="Location name *" value={lf.label} onChange={(e) => setLf({ ...lf, label: e.target.value })} />
-          <input className={`${input} w-full`} placeholder="Address" value={lf.address} onChange={(e) => setLf({ ...lf, address: e.target.value })} />
+          <AddressAutocomplete className={`${input} w-full`} placeholder="Address — start typing to search" value={lf.address}
+            onChange={(v) => setLf({ ...lf, address: v })}
+            onSelect={(s) => setLf({ ...lf, address: s.label, latitude: s.lat, longitude: s.lon })} />
           <div className="grid gap-2 sm:grid-cols-2">
             <label className="block"><span className="text-xs text-muted-foreground">Starts</span>
               <input type="datetime-local" className={`${input} mt-1 w-full`} value={lf.startsAt} onChange={(e) => setLf({ ...lf, startsAt: e.target.value })} /></label>
@@ -131,7 +191,10 @@ export function OverviewTab({ p, isProducer }: Ctx) {
   const inv = useInvalidate();
   const [f, setF] = useState({ address: p.address ?? "", summary: p.summary ?? "", latitude: p.latitude?.toString() ?? "", longitude: p.longitude?.toString() ?? "", geofence: String(p.geofenceM ?? 10) });
   const [posting, setPosting] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(() => !(p.address || p.latitude));
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const dirty = useRef(false);
+  const update = (patch: Partial<typeof f>) => { setF((prev) => ({ ...prev, ...patch })); dirty.current = true; };
   const createGig = useCreateOpenGig();
   const [gf, setGf] = useState({ role: "", date: p.date ?? "", callTime: "", wrapTime: "", rate: "" });
   const openGigs = useQuery({
@@ -157,28 +220,37 @@ export function OverviewTab({ p, isProducer }: Ctx) {
       address: f.address, summary: f.summary, geofence_m: Number(f.geofence) || 10,
       latitude: f.latitude ? Number(f.latitude) : null, longitude: f.longitude ? Number(f.longitude) : null,
     }).eq("id", p.id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Site details saved");
-    setEditing(false);
+    if (error) { toast.error(error.message); throw error; }
     inv(["productions"]);
   }
   async function useHere() {
-    try { const pos = await getPosition(); setF({ ...f, latitude: pos.coords.latitude.toFixed(6), longitude: pos.coords.longitude.toFixed(6) }); }
+    try { const pos = await getPosition(); update({ latitude: pos.coords.latitude.toFixed(6), longitude: pos.coords.longitude.toFixed(6) }); }
     catch (e) { toast.error((e as Error).message); }
   }
 
-  const siteFilled = !!(p.address || p.latitude);
+  // Autosave: once the producer edits any field here, persist it a moment after they stop typing —
+  // no explicit Save button needed.
+  useEffect(() => {
+    if (!isProducer || !dirty.current) return;
+    setSaveState("saving");
+    const t = setTimeout(async () => {
+      try { await save(); dirty.current = false; setSaveState("saved"); }
+      catch { setSaveState("idle"); }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, 900);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [f.address, f.summary, f.latitude, f.longitude, f.geofence]);
 
   return (
     <div className="space-y-5">
-      <Panel title="Overview">
+      <Panel title="Overview" right={isProducer && saveState !== "idle" ? (
+        <span className="text-xs text-muted-foreground">{saveState === "saving" ? "Saving…" : "Saved"}</span>
+      ) : undefined}>
         <div className="space-y-3 p-4 text-sm">
           {isProducer ? (
-            <>
-              <label className="block"><span className="text-xs text-muted-foreground">Production summary</span>
-                <textarea rows={4} className={`${input} mt-1 w-full`} value={f.summary} onChange={(e) => setF({ ...f, summary: e.target.value })} /></label>
-              <button onClick={save} className={btn}>Save</button>
-            </>
+            <label className="block"><span className="text-xs text-muted-foreground">Production summary</span>
+              <textarea rows={4} className={`${input} mt-1 w-full`} value={f.summary} onChange={(e) => update({ summary: e.target.value })} /></label>
           ) : (
             <p className="whitespace-pre-wrap">{p.summary || "No summary yet."}</p>
           )}
@@ -192,21 +264,25 @@ export function OverviewTab({ p, isProducer }: Ctx) {
         </div>
       </Panel>
 
-      <Panel title="Site information" right={isProducer && siteFilled && !editing ? (
-        <button onClick={() => setEditing(true)} className="text-xs font-semibold text-primary hover:underline">Edit</button>
+      <Panel title="Site information" right={isProducer ? (
+        <div className="flex items-center gap-3">
+          {saveState !== "idle" && <span className="text-xs text-muted-foreground">{saveState === "saving" ? "Saving…" : "Saved"}</span>}
+          <button onClick={() => setEditing(!editing)} className="text-xs font-semibold text-primary hover:underline">{editing ? "Done" : "Edit"}</button>
+        </div>
       ) : undefined}>
         <div className="space-y-3 p-4 text-sm">
-          {isProducer && (!siteFilled || editing) ? (
+          {isProducer && editing ? (
             <>
               <label className="block"><span className="text-xs text-muted-foreground">Site address</span>
-                <input className={`${input} mt-1 w-full`} value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} placeholder="Street, suburb, city" /></label>
+                <AddressAutocomplete className={`${input} mt-1 w-full`} placeholder="Street, suburb, city" value={f.address}
+                  onChange={(v) => update({ address: v })}
+                  onSelect={(s) => update({ address: s.label, latitude: s.lat, longitude: s.lon })} /></label>
               <div className="grid gap-3 sm:grid-cols-3">
-                <label><span className="text-xs text-muted-foreground">Latitude</span><input className={`${input} mt-1 w-full`} value={f.latitude} onChange={(e) => setF({ ...f, latitude: e.target.value })} /></label>
-                <label><span className="text-xs text-muted-foreground">Longitude</span><input className={`${input} mt-1 w-full`} value={f.longitude} onChange={(e) => setF({ ...f, longitude: e.target.value })} /></label>
-                <label><span className="text-xs text-muted-foreground">Site radius (m)</span><input type="number" className={`${input} mt-1 w-full`} value={f.geofence} onChange={(e) => setF({ ...f, geofence: e.target.value })} /></label>
+                <label><span className="text-xs text-muted-foreground">Latitude</span><input className={`${input} mt-1 w-full`} value={f.latitude} onChange={(e) => update({ latitude: e.target.value })} /></label>
+                <label><span className="text-xs text-muted-foreground">Longitude</span><input className={`${input} mt-1 w-full`} value={f.longitude} onChange={(e) => update({ longitude: e.target.value })} /></label>
+                <label><span className="text-xs text-muted-foreground">Site radius (m)</span><input type="number" className={`${input} mt-1 w-full`} value={f.geofence} onChange={(e) => update({ geofence: e.target.value })} /></label>
               </div>
               <button onClick={useHere} className="inline-flex items-center gap-1 text-xs text-primary hover:underline"><MapPin className="h-3 w-3" /> Use my current location as the site location</button>
-              <button onClick={save} className={btn}>Save</button>
             </>
           ) : (
             <div className="flex gap-2"><MapPin className="h-4 w-4 text-primary" /> {p.address || p.location || "Address not set"}</div>

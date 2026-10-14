@@ -2,9 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { useRef, useState } from "react";
-import { Upload } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Pencil, Trash2, Upload } from "lucide-react";
 import { Badge, ClientBadge, Page, Panel } from "@/components/AppShell";
+import { AddressAutocomplete } from "@/components/site/SiteTabs";
 import { zar } from "@/lib/demo-data";
 import { useCreatePencil, useCrew, useProductions } from "@/lib/db";
 import { useQueryClient } from "@tanstack/react-query";
@@ -156,21 +157,68 @@ function Productions() {
   const blankForm = { name: "", client: "", type: "Commercial", location: "", startDate: "", endDate: "", budget: 0 };
   const [f, setF] = useState(blankForm);
   const [roleCrew, setRoleCrew] = useState<Record<string, string>>({});
+  const [editingId, setEditingId] = useState<string | null>(null); // editing an existing production
+  const [draftId, setDraftId] = useState<string | null>(null); // autosaved draft while creating a new one
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
 
   // Shoot days is inclusive of both the start and end date.
   const days = f.startDate && f.endDate ? Math.max(1, Math.round((+new Date(f.endDate) - +new Date(f.startDate)) / 86400000) + 1) : 1;
 
-  const closeModal = () => { setOpen(false); if (openOnLoad) navigate({ to: "/productions", search: {}, replace: true }); };
+  const resetForm = () => { setF(blankForm); setRoleCrew({}); setEditingId(null); setDraftId(null); setSaveState("idle"); };
+  const closeModal = () => { setOpen(false); resetForm(); if (openOnLoad) navigate({ to: "/productions", search: {}, replace: true }); };
+  const openNew = () => { resetForm(); setOpen(true); };
+  const openEdit = (p: (typeof list)[number]) => {
+    setF({ name: p.name, client: p.client, type: p.type, location: p.location, startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget });
+    setRoleCrew({});
+    setEditingId(p.id);
+    setDraftId(null);
+    setSaveState("idle");
+    setOpen(true);
+  };
 
-  // New productions start as a Draft so the team can sandbox crew groups against the budget before committing.
+  // Autosave a Draft as the user fills in the new-production form, so an abandoned form isn't lost —
+  // only while creating (not while editing an existing production, which saves explicitly).
+  useEffect(() => {
+    if (!open || editingId) return;
+    if (!f.name.trim() || !f.client.trim()) return;
+    const t = setTimeout(async () => {
+      setSaveState("saving");
+      const payload = { name: f.name, client: f.client, type: f.type, location: f.location, budget: f.budget, date: f.startDate || null, end_date: f.endDate || null, days };
+      if (draftId) {
+        const { error } = await supabase.from("productions").update(payload).eq("id", draftId);
+        if (error) { toast.error(error.message); return; }
+      } else {
+        const { data, error } = await supabase.from("productions").insert({ ...payload, status: "Draft" }).select("id").single();
+        if (error) { toast.error(error.message); return; }
+        setDraftId(data.id);
+      }
+      qc.invalidateQueries({ queryKey: ["productions"] });
+      setSaveState("saved");
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, 800);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [f.name, f.client, f.type, f.location, f.startDate, f.endDate, f.budget, open, editingId]);
+
+  async function deleteProduction(p: (typeof list)[number]) {
+    if (!window.confirm(`Delete "${p.name}"? This can't be undone.`)) return;
+    const { error } = await supabase.from("productions").delete().eq("id", p.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${p.name} deleted`);
+    qc.invalidateQueries({ queryKey: ["productions"] });
+  }
+
+  // New productions start as a Draft so the team can sandbox crew groups against the budget before committing;
+  // editing an existing one keeps its current status.
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!f.name || !f.client) { toast.error("Name and client are required"); return; }
     if (f.startDate && f.endDate && f.endDate < f.startDate) { toast.error("End date can't be before the start date"); return; }
-    const { data, error } = await supabase.from("productions").insert({
-      name: f.name, client: f.client, type: f.type, location: f.location, budget: f.budget, status: "Draft",
-      date: f.startDate || null, end_date: f.endDate || null, days,
-    }).select("id").single();
+    const payload = { name: f.name, client: f.client, type: f.type, location: f.location, budget: f.budget, date: f.startDate || null, end_date: f.endDate || null, days };
+    const targetId = editingId ?? draftId;
+    const { data, error } = targetId
+      ? await supabase.from("productions").update(payload).eq("id", targetId).select("id").single()
+      : await supabase.from("productions").insert({ ...payload, status: "Draft" }).select("id").single();
     if (error) { toast.error(error.message); return; }
     const assigned = Object.entries(roleCrew).filter(([, crewId]) => crewId);
     for (const [role, crewId] of assigned) {
@@ -180,21 +228,27 @@ function Productions() {
       } catch (err) { toast.error(`Could not pencil ${role}: ${(err as Error).message}`); }
     }
     qc.invalidateQueries({ queryKey: ["productions"] });
+    const wasEditing = !!editingId;
     setOpen(false);
-    setF(blankForm);
-    setRoleCrew({});
-    navigate({ to: "/productions/$id", params: { id: data.id }, search: { tab: "find-crew" } });
+    resetForm();
+    if (wasEditing) toast.success("Production updated");
+    else navigate({ to: "/productions/$id", params: { id: data.id }, search: { tab: "find-crew" } });
   };
 
   return (
     <Page title="Productions" subtitle="Start from the client brief, then break it down into crew and resources."
-      actions={<button onClick={() => setOpen(true)} className="rounded-sm bg-primary px-4 py-2 font-display text-sm font-semibold text-primary-foreground">+ New production</button>}>
+      actions={<button onClick={openNew} className="rounded-sm bg-primary px-4 py-2 font-display text-sm font-semibold text-primary-foreground">+ New production</button>}>
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={closeModal}>
           <form onSubmit={submit} onClick={(e) => e.stopPropagation()} className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-sm border border-border bg-card p-5 shadow-lg">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-display text-lg font-semibold">New production</h2>
-              <button type="button" onClick={closeModal} className="text-muted-foreground hover:text-foreground" aria-label="Close">✕</button>
+              <h2 className="font-display text-lg font-semibold">{editingId ? "Edit production" : "New production"}</h2>
+              <div className="flex items-center gap-3">
+                {!editingId && saveState !== "idle" && (
+                  <span className="text-xs text-muted-foreground">{saveState === "saving" ? "Saving draft…" : "Draft saved"}</span>
+                )}
+                <button type="button" onClick={closeModal} className="text-muted-foreground hover:text-foreground" aria-label="Close">✕</button>
+              </div>
             </div>
             <div className="rounded-sm border border-border p-4">
               <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Production info</h3>
@@ -204,7 +258,9 @@ function Productions() {
                 <select className={field} value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>
                   {["Commercial", "Film", "Television", "Photography", "Other"].map((t) => <option key={t}>{t}</option>)}
                 </select>
-                <input className={field} placeholder="Shoot location" value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} />
+                <AddressAutocomplete className={field} placeholder="Shoot location" value={f.location}
+                  onChange={(v) => setF({ ...f, location: v })}
+                  onSelect={(s) => setF({ ...f, location: s.label })} />
                 <label className="block"><span className="text-xs text-muted-foreground">Start date</span>
                   <input className={`${field} mt-1`} type="date" value={f.startDate} onChange={(e) => setF({ ...f, startDate: e.target.value })} /></label>
                 <label className="block"><span className="text-xs text-muted-foreground">End date</span>
@@ -214,44 +270,53 @@ function Productions() {
               </div>
             </div>
 
-            <div className="mt-4 rounded-sm border border-border p-4">
-              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pencil crew for key roles (optional)</h3>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {CREW_ROLES.map((role) => (
-                  <label key={role} className="block">
-                    <span className="text-xs text-muted-foreground">{role}</span>
-                    <select className={`${field} mt-1`} value={roleCrew[role] ?? ""} onChange={(e) => setRoleCrew({ ...roleCrew, [role]: e.target.value })}>
-                      <option value="">Unassigned</option>
-                      {crew.map((c) => <option key={c.id} value={c.id}>{c.name} · ★{c.rating.toFixed(1)} · {zar(c.dayRate)}/day</option>)}
-                    </select>
-                  </label>
-                ))}
+            {!editingId && (
+              <div className="mt-4 rounded-sm border border-border p-4">
+                <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pencil crew for key roles (optional)</h3>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {CREW_ROLES.map((role) => (
+                    <label key={role} className="block">
+                      <span className="text-xs text-muted-foreground">{role}</span>
+                      <select className={`${field} mt-1`} value={roleCrew[role] ?? ""} onChange={(e) => setRoleCrew({ ...roleCrew, [role]: e.target.value })}>
+                        <option value="">Unassigned</option>
+                        {crew.map((c) => <option key={c.id} value={c.id}>{c.name} · ★{c.rating.toFixed(1)} · {zar(c.dayRate)}/day</option>)}
+                      </select>
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
             <div className="mt-4 flex justify-end gap-2">
               <button type="button" onClick={closeModal} className="rounded-sm border border-border px-4 py-2 text-sm font-semibold">Cancel</button>
-              <button className="rounded-sm bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Create draft</button>
+              <button className="rounded-sm bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">{editingId ? "Save changes" : "Create draft"}</button>
             </div>
           </form>
         </div>
       )}
       <div className="grid gap-3 md:hidden">
         {list.map((p) => (
-          <Link key={p.id} to="/productions/$id" params={{ id: p.id }} className="block rounded-sm border border-border bg-card p-4">
+          <div key={p.id} className="rounded-sm border border-border bg-card p-4">
             <div className="flex items-start justify-between gap-2">
-              <div><div className="font-semibold">{p.name}</div><div className="mt-1 flex items-center gap-2"><ClientBadge name={p.client} /><span className="text-xs text-muted-foreground">{p.type}</span></div></div>
-              <Badge>{p.status}</Badge>
+              <Link to="/productions/$id" params={{ id: p.id }} className="min-w-0 flex-1">
+                <div className="truncate font-semibold hover:text-primary">{p.name}</div>
+                <div className="mt-1 flex items-center gap-2"><ClientBadge name={p.client} /><span className="text-xs text-muted-foreground">{p.type}</span></div>
+              </Link>
+              <div className="flex shrink-0 items-center gap-2">
+                <Badge>{p.status}</Badge>
+                <button onClick={() => openEdit(p)} className="text-muted-foreground hover:text-primary" aria-label={`Edit ${p.name}`}><Pencil className="h-4 w-4" /></button>
+                <button onClick={() => deleteProduction(p)} className="text-muted-foreground hover:text-destructive" aria-label={`Delete ${p.name}`}><Trash2 className="h-4 w-4" /></button>
+              </div>
             </div>
             <div className="mt-2 text-xs text-muted-foreground">{p.date || "Date TBC"} · {p.days} day(s) · {p.location}</div>
             <div className="mt-3 flex items-center justify-between text-sm"><span>{zar(p.budget)}</span><span className="text-xs text-muted-foreground">Crew {p.crewBooked}/{p.crewNeeded}</span></div>
             <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary" style={{ width: `${p.crewNeeded ? Math.min(100, (p.crewBooked / p.crewNeeded) * 100) : 0}%` }} /></div>
-          </Link>
+          </div>
         ))}
       </div>
       <div className="hidden md:block"><Panel title="All productions">
         <table className="w-full text-sm">
           <thead className="text-left text-[11px] text-muted-foreground">
-            <tr>{["Production", "Type", "Location", "Date", "Days", "Budget", "Status"].map((h) => <th key={h} className="px-4 py-2 font-medium">{h}</th>)}</tr>
+            <tr>{["Production", "Type", "Location", "Date", "Days", "Budget", "Status", ""].map((h) => <th key={h} className="px-4 py-2 font-medium">{h}</th>)}</tr>
           </thead>
           <tbody>
             {list.map((p) => (
@@ -263,6 +328,12 @@ function Productions() {
                 <td className="px-4">{p.days}</td>
                 <td className="px-4">{zar(p.budget)}</td>
                 <td className="px-4"><Badge>{p.status}</Badge></td>
+                <td className="px-4">
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => openEdit(p)} className="text-muted-foreground hover:text-primary" aria-label={`Edit ${p.name}`}><Pencil className="h-4 w-4" /></button>
+                    <button onClick={() => deleteProduction(p)} className="text-muted-foreground hover:text-destructive" aria-label={`Delete ${p.name}`}><Trash2 className="h-4 w-4" /></button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
