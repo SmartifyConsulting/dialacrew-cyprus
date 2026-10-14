@@ -14,7 +14,27 @@ import {
   signedUrl, uploadFile, useBookingAssets, useCrewAssets, useDocs, useInvalidate, useMessages, usePosts, useRegister,
   useReviews, useSignedUrl, useSiteMembers, useTasks,
 } from "@/lib/site";
-import { useCreateOpenGig } from "@/lib/db";
+import { useCreateOpenGig, useRequests, useSetRequestState } from "@/lib/db";
+
+function OvertimeApprovals({ production }: { production: string }) {
+  const reqs = (useRequests().data ?? []).filter((r) => r.kind === "Overtime" && r.production === production && r.state === "Pending");
+  const setState = useSetRequestState();
+  if (reqs.length === 0) return null;
+  return (
+    <Panel title={`Overtime to approve (${reqs.length})`}>
+      <ul className="divide-y divide-border text-sm">
+        {reqs.map((r) => (
+          <li key={r.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+            <div className="min-w-0 flex-1"><div className="font-semibold">{r.who}</div><div className="text-xs text-muted-foreground">{r.detail}</div></div>
+            <span className="font-semibold">{zar(r.amount)}</span>
+            <button onClick={() => setState.mutate({ id: r.id, state: "Approved" })} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Approve</button>
+            <button onClick={() => setState.mutate({ id: r.id, state: "Declined" })} className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold">Decline</button>
+          </li>
+        ))}
+      </ul>
+    </Panel>
+  );
+}
 
 type Ctx = { p: Production; isProducer: boolean; userId: string; myName: string; myCrewId: string | null };
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
@@ -396,6 +416,18 @@ export function RegisterTab({ p, isProducer, userId, myName, myCrewId }: Ctx) {
 
   return (
     <div className="space-y-5">
+      {isProducer && (() => {
+        const st = members.map((m) => { const l = lastByCrew.get(m.crew_id); return !l ? "na" : l.kind === "in" ? "on" : "out"; });
+        const cards: [string, number, string][] = [["On set", st.filter((s) => s === "on").length, "text-success"], ["Not arrived", st.filter((s) => s === "na").length, "text-destructive"], ["Wrapped", st.filter((s) => s === "out").length, "text-muted-foreground"]];
+        return (
+          <div className="grid grid-cols-3 gap-3">
+            {cards.map(([l, v, c]) => (
+              <div key={l} className="rounded-xl border border-border bg-card p-4 shadow-sm"><div className="text-xs text-muted-foreground">{l}</div><div className={`mt-1 font-display text-3xl font-semibold ${c}`}>{v}</div></div>
+            ))}
+          </div>
+        );
+      })()}
+      {isProducer && <OvertimeApprovals production={p.name} />}
       {!hasSite && <p className="rounded-sm border border-primary/40 bg-primary/10 p-3 text-sm">The site location isn't set yet{isProducer ? " — add it under Overview so check-ins can be verified." : ", so check-ins can't be verified yet."}</p>}
       {myCrewId && (
         <Panel title="My attendance">
