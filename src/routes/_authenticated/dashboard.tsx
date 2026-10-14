@@ -205,13 +205,14 @@ function Dashboard() {
             <ul className="divide-y divide-border">
               {pendingReqs.length + waitingCrew.length === 0 && <li className="p-4 text-sm text-muted-foreground">All caught up.</li>}
               {pendingReqs.map((r) => (
-                <li key={r.id} className="px-4 py-3">
-                  <div className="flex justify-between text-xs font-semibold text-primary"><span>{r.kind}</span><span>{zar(r.amount)}</span></div>
-                  <div className="mt-1 text-sm">{r.detail}</div>
-                  <div className="text-xs text-muted-foreground">{r.who} · <Highlight text={r.production} /></div>
-                  <div className="mt-2 flex gap-2">
-                    <button onClick={() => setState.mutate({ id: r.id, state: "Approved" })} className="rounded-md bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">Approve</button>
-                    <button onClick={() => setState.mutate({ id: r.id, state: "Declined" })} className="rounded-md border border-border px-3 py-1 text-xs font-semibold">Decline</button>
+                <li key={r.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm"><span className="font-semibold text-primary">{r.kind}</span> · {r.detail}</div>
+                    <div className="truncate text-xs text-muted-foreground">{r.who} · <Highlight text={r.production} /> · {zar(r.amount)}</div>
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    <button onClick={() => setState.mutate({ id: r.id, state: "Approved" })} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Approve</button>
+                    <button onClick={() => setState.mutate({ id: r.id, state: "Declined" })} className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold">Decline</button>
                   </div>
                 </li>
               ))}
