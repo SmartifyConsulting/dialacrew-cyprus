@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { TopNav } from "@/components/AppShell";
 import { AuthForm } from "@/components/AuthForm";
-import logo from "@/assets/bookacrew-sa-logo.png.asset.json";
+import logoUrl from "@/assets/bookacrew-sa-logo-black.png";
 
 const HERO_BG = "https://static.wixstatic.com/media/20efcd_c74b87f40292491e9dbcf1db2483f78c~mv2.jpg";
 
@@ -27,9 +27,9 @@ function Index() {
     <div className="flex min-h-screen flex-col bg-background">
       <TopNav />
       <section className="relative flex-1 bg-cover bg-center" style={{ backgroundImage: `url(${HERO_BG})` }}>
-        <div className="absolute inset-0 bg-background/75" />
+        <div className="absolute inset-0 bg-background/85" />
         <div className="relative mx-auto flex max-w-md flex-col items-center px-4 py-10">
-          <img src={logo.url} alt="Book a Crew" className="mb-6 w-[260px] md:w-[320px]" />
+          <img src={logoUrl} alt="Book a Crew" className="mb-6 w-[260px] md:w-[320px]" />
           <AuthForm />
         </div>
       </section>
