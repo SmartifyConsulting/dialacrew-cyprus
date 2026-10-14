@@ -75,7 +75,7 @@ function MemoryPage() {
               <input className={field} type="number" min={1} value={f.days} onChange={(e) => setF({ ...f, days: Math.max(1, +e.target.value) })} aria-label="Shoot days" />
               <input className={field} placeholder="Location" value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} />
             </div>
-            <button disabled={busy} className="inline-flex items-center justify-center gap-2 rounded-sm bg-primary px-4 py-2 font-display text-sm font-semibold uppercase tracking-widest text-primary-foreground disabled:opacity-60">
+            <button disabled={busy} className="inline-flex items-center justify-center gap-2 rounded-sm bg-primary px-4 py-2 font-display text-sm font-semibold text-primary-foreground disabled:opacity-60">
               <Sparkles className="h-4 w-4" />{busy ? "Matching…" : "Match crew & kit"}
             </button>
           </form>
@@ -85,13 +85,13 @@ function MemoryPage() {
               {res.memory_insights.length > 0 && <List title="From the MemoryBank" items={res.memory_insights} />}
               {res.warnings.length > 0 && <List title="Watch out" items={res.warnings} tone="text-destructive" />}
               <div>
-                <h4 className="mb-2 font-display text-xs uppercase tracking-widest text-primary">Recommended crew</h4>
+                <h4 className="mb-2 font-display text-xs text-primary">Recommended crew</h4>
                 <ul className="space-y-2">{res.crew.map((c) => (
                   <li key={c.crew_id} className="rounded-sm border border-border p-2"><Link to="/crew/$id" params={{ id: c.crew_id }} className="font-semibold hover:text-primary">{c.name}</Link> <span className="text-muted-foreground">· {c.suggested_role}</span><div className="text-xs text-muted-foreground">{c.why}</div></li>
                 ))}</ul>
               </div>
               <div>
-                <h4 className="mb-2 font-display text-xs uppercase tracking-widest text-primary">Recommended kit</h4>
+                <h4 className="mb-2 font-display text-xs text-primary">Recommended kit</h4>
                 <ul className="space-y-2">{res.kit.map((k) => (
                   <li key={k.asset_id} className="rounded-sm border border-border p-2"><span className="font-semibold">{k.name}</span> <span className="text-muted-foreground">· {k.owner}</span><div className="text-xs text-muted-foreground">{k.why}</div></li>
                 ))}</ul>
@@ -134,7 +134,7 @@ function MemoryPage() {
 function List({ title, items, tone = "" }: { title: string; items: string[]; tone?: string }) {
   return (
     <div className="mt-2">
-      <h5 className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{title}</h5>
+      <h5 className="text-[11px] font-semibold text-muted-foreground">{title}</h5>
       <ul className={`mt-1 list-disc space-y-0.5 pl-5 text-xs ${tone}`}>{items.map((i) => <li key={i}>{i}</li>)}</ul>
     </div>
   );

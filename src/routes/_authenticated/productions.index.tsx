@@ -47,7 +47,7 @@ function Productions() {
 
   return (
     <Page title="Projects" subtitle="Start from the client brief, then break it down into crew and resources."
-      actions={<button onClick={() => setOpen(!open)} className="rounded-sm bg-primary px-4 py-2 font-display text-sm font-semibold uppercase tracking-widest text-primary-foreground">{open ? "Cancel" : "+ New production"}</button>}>
+      actions={<button onClick={() => setOpen(!open)} className="rounded-sm bg-primary px-4 py-2 font-display text-sm font-semibold text-primary-foreground">{open ? "Cancel" : "+ New production"}</button>}>
       {open && (
         <form onSubmit={submit} className="mb-5 grid gap-3 rounded-sm border border-primary/50 bg-card p-4 md:grid-cols-4">
           <input className={field} placeholder="Production name *" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
@@ -62,7 +62,7 @@ function Productions() {
           <input className={field} type="date" value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} />
           <input className={field} type="number" min={1} placeholder="Shoot days" value={f.days} onChange={(e) => setF({ ...f, days: +e.target.value })} />
           <input className={field} type="number" min={0} placeholder="Budget (ZAR)" value={f.budget || ""} onChange={(e) => setF({ ...f, budget: +e.target.value })} />
-          <button className="rounded-sm bg-primary px-4 py-2 text-sm font-semibold uppercase text-primary-foreground">Create draft</button>
+          <button className="rounded-sm bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Create draft</button>
         </form>
       )}
       <div className="grid gap-3 md:hidden">
@@ -80,7 +80,7 @@ function Productions() {
       </div>
       <div className="hidden md:block"><Panel title="All productions">
         <table className="w-full text-sm">
-          <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
+          <thead className="text-left text-[11px] text-muted-foreground">
             <tr>{["Production", "Type", "Location", "Date", "Days", "Budget", "Status"].map((h) => <th key={h} className="px-4 py-2 font-medium">{h}</th>)}</tr>
           </thead>
           <tbody>

@@ -38,7 +38,7 @@ function BottomNav({ items }: { items: NavItem[] }) {
       <ul className="flex">
         {items.map((n) => (
           <li key={n.label} className="flex-1">
-            <Link to={n.to} className="flex flex-col items-center gap-0.5 py-2 font-display text-[11px] font-semibold uppercase tracking-wider text-nav-foreground/70" activeProps={{ className: "text-primary" }}>
+            <Link to={n.to} className="flex flex-col items-center gap-0.5 py-2 font-sans text-[11px] font-medium text-nav-foreground/80" activeProps={{ className: "!text-nav-foreground font-semibold" }}>
               <n.icon className="h-5 w-5" />{n.label}
             </Link>
           </li>
@@ -70,14 +70,14 @@ export function TopNav() {
           <Link to="/dashboard" className="px-5 py-5"><img src={logo.url} alt="Book a Crew" className="h-12 w-auto" /></Link>
           <nav className="flex flex-1 flex-col gap-1 px-3">
             {items.map((n) => (
-              <Link key={n.label} to={n.to} className="flex items-center gap-3 rounded-md px-3 py-2.5 font-display text-sm font-semibold uppercase tracking-widest text-nav-foreground/70 hover:bg-nav-foreground/10 hover:text-nav-foreground" activeProps={{ className: "bg-nav-foreground/10 text-primary" }}>
+              <Link key={n.label} to={n.to} className="flex items-center gap-3 rounded-xl px-4 py-3 font-sans text-[15px] font-medium text-nav-foreground/85 transition-colors hover:bg-nav-foreground/10 hover:text-nav-foreground" activeProps={{ className: "bg-nav-foreground/15 !text-nav-foreground font-semibold" }}>
                 <n.icon className="h-4 w-4" />{n.label}
               </Link>
             ))}
           </nav>
           <div className="border-t border-nav-foreground/10 p-4">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-nav-foreground/60">{role.data ? `${role.data} view` : ""}</p>
-            <button onClick={signOut} className="w-full rounded-sm border border-nav-foreground/30 px-3 py-1.5 font-display text-xs font-semibold uppercase tracking-widest hover:bg-nav-foreground/10">Sign out</button>
+            <p className="mb-2 text-xs font-medium capitalize text-nav-foreground/60">{role.data ? `${role.data} view` : ""}</p>
+            <button onClick={signOut} className="w-full rounded-xl border border-nav-foreground/30 px-3 py-2 font-sans text-sm font-medium text-nav-foreground hover:bg-nav-foreground/10">Sign out</button>
           </div>
         </aside>
       )}
@@ -89,7 +89,7 @@ export function TopNav() {
               {signedIn && (
                 <>
                   <NotificationBell userId={session.user.id} />
-                  <button onClick={signOut} className="rounded-sm border border-border px-3 py-1 font-display text-xs font-semibold uppercase tracking-widest md:hidden">Sign out</button>
+                  <button onClick={signOut} className="rounded-sm border border-border px-3 py-1 font-display text-xs font-semibold md:hidden">Sign out</button>
                 </>
               )}
             </div>
@@ -109,7 +109,7 @@ function RoleGate({ children, open }: { children: ReactNode; open?: boolean | un
   if (!isManager && !open)
     return (
       <div className="rounded-sm border border-border bg-card p-8 text-center">
-        <h2 className="font-display text-3xl font-bold uppercase text-primary">You're signed in as {role.data === "crew" ? "crew" : (role.data ?? "a guest")}</h2>
+        <h2 className="font-display text-3xl font-bold text-primary">You're signed in as {role.data === "crew" ? "crew" : (role.data ?? "a guest")}</h2>
         <p className="mt-3 text-muted-foreground">This area is for producers. Your own job offers and availability will appear here soon.</p>
       </div>
     );
@@ -125,7 +125,7 @@ export function Page({ title, subtitle, actions, children, open }: { title: stri
         <RoleGate open={open}>
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
             <div>
-              <h1 className="font-display text-4xl font-bold uppercase tracking-wide text-foreground md:text-5xl">{title}</h1>
+              <h1 className="font-sans text-3xl font-bold normal-case tracking-tight text-foreground md:text-4xl">{title}</h1>
               {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
             </div>
             {actions}
@@ -160,14 +160,14 @@ const tone: Record<string, string> = {
 };
 
 export function Badge({ children }: { children: string }) {
-  return <span className={`inline-block rounded-sm px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ${tone[children] ?? "bg-muted text-muted-foreground"}`}>{children}</span>;
+  return <span className={`inline-block rounded-sm px-2 py-0.5 text-xs font-semibold ${tone[children] ?? "bg-muted text-muted-foreground"}`}>{children}</span>;
 }
 
 export function Panel({ title, children, right }: { title: string; children: ReactNode; right?: ReactNode }) {
   return (
     <section className="rounded-sm border border-border bg-card">
       <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-        <h2 className="font-display text-sm font-semibold uppercase tracking-widest text-primary">{title}</h2>
+        <h2 className="font-display text-sm font-semibold text-primary">{title}</h2>
         {right}
       </div>
       {children}

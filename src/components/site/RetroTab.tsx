@@ -16,7 +16,7 @@ const LOC_TAGS = ["High Efficiency", "Power Struggles", "Sound Clean", "Sound No
 const VEN_TAGS = ["Recommend", "Over-Priced", "Reliable Under Pressure", "Do Not Rehire"];
 
 const field = "w-full rounded-sm border border-input bg-background px-2 py-1.5 text-sm outline-none focus:border-ring";
-const label = "text-[11px] font-semibold uppercase tracking-widest text-muted-foreground";
+const label = "text-[11px] font-semibold text-muted-foreground";
 
 const blank = (p: Production): RetroForm => ({
   type: TYPES.includes(p.type) ? p.type : "Commercial", shootDays: p.days, crewSize: "<20", locationsCount: 1,
@@ -83,7 +83,7 @@ export function RetroTab({ p }: { p: Production }) {
     <form onSubmit={submit} className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
       <div className="space-y-5">
         <section className="rounded-sm border border-border bg-card p-4">
-          <h3 className="mb-3 font-display text-sm uppercase tracking-widest text-primary">1 · Project</h3>
+          <h3 className="mb-3 font-display text-sm text-primary">1 · Project</h3>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <label className="space-y-1"><span className={label}>Type</span><select className={field} value={f.type} onChange={(e) => set("type", e.target.value)}>{TYPES.map((t) => <option key={t}>{t}</option>)}</select></label>
             <label className="space-y-1"><span className={label}>Shoot days</span>{num("shootDays")}</label>
@@ -93,7 +93,7 @@ export function RetroTab({ p }: { p: Production }) {
         </section>
 
         <section className="rounded-sm border border-border bg-card p-4">
-          <h3 className="mb-3 font-display text-sm uppercase tracking-widest text-primary">2 · Planned vs actual</h3>
+          <h3 className="mb-3 font-display text-sm text-primary">2 · Planned vs actual</h3>
           <div className="grid grid-cols-[auto_1fr_1fr] items-center gap-2 text-sm">
             <span /><span className={label}>Planned</span><span className={label}>Actual</span>
             <span>Budget (R)</span>{num("budgetPlanned")}{num("budgetActual")}
@@ -105,7 +105,7 @@ export function RetroTab({ p }: { p: Production }) {
         </section>
 
         <section className="rounded-sm border border-border bg-card p-4">
-          <h3 className="mb-3 font-display text-sm uppercase tracking-widest text-primary">3 · Friction ratings</h3>
+          <h3 className="mb-3 font-display text-sm text-primary">3 · Friction ratings</h3>
           <div className="space-y-3">
             {CATS.map((c) => (
               <div key={c}>
@@ -124,7 +124,7 @@ export function RetroTab({ p }: { p: Production }) {
         </section>
 
         <section className="rounded-sm border border-border bg-card p-4">
-          <h3 className="mb-3 font-display text-sm uppercase tracking-widest text-primary">4 · Locations & vendors</h3>
+          <h3 className="mb-3 font-display text-sm text-primary">4 · Locations & vendors</h3>
           {f.locations.map((l, i) => (
             <div key={`l${i}`} className="mb-3 space-y-1.5">
               <input className={field} placeholder="Location name" value={l.name} onChange={(e) => set("locations", f.locations.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
@@ -142,7 +142,7 @@ export function RetroTab({ p }: { p: Production }) {
         </section>
 
         <section className="rounded-sm border border-border bg-card p-4">
-          <h3 className="mb-3 font-display text-sm uppercase tracking-widest text-primary">5 · Quick notes</h3>
+          <h3 className="mb-3 font-display text-sm text-primary">5 · Quick notes</h3>
           {([["win", "Top operational win"], ["risk", "Top risk / close call"], ["warning", "What should AI warn us about on the next similar shoot?"]] as const).map(([k, t]) => (
             <label key={k} className="mb-3 block space-y-1">
               <span className="flex justify-between"><span className={label}>{t}</span><span className="text-[11px] text-muted-foreground">{f[k].length}/280</span></span>
@@ -154,11 +154,11 @@ export function RetroTab({ p }: { p: Production }) {
 
       <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
         <div className="rounded-sm border border-primary/50 bg-card p-4">
-          <h3 className="mb-2 flex items-center gap-2 font-display text-sm uppercase tracking-widest text-primary"><Sparkles className="h-4 w-4" />AI Memory Summary</h3>
+          <h3 className="mb-2 flex items-center gap-2 font-display text-sm text-primary"><Sparkles className="h-4 w-4" />AI Memory Summary</h3>
           {out?.lessons ? <p className="rounded-sm bg-primary/10 p-3 text-sm"><strong>Lessons learned:</strong> {out.lessons}</p>
             : <p className="text-xs text-muted-foreground">Save to generate the lessons-learned alert. It's added to {p.client}'s MemoryBank and used in future crew matching.</p>}
           <pre className="mt-3 max-h-80 overflow-auto rounded-sm bg-background p-2 text-[10px] leading-snug text-muted-foreground">{JSON.stringify(out?.payload && Object.keys(out.payload).length ? out.payload : preview, null, 2)}</pre>
-          <button disabled={busy} className="mt-3 w-full rounded-sm bg-primary px-4 py-2 font-display text-sm font-semibold uppercase tracking-widest text-primary-foreground disabled:opacity-60">
+          <button disabled={busy} className="mt-3 w-full rounded-sm bg-primary px-4 py-2 font-display text-sm font-semibold text-primary-foreground disabled:opacity-60">
             {busy ? "Learning…" : existing.data ? "Update review" : "Save review & teach AI"}
           </button>
         </div>

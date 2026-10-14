@@ -25,7 +25,7 @@ export function ProjectInsights({ p, isProducer }: { p: Production; isProducer: 
           <p className="whitespace-pre-wrap">{p.summary || "No summary yet."}</p>
           <div className="flex items-start gap-2 text-xs"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" /><span>{p.address || p.location || "Address not set"}</span></div>
           {(p.address || p.latitude) && (
-            <a className="inline-flex items-center gap-1 rounded-sm border border-primary px-2 py-1 text-xs font-semibold uppercase text-primary hover:bg-primary/10" target="_blank" rel="noopener noreferrer"
+            <a className="inline-flex items-center gap-1 rounded-sm border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10" target="_blank" rel="noopener noreferrer"
               href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.latitude ? `${p.latitude},${p.longitude}` : p.address ?? "")}`}>
               <MapPin className="h-3 w-3" /> Open in Maps
             </a>

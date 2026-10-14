@@ -135,16 +135,16 @@ export function AuthForm() {
     <div className="w-full">
     {import.meta.env.DEV && (
       <div className="mb-6 rounded-sm border border-dashed border-primary/50 bg-primary/5 p-3">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-primary">Dev quick switch (local only)</p>
+        <p className="mb-2 text-xs font-semibold text-primary">Dev quick switch (local only)</p>
         <div className="flex flex-wrap gap-2">
           {DEV_ACCOUNTS.map((a) => (
             <button key={a.email} type="button" disabled={busy} onClick={() => quickSwitch(a)}
-              className="rounded-sm border border-primary/40 bg-card px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary hover:bg-primary/10 disabled:opacity-50">
+              className="rounded-sm border border-primary/40 bg-card px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 disabled:opacity-50">
               {a.label}
             </button>
           ))}
           <button type="button" disabled={busy} onClick={() => supabase.auth.signOut()}
-            className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:bg-muted disabled:opacity-50">
+            className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted disabled:opacity-50">
             Sign out
           </button>
         </div>
@@ -154,7 +154,7 @@ export function AuthForm() {
     <div className="mt-6 grid grid-cols-2 border border-border">
       {(["signin", "signup"] as const).map((m) => (
         <button key={m} type="button" onClick={() => { setMode(m); setError(""); }}
-          className={`py-2 font-display text-sm uppercase tracking-widest ${mode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
+          className={`py-2 font-display text-sm ${mode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
           {m === "signin" ? "Sign in" : "Sign up"}
         </button>
       ))}
@@ -186,7 +186,7 @@ export function AuthForm() {
               <div className={`grid gap-2 ${producerSignupEnabled ? "grid-cols-2" : "grid-cols-1"}`}>
                 {(producerSignupEnabled ? (["crew", "producer"] as const) : (["crew"] as const)).map((r) => (
                   <button key={r} type="button" onClick={() => setRole(r)}
-                    className={`rounded-sm border py-2 text-sm font-semibold uppercase tracking-wider ${role === r ? "border-primary bg-primary/15 text-primary" : "border-input text-muted-foreground"}`}>
+                    className={`rounded-sm border py-2 text-sm font-semibold ${role === r ? "border-primary bg-primary/15 text-primary" : "border-input text-muted-foreground"}`}>
                     {r === "crew" ? "Crew member" : "Producer"}
                   </button>
                 ))}
@@ -219,7 +219,7 @@ export function AuthForm() {
                 <input value={customSkill} onChange={(e) => setCustomSkill(e.target.value)} placeholder="Your service" className={`${fieldClass} text-xs`}
                   onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); const v = customSkill.trim(); if (v && !skills.includes(v)) setSkills([...skills, v]); setCustomSkill(""); } }} />
                 <button type="button" onClick={() => { const v = customSkill.trim(); if (v && !skills.includes(v)) setSkills([...skills, v]); setCustomSkill(""); }}
-                  className="rounded-sm border border-input px-3 text-xs font-semibold uppercase text-muted-foreground hover:border-primary hover:text-primary">Add</button>
+                  className="rounded-sm border border-input px-3 text-xs font-semibold text-muted-foreground hover:border-primary hover:text-primary">Add</button>
               </div>
               {skills.filter((s) => !SERVICE_SKILLS.includes(s)).length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
@@ -261,10 +261,10 @@ export function AuthForm() {
       )}
     </form>
 
-    <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-widest text-muted-foreground">
+    <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
       <span className="h-px flex-1 bg-border" />or<span className="h-px flex-1 bg-border" />
     </div>
-    <button type="button" onClick={google} className="w-full rounded-sm border border-border bg-card py-3 font-display text-sm font-semibold uppercase tracking-widest text-foreground hover:bg-muted">
+    <button type="button" onClick={google} className="w-full rounded-sm border border-border bg-card py-3 font-display text-sm font-semibold text-foreground hover:bg-muted">
       Continue with Google
     </button>
     </div>
