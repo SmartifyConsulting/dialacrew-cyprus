@@ -14,7 +14,27 @@ import {
   signedUrl, uploadFile, useBookingAssets, useCrewAssets, useDocs, useInvalidate, useMessages, usePosts, useRegister,
   useReviews, useSignedUrl, useSiteMembers, useTasks,
 } from "@/lib/site";
-import { useCreateOpenGig } from "@/lib/db";
+import { useCreateOpenGig, useRequests, useSetRequestState } from "@/lib/db";
+
+function OvertimeApprovals({ production }: { production: string }) {
+  const reqs = (useRequests().data ?? []).filter((r) => r.kind === "Overtime" && r.production === production && r.state === "Pending");
+  const setState = useSetRequestState();
+  if (reqs.length === 0) return null;
+  return (
+    <Panel title={`Overtime to approve (${reqs.length})`}>
+      <ul className="divide-y divide-border text-sm">
+        {reqs.map((r) => (
+          <li key={r.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+            <div className="min-w-0 flex-1"><div className="font-semibold">{r.who}</div><div className="text-xs text-muted-foreground">{r.detail}</div></div>
+            <span className="font-semibold">{zar(r.amount)}</span>
+            <button onClick={() => setState.mutate({ id: r.id, state: "Approved" })} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Approve</button>
+            <button onClick={() => setState.mutate({ id: r.id, state: "Declined" })} className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold">Decline</button>
+          </li>
+        ))}
+      </ul>
+    </Panel>
+  );
+}
 
 type Ctx = { p: Production; isProducer: boolean; userId: string; myName: string; myCrewId: string | null };
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
