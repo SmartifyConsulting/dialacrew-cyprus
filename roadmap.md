@@ -24,6 +24,8 @@
 - [x] Company Settings menu label uses company name
 - [x] Escrow.com: one pool per production, batch release at wrap
 - [x] Grab a Gig marketplace (fee to secure, 24h no-show penalty)
+- [x] Admin-configurable gig fees, penalty and notice hours
+- [ ] Stripe: save card when securing a gig, charge fee + penalties
 - [ ] Crew value dashboard (connections, earnings, Grab a Gig)
 - [ ] Social-media opt-in at signup + admin spotlight queue
 - [ ] Email-domain company onboarding, pending approval, 2 extra admins
