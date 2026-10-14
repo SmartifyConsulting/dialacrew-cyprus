@@ -33,7 +33,7 @@ function CrewDashboard() {
   const pencils = live.filter((j) => j.status === "pencil" || j.status === "awaiting_crew_confirmation");
   async function respond(id: string, accept: boolean) {
     const { error } = await supabase.from("bookings").update({ status: accept ? "confirmed" : "cancelled" }).eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success(accept ? "Job accepted" : "Job declined");
     qc.invalidateQueries({ queryKey: ["crew-jobs"] });
   }
