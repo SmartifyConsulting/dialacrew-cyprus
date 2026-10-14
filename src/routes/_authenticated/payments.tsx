@@ -54,7 +54,7 @@ function PaymentsPage() {
 
   const rows = bookings.filter((b) => STAGE[b.status] && b.crewId);
   const total = (b: (typeof rows)[number]) => b.crewRate * b.days;
-  const released = (b: (typeof rows)[number]) => !!(b as { escrowReleasedAt?: string | null }).escrowReleasedAt || b.status === "release_authorised";
+  const released = (b: (typeof rows)[number]) => !!(b as { escrowReleasedAt?: string | null }).escrowReleasedAt || (b.status as string) === "release_authorised";
   const sum = (f: (b: (typeof rows)[number]) => boolean) => rows.filter(f).reduce((a, b) => a + total(b), 0);
   const tiles = [
     { label: "Total committed", value: sum(() => true) },
@@ -70,7 +70,7 @@ function PaymentsPage() {
     catch (e) { toast.error((e as Error).message); } finally { setBusy(null); }
   }
   async function doRelease(pid: string, ids: string[]) {
-    if (!ids.length) return toast.error("Tick at least one crew member.");
+    if (!ids.length) { toast.error("Tick at least one crew member."); return; }
     setBusy(pid);
     try { const r = await release({ data: { productionId: pid, bookingIds: ids } }); toast.success(`Released pay for ${r.released} crew`); setPicked({}); refresh(); }
     catch (e) { toast.error((e as Error).message); } finally { setBusy(null); }
