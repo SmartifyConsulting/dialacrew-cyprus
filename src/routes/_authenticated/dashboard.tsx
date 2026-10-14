@@ -1,7 +1,7 @@
 import { overtimeAmount, shiftLabel, type OvertimeShift } from "@/lib/costing";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check } from "lucide-react";
-import { Badge, Page, Panel } from "@/components/AppShell";
+import { Badge, ClientBadge, Page, Panel } from "@/components/AppShell";
 import { zar } from "@/lib/demo-data";
 import { useBookings, useCrew, useProductions, useRequestOvertime, useRequests, useRespondToBooking, useSetRequestState } from "@/lib/db";
 import { useState } from "react";
@@ -239,7 +239,10 @@ function Dashboard() {
                 return (
                   <Link key={p.id} to="/productions/$id" params={{ id: p.id }} className="block rounded-lg border border-border bg-background p-4 transition hover:border-primary">
                     <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0"><div className="truncate font-semibold">{p.name}</div><div className="truncate text-xs text-muted-foreground">{p.client} · {p.date}</div></div>
+                      <div className="min-w-0">
+                        <div className="truncate font-semibold">{p.name}</div>
+                        <div className="mt-1 flex items-center gap-2"><ClientBadge name={p.client} /><span className="truncate text-xs text-muted-foreground">{p.date}</span></div>
+                      </div>
                       <Badge>{p.status}</Badge>
                     </div>
                     <div className="mt-3 flex justify-between text-xs text-muted-foreground"><span>Crew {p.crewBooked}/{p.crewNeeded}</span><span>{zar(p.budget)}</span></div>

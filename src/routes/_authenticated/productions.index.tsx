@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useState } from "react";
-import { Badge, Page, Panel } from "@/components/AppShell";
+import { Badge, ClientBadge, Page, Panel } from "@/components/AppShell";
 import { zar } from "@/lib/demo-data";
 import { useProductions } from "@/lib/db";
 import { useQueryClient } from "@tanstack/react-query";
@@ -69,7 +69,7 @@ function Productions() {
         {list.map((p) => (
           <Link key={p.id} to="/productions/$id" params={{ id: p.id }} className="block rounded-sm border border-border bg-card p-4">
             <div className="flex items-start justify-between gap-2">
-              <div><div className="font-semibold">{p.name}</div><div className="text-xs text-muted-foreground">{p.client} · {p.type}</div></div>
+              <div><div className="font-semibold">{p.name}</div><div className="mt-1 flex items-center gap-2"><ClientBadge name={p.client} /><span className="text-xs text-muted-foreground">{p.type}</span></div></div>
               <Badge>{p.status}</Badge>
             </div>
             <div className="mt-2 text-xs text-muted-foreground">{p.date || "Date TBC"} · {p.days} day(s) · {p.location}</div>
@@ -86,7 +86,7 @@ function Productions() {
           <tbody>
             {list.map((p) => (
               <tr key={p.id} className="border-t border-border hover:bg-muted/50">
-                <td className="px-4 py-2.5 font-medium"><Link to="/productions/$id" params={{ id: p.id }} className="hover:text-primary">{p.name}</Link><div className="text-xs text-muted-foreground">{p.client}</div></td>
+                <td className="px-4 py-2.5 font-medium"><Link to="/productions/$id" params={{ id: p.id }} className="hover:text-primary">{p.name}</Link><div className="mt-1"><ClientBadge name={p.client} /></div></td>
                 <td className="px-4">{p.type}</td>
                 <td className="px-4 text-muted-foreground">{p.location}</td>
                 <td className="px-4 text-muted-foreground">{p.date}</td>

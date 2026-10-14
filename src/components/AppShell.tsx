@@ -198,6 +198,23 @@ export function Badge({ children }: { children: string }) {
   return <span className={`inline-block rounded-sm px-2 py-0.5 text-xs font-semibold ${tone[children] ?? "bg-muted text-muted-foreground"}`}>{children}</span>;
 }
 
+// Fixed palette so each client name always lands on the same color — makes client identity scannable at a glance.
+const CLIENT_COLORS = [
+  "bg-orange-500 text-white", "bg-blue-600 text-white", "bg-purple-600 text-white", "bg-emerald-600 text-white",
+  "bg-pink-600 text-white", "bg-teal-600 text-white", "bg-red-600 text-white", "bg-indigo-600 text-white",
+  "bg-amber-600 text-white", "bg-cyan-600 text-white",
+];
+
+function clientColor(name: string) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return CLIENT_COLORS[h % CLIENT_COLORS.length];
+}
+
+export function ClientBadge({ name }: { name: string }) {
+  return <span className={`inline-block rounded-sm px-2 py-0.5 text-xs font-semibold ${clientColor(name)}`}>{name}</span>;
+}
+
 export function Panel({ title, children, right }: { title: string; children: ReactNode; right?: ReactNode }) {
   return (
     <section className="rounded-sm border border-border bg-card">
