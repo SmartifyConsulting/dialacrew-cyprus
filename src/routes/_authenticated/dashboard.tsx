@@ -159,7 +159,9 @@ function Dashboard() {
   const totalBudget = productions.reduce((a, p) => a + p.budget, 0);
   const budgetPct = totalBudget ? Math.round((secured / totalBudget) * 100) : 0;
   const pendingReqs = reqs.filter((r) => r.state === "Pending");
-  const waitingCrew = bookings.filter((b) => b.status === "awaiting_crew_confirmation" || b.status === "pencil");
+  const waitingCrew = bookings.filter((b) => b.status === "awaiting_crew_confirmation");
+  const [prodFilter, setProdFilter] = useState<"Active" | "Upcoming" | "Wrapped">("Active");
+  const filteredProductions = productions.filter((p) => p.status === prodFilter);
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const kpis = [
@@ -207,32 +209,32 @@ function Dashboard() {
               ))}
               {waitingCrew.map((b) => (
                 <li key={b.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-                  {b.status === "awaiting_crew_confirmation" && (
-                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-success/20 text-success"><Check className="h-3.5 w-3.5" /></span>
-                  )}
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-success/20 text-success"><Check className="h-3.5 w-3.5" /></span>
                   <div className="min-w-0 flex-1">
-                    <div className="font-medium">
-                      {crewName(b.crewId)}{" "}
-                      {b.status === "awaiting_crew_confirmation" ? `accepted your ${b.pencilPriority === 2 ? "2nd" : "1st"} pencil` : `· ${b.pencilPriority === 2 ? "2nd" : "1st"} pencil sent`}
-                    </div>
+                    <div className="font-medium">{crewName(b.crewId)} accepted your {b.pencilPriority === 2 ? "2nd" : "1st"} pencil</div>
                     <div className="truncate text-xs text-muted-foreground">
                       {prodName(b.productionId)} · {b.role}{b.bookingDate ? ` · ${b.bookingDate}` : ""} · {zar(b.crewRate)} a day
                     </div>
                   </div>
-                  {b.status === "awaiting_crew_confirmation" ? (
-                    <button onClick={() => respondToBooking.mutate({ id: b.id, status: "confirmed" })} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Confirm booking</button>
-                  ) : (
-                    <Badge>{b.status}</Badge>
-                  )}
+                  <button onClick={() => respondToBooking.mutate({ id: b.id, status: "confirmed" })} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Confirm booking</button>
                 </li>
               ))}
             </ul>
           </Panel>
 
-          <Panel title="Productions">
+          <Panel title="Productions" right={
+            <div className="flex gap-1">
+              {(["Active", "Upcoming", "Wrapped"] as const).map((s) => (
+                <button key={s} onClick={() => setProdFilter(s)}
+                  className={`rounded-md px-2.5 py-1 text-xs font-semibold ${prodFilter === s ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          }>
             <div className="grid gap-3 p-4 sm:grid-cols-2">
-              {productions.length === 0 && <p className="text-sm text-muted-foreground">No productions yet.</p>}
-              {productions.map((p) => {
+              {filteredProductions.length === 0 && <p className="text-sm text-muted-foreground">No {prodFilter.toLowerCase()} productions.</p>}
+              {filteredProductions.map((p) => {
                 const pct = p.crewNeeded ? Math.min(100, Math.round((p.crewBooked / p.crewNeeded) * 100)) : 0;
                 return (
                   <Link key={p.id} to="/productions/$id" params={{ id: p.id }} className="block rounded-lg border border-border bg-background p-4 transition hover:border-primary">
