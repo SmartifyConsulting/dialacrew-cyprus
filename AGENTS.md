@@ -28,3 +28,4 @@
 - Client MemoryBank (company_memory) is rebuilt by AI from production_retrospectives + crew_reviews + bookings in src/lib/memory.functions.ts; AI calls go through src/lib/ai.server.ts — one learning path for retros, matcher and relearn.
 - Production site page = fixed Overview widget on the left + tabbed feed on the right; tab lists per role live in productions.$id.tsx (CREW_TABS / MANAGER_TABS) — one place decides who sees what.
 - Any site member can rate co-workers (crew_reviews RLS via is_site_member, never self) — ratings are peer-driven, not producer-only.
+- Escrow: one Escrow.com transaction per production (production_escrow), bookings are line items; all calls in src/lib/escrow.functions.ts — fewer fees, one funding step.
