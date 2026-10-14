@@ -62,35 +62,42 @@ export function TopNav() {
     navigate({ to: "/", replace: true });
   }
 
+  const signedIn = ready && session;
   return (
-    <header className="sticky top-0 z-30">
-      <div className="bg-nav text-nav-foreground">
-        <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
-          <Link to={session ? "/dashboard" : "/"} className="shrink-0"><img src={logo.url} alt="Book a Crew" className="h-10 w-auto" /></Link>
-          <div className="ml-auto flex items-center gap-3">
-            {ready && session && (
-              <>
-                <NotificationBell userId={session.user.id} />
-                <span className="hidden text-xs font-semibold uppercase tracking-widest text-muted-foreground md:block text-nav-foreground/70">{role.data ? `${role.data} view` : ""}</span>
-                <button onClick={signOut} className="rounded-sm border border-nav-foreground/30 px-3 py-1 font-display text-xs font-semibold uppercase tracking-widest hover:bg-nav-foreground/10">Sign out</button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-      {ready && session && (
-        <div className="hidden border-t border-nav-foreground/10 bg-nav md:block">
-          <nav className="mx-auto flex max-w-7xl flex-wrap gap-1 px-4 py-1.5">
+    <>
+      {signedIn && (
+        <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-nav-foreground/10 bg-nav text-nav-foreground md:flex" aria-label="Main menu">
+          <Link to="/dashboard" className="px-5 py-5"><img src={logo.url} alt="Book a Crew" className="h-12 w-auto" /></Link>
+          <nav className="flex flex-1 flex-col gap-1 px-3">
             {items.map((n) => (
-              <Link key={n.label} to={n.to} className="rounded-sm px-3 py-1 font-display text-sm font-semibold uppercase tracking-widest text-nav-foreground/70 hover:text-nav-foreground" activeProps={{ className: "text-primary" }}>
-                {n.label}
+              <Link key={n.label} to={n.to} className="flex items-center gap-3 rounded-md px-3 py-2.5 font-display text-sm font-semibold uppercase tracking-widest text-nav-foreground/70 hover:bg-nav-foreground/10 hover:text-nav-foreground" activeProps={{ className: "bg-nav-foreground/10 text-primary" }}>
+                <n.icon className="h-4 w-4" />{n.label}
               </Link>
             ))}
           </nav>
-        </div>
+          <div className="border-t border-nav-foreground/10 p-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-nav-foreground/60">{role.data ? `${role.data} view` : ""}</p>
+            <button onClick={signOut} className="w-full rounded-sm border border-nav-foreground/30 px-3 py-1.5 font-display text-xs font-semibold uppercase tracking-widest hover:bg-nav-foreground/10">Sign out</button>
+          </div>
+        </aside>
       )}
-      {ready && session && <BottomNav items={items} />}
-    </header>
+      <header className={`sticky top-0 z-30 ${signedIn ? "md:pl-60" : ""}`}>
+        <div className={signedIn ? "border-b border-border bg-card md:bg-card" : "bg-nav text-nav-foreground"}>
+          <div className={`flex items-center gap-4 px-4 py-3 ${signedIn ? "" : "mx-auto max-w-7xl"}`}>
+            <Link to={session ? "/dashboard" : "/"} className={`shrink-0 ${signedIn ? "md:hidden" : ""}`}><img src={logo.url} alt="Book a Crew" className="h-10 w-auto" /></Link>
+            <div className="ml-auto flex items-center gap-3">
+              {signedIn && (
+                <>
+                  <NotificationBell userId={session.user.id} />
+                  <button onClick={signOut} className="rounded-sm border border-border px-3 py-1 font-display text-xs font-semibold uppercase tracking-widest md:hidden">Sign out</button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+        {signedIn && <BottomNav items={items} />}
+      </header>
+    </>
   );
 }
 
@@ -113,7 +120,8 @@ export function Page({ title, subtitle, actions, children, open }: { title: stri
   return (
     <div className="min-h-screen bg-background">
       <TopNav />
-      <main className="mx-auto max-w-7xl px-4 py-6">
+      <div className="md:pl-60">
+      <main className="mx-auto max-w-7xl px-4 py-6 pb-24 md:pb-6">
         <RoleGate open={open}>
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
             <div>
@@ -125,6 +133,7 @@ export function Page({ title, subtitle, actions, children, open }: { title: stri
           {children}
         </RoleGate>
       </main>
+      </div>
     </div>
   );
 }
