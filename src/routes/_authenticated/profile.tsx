@@ -125,7 +125,7 @@ function CompanyPanel({ userId }: { userId: string | undefined }) {
   }
 
   return (
-    <Page open title="My Company" subtitle={company.data.companies?.name ?? ""}>
+    <Page open title={company.data.companies?.name ? `${company.data.companies.name} Settings` : "Company Settings"}>
       <div className="mb-5"><AvatarCard userId={userId} /></div>
       <div className="grid gap-5 lg:grid-cols-2">
         <Panel title="Your role">
