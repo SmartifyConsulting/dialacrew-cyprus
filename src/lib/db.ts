@@ -89,9 +89,8 @@ export const useClaimGig = () => {
 export const useCreateOpenGig = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (f: { productionId: string; role: string; bookingDate: string; callTime?: string; wrapTime?: string; crewRate: number; clientCharge: number; days: number; priority?: 1 | 2 }) => {
+    mutationFn: async (f: { productionId: string; role: string; bookingDate: string; callTime?: string; wrapTime?: string; crewRate: number; clientCharge: number; days: number }) => {
       const { error } = await supabase.from("bookings").insert({
-        pencil_priority: f.priority ?? 1,
         production_id: f.productionId, crew_id: null, role: f.role, status: "open",
         booking_date: f.bookingDate || null, call_time: f.callTime || null, wrap_time: f.wrapTime || null,
         crew_rate: f.crewRate, client_charge: f.clientCharge, days: f.days,
@@ -105,8 +104,9 @@ export const useCreateOpenGig = () => {
 export const useCreatePencil = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (f: { productionId: string; crewId: string; role: string; bookingDate: string; callTime?: string; wrapTime?: string; crewRate: number; clientCharge: number; days: number }) => {
+    mutationFn: async (f: { productionId: string; crewId: string; role: string; bookingDate: string; callTime?: string; wrapTime?: string; crewRate: number; clientCharge: number; days: number; priority?: 1 | 2 }) => {
       const { error } = await supabase.from("bookings").insert({
+        pencil_priority: f.priority ?? 1,
         production_id: f.productionId, crew_id: f.crewId, role: f.role, status: "pencil",
         booking_date: f.bookingDate || null, call_time: f.callTime || null, wrap_time: f.wrapTime || null,
         crew_rate: f.crewRate, client_charge: f.clientCharge, days: f.days,
