@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode } from "react";
-import { Briefcase, Building2, Home, Search, Shield, Star, User, type LucideIcon, Wallet, CalendarDays } from "lucide-react";
+import { Megaphone, Briefcase, Building2, Home, Search, Shield, Star, User, type LucideIcon, Wallet, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany, useRole, useSession } from "@/lib/auth";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -45,6 +45,7 @@ export const navByRole: Record<string, NavItem[]> = {
     { to: "/dashboard", label: "Dashboard", icon: Home },
     { to: "/calendar", label: "Calendar", icon: CalendarDays },
     { to: "/gigs", label: "Find Gigs", icon: Search },
+    { to: "/grab-a-gig", label: "Grab a Gig", icon: Megaphone },
     { to: "/reviews", label: "Reviews", icon: Star },
     { to: "/profile", label: "Profile", icon: User },
   ],

@@ -23,7 +23,7 @@
 - [x] 1st / 2nd pencil choice when pencilling crew
 - [x] Company Settings menu label uses company name
 - [x] Escrow.com: one pool per production, batch release at wrap
-- [ ] Grab a Gig marketplace (fee to secure, 24h no-show penalty)
+- [x] Grab a Gig marketplace (fee to secure, 24h no-show penalty)
 - [ ] Crew value dashboard (connections, earnings, Grab a Gig)
 - [ ] Social-media opt-in at signup + admin spotlight queue
 - [ ] Email-domain company onboarding, pending approval, 2 extra admins

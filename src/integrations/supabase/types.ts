@@ -301,6 +301,93 @@ export type Database = {
         }
         Relationships: []
       }
+      community_gigs: {
+        Row: {
+          amount: number
+          call_time: string
+          cancelled_at: string | null
+          contact_phone: string
+          country: string
+          created_at: string
+          department: string
+          description: string
+          end_date: string | null
+          event_date: string
+          expires_at: string
+          id: string
+          kit_required: string
+          pay_type: string
+          penalty_amount: number
+          penalty_reason: string | null
+          posted_by: string
+          poster_name: string
+          role: string
+          secure_fee: number
+          secured_at: string | null
+          secured_by: string | null
+          secured_name: string | null
+          status: string
+          title: string
+          venue: string
+        }
+        Insert: {
+          amount: number
+          call_time: string
+          cancelled_at?: string | null
+          contact_phone: string
+          country: string
+          created_at?: string
+          department: string
+          description: string
+          end_date?: string | null
+          event_date: string
+          expires_at: string
+          id?: string
+          kit_required?: string
+          pay_type: string
+          penalty_amount?: number
+          penalty_reason?: string | null
+          posted_by?: string
+          poster_name: string
+          role: string
+          secure_fee?: number
+          secured_at?: string | null
+          secured_by?: string | null
+          secured_name?: string | null
+          status?: string
+          title: string
+          venue: string
+        }
+        Update: {
+          amount?: number
+          call_time?: string
+          cancelled_at?: string | null
+          contact_phone?: string
+          country?: string
+          created_at?: string
+          department?: string
+          description?: string
+          end_date?: string | null
+          event_date?: string
+          expires_at?: string
+          id?: string
+          kit_required?: string
+          pay_type?: string
+          penalty_amount?: number
+          penalty_reason?: string | null
+          posted_by?: string
+          poster_name?: string
+          role?: string
+          secure_fee?: number
+          secured_at?: string | null
+          secured_by?: string | null
+          secured_name?: string | null
+          status?: string
+          title?: string
+          venue?: string
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           address: string | null
@@ -1760,6 +1847,7 @@ export type Database = {
       }
       claim_crew_profile: { Args: never; Returns: string }
       claim_gig: { Args: { _booking: string }; Returns: undefined }
+      complete_gig: { Args: { _gig: string }; Returns: undefined }
       crew_on_time_pct: { Args: { _crew_id: string }; Returns: number }
       expire_pencils: { Args: never; Returns: undefined }
       generate_invoice: { Args: { _booking: string }; Returns: string }
@@ -1808,6 +1896,8 @@ export type Database = {
         }[]
       }
       release_payment: { Args: { _booking: string }; Returns: string }
+      report_gig_no_show: { Args: { _gig: string }; Returns: number }
+      secure_gig: { Args: { _gig: string }; Returns: undefined }
       site_members: {
         Args: { _prod: string }
         Returns: {
@@ -1821,6 +1911,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      withdraw_from_gig: { Args: { _gig: string }; Returns: number }
     }
     Enums: {
       app_role: "producer" | "crew" | "client" | "admin"
