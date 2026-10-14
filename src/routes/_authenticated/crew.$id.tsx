@@ -389,7 +389,7 @@ function BankingTab({ crewId }: { crewId: string }) {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email: session.user.email, password });
       if (error) { toast.error("Incorrect password"); return; }
-      const { data, error: rpcError } = await supabase.rpc("get_banking_details", { _crew_id: crewId });
+      const { data, error: rpcError } = await (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<{ data: BankRow[] | null; error: Error | null }>)("get_banking_details", { _crew_id: crewId });
       if (rpcError) throw rpcError;
       const row = data?.[0];
       if (row) {
@@ -410,7 +410,7 @@ function BankingTab({ crewId }: { crewId: string }) {
     if (!f.swiftBic.trim()) { toast.error("SWIFT/BIC is required for an international transfer"); return; }
     setSaving(true);
     try {
-      const { error } = await supabase.rpc("upsert_banking_details", {
+      const { error } = await (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<{ error: Error | null }>)("upsert_banking_details", {
         _crew_id: crewId, _account_holder_name: f.accountHolderName, _bank_name: f.bankName, _bank_country: f.bankCountry,
         _bank_address: f.bankAddress, _account_number: f.accountNumber, _iban: f.iban, _swift_bic: f.swiftBic,
         _routing_or_sort_code: f.routingOrSortCode, _currency: f.currency, _notes: f.notes,
@@ -525,3 +525,9 @@ function Kit({ crewId, items, canEdit, onChange }: { crewId: string; items: { id
     </div>
   );
 }
+
+type BankRow = {
+  account_holder_name: string | null; bank_name: string | null; bank_country: string | null; bank_address: string | null;
+  account_number: string | null; iban: string | null; swift_bic: string | null; routing_or_sort_code: string | null;
+  currency: string | null; notes: string | null; updated_at: string | null;
+};

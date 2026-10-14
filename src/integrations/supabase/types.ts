@@ -334,6 +334,7 @@ export type Database = {
           email: string
           id: string
           invited_by: string
+          role_title: string | null
           status: string
           token: string
         }
@@ -345,6 +346,7 @@ export type Database = {
           email: string
           id?: string
           invited_by?: string
+          role_title?: string | null
           status?: string
           token?: string
         }
@@ -356,6 +358,7 @@ export type Database = {
           email?: string
           id?: string
           invited_by?: string
+          role_title?: string | null
           status?: string
           token?: string
         }
@@ -1792,7 +1795,12 @@ export type Database = {
         | "cancelled"
         | "disputed"
         | "open"
-      company_role: "owner" | "producer" | "production_manager" | "accounts"
+      company_role:
+        | "owner"
+        | "producer"
+        | "production_manager"
+        | "accounts"
+        | "other"
       payment_status:
         | "not_required"
         | "payment_required"
@@ -1944,7 +1952,13 @@ export const Constants = {
         "disputed",
         "open",
       ],
-      company_role: ["owner", "producer", "production_manager", "accounts"],
+      company_role: [
+        "owner",
+        "producer",
+        "production_manager",
+        "accounts",
+        "other",
+      ],
       payment_status: [
         "not_required",
         "payment_required",

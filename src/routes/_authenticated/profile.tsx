@@ -82,7 +82,7 @@ function AvatarCard({ userId }: { userId: string | undefined }) {
 
 const field = "w-full rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
 const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground";
-const ROLES = ["producer", "production_manager", "accounts"] as const;
+const ROLES = ["producer", "production_manager", "accounts", "other"] as const;
 
 function CompanyPanel({ userId }: { userId: string | undefined }) {
   const qc = useQueryClient();
@@ -91,17 +91,19 @@ function CompanyPanel({ userId }: { userId: string | undefined }) {
   const invites = useCompanyInvites(companyId);
   const [email, setEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<(typeof ROLES)[number]>("producer");
+  const [otherRole, setOtherRole] = useState("");
   const [busy, setBusy] = useState(false);
   const isOwner = company.data?.company_role === "owner";
 
   async function sendInvite() {
     if (!companyId || !email.trim()) return;
+    if (inviteRole === "other" && !otherRole.trim()) { toast.error("Please describe their role"); return; }
     setBusy(true);
     try {
-      const { error } = await supabase.from("company_invites").insert({ company_id: companyId, email: email.trim(), company_role: inviteRole });
+      const { error } = await supabase.from("company_invites").insert({ company_id: companyId, email: email.trim(), company_role: inviteRole, role_title: inviteRole === "other" ? otherRole.trim() : null });
       if (error) throw error;
       toast.success("Invite created — copy the link below and send it to them");
-      setEmail("");
+      setEmail(""); setOtherRole("");
       qc.invalidateQueries({ queryKey: ["company-invites", companyId] });
     } catch (e) { toast.error(friendlyError(e)); }
     setBusy(false);
@@ -137,9 +139,14 @@ function CompanyPanel({ userId }: { userId: string | undefined }) {
           <Panel title="Invite a teammate">
             <div className="space-y-3 p-4">
               <input type="email" placeholder="teammate@company.com" className={field} value={email} onChange={(e) => setEmail(e.target.value)} />
-              <select className={field} value={inviteRole} onChange={(e) => setInviteRole(e.target.value as (typeof ROLES)[number])}>
-                {ROLES.map((r) => <option key={r} value={r}>{r.replace("_", " ")}</option>)}
-              </select>
+              <label className="block text-xs font-semibold text-muted-foreground">Role
+                <select required className={`${field} mt-1`} value={inviteRole} onChange={(e) => setInviteRole(e.target.value as (typeof ROLES)[number])}>
+                  {ROLES.map((r) => <option key={r} value={r}>{r === "other" ? "Other" : r.replace("_", " ").replace(/^./, (c) => c.toUpperCase())}</option>)}
+                </select>
+              </label>
+              {inviteRole === "other" && (
+                <input placeholder="Describe their role, e.g. Office manager" className={field} value={otherRole} onChange={(e) => setOtherRole(e.target.value)} />
+              )}
               <button disabled={busy} onClick={sendInvite} className={`${btn} disabled:opacity-60`}>{busy ? "Creating…" : "Create invite link"}</button>
               <p className="text-xs text-muted-foreground">No email is sent automatically — copy the link and share it yourself.</p>
             </div>
@@ -155,7 +162,7 @@ function CompanyPanel({ userId }: { userId: string | undefined }) {
                   <li key={i.id} className="flex items-center justify-between px-4 py-2.5">
                     <div>
                       <div className="text-sm font-medium">{i.email}</div>
-                      <div className="text-xs text-muted-foreground">{i.company_role.replace("_", " ")} · {new Date(i.created_at).toLocaleDateString("en-ZA")}</div>
+                      <div className="text-xs text-muted-foreground">{(i as { role_title?: string | null }).role_title || i.company_role.replace("_", " ")} · {new Date(i.created_at).toLocaleDateString("en-ZA")}</div>
                     </div>
                     <div className="flex items-center gap-3">
                       <Badge>{i.status}</Badge>
