@@ -43,6 +43,13 @@
       "when": 1792008245861,
       "tag": "0005_invite_other_role",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792010032445,
+      "tag": "0006_production_escrow",
+      "breakpoints": true
     }
   ]
 }

@@ -107,6 +107,7 @@ export type Database = {
           crew_id: string | null
           crew_rate: number
           days: number
+          escrow_released_at: string | null
           id: string
           job_completed_at: string | null
           payment_status: Database["public"]["Enums"]["payment_status"]
@@ -136,6 +137,7 @@ export type Database = {
           crew_id?: string | null
           crew_rate?: number
           days?: number
+          escrow_released_at?: string | null
           id?: string
           job_completed_at?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
@@ -165,6 +167,7 @@ export type Database = {
           crew_id?: string | null
           crew_rate?: number
           days?: number
+          escrow_released_at?: string | null
           id?: string
           job_completed_at?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
@@ -1145,6 +1148,44 @@ export type Database = {
           value?: Json
         }
         Relationships: []
+      }
+      production_escrow: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          escrow_transaction_id: string | null
+          production_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          escrow_transaction_id?: string | null
+          production_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          escrow_transaction_id?: string | null
+          production_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_escrow_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: true
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       production_locations: {
         Row: {
