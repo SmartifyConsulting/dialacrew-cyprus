@@ -192,23 +192,26 @@ function Productions() {
               <h2 className="font-display text-lg font-semibold">New production</h2>
               <button type="button" onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground" aria-label="Close">✕</button>
             </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              <ClientPicker clients={clients} value={f.client} onChange={(company) => setF({ ...f, client: company })} onClientsChanged={() => qc.invalidateQueries({ queryKey: ["clients"] })} />
-              <input className={field} placeholder="Production name *" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
-              <select className={field} value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>
-                {["Commercial", "Film", "Television", "Photography", "Other"].map((t) => <option key={t}>{t}</option>)}
-              </select>
-              <input className={field} placeholder="Shoot location" value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} />
-              <label className="block"><span className="text-xs text-muted-foreground">Start date</span>
-                <input className={`${field} mt-1`} type="date" value={f.startDate} onChange={(e) => setF({ ...f, startDate: e.target.value })} /></label>
-              <label className="block"><span className="text-xs text-muted-foreground">End date</span>
-                <input className={`${field} mt-1`} type="date" value={f.endDate} onChange={(e) => setF({ ...f, endDate: e.target.value })} /></label>
-              <input className={field} type="number" min={0} placeholder="Budget (ZAR)" value={f.budget || ""} onChange={(e) => setF({ ...f, budget: +e.target.value })} />
-              <div className="flex items-center text-xs text-muted-foreground">{f.startDate && f.endDate ? `${days} shoot day(s)` : "Set a start and end date to calculate shoot days"}</div>
+            <div className="rounded-sm border border-border p-4">
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Production info</h3>
+              <div className="grid gap-3 md:grid-cols-2">
+                <ClientPicker clients={clients} value={f.client} onChange={(company) => setF({ ...f, client: company })} onClientsChanged={() => qc.invalidateQueries({ queryKey: ["clients"] })} />
+                <input className={field} placeholder="Production name *" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
+                <select className={field} value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>
+                  {["Commercial", "Film", "Television", "Photography", "Other"].map((t) => <option key={t}>{t}</option>)}
+                </select>
+                <input className={field} placeholder="Shoot location" value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} />
+                <label className="block"><span className="text-xs text-muted-foreground">Start date</span>
+                  <input className={`${field} mt-1`} type="date" value={f.startDate} onChange={(e) => setF({ ...f, startDate: e.target.value })} /></label>
+                <label className="block"><span className="text-xs text-muted-foreground">End date</span>
+                  <input className={`${field} mt-1`} type="date" value={f.endDate} onChange={(e) => setF({ ...f, endDate: e.target.value })} /></label>
+                <input className={field} type="number" min={0} placeholder="Budget (ZAR)" value={f.budget || ""} onChange={(e) => setF({ ...f, budget: +e.target.value })} />
+                <div className="flex items-center text-xs text-muted-foreground">{f.startDate && f.endDate ? `${days} shoot day(s)` : "Set a start and end date to calculate shoot days"}</div>
+              </div>
             </div>
 
-            <div className="mt-5">
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pencil crew for key roles (optional)</h3>
+            <div className="mt-4 rounded-sm border border-border p-4">
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pencil crew for key roles (optional)</h3>
               <div className="grid gap-2 sm:grid-cols-2">
                 {CREW_ROLES.map((role) => (
                   <label key={role} className="block">
