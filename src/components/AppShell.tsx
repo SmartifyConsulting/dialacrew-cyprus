@@ -177,7 +177,7 @@ const tone: Record<string, string> = {
   Confirmed: "bg-success/20 text-success", confirmed: "bg-success/20 text-success",
   "On set": "bg-success/20 text-success",
   Active: "bg-success/20 text-success",
-  Pencil: "bg-primary/20 text-primary", pencil: "bg-primary/20 text-primary",
+  Penciled: "bg-primary/20 text-primary", pencil: "bg-primary/20 text-primary",
   Upcoming: "bg-primary/20 text-primary",
   Draft: "bg-chart-3/20 text-chart-3",
   Pending: "bg-chart-3/20 text-chart-3",

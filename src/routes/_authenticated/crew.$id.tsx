@@ -156,7 +156,7 @@ function CrewProfile() {
 }
 
 const STATUS_LABEL: Record<string, string> = {
-  draft: "Draft", pencil: "Pencil", awaiting_crew_confirmation: "Awaiting your confirmation", confirmed: "Confirmed",
+  draft: "Draft", pencil: "Penciled", awaiting_crew_confirmation: "Pending", confirmed: "Confirmed",
   in_progress: "In progress", awaiting_review: "Awaiting review", payment_released: "Payment released",
   completed: "Completed", cancelled: "Cancelled", disputed: "Disputed",
 };
