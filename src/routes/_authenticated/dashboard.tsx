@@ -5,7 +5,7 @@ import { useBookings, useCrew, useProductions, useRequests, useSetRequestState }
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useRole, useSession } from "@/lib/auth";
-import { useMyCrewId } from "@/lib/site";
+import { useMyCrewId, useMyName } from "@/lib/site";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -105,109 +105,120 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 function Dashboard() {
+  const { session } = useSession();
+  const name = useMyName(session?.user.id).data ?? "";
+  const first = name.includes("@") ? "" : name.split(" ")[0];
   const productions = useProductions().data ?? [];
   const crew = useCrew().data ?? [];
   const bookings = useBookings().data ?? [];
   const reqs = useRequests().data ?? [];
   const setState = useSetRequestState();
   const crewName = (id: string | null) => (id ? crew.find((c) => c.id === id)?.name ?? "—" : "Open gig");
+  const prodName = (id: string) => productions.find((p) => p.id === id)?.name ?? "Production";
   const count = (s: string) => bookings.filter((b) => b.status === s).length;
   const secured = productions.reduce((a, p) => a + p.securedFunds, 0);
-  const stats = [
-    ["Active productions", productions.filter((p) => p.status === "Active").length],
-    ["Upcoming", productions.filter((p) => p.status === "Upcoming").length],
-    ["Pencils", count("pencil")],
-    ["Confirmed", count("confirmed")],
-    ["Pending responses", count("awaiting_crew_confirmation")],
-    ["Approvals waiting", reqs.filter((r) => r.state === "Pending").length],
-    ["Secured funds", zar(secured)],
-    ["Outstanding invoices", zar(186_400)],
+  const pendingReqs = reqs.filter((r) => r.state === "Pending");
+  const waitingCrew = bookings.filter((b) => b.status === "awaiting_crew_confirmation" || b.status === "pencil");
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const kpis = [
+    { l: "Active productions", v: productions.filter((p) => p.status === "Active").length, s: `${productions.filter((p) => p.status === "Upcoming").length} upcoming` },
+    { l: "Crew confirmed", v: count("confirmed"), s: `${count("pencil")} on pencil` },
+    { l: "Needs you", v: pendingReqs.length + waitingCrew.length, s: `${pendingReqs.length} approvals` },
+    { l: "Secured funds", v: zar(secured), s: "across all projects" },
   ];
   const onSet = productions.find((p) => p.status === "Active");
   const today = onSet ? bookings.filter((b) => b.productionId === onSet.id) : [];
   const dateLabel = new Date().toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const activity = [
+    ...reqs.filter((r) => r.state !== "Pending").map((r) => ({ id: `r${r.id}`, text: `${r.kind} for ${r.who} ${r.state.toLowerCase()}`, sub: r.production })),
+    ...bookings.filter((b) => b.status === "confirmed").map((b) => ({ id: `b${b.id}`, text: `${crewName(b.crewId)} confirmed as ${b.role}`, sub: prodName(b.productionId) })),
+  ].slice(0, 8);
 
   return (
-    <Page title="Home" subtitle={dateLabel}
-      actions={<Link to="/productions" className="rounded-sm bg-primary px-4 py-2 font-display text-sm font-semibold uppercase tracking-widest text-primary-foreground">+ New production</Link>}>
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-border bg-border md:grid-cols-4 lg:grid-cols-8">
-        {stats.map(([l, v]) => (
-          <div key={l} className="bg-card px-3 py-3">
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{l}</div>
-            <div className="mt-1 font-display text-2xl font-semibold">{v}</div>
+    <Page title={`${greet}${first ? `, ${first}` : ""}`} subtitle={dateLabel}
+      actions={<Link to="/productions" className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm">+ New production</Link>}>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {kpis.map((k) => (
+          <div key={k.l} className="rounded-xl border border-border bg-card p-4 shadow-sm">
+            <div className="text-xs font-medium text-muted-foreground">{k.l}</div>
+            <div className="mt-1 font-display text-3xl font-semibold">{k.v}</div>
+            <div className="mt-1 text-xs text-muted-foreground">{k.s}</div>
           </div>
         ))}
       </div>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+        <div className="space-y-5 lg:col-span-2">
           <Panel title="Productions">
-            <table className="w-full text-sm">
-              <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                <tr>{["Production", "Client", "Date", "Crew", "Budget", "Secured", "Status"].map((h) => <th key={h} className="px-4 py-2 font-medium">{h}</th>)}</tr>
-              </thead>
-              <tbody>
-                {productions.map((p) => (
-                  <tr key={p.id} className="border-t border-border hover:bg-muted/50">
-                    <td className="px-4 py-2.5 font-medium"><Link to="/productions/$id" params={{ id: p.id }} className="hover:text-primary">{p.name}</Link></td>
-                    <td className="px-4 text-muted-foreground">{p.client}</td>
-                    <td className="px-4 text-muted-foreground">{p.date}</td>
-                    <td className="px-4">{p.crewBooked}/{p.crewNeeded}</td>
-                    <td className="px-4">{zar(p.budget)}</td>
-                    <td className="px-4">{zar(p.securedFunds)}</td>
-                    <td className="px-4"><Badge>{p.status}</Badge></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="grid gap-3 p-4 sm:grid-cols-2">
+              {productions.length === 0 && <p className="text-sm text-muted-foreground">No productions yet.</p>}
+              {productions.map((p) => {
+                const pct = p.crewNeeded ? Math.min(100, Math.round((p.crewBooked / p.crewNeeded) * 100)) : 0;
+                return (
+                  <Link key={p.id} to="/productions/$id" params={{ id: p.id }} className="block rounded-lg border border-border bg-background p-4 transition hover:border-primary">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0"><div className="truncate font-semibold">{p.name}</div><div className="truncate text-xs text-muted-foreground">{p.client} · {p.date}</div></div>
+                      <Badge>{p.status}</Badge>
+                    </div>
+                    <div className="mt-3 flex justify-between text-xs text-muted-foreground"><span>Crew {p.crewBooked}/{p.crewNeeded}</span><span>{zar(p.budget)}</span></div>
+                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} /></div>
+                  </Link>
+                );
+              })}
+            </div>
           </Panel>
-        </div>
 
-        <Panel title="Approvals">
-          <ul>
-            {reqs.map((r) => (
-              <li key={r.id} className="border-t border-border px-4 py-3 first:border-t-0">
-                <div className="flex justify-between text-xs uppercase tracking-wider text-primary"><span>{r.kind}</span><span>{zar(r.amount)}</span></div>
-                <div className="mt-1 text-sm">{r.detail}</div>
-                <div className="text-xs text-muted-foreground">{r.who} · {r.production}</div>
-                {r.state === "Pending" ? (
-                  <div className="mt-2 flex gap-2">
-                    <button onClick={() => setState.mutate({ id: r.id, state: "Approved" })} className="rounded-sm bg-primary px-3 py-1 text-xs font-semibold uppercase text-primary-foreground">Approve</button>
-                    <button onClick={() => setState.mutate({ id: r.id, state: "Declined" })} className="rounded-sm border border-border px-3 py-1 text-xs font-semibold uppercase">Decline</button>
-                  </div>
-                ) : <div className="mt-2 text-xs font-semibold uppercase">{r.state}</div>}
-              </li>
-            ))}
-          </ul>
-        </Panel>
-
-        <div className="lg:col-span-2">
           <Panel title={`On set today${onSet ? ` · ${onSet.name}` : ""}`}>
-            <table className="w-full text-sm">
-              <tbody>
-                {today.map((b) => (
-                  <tr key={b.id} className="border-t border-border first:border-t-0">
-                    <td className="px-4 py-2.5 font-medium">{crewName(b.crewId)}</td>
-                    <td className="px-4 text-muted-foreground">{b.role}</td>
-                    <td className="px-4"><Badge>{b.status}</Badge></td>
-                    <td className="px-4 text-right">{b.attendance && <Badge>{b.attendance}</Badge>}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <ul className="divide-y divide-border text-sm">
+              {today.length === 0 && <li className="p-4 text-muted-foreground">Nobody on set today.</li>}
+              {today.map((b) => (
+                <li key={b.id} className="flex items-center gap-3 px-4 py-2.5">
+                  <span className="flex-1 font-medium">{crewName(b.crewId)} <span className="font-normal text-muted-foreground">· {b.role}</span></span>
+                  <Badge>{b.status}</Badge>
+                  {b.attendance && <Badge>{b.attendance}</Badge>}
+                </li>
+              ))}
+            </ul>
           </Panel>
         </div>
 
-        <Panel title="Pending crew responses">
-          <ul className="text-sm">
-            {bookings.filter((b) => b.status === "awaiting_crew_confirmation" || b.status === "pencil").map((b) => (
-              <li key={b.id} className="flex items-center justify-between border-t border-border px-4 py-2.5 first:border-t-0">
-                <span>{crewName(b.crewId)} <span className="text-muted-foreground">· {b.role}</span></span>
-                <Badge>{b.status}</Badge>
-              </li>
-            ))}
-          </ul>
-        </Panel>
+        <div className="space-y-5">
+          <Panel title={`Needs you (${pendingReqs.length + waitingCrew.length})`}>
+            <ul className="divide-y divide-border">
+              {pendingReqs.length + waitingCrew.length === 0 && <li className="p-4 text-sm text-muted-foreground">All caught up.</li>}
+              {pendingReqs.map((r) => (
+                <li key={r.id} className="px-4 py-3">
+                  <div className="flex justify-between text-xs font-semibold text-primary"><span>{r.kind}</span><span>{zar(r.amount)}</span></div>
+                  <div className="mt-1 text-sm">{r.detail}</div>
+                  <div className="text-xs text-muted-foreground">{r.who} · {r.production}</div>
+                  <div className="mt-2 flex gap-2">
+                    <button onClick={() => setState.mutate({ id: r.id, state: "Approved" })} className="rounded-md bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">Approve</button>
+                    <button onClick={() => setState.mutate({ id: r.id, state: "Declined" })} className="rounded-md border border-border px-3 py-1 text-xs font-semibold">Decline</button>
+                  </div>
+                </li>
+              ))}
+              {waitingCrew.map((b) => (
+                <li key={b.id} className="flex items-center justify-between gap-2 px-4 py-2.5 text-sm">
+                  <span className="min-w-0"><span className="font-medium">{crewName(b.crewId)}</span><span className="block truncate text-xs text-muted-foreground">{b.role} · {prodName(b.productionId)}</span></span>
+                  <Badge>{b.status}</Badge>
+                </li>
+              ))}
+            </ul>
+          </Panel>
+
+          <Panel title="Recent activity">
+            <ul className="divide-y divide-border text-sm">
+              {activity.length === 0 && <li className="p-4 text-muted-foreground">No activity yet.</li>}
+              {activity.map((a) => (
+                <li key={a.id} className="flex gap-3 px-4 py-2.5">
+                  <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                  <span><span className="block">{a.text}</span><span className="text-xs text-muted-foreground">{a.sub}</span></span>
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        </div>
       </div>
     </Page>
   );
