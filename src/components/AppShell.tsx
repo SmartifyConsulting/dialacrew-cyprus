@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { type ReactNode } from "react";
-import { Briefcase, Building2, Home, Search, Shield, Star, User, type LucideIcon } from "lucide-react";
+import { Briefcase, Building2, Home, Search, Shield, Star, User, type LucideIcon, Wallet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRole, useSession } from "@/lib/auth";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -11,23 +11,25 @@ type NavItem = { to: string; label: string; icon: LucideIcon };
 // One menu definition per role, used by both the top bar and the phone bottom bar.
 export const navByRole: Record<string, NavItem[]> = {
   producer: [
-    { to: "/dashboard", label: "Home", icon: Home },
-    { to: "/crew", label: "Find Crew", icon: Search },
-    { to: "/productions", label: "Projects", icon: Briefcase },
-    { to: "/profile", label: "My Company", icon: Building2 },
+    { to: "/dashboard", label: "Dashboard", icon: Home },
+    { to: "/productions", label: "Bookings", icon: Briefcase },
+    { to: "/crew", label: "Search", icon: Search },
+    { to: "/payments", label: "Payments", icon: Wallet },
+    { to: "/profile", label: "Profile", icon: Building2 },
   ],
   crew: [
-    { to: "/dashboard", label: "Home", icon: Home },
+    { to: "/dashboard", label: "Dashboard", icon: Home },
     { to: "/gigs", label: "Find Gigs", icon: Search },
     { to: "/reviews", label: "Reviews", icon: Star },
-    { to: "/profile", label: "My Profile", icon: User },
+    { to: "/profile", label: "Profile", icon: User },
   ],
   client: [{ to: "/profile", label: "My Profile", icon: User }],
   admin: [
-    { to: "/dashboard", label: "Home", icon: Home },
-    { to: "/crew", label: "Find Crew", icon: Search },
-    { to: "/productions", label: "Projects", icon: Briefcase },
-    { to: "/profile", label: "My Company", icon: Building2 },
+    { to: "/dashboard", label: "Dashboard", icon: Home },
+    { to: "/productions", label: "Bookings", icon: Briefcase },
+    { to: "/crew", label: "Search", icon: Search },
+    { to: "/payments", label: "Payments", icon: Wallet },
+    { to: "/profile", label: "Profile", icon: Building2 },
     { to: "/admin", label: "Admin", icon: Shield },
   ],
 };
