@@ -159,5 +159,5 @@
 }
 
 @layer base {
-  h1, h2, h3 { font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700; }
+  h1, h2, h3 { font-family: var(--font-sans); text-transform: none; letter-spacing: -0.01em; font-weight: 700; }
 }

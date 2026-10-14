@@ -4,7 +4,7 @@ import { useClaimGig, useOpenGigs } from "@/lib/db";
 import { zar } from "@/lib/demo-data";
 
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
-const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold uppercase tracking-wider text-primary-foreground";
+const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground";
 
 /** Country of a gig = last comma-separated part of its address (or location). */
 export const gigCountry = (g: { address: string; location: string }) => ((g.address || g.location || "").split(",").pop() ?? "").trim();
@@ -60,7 +60,7 @@ export function FindGigsTab({ canClaim }: { canClaim: boolean }) {
           {countries.map((c) => <option key={c}>{c}</option>)}
         </select>
         <input type="number" value={radiusKm} onChange={(e) => setRadiusKm(e.target.value)} className={`${input} w-28`} placeholder="Radius (km)" disabled={!near} />
-        <button onClick={useMyLocation} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold uppercase hover:border-primary">
+        <button onClick={useMyLocation} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold hover:border-primary">
           {near ? "Near me ✓" : "Filter near me"}
         </button>
         {near && <button onClick={() => setNear(null)} className="text-xs text-muted-foreground hover:underline">Clear location filter</button>}

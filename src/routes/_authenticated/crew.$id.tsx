@@ -32,7 +32,7 @@ export const Route = createFileRoute("/_authenticated/crew/$id")({
 
 type Cert = { name: string; issuer: string; date: string };
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
-const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold uppercase tracking-wider text-primary-foreground";
+const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground";
 const TABS = ["About", "Certifications", "Projects", "Kit & props"] as const;
 
 function CrewProfile() {
@@ -97,7 +97,7 @@ function CrewProfile() {
               <div className="text-muted-foreground">{m.role} · {m.department}</div>
               <div className="mt-1 flex items-center gap-1 text-sm"><Star className="h-4 w-4 fill-primary text-primary" /> <strong>{Number(m.rating).toFixed(1)}</strong> <span className="text-muted-foreground">({reviews.length} reviews)</span></div>
             </div>
-            {canEdit && <button onClick={() => setEditing(!editing)} className="ml-auto text-xs uppercase text-primary hover:underline">{editing ? "Close" : "Edit profile"}</button>}
+            {canEdit && <button onClick={() => setEditing(!editing)} className="ml-auto text-xs text-primary hover:underline">{editing ? "Close" : "Edit profile"}</button>}
           </div>
           {editing ? <EditForm m={m} onSave={async (patch) => { if (await update(patch)) { toast.success("Profile saved"); setEditing(false); } }} /> : (
             <div className="mt-5 space-y-2 text-sm text-muted-foreground">
@@ -257,31 +257,31 @@ function ProjectRow({ job: j, userId, canRespond, isProducer, onChange }: { job:
           {j.status === "pencil" && j.pencil_expires_at && <div className="text-xs text-muted-foreground">Expires {new Date(j.pencil_expires_at).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" })}</div>}
         </div>
         <div className="text-right">
-          <span className="text-xs uppercase text-muted-foreground">{STATUS_LABEL[j.status] ?? j.status}</span>
+          <span className="text-xs text-muted-foreground">{STATUS_LABEL[j.status] ?? j.status}</span>
           {j.payment_status !== "not_required" && PAYMENT_LABEL[j.payment_status] && (
             <div className="text-xs text-muted-foreground">{PAYMENT_LABEL[j.payment_status]}</div>
           )}
         </div>
       </div>
       {canRespond && onJob && (
-        <button onClick={completeJob} className="mt-2 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold uppercase text-primary-foreground">Mark job completed</button>
+        <button onClick={completeJob} className="mt-2 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Mark job completed</button>
       )}
       {isProducer && j.status === "confirmed" && j.payment_status === "payment_required" && (
-        <button onClick={recordPayment} className="mt-2 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold uppercase text-primary-foreground">Record payment received</button>
+        <button onClick={recordPayment} className="mt-2 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Record payment received</button>
       )}
       {isProducer && j.status === "awaiting_review" && j.client_approved == null && (
-        <button onClick={approveOnClientBehalf} className="mt-2 rounded-sm border border-primary px-3 py-1.5 text-xs font-semibold uppercase text-primary">Approve job (on client's behalf)</button>
+        <button onClick={approveOnClientBehalf} className="mt-2 rounded-sm border border-primary px-3 py-1.5 text-xs font-semibold text-primary">Approve job (on client's behalf)</button>
       )}
       {isProducer && (j.payment_status === "awaiting_release" || j.payment_status === "release_authorised") && (
-        <button onClick={releaseFunds} className="mt-2 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold uppercase text-primary-foreground">Release payment</button>
+        <button onClick={releaseFunds} className="mt-2 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Release payment</button>
       )}
       {isProducer && ["pencil", "awaiting_crew_confirmation", "confirmed"].includes(j.status) && (
         <button onClick={doCancelBooking} className="mt-2 ml-2 text-xs text-destructive hover:underline">Cancel booking</button>
       )}
       {canRespond && pending && (
         <div className="mt-2 flex gap-2">
-          <button onClick={accept} className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold uppercase text-primary-foreground">Accept</button>
-          <button onClick={decline} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold uppercase">Decline</button>
+          <button onClick={accept} className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Accept</button>
+          <button onClick={decline} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold">Decline</button>
           <button onClick={() => setNegOpen(!negOpen)} className="ml-auto text-xs text-primary hover:underline">{negOpen ? "Hide rate negotiation" : "Negotiate rate"}</button>
         </div>
       )}
@@ -294,15 +294,15 @@ function ProjectRow({ job: j, userId, canRespond, isProducer, onChange }: { job:
       {otOpen && (
         <div className="mt-2 space-y-2 rounded-sm border border-border bg-muted/30 p-3">
           <div className="grid grid-cols-2 gap-2">
-            <label className="block"><span className="text-xs uppercase tracking-wider text-muted-foreground">Extra hours</span>
+            <label className="block"><span className="text-xs text-muted-foreground">Extra hours</span>
               <input type="number" min="0.5" step="0.5" className="mt-1 w-full rounded-sm border border-input bg-background px-2 py-1 text-xs" value={ot.hours} onChange={(e) => setOt({ ...ot, hours: e.target.value })} /></label>
-            <label className="block"><span className="text-xs uppercase tracking-wider text-muted-foreground">Shift</span>
+            <label className="block"><span className="text-xs text-muted-foreground">Shift</span>
               <select className="mt-1 w-full rounded-sm border border-input bg-background px-2 py-1 text-xs" value={ot.shift} onChange={(e) => setOt({ ...ot, shift: e.target.value as OvertimeShift })}><option value="day">Day</option><option value="night">Night (4pm–morning)</option></select></label>
           </div>
           <input placeholder="Reason" className="w-full rounded-sm border border-input bg-background px-2 py-1 text-xs" value={ot.reason} onChange={(e) => setOt({ ...ot, reason: e.target.value })} />
           <p className="text-xs font-semibold">{shiftLabel(j.booking_date, ot.shift)}: R{otAmount.toLocaleString()}</p>
           <p className="text-xs text-muted-foreground">Sent to the producer for authorisation. If they don't respond, you may proceed at your own risk — Book a Crew isn't responsible for unauthorised overtime.</p>
-          <button onClick={submitOvertime} className="rounded-sm bg-primary px-2 py-1 text-xs font-semibold uppercase text-primary-foreground">Send request</button>
+          <button onClick={submitOvertime} className="rounded-sm bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground">Send request</button>
         </div>
       )}
       {negOpen && (
@@ -321,7 +321,7 @@ function ProjectRow({ job: j, userId, canRespond, isProducer, onChange }: { job:
           {pending && (
             <div className="flex items-center gap-2">
               <input type="number" className="w-28 rounded-sm border border-input bg-background px-2 py-1 text-xs" value={proposedRate} onChange={(e) => setProposedRate(e.target.value)} />
-              <button onClick={sendProposal} className="rounded-sm bg-primary px-2 py-1 text-xs font-semibold uppercase text-primary-foreground">Propose</button>
+              <button onClick={sendProposal} className="rounded-sm bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground">Propose</button>
             </div>
           )}
         </div>
@@ -336,7 +336,7 @@ function EditForm({ m, onSave }: { m: { name: string; role: string; department: 
     portfolio_url: m.portfolio_url ?? "", youtube_url: m.youtube_url ?? "", vimeo_url: m.vimeo_url ?? "", instagram_url: m.instagram_url ?? "",
   });
   const field = (k: keyof typeof f, label: string, type = "text") => (
-    <label className="block"><span className="text-xs uppercase tracking-wider text-muted-foreground">{label}</span>
+    <label className="block"><span className="text-xs text-muted-foreground">{label}</span>
       <input type={type} className={`${input} mt-1 w-full`} value={String(f[k])} onChange={(e) => setF({ ...f, [k]: e.target.value })} /></label>
   );
   return (
@@ -344,7 +344,7 @@ function EditForm({ m, onSave }: { m: { name: string; role: string; department: 
       {field("name", "Name")}{field("role", "Role")}{field("department", "Department")}{field("location", "Location")}
       {field("email", "Email", "email")}{field("phone", "Phone", "tel")}
       <div className="sm:col-span-2">{field("skills", "Skills (comma separated)")}</div>
-      <label className="block sm:col-span-2"><span className="text-xs uppercase tracking-wider text-muted-foreground">Experience</span>
+      <label className="block sm:col-span-2"><span className="text-xs text-muted-foreground">Experience</span>
         <textarea rows={4} className={`${input} mt-1 w-full`} value={f.experience_notes} onChange={(e) => setF({ ...f, experience_notes: e.target.value })} /></label>
       {field("team_led", "Team members led", "number")}{field("safety_record", "Safety record %", "number")}
       {field("portfolio_url", "Portfolio / showreel URL", "url")}{field("youtube_url", "YouTube URL", "url")}

@@ -38,7 +38,7 @@ function OvertimeApprovals({ production }: { production: string }) {
 
 type Ctx = { p: Production; isProducer: boolean; userId: string; myName: string; myCrewId: string | null };
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
-const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold uppercase tracking-wider text-primary-foreground disabled:opacity-50";
+const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50";
 const when = (s: string) => new Date(s).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" });
 const initials = (n: string) => n.split(" ").map((x) => x[0]).join("").slice(0, 2).toUpperCase();
 
@@ -95,7 +95,7 @@ export function OverviewTab({ p, isProducer }: Ctx) {
   const filled = !!(p.address || p.latitude) && !!p.summary;
   if (!isProducer || (filled && !editing)) {
     return isProducer ? (
-      <button onClick={() => setEditing(true)} className="w-full rounded-sm border border-border px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:border-primary hover:text-primary">Edit site details</button>
+      <button onClick={() => setEditing(true)} className="w-full rounded-sm border border-border px-3 py-2 text-xs font-semibold text-muted-foreground hover:border-primary hover:text-primary">Edit site details</button>
     ) : null;
   }
 
@@ -106,15 +106,15 @@ export function OverviewTab({ p, isProducer }: Ctx) {
           <div className="space-y-3 p-4 text-sm">
             {isProducer ? (
               <>
-                <label className="block"><span className="text-xs uppercase tracking-wider text-muted-foreground">Site address</span>
+                <label className="block"><span className="text-xs text-muted-foreground">Site address</span>
                   <input className={`${input} mt-1 w-full`} value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} placeholder="Street, suburb, city" /></label>
                 <div className="grid gap-3 sm:grid-cols-3">
-                  <label><span className="text-xs uppercase tracking-wider text-muted-foreground">Latitude</span><input className={`${input} mt-1 w-full`} value={f.latitude} onChange={(e) => setF({ ...f, latitude: e.target.value })} /></label>
-                  <label><span className="text-xs uppercase tracking-wider text-muted-foreground">Longitude</span><input className={`${input} mt-1 w-full`} value={f.longitude} onChange={(e) => setF({ ...f, longitude: e.target.value })} /></label>
-                  <label><span className="text-xs uppercase tracking-wider text-muted-foreground">Site radius (m)</span><input type="number" className={`${input} mt-1 w-full`} value={f.geofence} onChange={(e) => setF({ ...f, geofence: e.target.value })} /></label>
+                  <label><span className="text-xs text-muted-foreground">Latitude</span><input className={`${input} mt-1 w-full`} value={f.latitude} onChange={(e) => setF({ ...f, latitude: e.target.value })} /></label>
+                  <label><span className="text-xs text-muted-foreground">Longitude</span><input className={`${input} mt-1 w-full`} value={f.longitude} onChange={(e) => setF({ ...f, longitude: e.target.value })} /></label>
+                  <label><span className="text-xs text-muted-foreground">Site radius (m)</span><input type="number" className={`${input} mt-1 w-full`} value={f.geofence} onChange={(e) => setF({ ...f, geofence: e.target.value })} /></label>
                 </div>
                 <button onClick={useHere} className="inline-flex items-center gap-1 text-xs text-primary hover:underline"><MapPin className="h-3 w-3" /> Use my current location as the site location</button>
-                <label className="block"><span className="text-xs uppercase tracking-wider text-muted-foreground">Project summary</span>
+                <label className="block"><span className="text-xs text-muted-foreground">Project summary</span>
                   <textarea rows={4} className={`${input} mt-1 w-full`} value={f.summary} onChange={(e) => setF({ ...f, summary: e.target.value })} /></label>
                 <button onClick={save} className={btn}>Save</button>
               </>
@@ -152,7 +152,7 @@ export function MembersList({ p, userId }: Ctx) {
                 <Link to="/crew/$id" params={{ id: m.crew_id }} className="block truncate text-sm font-semibold hover:text-primary">{m.name}</Link>
                 <div className="truncate text-xs text-muted-foreground">{m.role} · {m.department}</div>
               </div>
-              {m.user_id !== userId && <button onClick={() => setRating({ crewId: m.crew_id, name: m.name })} className="rounded-sm border border-primary px-2 py-1 text-xs font-semibold uppercase text-primary hover:bg-primary/10">Rate me</button>}
+              {m.user_id !== userId && <button onClick={() => setRating({ crewId: m.crew_id, name: m.name })} className="rounded-sm border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10">Rate me</button>}
             </li>
           ))}
         </ul>
@@ -195,7 +195,7 @@ function RateDialog({ crewId, name, productionId, onClose }: { crewId: string; n
         </div>
         <textarea rows={3} className={`${input} w-full`} placeholder="How did they do on this job?" value={comment} onChange={(e) => setComment(e.target.value)} />
         <div className="mt-3 flex justify-end gap-2">
-          <button onClick={onClose} className="px-3 py-2 text-xs uppercase text-muted-foreground">Cancel</button>
+          <button onClick={onClose} className="px-3 py-2 text-xs text-muted-foreground">Cancel</button>
           <button onClick={submit} className={btn}>Save rating</button>
         </div>
       </div>
@@ -254,8 +254,8 @@ export function PostsTab({ p, userId, myName, isProducer }: Ctx) {
         {audio && !recording && <div className="mt-2 flex items-center gap-2 text-xs text-primary"><Mic className="h-3 w-3" /> Voice note attached{audio.transcript ? " and transcribed" : ""} <button className="text-muted-foreground underline" onClick={() => setAudio(null)}>remove</button></div>}
         {files.length > 0 && <div className="mt-2 flex flex-wrap gap-2">{files.map((f, i) => <span key={i} className="rounded-sm bg-muted px-2 py-1 text-xs">{f.name} <button onClick={() => setFiles(files.filter((_, j) => j !== i))}>×</button></span>)}</div>}
         <div className="mt-3 flex items-center gap-2">
-          <button onClick={() => setRecording(true)} disabled={recording} className="inline-flex items-center gap-1 rounded-sm border border-border px-3 py-2 text-xs uppercase hover:border-primary"><Mic className="h-4 w-4" /> Audio</button>
-          <button onClick={() => fileRef.current?.click()} className="inline-flex items-center gap-1 rounded-sm border border-border px-3 py-2 text-xs uppercase hover:border-primary"><Paperclip className="h-4 w-4" /> Attach</button>
+          <button onClick={() => setRecording(true)} disabled={recording} className="inline-flex items-center gap-1 rounded-sm border border-border px-3 py-2 text-xs hover:border-primary"><Mic className="h-4 w-4" /> Audio</button>
+          <button onClick={() => fileRef.current?.click()} className="inline-flex items-center gap-1 rounded-sm border border-border px-3 py-2 text-xs hover:border-primary"><Paperclip className="h-4 w-4" /> Attach</button>
           <input ref={fileRef} type="file" multiple hidden onChange={(e) => { setFiles([...files, ...Array.from(e.target.files ?? [])]); e.target.value = ""; }} />
           <button onClick={submit} disabled={busy || recording} className={`${btn} ml-auto`}>{busy ? "Posting…" : "Post"}</button>
         </div>
@@ -434,20 +434,20 @@ export function RegisterTab({ p, isProducer, userId, myName, myCrewId }: Ctx) {
           <div className="flex flex-wrap items-center gap-3 p-4">
             <span className="text-sm">Status: <strong>{myLast?.kind === "in" ? "On site" : "Not checked in"}</strong></span>
             <button disabled={busy} onClick={() => selfMark("in")} className={`${btn} inline-flex items-center gap-1`}><LogIn className="h-4 w-4" /> Check in</button>
-            <button disabled={busy} onClick={() => selfMark("out")} className="inline-flex items-center gap-1 rounded-sm border border-border px-3 py-2 text-xs font-semibold uppercase"><LogOut className="h-4 w-4" /> Check out</button>
+            <button disabled={busy} onClick={() => selfMark("out")} className="inline-flex items-center gap-1 rounded-sm border border-border px-3 py-2 text-xs font-semibold"><LogOut className="h-4 w-4" /> Check out</button>
             <label className="ml-auto flex items-center gap-2 text-sm"><input type="checkbox" className="accent-primary" checked={auto} disabled={!hasSite} onChange={(e) => setAuto(e.target.checked)} /> Automatic tracking while this page is open</label>
           </div>
           {pending > 0 && (
             <div className="flex items-center justify-between border-t border-border bg-primary/10 px-4 py-2 text-xs">
               <span>{pending} check-in{pending > 1 ? "s" : ""} saved offline, not yet synced.</span>
-              <button onClick={trySync} className="font-semibold uppercase text-primary hover:underline">Sync now</button>
+              <button onClick={trySync} className="font-semibold text-primary hover:underline">Sync now</button>
             </div>
           )}
         </Panel>
       )}
       <Panel title="Who's on site" right={<span className="text-xs text-muted-foreground">Radius {radius}m</span>}>
         <table className="w-full text-sm">
-          <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground"><tr><th className="px-4 py-2">Member</th><th className="px-4">Status</th><th className="px-4">Last movement</th>{isProducer && <th className="px-4">Mark</th>}</tr></thead>
+          <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Member</th><th className="px-4">Status</th><th className="px-4">Last movement</th>{isProducer && <th className="px-4">Mark</th>}</tr></thead>
           <tbody>
             {members.map((m) => {
               const l = lastByCrew.get(m.crew_id);
@@ -469,14 +469,14 @@ export function RegisterTab({ p, isProducer, userId, myName, myCrewId }: Ctx) {
       </Panel>
       <Panel title="Register — all ins and outs">
         <table className="w-full text-sm">
-          <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground"><tr><th className="px-4 py-2">Time</th><th className="px-4">Member</th><th className="px-4">In/Out</th><th className="px-4">How</th><th className="px-4">Location</th></tr></thead>
+          <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Time</th><th className="px-4">Member</th><th className="px-4">In/Out</th><th className="px-4">How</th><th className="px-4">Location</th></tr></thead>
           <tbody>
             {rows.length === 0 && <tr><td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">No entries yet.</td></tr>}
             {rows.map((r) => (
               <tr key={r.id} className="border-t border-border">
                 <td className="px-4 py-2 text-xs">{when(r.created_at)}</td>
                 <td className="px-4">{r.person_name}</td>
-                <td className="px-4 font-semibold uppercase">{r.kind}</td>
+                <td className="px-4 font-semibold">{r.kind}</td>
                 <td className="px-4 text-xs text-muted-foreground">{r.source === "geofence" ? "Automatic" : r.source === "gps" ? "GPS" : "Marked by producer"}</td>
                 <td className="px-4 text-xs">{r.on_site == null ? "—" : r.on_site ? <span className="text-success">On site ({r.distance_m}m)</span> : <span className="text-destructive">Off site ({r.distance_m}m)</span>}</td>
               </tr>
@@ -592,7 +592,7 @@ export function AssetsTab({ p, isProducer, bookings, crewNames }: Ctx & { bookin
       <p className="text-sm text-muted-foreground">{isProducer ? "Tick the kit and props from each provider's inventory that Dial a Crew has selected for this job. Each fee is added to that provider's total." : "Kit and props selected for this job."}</p>
       {isProducer && rows.length > 0 && (
         <div className="flex items-center justify-between rounded-sm border border-primary/40 bg-primary/10 px-4 py-3">
-          <span className="text-sm font-semibold uppercase tracking-wider">Running cost as selected</span>
+          <span className="text-sm font-semibold">Running cost as selected</span>
           <span className="font-display text-2xl font-bold text-primary">{zar(grandTotal)}</span>
         </div>
       )}
@@ -671,12 +671,12 @@ function SwapDialog({ booking, currentName, onClose, onDone }: { booking: Bookin
                 <div className="text-sm font-semibold">{c.name}</div>
                 <div className="text-xs text-muted-foreground">{c.role} · {c.department} · {zar(c.day_rate)}/day {!c.available && "· Booked"}</div>
               </div>
-              <button disabled={busy} onClick={() => swap(c.id, c.day_rate)} className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold uppercase text-primary-foreground disabled:opacity-60">Use this person</button>
+              <button disabled={busy} onClick={() => swap(c.id, c.day_rate)} className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-60">Use this person</button>
             </li>
           ))}
           {candidates.data?.length === 0 && <li className="py-4 text-center text-sm text-muted-foreground">No matches.</li>}
         </ul>
-        <div className="mt-3 text-right"><button onClick={onClose} className="text-xs uppercase text-muted-foreground">Cancel</button></div>
+        <div className="mt-3 text-right"><button onClick={onClose} className="text-xs text-muted-foreground">Cancel</button></div>
       </div>
     </div>
   );
@@ -699,7 +699,7 @@ export function CommercialsTab({ p, bookings, crewNames, requests }: Ctx & { boo
   return (
     <div className="space-y-5">
       <div className="flex justify-end">
-        <div className="flex rounded-sm border border-border text-xs font-semibold uppercase">
+        <div className="flex rounded-sm border border-border text-xs font-semibold">
           <button onClick={() => setClientView(false)} className={`px-3 py-2 ${!clientView ? "bg-primary text-primary-foreground" : ""}`}>Producer view</button>
           <button onClick={() => setClientView(true)} className={`px-3 py-2 ${clientView ? "bg-primary text-primary-foreground" : ""}`}>Client view</button>
         </div>
@@ -709,12 +709,12 @@ export function CommercialsTab({ p, bookings, crewNames, requests }: Ctx & { boo
           ? [["Budget", zar(p.budget)], ["Quoted to client", zar(billing)], ["Crew booked", `${p.crewBooked}/${p.crewNeeded}`], ["Secured funds", zar(p.securedFunds)], ["Balance due", zar(Math.max(0, billing - p.securedFunds))]]
           : [["Budget", zar(p.budget)], ["Running cost", zar(running)], ["Client billing", zar(billing)], ["Margin", zar(billing - running)], ["Budget left", zar(p.budget - running)]]
         ).map(([l, v]) => (
-          <div key={l} className="bg-card px-4 py-3"><div className="text-[11px] uppercase tracking-wider text-muted-foreground">{l}</div><div className="font-display text-2xl font-semibold">{v}</div></div>
+          <div key={l} className="bg-card px-4 py-3"><div className="text-[11px] text-muted-foreground">{l}</div><div className="font-display text-2xl font-semibold">{v}</div></div>
         ))}
       </div>
       <Panel title="Cost breakdown">
         <table className="w-full text-sm">
-          <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground"><tr>
+          <thead className="text-left text-[11px] text-muted-foreground"><tr>
             <th className="px-4 py-2">Role</th><th className="px-4">Provider</th><th className="px-4">Days</th>
             {!clientView && <><th className="px-4">Crew rate</th><th className="px-4">Assets</th><th className="px-4">Provider total</th></>}
             <th className="px-4">{clientView ? "Charge" : "Client charge"}</th><th className="px-4">Status</th></tr></thead>

@@ -80,7 +80,7 @@ function AvatarCard({ userId }: { userId: string | undefined }) {
 }
 
 const field = "w-full rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
-const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold uppercase tracking-wider text-primary-foreground";
+const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground";
 const ROLES = ["producer", "production_manager", "accounts"] as const;
 
 function CompanyPanel({ userId }: { userId: string | undefined }) {

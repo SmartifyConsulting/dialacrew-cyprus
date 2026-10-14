@@ -64,7 +64,7 @@ export function AudioRecorder({ onDone, onCancel }: { onDone: (blob: Blob, trans
   };
   const mm = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
   const cancelBtn = (
-    <button onClick={cancel} type="button" className="flex items-center gap-1 rounded-sm border border-border px-3 py-1.5 text-xs font-semibold uppercase text-muted-foreground hover:border-destructive hover:text-destructive">
+    <button onClick={cancel} type="button" className="flex items-center gap-1 rounded-sm border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:border-destructive hover:text-destructive">
       <X className="h-3 w-3" /> Cancel
     </button>
   );
@@ -74,7 +74,7 @@ export function AudioRecorder({ onDone, onCancel }: { onDone: (blob: Blob, trans
       {state === "rec" ? (
         <>
           <span className="flex items-center gap-2 text-sm font-semibold text-primary"><Mic className="h-4 w-4 animate-pulse" /> Recording {mm}</span>
-          <button onClick={stop} type="button" className="ml-auto flex items-center gap-1 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold uppercase text-primary-foreground"><Square className="h-3 w-3" /> Stop & transcribe</button>
+          <button onClick={stop} type="button" className="ml-auto flex items-center gap-1 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"><Square className="h-3 w-3" /> Stop & transcribe</button>
           {cancelBtn}
         </>
       ) : (

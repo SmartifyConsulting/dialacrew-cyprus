@@ -98,7 +98,7 @@ function ImportTab() {
                 </table>
                 <p className="mt-1 text-xs text-muted-foreground">Previewing {Math.min(5, csv.rows.length)} of {csv.rows.length} rows.</p>
               </div>
-              <button onClick={runImport} disabled={importing} className="rounded-sm bg-primary px-4 py-2 text-xs font-semibold uppercase tracking-wider text-primary-foreground disabled:opacity-60">
+              <button onClick={runImport} disabled={importing} className="rounded-sm bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-60">
                 {importing ? "Importing…" : `Import ${csv.rows.length} rows`}
               </button>
             </>
@@ -121,7 +121,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 const TABS = ["Users", "Crew", "Import", "Companies", "Bookings", "Payments", "Invoices", "Inventory", "Disputes", "Reviews", "Memberships", "Audit Log"] as const;
-const btn = "rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary-foreground";
+const btn = "rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground";
 
 function AdminPage() {
   const { session } = useSession();
@@ -193,7 +193,7 @@ function UsersTab() {
   return (
     <Panel title={`Users (${users.data?.length ?? 0})`}>
       <table className="w-full text-sm">
-        <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground"><tr><th className="px-4 py-2">Name</th><th className="px-4">Email</th><th className="px-4">Roles</th><th className="px-4">Status</th><th className="px-4">Action</th></tr></thead>
+        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Name</th><th className="px-4">Email</th><th className="px-4">Roles</th><th className="px-4">Status</th><th className="px-4">Action</th></tr></thead>
         <tbody>
           {(users.data ?? []).map((u) => (
             <tr key={u.id} className="border-t border-border">
@@ -218,7 +218,7 @@ function CrewTab() {
   return (
     <Panel title={`Crew (${crew.data?.length ?? 0})`}>
       <table className="w-full text-sm">
-        <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground"><tr><th className="px-4 py-2">Name</th><th className="px-4">Role</th><th className="px-4">Department</th><th className="px-4">Rate</th><th className="px-4">Rating</th></tr></thead>
+        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Name</th><th className="px-4">Role</th><th className="px-4">Department</th><th className="px-4">Rate</th><th className="px-4">Rating</th></tr></thead>
         <tbody>{(crew.data ?? []).map((c) => (
           <tr key={c.id} className="border-t border-border"><td className="px-4 py-2 font-medium">{c.name}</td><td className="px-4">{c.role}</td><td className="px-4">{c.department}</td><td className="px-4">{zar(c.day_rate)}</td><td className="px-4">★ {c.rating}</td></tr>
         ))}</tbody>
@@ -235,7 +235,7 @@ function CompaniesTab() {
   return (
     <Panel title={`Companies (${companies.data?.length ?? 0})`}>
       <table className="w-full text-sm">
-        <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground"><tr><th className="px-4 py-2">Name</th><th className="px-4">Billing email</th><th className="px-4">Phone</th><th className="px-4">Users</th></tr></thead>
+        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Name</th><th className="px-4">Billing email</th><th className="px-4">Phone</th><th className="px-4">Users</th></tr></thead>
         <tbody>{(companies.data ?? []).map((c) => (
           <tr key={c.id} className="border-t border-border"><td className="px-4 py-2 font-medium">{c.name}</td><td className="px-4 text-muted-foreground">{c.billing_email || "—"}</td><td className="px-4">{c.phone || "—"}</td><td className="px-4">{(c.company_users as unknown as { count: number }[])?.[0]?.count ?? 0}</td></tr>
         ))}</tbody>
@@ -253,7 +253,7 @@ function BookingsTab() {
   return (
     <Panel title={`Bookings (${bookings.data?.length ?? 0})`}>
       <table className="w-full text-sm">
-        <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground"><tr><th className="px-4 py-2">Production</th><th className="px-4">Crew</th><th className="px-4">Role</th><th className="px-4">Date</th><th className="px-4">Status</th><th className="px-4">Payment</th></tr></thead>
+        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Production</th><th className="px-4">Crew</th><th className="px-4">Role</th><th className="px-4">Date</th><th className="px-4">Status</th><th className="px-4">Payment</th></tr></thead>
         <tbody>{(bookings.data ?? []).map((b) => (
           <tr key={b.id} className="border-t border-border">
             <td className="px-4 py-2 font-medium">{(b.productions as { name: string } | null)?.name}</td>
@@ -275,7 +275,7 @@ function PaymentsTab() {
   return (
     <Panel title={`Payments (${rows.data?.length ?? 0})`}>
       <table className="w-full text-sm">
-        <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground"><tr><th className="px-4 py-2">Production</th><th className="px-4">Crew</th><th className="px-4">Amount</th><th className="px-4">Status</th></tr></thead>
+        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Production</th><th className="px-4">Crew</th><th className="px-4">Amount</th><th className="px-4">Status</th></tr></thead>
         <tbody>{(rows.data ?? []).map((b) => (
           <tr key={b.id} className="border-t border-border">
             <td className="px-4 py-2 font-medium">{(b.productions as { name: string } | null)?.name}</td>
@@ -297,7 +297,7 @@ function InvoicesTab() {
   return (
     <Panel title={`Invoices (${invoices.data?.length ?? 0})`}>
       <table className="w-full text-sm">
-        <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground"><tr><th className="px-4 py-2">Invoice #</th><th className="px-4">Crew</th><th className="px-4">Production</th><th className="px-4">Subtotal</th><th className="px-4">VAT</th><th className="px-4">Total</th><th className="px-4">Status</th></tr></thead>
+        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Invoice #</th><th className="px-4">Crew</th><th className="px-4">Production</th><th className="px-4">Subtotal</th><th className="px-4">VAT</th><th className="px-4">Total</th><th className="px-4">Status</th></tr></thead>
         <tbody>{(invoices.data ?? []).map((i) => (
           <tr key={i.id} className="border-t border-border">
             <td className="px-4 py-2 font-medium">{i.invoice_number}</td>
@@ -342,7 +342,7 @@ function DisputesTab() {
             {d.status === "open" && (
               <div className="mt-2 flex gap-2">
                 <button onClick={() => resolve(d.id, "resolved")} className={btn}>Resolve</button>
-                <button onClick={() => resolve(d.id, "rejected")} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold uppercase">Reject</button>
+                <button onClick={() => resolve(d.id, "rejected")} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold">Reject</button>
               </div>
             )}
           </li>
@@ -407,7 +407,7 @@ function MembershipsTab() {
     <div className="space-y-5">
       <Panel title="Pricing">
         <table className="w-full text-sm">
-          <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground"><tr><th className="px-4 py-2">Type</th><th className="px-4">Price (cents)</th><th className="px-4">Currency</th><th className="px-4">Action</th></tr></thead>
+          <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Type</th><th className="px-4">Price (cents)</th><th className="px-4">Currency</th><th className="px-4">Action</th></tr></thead>
           <tbody>{(plans.data ?? []).map((p) => (
             <PlanRow key={p.id} plan={p} onSave={updatePrice} />
           ))}</tbody>
@@ -415,7 +415,7 @@ function MembershipsTab() {
       </Panel>
       <Panel title={`Memberships (${memberships.data?.length ?? 0})`}>
         <table className="w-full text-sm">
-          <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground"><tr><th className="px-4 py-2">User</th><th className="px-4">Type</th><th className="px-4">Status</th></tr></thead>
+          <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">User</th><th className="px-4">Type</th><th className="px-4">Status</th></tr></thead>
           <tbody>{(memberships.data ?? []).map((m) => (
             <tr key={m.id} className="border-t border-border"><td className="px-4 py-2">{m.profile?.full_name || m.profile?.email || "—"}</td><td className="px-4">{m.membership_type}</td><td className="px-4"><Badge>{m.status}</Badge></td></tr>
           ))}</tbody>
@@ -445,7 +445,7 @@ function AuditLogTab() {
   return (
     <Panel title={`Audit log (last ${logs.data?.length ?? 0})`}>
       <table className="w-full text-sm">
-        <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground"><tr><th className="px-4 py-2">When</th><th className="px-4">Action</th><th className="px-4">Table</th><th className="px-4">Record</th><th className="px-4">Change</th></tr></thead>
+        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">When</th><th className="px-4">Action</th><th className="px-4">Table</th><th className="px-4">Record</th><th className="px-4">Change</th></tr></thead>
         <tbody>{(logs.data ?? []).map((l) => (
           <tr key={l.id} className="border-t border-border">
             <td className="px-4 py-2 text-xs">{new Date(l.created_at).toLocaleString("en-ZA")}</td>
@@ -515,7 +515,7 @@ function InventoryTab() {
 
       <Panel title={`Inventory (${items.data?.length ?? 0} item types)`}>
         <table className="w-full text-sm">
-          <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground"><tr>
+          <thead className="text-left text-[11px] text-muted-foreground"><tr>
             <th className="px-4 py-2">Item</th><th className="px-4">Category</th><th className="px-4">Total</th><th className="px-4">Checked out</th><th className="px-4">Available</th><th className="px-4">Action</th>
           </tr></thead>
           <tbody>
@@ -542,7 +542,7 @@ function InventoryTab() {
 
       <Panel title="Library card — check-out history">
         <table className="w-full text-sm">
-          <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground"><tr>
+          <thead className="text-left text-[11px] text-muted-foreground"><tr>
             <th className="px-4 py-2">Item</th><th className="px-4">Qty</th><th className="px-4">Where</th><th className="px-4">Left on</th><th className="px-4">Due back</th><th className="px-4">Returned</th><th className="px-4">Action</th>
           </tr></thead>
           <tbody>
@@ -592,15 +592,15 @@ function CheckoutDialog({ item, onClose, onDone }: { item: { id: string; name: s
       <div className="w-full max-w-md rounded-sm border border-border bg-card p-5" onClick={(e) => e.stopPropagation()}>
         <h3 className="font-script text-3xl text-primary">Check out {item.name}</h3>
         <div className="mt-4 grid gap-3">
-          <label className="block"><span className="text-xs uppercase tracking-wider text-muted-foreground">Quantity</span>
+          <label className="block"><span className="text-xs text-muted-foreground">Quantity</span>
             <input type="number" min="1" className={`${invField} mt-1 w-full`} value={f.quantity} onChange={(e) => setF({ ...f, quantity: e.target.value })} /></label>
-          <label className="block"><span className="text-xs uppercase tracking-wider text-muted-foreground">Where it's going</span>
+          <label className="block"><span className="text-xs text-muted-foreground">Where it's going</span>
             <input className={`${invField} mt-1 w-full`} placeholder="Production name, person, location…" value={f.checkedOutTo} onChange={(e) => setF({ ...f, checkedOutTo: e.target.value })} /></label>
-          <label className="block"><span className="text-xs uppercase tracking-wider text-muted-foreground">Expected return date</span>
+          <label className="block"><span className="text-xs text-muted-foreground">Expected return date</span>
             <input type="date" className={`${invField} mt-1 w-full`} value={f.returnBy} onChange={(e) => setF({ ...f, returnBy: e.target.value })} /></label>
         </div>
         <div className="mt-4 flex justify-end gap-2">
-          <button onClick={onClose} className="px-3 py-2 text-xs uppercase text-muted-foreground">Cancel</button>
+          <button onClick={onClose} className="px-3 py-2 text-xs text-muted-foreground">Cancel</button>
           <button disabled={busy} onClick={submit} className={`${btn} disabled:opacity-60`}>{busy ? "Saving…" : "Check out"}</button>
         </div>
       </div>

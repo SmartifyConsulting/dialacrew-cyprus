@@ -25,5 +25,5 @@ export const PasswordInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HT
 });
 
 export const fieldClass = "w-full rounded-sm border border-input bg-background px-3 py-2 text-foreground outline-none focus:border-primary";
-export const labelClass = "mb-1 block font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground";
-export const submitClass = "w-full rounded-sm bg-primary px-6 py-3 font-display text-sm font-semibold uppercase tracking-widest text-primary-foreground hover:opacity-90 disabled:opacity-50";
+export const labelClass = "mb-1 block font-display text-xs font-semibold text-muted-foreground";
+export const submitClass = "w-full rounded-sm bg-primary px-6 py-3 font-display text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50";

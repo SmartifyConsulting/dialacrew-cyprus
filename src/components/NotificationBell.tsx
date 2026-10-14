@@ -38,7 +38,7 @@ export function NotificationBell({ userId }: { userId: string }) {
       </button>
       {open && (
         <div className="absolute right-0 top-11 z-40 w-80 rounded-sm border border-border bg-card text-card-foreground shadow-lg">
-          <div className="flex items-center justify-between border-b border-border px-3 py-2 text-xs uppercase tracking-widest">
+          <div className="flex items-center justify-between border-b border-border px-3 py-2 text-xs">
             <span className="text-primary">Notifications</span>
             {unread > 0 && <button onClick={markAll} className="text-muted-foreground hover:text-foreground">Mark all read</button>}
           </div>

@@ -55,7 +55,7 @@ function ProductionSite() {
     <div className="flex items-center gap-2">
       {isProducer && (
         <button onClick={() => setTab("Find Crew")}
-          className={`inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs font-semibold uppercase tracking-wider ${tab === "Find Crew" ? "bg-primary text-primary-foreground" : "border border-primary text-primary hover:bg-primary/10"}`}>
+          className={`inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs font-semibold ${tab === "Find Crew" ? "bg-primary text-primary-foreground" : "border border-primary text-primary hover:bg-primary/10"}`}>
           <Sparkles className="h-4 w-4" /> Find Crew
         </button>
       )}

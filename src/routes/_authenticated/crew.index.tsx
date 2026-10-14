@@ -155,26 +155,26 @@ function PencilDialog({ crew, onClose }: { crew: { id: string; name: string; rol
               </button>
             ))}
           </div>
-          <label className="block"><span className="text-xs uppercase tracking-wider text-muted-foreground">Production</span>
+          <label className="block"><span className="text-xs text-muted-foreground">Production</span>
             <select className={`${field} mt-1`} value={f.productionId} onChange={(e) => { const p = active.find((x) => x.id === e.target.value); setF({ ...f, productionId: e.target.value, date: p?.date ?? f.date }); }}>
               {active.length === 0 && <option value="">No open productions</option>}
               {active.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </label>
-          <label className="block"><span className="text-xs uppercase tracking-wider text-muted-foreground">Role on this job</span>
+          <label className="block"><span className="text-xs text-muted-foreground">Role on this job</span>
             <input className={`${field} mt-1`} value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })} /></label>
           <div className="grid grid-cols-3 gap-3">
-            <label className="block"><span className="text-xs uppercase tracking-wider text-muted-foreground">Date</span>
+            <label className="block"><span className="text-xs text-muted-foreground">Date</span>
               <input type="date" className={`${field} mt-1`} value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} /></label>
-            <label className="block"><span className="text-xs uppercase tracking-wider text-muted-foreground">Call time</span>
+            <label className="block"><span className="text-xs text-muted-foreground">Call time</span>
               <input type="time" className={`${field} mt-1`} value={f.callTime} onChange={(e) => setF({ ...f, callTime: e.target.value })} /></label>
-            <label className="block"><span className="text-xs uppercase tracking-wider text-muted-foreground">Wrap time</span>
+            <label className="block"><span className="text-xs text-muted-foreground">Wrap time</span>
               <input type="time" className={`${field} mt-1`} value={f.wrapTime} onChange={(e) => setF({ ...f, wrapTime: e.target.value })} /></label>
           </div>
         </div>
         <div className="mt-4 flex justify-end gap-2">
-          <button onClick={onClose} className="px-3 py-2 text-xs uppercase text-muted-foreground">Cancel</button>
-          <button disabled={create.isPending} onClick={submit} className="rounded-sm bg-primary px-4 py-2 text-xs font-semibold uppercase tracking-wider text-primary-foreground disabled:opacity-60">
+          <button onClick={onClose} className="px-3 py-2 text-xs text-muted-foreground">Cancel</button>
+          <button disabled={create.isPending} onClick={submit} className="rounded-sm bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-60">
             {create.isPending ? "Sending…" : "Send pencil"}
           </button>
         </div>

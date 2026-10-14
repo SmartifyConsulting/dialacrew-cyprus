@@ -62,7 +62,7 @@ function CrewDashboard() {
         const where = pr?.address || pr?.location || "";
         return (
           <section className="mb-5 rounded-lg bg-primary p-5 text-primary-foreground shadow-sm">
-            <div className="text-xs font-semibold uppercase tracking-widest opacity-80">{todayJob.booking_date === todayIso ? "Today" : "Next up"} · {todayJob.booking_date}</div>
+            <div className="text-xs font-semibold opacity-80">{todayJob.booking_date === todayIso ? "Today" : "Next up"} · {todayJob.booking_date}</div>
             <div className="mt-1 font-display text-2xl font-semibold">{pr?.name ?? "Production"}</div>
             <div className="mt-1 text-sm opacity-90">{todayJob.role}{todayJob.call_time ? ` · call ${todayJob.call_time.slice(0, 5)}` : ""}</div>
             <div className="mt-4 flex flex-wrap gap-2">
@@ -80,8 +80,8 @@ function CrewDashboard() {
               return (
                 <li key={j.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
                   <div className="min-w-0 flex-1"><div className="font-semibold">{pr?.name ?? "Production"}</div><div className="text-xs text-muted-foreground">{j.pencil_priority === 2 ? "2nd pencil" : "1st pencil"} · {j.role} · {j.booking_date ?? ""}</div></div>
-                  <button onClick={() => respond(j.id, true)} className="rounded-md bg-success px-3 py-1.5 text-xs font-semibold uppercase text-primary-foreground">Accept</button>
-                  <button onClick={() => respond(j.id, false)} className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold uppercase">Decline</button>
+                  <button onClick={() => respond(j.id, true)} className="rounded-md bg-success px-3 py-1.5 text-xs font-semibold text-primary-foreground">Accept</button>
+                  <button onClick={() => respond(j.id, false)} className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold">Decline</button>
                 </li>
               );
             })}

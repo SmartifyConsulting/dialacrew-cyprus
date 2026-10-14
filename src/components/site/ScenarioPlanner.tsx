@@ -15,7 +15,7 @@ type Asset = { id: string; crew_id: string; name: string; category: string; dail
 type Scenario = { id: string; name: string; selection: Selection; total: number; created_at: string };
 
 const field = "w-full rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
-const btn = "inline-flex items-center gap-1.5 rounded-sm bg-primary px-3 py-2 text-xs font-semibold uppercase tracking-wider text-primary-foreground disabled:opacity-50";
+const btn = "inline-flex items-center gap-1.5 rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50";
 const ghost = "inline-flex items-center gap-1 rounded-sm border border-border px-2 py-1 text-xs hover:border-primary hover:text-primary";
 
 /** Scenario key: drafts for a production are stored as brief_matches rows under this client key. */
@@ -227,7 +227,7 @@ export function ScenarioPlanner({ p }: { p: Production }) {
         {!scenarios.data?.length ? <p className="p-4 text-sm text-muted-foreground">No drafts yet. Save one above, then build another with a different group to compare.</p> : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase tracking-wider text-muted-foreground">
+              <thead className="text-left text-xs text-muted-foreground">
                 <tr><th className="px-4 py-2">Draft</th><th className="px-2">Crew</th><th className="px-2">Kit items</th><th className="px-2">Estimate</th><th className="px-2 w-40">Budget used</th><th /></tr>
               </thead>
               <tbody className="divide-y divide-border">
