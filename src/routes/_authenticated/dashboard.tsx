@@ -1,8 +1,9 @@
 import { overtimeAmount, shiftLabel, type OvertimeShift } from "@/lib/costing";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Check } from "lucide-react";
 import { Badge, Page, Panel } from "@/components/AppShell";
 import { zar } from "@/lib/demo-data";
-import { useBookings, useCrew, useProductions, useRequestOvertime, useRequests, useSetRequestState } from "@/lib/db";
+import { useBookings, useCrew, useProductions, useRequestOvertime, useRequests, useRespondToBooking, useSetRequestState } from "@/lib/db";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -150,10 +151,13 @@ function Dashboard() {
   const bookings = useBookings().data ?? [];
   const reqs = useRequests().data ?? [];
   const setState = useSetRequestState();
+  const respondToBooking = useRespondToBooking();
   const crewName = (id: string | null) => (id ? crew.find((c) => c.id === id)?.name ?? "—" : "Open gig");
   const prodName = (id: string) => productions.find((p) => p.id === id)?.name ?? "Production";
   const count = (s: string) => bookings.filter((b) => b.status === s).length;
   const secured = productions.reduce((a, p) => a + p.securedFunds, 0);
+  const totalBudget = productions.reduce((a, p) => a + p.budget, 0);
+  const budgetPct = totalBudget ? Math.round((secured / totalBudget) * 100) : 0;
   const pendingReqs = reqs.filter((r) => r.state === "Pending");
   const waitingCrew = bookings.filter((b) => b.status === "awaiting_crew_confirmation" || b.status === "pencil");
   const hour = new Date().getHours();
@@ -162,7 +166,7 @@ function Dashboard() {
     { l: "Active productions", v: productions.filter((p) => p.status === "Active").length, s: `${productions.filter((p) => p.status === "Upcoming").length} upcoming` },
     { l: "Crew confirmed", v: count("confirmed"), s: `${count("pencil")} on pencil` },
     { l: "Needs you", v: pendingReqs.length + waitingCrew.length, s: `${pendingReqs.length} approvals` },
-    { l: "Secured funds", v: zar(secured), s: "across all projects" },
+    { l: "Budget committed", v: `${budgetPct}%`, s: `${zar(secured)} of ${zar(totalBudget)}` },
   ];
   const onSet = productions.find((p) => p.status === "Active");
   const today = onSet ? bookings.filter((b) => b.productionId === onSet.id) : [];
@@ -178,11 +182,51 @@ function Dashboard() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {kpis.map((k) => (
           <div key={k.l} className="rounded-xl border border-border bg-card p-4 shadow-sm">
-            <div className="text-xs font-medium text-muted-foreground">{k.l}</div>
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{k.l}</div>
             <div className="mt-1 font-display text-3xl font-semibold">{k.v}</div>
             <div className="mt-1 text-xs text-muted-foreground">{k.s}</div>
           </div>
         ))}
+      </div>
+
+      <div className="mt-5">
+        <Panel title="Needs you" right={<span className="text-xs text-muted-foreground">{pendingReqs.length + waitingCrew.length} open</span>}>
+          <ul className="divide-y divide-border">
+            {pendingReqs.length + waitingCrew.length === 0 && <li className="p-4 text-sm text-muted-foreground">All caught up.</li>}
+            {pendingReqs.map((r) => (
+              <li key={r.id} className="px-4 py-3">
+                <div className="flex justify-between text-xs font-semibold text-primary"><span>{r.kind}</span><span>{zar(r.amount)}</span></div>
+                <div className="mt-1 text-sm">{r.detail}</div>
+                <div className="text-xs text-muted-foreground">{r.who} · {r.production}</div>
+                <div className="mt-2 flex gap-2">
+                  <button onClick={() => setState.mutate({ id: r.id, state: "Approved" })} className="rounded-md bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">Approve</button>
+                  <button onClick={() => setState.mutate({ id: r.id, state: "Declined" })} className="rounded-md border border-border px-3 py-1 text-xs font-semibold">Decline</button>
+                </div>
+              </li>
+            ))}
+            {waitingCrew.map((b) => (
+              <li key={b.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                {b.status === "awaiting_crew_confirmation" && (
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-success/20 text-success"><Check className="h-3.5 w-3.5" /></span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium">
+                    {crewName(b.crewId)}{" "}
+                    {b.status === "awaiting_crew_confirmation" ? `accepted your ${b.pencilPriority === 2 ? "2nd" : "1st"} pencil` : `· ${b.pencilPriority === 2 ? "2nd" : "1st"} pencil sent`}
+                  </div>
+                  <div className="truncate text-xs text-muted-foreground">
+                    {prodName(b.productionId)} · {b.role}{b.bookingDate ? ` · ${b.bookingDate}` : ""} · {zar(b.crewRate)} a day
+                  </div>
+                </div>
+                {b.status === "awaiting_crew_confirmation" ? (
+                  <button onClick={() => respondToBooking.mutate({ id: b.id, status: "confirmed" })} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Confirm booking</button>
+                ) : (
+                  <Badge>{b.status}</Badge>
+                )}
+              </li>
+            ))}
+          </ul>
+        </Panel>
       </div>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-3">
@@ -221,30 +265,7 @@ function Dashboard() {
         </div>
 
         <div className="space-y-5">
-          <Panel title={`Needs you (${pendingReqs.length + waitingCrew.length})`}>
-            <ul className="divide-y divide-border">
-              {pendingReqs.length + waitingCrew.length === 0 && <li className="p-4 text-sm text-muted-foreground">All caught up.</li>}
-              {pendingReqs.map((r) => (
-                <li key={r.id} className="px-4 py-3">
-                  <div className="flex justify-between text-xs font-semibold text-primary"><span>{r.kind}</span><span>{zar(r.amount)}</span></div>
-                  <div className="mt-1 text-sm">{r.detail}</div>
-                  <div className="text-xs text-muted-foreground">{r.who} · {r.production}</div>
-                  <div className="mt-2 flex gap-2">
-                    <button onClick={() => setState.mutate({ id: r.id, state: "Approved" })} className="rounded-md bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">Approve</button>
-                    <button onClick={() => setState.mutate({ id: r.id, state: "Declined" })} className="rounded-md border border-border px-3 py-1 text-xs font-semibold">Decline</button>
-                  </div>
-                </li>
-              ))}
-              {waitingCrew.map((b) => (
-                <li key={b.id} className="flex items-center justify-between gap-2 px-4 py-2.5 text-sm">
-                  <span className="min-w-0"><span className="font-medium">{crewName(b.crewId)}</span><span className="block truncate text-xs text-muted-foreground">{b.role} · {prodName(b.productionId)}</span></span>
-                  <Badge>{b.status}</Badge>
-                </li>
-              ))}
-            </ul>
-          </Panel>
-
-          <Panel title="Recent activity">
+          <Panel title="Live activity" right={<span className="text-xs text-muted-foreground">Across web and mobile</span>}>
             <ul className="divide-y divide-border text-sm">
               {activity.length === 0 && <li className="p-4 text-muted-foreground">No activity yet.</li>}
               {activity.map((a) => (

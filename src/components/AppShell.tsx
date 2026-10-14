@@ -202,7 +202,7 @@ export function Panel({ title, children, right }: { title: string; children: Rea
   return (
     <section className="rounded-sm border border-border bg-card">
       <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-        <h2 className="font-display text-sm font-semibold text-primary">{title}</h2>
+        <h2 className="font-display text-sm font-semibold uppercase tracking-wide text-primary">{title}</h2>
         {right}
       </div>
       {children}
