@@ -460,6 +460,57 @@ export type Database = {
           },
         ]
       }
+      crew_group_members: {
+        Row: {
+          crew_id: string
+          group_id: string
+        }
+        Insert: {
+          crew_id: string
+          group_id: string
+        }
+        Update: {
+          crew_id?: string
+          group_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crew_group_members_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crew_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "crew_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crew_groups: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       crew_members: {
         Row: {
           available: boolean
@@ -1092,6 +1143,50 @@ export type Database = {
         }
         Relationships: []
       }
+      production_locations: {
+        Row: {
+          address: string
+          created_at: string
+          ends_at: string | null
+          id: string
+          label: string
+          latitude: number | null
+          longitude: number | null
+          production_id: string
+          starts_at: string | null
+        }
+        Insert: {
+          address?: string
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          label: string
+          latitude?: number | null
+          longitude?: number | null
+          production_id: string
+          starts_at?: string | null
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          label?: string
+          latitude?: number | null
+          longitude?: number | null
+          production_id?: string
+          starts_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_locations_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_retrospectives: {
         Row: {
           client: string
@@ -1136,6 +1231,38 @@ export type Database = {
           },
         ]
       }
+      production_risks: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          production_id: string
+          text: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          production_id: string
+          text: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          production_id?: string
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_risks_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       productions: {
         Row: {
           address: string
@@ -1146,11 +1273,11 @@ export type Database = {
           crew_booked: number
           crew_needed: number
           date: string | null
-          end_date: string | null
-          job_id: string | null
           days: number
+          end_date: string | null
           geofence_m: number
           id: string
+          job_id: string | null
           latitude: number | null
           location: string
           longitude: number | null
@@ -1169,11 +1296,11 @@ export type Database = {
           crew_booked?: number
           crew_needed?: number
           date?: string | null
-          end_date?: string | null
-          job_id?: string | null
           days?: number
+          end_date?: string | null
           geofence_m?: number
           id?: string
+          job_id?: string | null
           latitude?: number | null
           location?: string
           longitude?: number | null
@@ -1192,11 +1319,11 @@ export type Database = {
           crew_booked?: number
           crew_needed?: number
           date?: string | null
-          end_date?: string | null
-          job_id?: string | null
           days?: number
+          end_date?: string | null
           geofence_m?: number
           id?: string
+          job_id?: string | null
           latitude?: number | null
           location?: string
           longitude?: number | null
@@ -1212,133 +1339,6 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      production_locations: {
-        Row: {
-          id: string
-          production_id: string
-          label: string
-          address: string
-          latitude: number | null
-          longitude: number | null
-          starts_at: string | null
-          ends_at: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          production_id: string
-          label: string
-          address?: string
-          latitude?: number | null
-          longitude?: number | null
-          starts_at?: string | null
-          ends_at?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          production_id?: string
-          label?: string
-          address?: string
-          latitude?: number | null
-          longitude?: number | null
-          starts_at?: string | null
-          ends_at?: string | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "production_locations_production_id_fkey"
-            columns: ["production_id"]
-            isOneToOne: false
-            referencedRelation: "productions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      production_risks: {
-        Row: {
-          id: string
-          production_id: string
-          text: string
-          created_by: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          production_id: string
-          text: string
-          created_by?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          production_id?: string
-          text?: string
-          created_by?: string | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "production_risks_production_id_fkey"
-            columns: ["production_id"]
-            isOneToOne: false
-            referencedRelation: "productions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      crew_groups: {
-        Row: {
-          id: string
-          name: string
-          created_by: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          name: string
-          created_by?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          name?: string
-          created_by?: string | null
-          created_at?: string
-        }
-        Relationships: []
-      }
-      crew_group_members: {
-        Row: {
-          group_id: string
-          crew_id: string
-        }
-        Insert: {
-          group_id: string
-          crew_id: string
-        }
-        Update: {
-          group_id?: string
-          crew_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "crew_group_members_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "crew_groups"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "crew_group_members_crew_id_fkey"
-            columns: ["crew_id"]
-            isOneToOne: false
-            referencedRelation: "crew_members"
             referencedColumns: ["id"]
           },
         ]
@@ -1717,38 +1717,6 @@ export type Database = {
       claim_crew_profile: { Args: never; Returns: string }
       claim_gig: { Args: { _booking: string }; Returns: undefined }
       crew_on_time_pct: { Args: { _crew_id: string }; Returns: number }
-      get_banking_details: {
-        Args: { _crew_id: string }
-        Returns: {
-          account_holder_name: string
-          bank_name: string
-          bank_country: string
-          bank_address: string
-          account_number: string
-          iban: string
-          swift_bic: string
-          routing_or_sort_code: string
-          currency: string
-          notes: string
-          updated_at: string
-        }[]
-      }
-      upsert_banking_details: {
-        Args: {
-          _crew_id: string
-          _account_holder_name: string
-          _bank_name: string
-          _bank_country: string
-          _bank_address: string
-          _account_number: string
-          _iban: string
-          _swift_bic: string
-          _routing_or_sort_code: string
-          _currency: string
-          _notes: string
-        }
-        Returns: undefined
-      }
       expire_pencils: { Args: never; Returns: undefined }
       generate_invoice: { Args: { _booking: string }; Returns: string }
       get_invite: {
