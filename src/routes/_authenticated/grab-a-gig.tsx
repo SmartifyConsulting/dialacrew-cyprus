@@ -6,6 +6,7 @@ import { Page, Panel } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useRole, useSession } from "@/lib/auth";
 import { isUrgent, lateWithdrawal } from "@/lib/gigs";
+import type { Database } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/grab-a-gig")({
   head: () => ({
@@ -24,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/grab-a-gig")({
 const rand = (n: number) => `R ${Math.round(n).toLocaleString("en-ZA")}`;
 const field = "w-full rounded-xl border border-input bg-background px-3 py-2 text-sm";
 const COUNTRIES = ["South Africa", "Namibia", "Botswana", "Kenya", "Nigeria", "Cyprus", "United Kingdom"];
-type Gig = Record<string, any>;
+type Gig = Database["public"]["Tables"]["community_gigs"]["Row"];
 
 const empty = { title: "", role: "", department: "", description: "", event_date: "", end_date: "", call_time: "", venue: "", country: "South Africa", kit_required: "", pay_type: "day_rate", amount: "", contact_phone: "", expires_at: "" };
 
