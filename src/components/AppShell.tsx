@@ -200,18 +200,19 @@ export function Badge({ children }: { children: string }) {
 
 // Fixed palette so each client name always lands on the same color — makes client identity scannable at a glance.
 // Deliberately one color per hue family (not red+rose+pink+fuchsia all at once) so neighbors are easy to
-// tell apart at a glance, not just technically different. Green/emerald are excluded: that family is
-// reserved for the Savanna Gin highlight. Blue is excluded too: it matches the app's primary brand color,
-// so a client badge would be mistaken for a primary-styled element (buttons, active status, links).
+// tell apart at a glance, not just technically different. Blue is excluded: it matches the app's primary
+// brand color, so a client badge would be mistaken for a primary-styled element (buttons, active status, links).
 const CLIENT_COLORS = [
   "bg-orange-500 text-white", "bg-red-700 text-white", "bg-fuchsia-600 text-white", "bg-violet-600 text-white",
   "bg-indigo-600 text-white", "bg-cyan-700 text-white", "bg-amber-700 text-white", "bg-stone-600 text-white",
 ];
-
-// Pinned overrides take priority over the assigned palette — e.g. Savanna Gin is always green, everywhere.
-const CLIENT_COLOR_OVERRIDES: Record<string, string> = {
-  "Savanna Gin": "bg-green-600 text-white",
-};
+// Plain-text equivalent of each CLIENT_COLORS entry, same index — written out literally (not derived by
+// string-replacing "bg-" at runtime) so Tailwind's class scanner can actually see and generate them.
+const CLIENT_TEXT_COLORS = [
+  "text-orange-500", "text-red-700", "text-fuchsia-600", "text-violet-600",
+  "text-indigo-600", "text-cyan-700", "text-amber-700", "text-stone-600",
+];
+const bgToTextColor = (bgClass: string) => CLIENT_TEXT_COLORS[CLIENT_COLORS.indexOf(bgClass)] ?? "text-foreground";
 
 // Every client name seen anywhere in the app is registered here up front (alphabetically), so the same
 // name always gets the same color on every screen and every reload — not just within one page's render
@@ -220,7 +221,7 @@ const clientColorAssignments = new Map<string, string>();
 let nextSlot = 0;
 
 function registerClient(name: string) {
-  if (clientColorAssignments.has(name) || CLIENT_COLOR_OVERRIDES[name]) return;
+  if (clientColorAssignments.has(name)) return;
   clientColorAssignments.set(name, CLIENT_COLORS[nextSlot % CLIENT_COLORS.length]!);
   nextSlot++;
 }
@@ -232,7 +233,6 @@ function registerClient(name: string) {
   .forEach(registerClient);
 
 function clientColor(name: string) {
-  if (CLIENT_COLOR_OVERRIDES[name]) return CLIENT_COLOR_OVERRIDES[name];
   const existing = clientColorAssignments.get(name);
   if (existing) return existing;
   // Unregistered client (added after this list was last updated): hash into the palette so it's at
@@ -244,11 +244,19 @@ function clientColor(name: string) {
   return color;
 }
 
+// "Savanna Gin" is the production name, not the client ("Savanna Drinks Co." is) — but it's pinned to the
+// same color as that client's badge so the two read as the same company wherever either appears.
+const CLIENT_COLOR_OVERRIDES: Record<string, string> = {
+  "Savanna Gin": clientColor("Savanna Drinks Co."),
+};
+
 export function ClientBadge({ name }: { name: string }) {
   return <span className={`inline-block rounded-sm px-2 py-0.5 text-xs font-semibold ${clientColor(name)}`}>{name}</span>;
 }
 
 // Highlights pinned client-color overrides wherever their name appears in free text (not just badges).
+// Uses the override's own badge color as text color so it always matches that badge, instead of a
+// hardcoded color that can drift out of sync.
 const HIGHLIGHT_NAMES = Object.keys(CLIENT_COLOR_OVERRIDES);
 
 export function Highlight({ text }: { text: string }) {
@@ -259,7 +267,7 @@ export function Highlight({ text }: { text: string }) {
     <>
       {parts.map((part, i) =>
         HIGHLIGHT_NAMES.includes(part)
-          ? <span key={i} className="font-semibold text-green-600">{part}</span>
+          ? <span key={i} className={`font-semibold ${bgToTextColor(CLIENT_COLOR_OVERRIDES[part]!)}`}>{part}</span>
           : <span key={i}>{part}</span>
       )}
     </>
