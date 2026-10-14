@@ -6,6 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useRole, useSession } from "@/lib/auth";
 import { useMyCrewId } from "@/lib/site";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 function DashboardRouter() {
   const { session } = useSession();
@@ -25,8 +27,49 @@ function CrewDashboard() {
     },
   }).data ?? [];
   const live = jobs.filter((j) => !["cancelled", "completed", "payment_released"].includes(j.status));
+  const qc = useQueryClient();
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayJob = live.find((j) => j.booking_date === todayIso) ?? live.find((j) => (j.booking_date ?? "") >= todayIso);
+  const pencils = live.filter((j) => j.status === "pencil" || j.status === "awaiting_crew_confirmation");
+  async function respond(id: string, accept: boolean) {
+    const { error } = await supabase.from("bookings").update({ status: accept ? "confirmed" : "cancelled" }).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success(accept ? "Job accepted" : "Job declined");
+    qc.invalidateQueries({ queryKey: ["crew-jobs"] });
+  }
   return (
     <Page open title="Home" subtitle="Your jobs and call times">
+      {todayJob && (() => {
+        const pr = todayJob.productions as { name?: string; address?: string; location?: string } | null;
+        const where = pr?.address || pr?.location || "";
+        return (
+          <section className="mb-5 rounded-lg bg-primary p-5 text-primary-foreground shadow-sm">
+            <div className="text-xs font-semibold uppercase tracking-widest opacity-80">{todayJob.booking_date === todayIso ? "Today" : "Next up"} · {todayJob.booking_date}</div>
+            <div className="mt-1 font-display text-2xl font-semibold">{pr?.name ?? "Production"}</div>
+            <div className="mt-1 text-sm opacity-90">{todayJob.role}{todayJob.call_time ? ` · call ${todayJob.call_time.slice(0, 5)}` : ""}</div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link to="/productions/$id" params={{ id: todayJob.production_id }} className="rounded-md bg-background px-4 py-2 text-sm font-semibold text-foreground">Open job</Link>
+              {where && <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(where)}`} target="_blank" rel="noreferrer" className="rounded-md border border-primary-foreground/40 px-4 py-2 text-sm font-semibold">Directions</a>}
+            </div>
+          </section>
+        );
+      })()}
+      {pencils.length > 0 && (
+        <div className="mb-5"><Panel title={`Job offers waiting (${pencils.length})`}>
+          <ul className="divide-y divide-border text-sm">
+            {pencils.map((j) => {
+              const pr = j.productions as { name?: string } | null;
+              return (
+                <li key={j.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                  <div className="min-w-0 flex-1"><div className="font-semibold">{pr?.name ?? "Production"}</div><div className="text-xs text-muted-foreground">{j.role} · {j.booking_date ?? ""}</div></div>
+                  <button onClick={() => respond(j.id, true)} className="rounded-md bg-success px-3 py-1.5 text-xs font-semibold uppercase text-primary-foreground">Accept</button>
+                  <button onClick={() => respond(j.id, false)} className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold uppercase">Decline</button>
+                </li>
+              );
+            })}
+          </ul>
+        </Panel></div>
+      )}
       <Panel title={`My jobs (${live.length})`}>
         <ul className="divide-y divide-border text-sm">
           {live.length === 0 && <li className="p-4 text-muted-foreground">No jobs yet. Open Find Gigs to grab one.</li>}
@@ -80,10 +123,12 @@ function Dashboard() {
     ["Secured funds", zar(secured)],
     ["Outstanding invoices", zar(186_400)],
   ];
-  const today = bookings.filter((b) => b.productionId === "p1");
+  const onSet = productions.find((p) => p.status === "Active");
+  const today = onSet ? bookings.filter((b) => b.productionId === onSet.id) : [];
+  const dateLabel = new Date().toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
   return (
-    <Page title="Home" subtitle="Tuesday 6 October 2026 · Producer: Clevercat Productions"
+    <Page title="Home" subtitle={dateLabel}
       actions={<Link to="/productions" className="rounded-sm bg-primary px-4 py-2 font-display text-sm font-semibold uppercase tracking-widest text-primary-foreground">+ New production</Link>}>
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-border bg-border md:grid-cols-4 lg:grid-cols-8">
         {stats.map(([l, v]) => (
@@ -137,7 +182,7 @@ function Dashboard() {
         </Panel>
 
         <div className="lg:col-span-2">
-          <Panel title="On set today · Savanna Gin TVC">
+          <Panel title={`On set today${onSet ? ` · ${onSet.name}` : ""}`}>
             <table className="w-full text-sm">
               <tbody>
                 {today.map((b) => (
