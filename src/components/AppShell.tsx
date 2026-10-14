@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode } from "react";
 import { Briefcase, Building2, Home, Search, Shield, Star, User, type LucideIcon, Wallet, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useRole, useSession } from "@/lib/auth";
+import { useCompany, useRole, useSession } from "@/lib/auth";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useSignedUrl } from "@/lib/site";
 import logo from "@/assets/bookacrew-sa-logo.png.asset.json";
@@ -82,7 +82,11 @@ export function TopNav() {
   const me = useMyProfile(session?.user.id);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const items = navByRole[role.data ?? "client"] ?? navByRole["client"]!;
+  const company = useCompany(session?.user.id);
+  const companyName = company.data?.companies?.name;
+  const baseItems = navByRole[role.data ?? "client"] ?? navByRole["client"]!;
+  const isTeam = role.data === "producer" || role.data === "admin";
+  const items = baseItems.map((n) => (isTeam && n.to === "/profile" && companyName ? { ...n, label: `${companyName} Settings` } : n));
 
   async function signOut() {
     await queryClient.cancelQueries();
