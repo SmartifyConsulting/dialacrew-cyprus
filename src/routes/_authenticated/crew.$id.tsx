@@ -30,10 +30,9 @@ export const Route = createFileRoute("/_authenticated/crew/$id")({
   component: CrewProfile,
 });
 
-type Cert = { name: string; issuer: string; date: string };
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
 const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground";
-const TABS = ["About", "Certifications", "Projects", "Kit & props"] as const;
+const TABS = ["About", "Projects", "Kit & props"] as const;
 
 function CrewProfile() {
   const { id } = Route.useParams();
@@ -67,7 +66,6 @@ function CrewProfile() {
   const m = c.data;
   if (!m) return <Page open title={c.isLoading ? "Loading…" : "Profile not found"}>{null}</Page>;
   const canEdit = role.data === "producer" || m.user_id === session?.user.id;
-  const certs = (Array.isArray(m.certifications) ? m.certifications : []) as Cert[];
   const done = (jobs.data ?? []).filter((j) => (j.productions as { status?: string } | null)?.status === "Wrapped").length;
   const refresh = () => inv(["crew-profile", id], ["crew"], ["crew-assets", id], ["crew-assets"]);
 
@@ -139,7 +137,6 @@ function CrewProfile() {
               )}
             </div>
           )}
-          {tab === "Certifications" && <Certifications certs={certs} canEdit={canEdit} onChange={(next) => update({ certifications: next })} />}
           {tab === "Projects" && (
             <ul className="divide-y divide-border">
               {(jobs.data ?? []).length === 0 && <li className="py-3 text-sm text-muted-foreground">No projects yet.</li>}
@@ -355,29 +352,6 @@ function EditForm({ m, onSave }: { m: { name: string; role: string; department: 
         skills: f.skills.split(",").map((s) => s.trim()).filter(Boolean),
         portfolio_url: f.portfolio_url || null, youtube_url: f.youtube_url || null, vimeo_url: f.vimeo_url || null, instagram_url: f.instagram_url || null,
       })}>Save profile</button></div>
-    </div>
-  );
-}
-
-function Certifications({ certs, canEdit, onChange }: { certs: Cert[]; canEdit: boolean; onChange: (c: Cert[]) => void }) {
-  const [n, setN] = useState<Cert>({ name: "", issuer: "", date: "" });
-  return (
-    <div className="space-y-3">
-      {certs.length === 0 && <p className="text-sm text-muted-foreground">No certifications added yet</p>}
-      {certs.map((c, i) => (
-        <div key={i} className="flex items-center justify-between rounded-sm border border-border p-3">
-          <div><div className="font-semibold">{c.name}</div><div className="text-xs text-muted-foreground">{c.issuer} · {c.date}</div></div>
-          {canEdit && <button aria-label="Remove" onClick={() => onChange(certs.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>}
-        </div>
-      ))}
-      {canEdit && (
-        <div className="flex flex-wrap gap-2">
-          <input className={`${input} flex-1`} placeholder="Certification" value={n.name} onChange={(e) => setN({ ...n, name: e.target.value })} />
-          <input className={input} placeholder="Issued by" value={n.issuer} onChange={(e) => setN({ ...n, issuer: e.target.value })} />
-          <input type="date" className={input} value={n.date} onChange={(e) => setN({ ...n, date: e.target.value })} />
-          <button className={btn} onClick={() => { if (n.name.trim()) { onChange([...certs, n]); setN({ name: "", issuer: "", date: "" }); } }}><Plus className="h-4 w-4" /></button>
-        </div>
-      )}
     </div>
   );
 }

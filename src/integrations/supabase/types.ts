@@ -1146,6 +1146,7 @@ export type Database = {
           crew_booked: number
           crew_needed: number
           date: string | null
+          end_date: string | null
           days: number
           geofence_m: number
           id: string
@@ -1167,6 +1168,7 @@ export type Database = {
           crew_booked?: number
           crew_needed?: number
           date?: string | null
+          end_date?: string | null
           days?: number
           geofence_m?: number
           id?: string
@@ -1188,6 +1190,7 @@ export type Database = {
           crew_booked?: number
           crew_needed?: number
           date?: string | null
+          end_date?: string | null
           days?: number
           geofence_m?: number
           id?: string
@@ -1206,6 +1209,50 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_locations: {
+        Row: {
+          id: string
+          production_id: string
+          label: string
+          address: string
+          latitude: number | null
+          longitude: number | null
+          starts_at: string | null
+          ends_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          production_id: string
+          label: string
+          address?: string
+          latitude?: number | null
+          longitude?: number | null
+          starts_at?: string | null
+          ends_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          production_id?: string
+          label?: string
+          address?: string
+          latitude?: number | null
+          longitude?: number | null
+          starts_at?: string | null
+          ends_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_locations_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
             referencedColumns: ["id"]
           },
         ]

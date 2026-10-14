@@ -1,6 +1,6 @@
 export type Production = {
   id: string; name: string; client: string; type: string; location: string;
-  date: string; days: number; status: "Draft" | "Active" | "Upcoming" | "Wrapped";
+  date: string; endDate?: string | null; days: number; status: "Draft" | "Active" | "Upcoming" | "Wrapped";
   budget: number; crewBooked: number; crewNeeded: number; securedFunds: number;
   address?: string; summary?: string; latitude?: number | null; longitude?: number | null; geofenceM?: number;
 };

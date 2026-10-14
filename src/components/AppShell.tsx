@@ -119,7 +119,7 @@ export function TopNav() {
       <header className={`sticky top-0 z-30 ${signedIn ? "md:pl-60" : ""}`}>
         <div className={signedIn ? "border-b border-border bg-card md:bg-card" : "bg-nav text-nav-foreground"}>
           <div className={`flex items-center gap-4 px-4 py-8 ${signedIn ? "" : "mx-auto max-w-7xl"}`}>
-            <Link to={session ? "/dashboard" : "/"} className={`shrink-0 ${signedIn ? "md:hidden" : ""}`}><img src={logo.url} alt="Book a Crew" className="h-20 w-auto" /></Link>
+            {signedIn && <Link to="/dashboard" className="shrink-0 md:hidden"><img src={logo.url} alt="Book a Crew" className="h-20 w-auto" /></Link>}
             <div className="ml-auto flex items-center gap-3">
               {signedIn && (
                 <>
@@ -151,7 +151,7 @@ function RoleGate({ children, open }: { children: ReactNode; open?: boolean | un
   return <>{children}</>;
 }
 
-export function Page({ title, subtitle, actions, children, open }: { title: string; subtitle?: string; actions?: ReactNode; children: ReactNode; open?: boolean }) {
+export function Page({ title, subtitle, actions, children, open }: { title: string; subtitle?: ReactNode; actions?: ReactNode; children: ReactNode; open?: boolean }) {
   return (
     <div className="min-h-screen bg-background">
       <TopNav />

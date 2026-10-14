@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { MapPin, Sparkles } from "lucide-react";
-import { Badge, Page } from "@/components/AppShell";
+import { Badge, ClientBadge, Page } from "@/components/AppShell";
 import { useRole, useSession } from "@/lib/auth";
 import { useBookings, useCrew, useProductions, useRequests } from "@/lib/db";
 import { useMyCrewId, useMyName } from "@/lib/site";
@@ -64,7 +64,7 @@ function ProductionSite() {
   );
 
   return (
-    <Page open title={p.name} subtitle={`${p.client} · ${p.type} · ${p.date} · ${p.days} day(s)`} actions={actions}>
+    <Page open title={p.name} subtitle={<span className="inline-flex items-center gap-2"><ClientBadge name={p.client} /> {p.type} · {p.date} · {p.days} day(s)</span>} actions={actions}>
       <div className="-mt-3 mb-4 flex items-center gap-1 text-sm text-muted-foreground"><MapPin className="h-4 w-4 text-primary" /> {p.address || p.location}</div>
       <div className="grid gap-5 lg:grid-cols-[380px_minmax(0,1fr)]">
         <aside className="space-y-5 lg:sticky lg:top-28 lg:self-start">

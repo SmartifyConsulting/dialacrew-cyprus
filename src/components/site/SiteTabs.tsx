@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { CheckCircle2, Circle, Download, FileText, LogIn, LogOut, MapPin, Mic, Paperclip, Star, Trash2, Users } from "lucide-react";
+import { CheckCircle2, Circle, Download, FileText, LogIn, LogOut, MapPin, Mic, Paperclip, Plus, Star, Trash2, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge, Panel } from "@/components/AppShell";
 import { AudioRecorder } from "@/components/AudioRecorder";
@@ -11,7 +11,7 @@ import { assetsTotal, providerTotal } from "@/lib/costing";
 import { distanceMeters, getPosition, isOnSite } from "@/lib/geo";
 import { isOnline, pendingCount, queueCheckin, syncQueue } from "@/lib/offline-checkin";
 import {
-  signedUrl, uploadFile, useBookingAssets, useCrewAssets, useDocs, useInvalidate, useMessages, usePosts, useRegister,
+  signedUrl, uploadFile, useBookingAssets, useCrewAssets, useDocs, useInvalidate, useLocationPoints, useMessages, usePosts, useRegister,
   useReviews, useSignedUrl, useSiteMembers, useTasks,
 } from "@/lib/site";
 import { useCreateOpenGig, useRequests, useSetRequestState } from "@/lib/db";
@@ -48,6 +48,81 @@ function FileLink({ path, name }: { path: string; name: string }) {
       className="inline-flex items-center gap-1.5 rounded-sm border border-border px-2 py-1 text-xs hover:border-primary hover:text-primary">
       <Paperclip className="h-3 w-3" /> {name}
     </button>
+  );
+}
+
+/* ---------------- Location points (multi-stop schedule) — lives inside Site information ---------------- */
+function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
+  const inv = useInvalidate();
+  const points = useLocationPoints(p.id).data ?? [];
+  const [adding, setAdding] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [lf, setLf] = useState({ label: "", address: "", startsAt: "", endsAt: "" });
+
+  async function addPoint() {
+    if (!lf.label.trim()) { toast.error("Give this location a name"); return; }
+    setBusy(true);
+    const { error } = await supabase.from("production_locations").insert({
+      production_id: p.id, label: lf.label.trim(), address: lf.address.trim(),
+      starts_at: lf.startsAt ? new Date(lf.startsAt).toISOString() : null,
+      ends_at: lf.endsAt ? new Date(lf.endsAt).toISOString() : null,
+    });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Location point added");
+    setLf({ label: "", address: "", startsAt: "", endsAt: "" });
+    setAdding(false);
+    inv(["location-points", p.id]);
+  }
+
+  async function removePoint(id: string) {
+    const { error } = await supabase.from("production_locations").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    inv(["location-points", p.id]);
+  }
+
+  if (!isProducer && points.length === 0) return null;
+
+  return (
+    <div className="border-t border-border">
+      <div className="flex items-center justify-between px-4 pt-4">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Location points</h3>
+        {isProducer && !adding && (
+          <button onClick={() => setAdding(true)} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> Add location point</button>
+        )}
+      </div>
+      <ul className="divide-y divide-border text-sm">
+        {points.length === 0 && <li className="p-4 text-muted-foreground">No location points yet.</li>}
+        {points.map((pt) => (
+          <li key={pt.id} className="flex items-start justify-between gap-3 px-4 py-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 font-medium"><MapPin className="h-3.5 w-3.5 text-primary" /> {pt.label}</div>
+              {pt.address && <div className="text-xs text-muted-foreground">{pt.address}</div>}
+              <div className="text-xs text-muted-foreground">
+                {pt.starts_at ? when(pt.starts_at) : "Start TBC"}{pt.ends_at ? ` → ${when(pt.ends_at)}` : ""}
+              </div>
+            </div>
+            {isProducer && <button onClick={() => removePoint(pt.id)} className="text-muted-foreground hover:text-destructive" aria-label={`Remove ${pt.label}`}><Trash2 className="h-4 w-4" /></button>}
+          </li>
+        ))}
+      </ul>
+      {isProducer && adding && (
+        <div className="space-y-2 border-t border-border p-4">
+          <input className={`${input} w-full`} placeholder="Location name *" value={lf.label} onChange={(e) => setLf({ ...lf, label: e.target.value })} />
+          <input className={`${input} w-full`} placeholder="Address" value={lf.address} onChange={(e) => setLf({ ...lf, address: e.target.value })} />
+          <div className="grid gap-2 sm:grid-cols-2">
+            <label className="block"><span className="text-xs text-muted-foreground">Starts</span>
+              <input type="datetime-local" className={`${input} mt-1 w-full`} value={lf.startsAt} onChange={(e) => setLf({ ...lf, startsAt: e.target.value })} /></label>
+            <label className="block"><span className="text-xs text-muted-foreground">Ends</span>
+              <input type="datetime-local" className={`${input} mt-1 w-full`} value={lf.endsAt} onChange={(e) => setLf({ ...lf, endsAt: e.target.value })} /></label>
+          </div>
+          <div className="flex gap-2">
+            <button disabled={busy} onClick={addPoint} className={btn}>{busy ? "Saving…" : "Save location"}</button>
+            <button onClick={() => setAdding(false)} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold">Cancel</button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -92,46 +167,57 @@ export function OverviewTab({ p, isProducer }: Ctx) {
     catch (e) { toast.error((e as Error).message); }
   }
 
-  const filled = !!(p.address || p.latitude) && !!p.summary;
-  if (!isProducer || (filled && !editing)) {
-    return isProducer ? (
-      <button onClick={() => setEditing(true)} className="w-full rounded-sm border border-border px-3 py-2 text-xs font-semibold text-muted-foreground hover:border-primary hover:text-primary">Edit site details</button>
-    ) : null;
-  }
+  const siteFilled = !!(p.address || p.latitude);
 
   return (
     <div className="space-y-5">
-      <div className="space-y-5">
-        <Panel title="Overview">
-          <div className="space-y-3 p-4 text-sm">
-            {isProducer ? (
-              <>
-                <label className="block"><span className="text-xs text-muted-foreground">Site address</span>
-                  <input className={`${input} mt-1 w-full`} value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} placeholder="Street, suburb, city" /></label>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <label><span className="text-xs text-muted-foreground">Latitude</span><input className={`${input} mt-1 w-full`} value={f.latitude} onChange={(e) => setF({ ...f, latitude: e.target.value })} /></label>
-                  <label><span className="text-xs text-muted-foreground">Longitude</span><input className={`${input} mt-1 w-full`} value={f.longitude} onChange={(e) => setF({ ...f, longitude: e.target.value })} /></label>
-                  <label><span className="text-xs text-muted-foreground">Site radius (m)</span><input type="number" className={`${input} mt-1 w-full`} value={f.geofence} onChange={(e) => setF({ ...f, geofence: e.target.value })} /></label>
-                </div>
-                <button onClick={useHere} className="inline-flex items-center gap-1 text-xs text-primary hover:underline"><MapPin className="h-3 w-3" /> Use my current location as the site location</button>
-                <label className="block"><span className="text-xs text-muted-foreground">Project summary</span>
-                  <textarea rows={4} className={`${input} mt-1 w-full`} value={f.summary} onChange={(e) => setF({ ...f, summary: e.target.value })} /></label>
-                <button onClick={save} className={btn}>Save</button>
-              </>
-            ) : (
-              <>
-                <div className="flex gap-2"><MapPin className="h-4 w-4 text-primary" /> {p.address || p.location || "Address not set"}</div>
-                <div className="text-muted-foreground">{p.client} · {p.type} · {p.date} · {p.days} day(s)</div>
-                <p className="whitespace-pre-wrap">{p.summary || "No summary yet."}</p>
-              </>
-            )}
-            {(p.address || p.latitude) && (
-              <a className="inline-flex text-xs text-primary hover:underline" target="_blank" rel="noopener noreferrer"
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.latitude ? `${p.latitude},${p.longitude}` : p.address ?? "")}`}>Open in maps</a>
-            )}
-          </div>
-        </Panel>
-      </div>
+      <Panel title="Overview">
+        <div className="space-y-3 p-4 text-sm">
+          {isProducer ? (
+            <>
+              <label className="block"><span className="text-xs text-muted-foreground">Production summary</span>
+                <textarea rows={4} className={`${input} mt-1 w-full`} value={f.summary} onChange={(e) => setF({ ...f, summary: e.target.value })} /></label>
+              <button onClick={save} className={btn}>Save</button>
+            </>
+          ) : (
+            <p className="whitespace-pre-wrap">{p.summary || "No summary yet."}</p>
+          )}
+          <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <dt>Client</dt><dd className="text-foreground">{p.client}</dd>
+            <dt>Type</dt><dd className="text-foreground">{p.type}</dd>
+            <dt>Shoot</dt><dd className="text-foreground">{p.date || "TBC"} · {p.days} day(s)</dd>
+            <dt>Crew</dt><dd className="text-foreground">{p.crewBooked} / {p.crewNeeded}</dd>
+            {isProducer && <><dt>Budget</dt><dd className="text-foreground">{zar(p.budget)}</dd></>}
+          </dl>
+        </div>
+      </Panel>
+
+      <Panel title="Site information" right={isProducer && siteFilled && !editing ? (
+        <button onClick={() => setEditing(true)} className="text-xs font-semibold text-primary hover:underline">Edit</button>
+      ) : undefined}>
+        <div className="space-y-3 p-4 text-sm">
+          {isProducer && (!siteFilled || editing) ? (
+            <>
+              <label className="block"><span className="text-xs text-muted-foreground">Site address</span>
+                <input className={`${input} mt-1 w-full`} value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} placeholder="Street, suburb, city" /></label>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <label><span className="text-xs text-muted-foreground">Latitude</span><input className={`${input} mt-1 w-full`} value={f.latitude} onChange={(e) => setF({ ...f, latitude: e.target.value })} /></label>
+                <label><span className="text-xs text-muted-foreground">Longitude</span><input className={`${input} mt-1 w-full`} value={f.longitude} onChange={(e) => setF({ ...f, longitude: e.target.value })} /></label>
+                <label><span className="text-xs text-muted-foreground">Site radius (m)</span><input type="number" className={`${input} mt-1 w-full`} value={f.geofence} onChange={(e) => setF({ ...f, geofence: e.target.value })} /></label>
+              </div>
+              <button onClick={useHere} className="inline-flex items-center gap-1 text-xs text-primary hover:underline"><MapPin className="h-3 w-3" /> Use my current location as the site location</button>
+              <button onClick={save} className={btn}>Save</button>
+            </>
+          ) : (
+            <div className="flex gap-2"><MapPin className="h-4 w-4 text-primary" /> {p.address || p.location || "Address not set"}</div>
+          )}
+          {(p.address || p.latitude) && (
+            <a className="inline-flex text-xs text-primary hover:underline" target="_blank" rel="noopener noreferrer"
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.latitude ? `${p.latitude},${p.longitude}` : p.address ?? "")}`}>Open in maps</a>
+          )}
+        </div>
+        <LocationPoints p={p} isProducer={isProducer} />
+      </Panel>
     </div>
   );
 }

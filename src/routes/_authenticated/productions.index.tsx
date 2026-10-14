@@ -6,7 +6,7 @@ import { useRef, useState } from "react";
 import { Upload } from "lucide-react";
 import { Badge, ClientBadge, Page, Panel } from "@/components/AppShell";
 import { zar } from "@/lib/demo-data";
-import { useProductions } from "@/lib/db";
+import { useCreatePencil, useCrew, useProductions } from "@/lib/db";
 import { useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/_authenticated/productions/")({
@@ -22,6 +22,12 @@ export const Route = createFileRoute("/_authenticated/productions/")({
 });
 
 const field = "w-full rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
+
+// Logical on-set order: direction, camera, lighting, art/costume/hair-MU, support.
+const CREW_ROLES = [
+  "Director", "Director of Photography", "Focus Puller", "Gaffer", "Art Department", "Wardrobe", "Make-Up",
+  "Catering", "Production Assistant",
+] as const;
 
 type ClientRow = { id: string; name: string; company: string };
 
@@ -50,22 +56,34 @@ function ClientPicker({ clients, value, onChange, onClientsChanged }: { clients:
   }
 
   // Expects a simple CSV with a header row: company,name,email,phone (name/email/phone optional).
-  async function uploadCsv(file: File) {
-    const text = await file.text();
+  function parseCsv(text: string) {
     const rows = text.split(/\r?\n/).map((r) => r.trim()).filter(Boolean);
-    if (rows.length < 2) { toast.error("CSV has no data rows"); return; }
+    if (rows.length < 2) { toast.error("File has no data rows"); return null; }
     const header = rows[0]!.split(",").map((h) => h.trim().toLowerCase());
     const companyIdx = header.indexOf("company");
-    if (companyIdx === -1) { toast.error("CSV must have a 'company' column"); return; }
+    if (companyIdx === -1) { toast.error("File must have a 'company' column"); return null; }
     const nameIdx = header.indexOf("name");
     const emailIdx = header.indexOf("email");
     const phoneIdx = header.indexOf("phone");
-    const records = rows.slice(1).map((r) => {
+    return rows.slice(1).map((r) => {
       const cols = r.split(",").map((c) => c.trim());
       const company = cols[companyIdx] ?? "";
       return { company, name: (nameIdx > -1 ? cols[nameIdx] : "") || company, email: emailIdx > -1 ? cols[emailIdx] ?? "" : "", phone: phoneIdx > -1 ? cols[phoneIdx] ?? "" : "" };
     }).filter((r) => r.company);
-    if (records.length === 0) { toast.error("No valid rows found"); return; }
+  }
+
+  async function uploadClientsFile(file: File) {
+    const ext = file.name.toLowerCase().split(".").pop() ?? "";
+    if (ext !== "csv" && ext !== "xls" && ext !== "xlsx") {
+      toast.error("Only .csv or .xls files are supported — please upload one of those formats.");
+      return;
+    }
+    if (ext === "xls" || ext === "xlsx") {
+      toast.error(".xls isn't readable as plain text yet — please export/save your spreadsheet as .csv and upload that instead.");
+      return;
+    }
+    const records = parseCsv(await file.text());
+    if (!records || records.length === 0) { if (records) toast.error("No valid rows found"); return; }
     setBusy(true);
     const { error } = await supabase.from("clients").insert(records);
     setBusy(false);
@@ -109,9 +127,9 @@ function ClientPicker({ clients, value, onChange, onClientsChanged }: { clients:
               <div className="flex items-center justify-between gap-2">
                 <button type="button" onClick={() => setAdding(true)} className="text-xs font-semibold text-primary hover:underline">+ Add new client</button>
                 <button type="button" onClick={() => fileRef.current?.click()} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
-                  <Upload className="h-3.5 w-3.5" /> Upload clients
+                  <Upload className="h-3.5 w-3.5" /> Upload clients (csv or xls)
                 </button>
-                <input ref={fileRef} type="file" accept=".csv,text/csv" hidden onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadCsv(file); e.target.value = ""; }} />
+                <input ref={fileRef} type="file" accept=".csv,text/csv,.xls,.xlsx" hidden onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadClientsFile(file); e.target.value = ""; }} />
               </div>
             )}
           </div>
@@ -130,37 +148,85 @@ function Productions() {
     queryFn: async () => { const { data, error } = await supabase.from("clients").select("id, name, company").order("company"); if (error) throw error; return data ?? []; },
   });
   const clients = clientsQuery.data ?? [];
+  const crew = useCrew().data ?? [];
+  const createPencil = useCreatePencil();
   const [open, setOpen] = useState(false);
-  const [f, setF] = useState({ name: "", client: "", type: "Commercial", location: "", date: "", days: 1, budget: 0 });
+  const blankForm = { name: "", client: "", type: "Commercial", location: "", startDate: "", endDate: "", budget: 0 };
+  const [f, setF] = useState(blankForm);
+  const [roleCrew, setRoleCrew] = useState<Record<string, string>>({});
+
+  // Shoot days is inclusive of both the start and end date.
+  const days = f.startDate && f.endDate ? Math.max(1, Math.round((+new Date(f.endDate) - +new Date(f.startDate)) / 86400000) + 1) : 1;
 
   // New productions start as a Draft so the team can sandbox crew groups against the budget before committing.
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!f.name || !f.client) { toast.error("Name and client are required"); return; }
-    const { data, error } = await supabase.from("productions").insert({ ...f, date: f.date || null, status: "Draft" }).select("id").single();
+    if (f.startDate && f.endDate && f.endDate < f.startDate) { toast.error("End date can't be before the start date"); return; }
+    const { data, error } = await supabase.from("productions").insert({
+      name: f.name, client: f.client, type: f.type, location: f.location, budget: f.budget, status: "Draft",
+      date: f.startDate || null, end_date: f.endDate || null, days,
+    }).select("id").single();
     if (error) { toast.error(error.message); return; }
+    const assigned = Object.entries(roleCrew).filter(([, crewId]) => crewId);
+    for (const [role, crewId] of assigned) {
+      const rate = crew.find((c) => c.id === crewId)?.dayRate ?? 0;
+      try {
+        await createPencil.mutateAsync({ productionId: data.id, crewId, role, bookingDate: f.startDate, crewRate: rate, clientCharge: rate, days });
+      } catch (err) { toast.error(`Could not pencil ${role}: ${(err as Error).message}`); }
+    }
     qc.invalidateQueries({ queryKey: ["productions"] });
     setOpen(false);
-    setF({ name: "", client: "", type: "Commercial", location: "", date: "", days: 1, budget: 0 });
+    setF(blankForm);
+    setRoleCrew({});
     navigate({ to: "/productions/$id", params: { id: data.id }, search: { tab: "find-crew" } });
   };
 
   return (
-    <Page title="Projects" subtitle="Start from the client brief, then break it down into crew and resources."
-      actions={<button onClick={() => setOpen(!open)} className="rounded-sm bg-primary px-4 py-2 font-display text-sm font-semibold text-primary-foreground">{open ? "Cancel" : "+ New production"}</button>}>
+    <Page title="Productions" subtitle="Start from the client brief, then break it down into crew and resources."
+      actions={<button onClick={() => setOpen(true)} className="rounded-sm bg-primary px-4 py-2 font-display text-sm font-semibold text-primary-foreground">+ New production</button>}>
       {open && (
-        <form onSubmit={submit} className="mb-5 grid gap-3 rounded-sm border border-primary/50 bg-card p-4 md:grid-cols-4">
-          <input className={field} placeholder="Production name *" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
-          <ClientPicker clients={clients} value={f.client} onChange={(company) => setF({ ...f, client: company })} onClientsChanged={() => qc.invalidateQueries({ queryKey: ["clients"] })} />
-          <select className={field} value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>
-            {["Commercial", "Film", "Television", "Photography", "Other"].map((t) => <option key={t}>{t}</option>)}
-          </select>
-          <input className={field} placeholder="Shoot location" value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} />
-          <input className={field} type="date" value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} />
-          <input className={field} type="number" min={1} placeholder="Shoot days" value={f.days} onChange={(e) => setF({ ...f, days: +e.target.value })} />
-          <input className={field} type="number" min={0} placeholder="Budget (ZAR)" value={f.budget || ""} onChange={(e) => setF({ ...f, budget: +e.target.value })} />
-          <button className="rounded-sm bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Create draft</button>
-        </form>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setOpen(false)}>
+          <form onSubmit={submit} onClick={(e) => e.stopPropagation()} className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-sm border border-border bg-card p-5 shadow-lg">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="font-display text-lg font-semibold">New production</h2>
+              <button type="button" onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground" aria-label="Close">✕</button>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <ClientPicker clients={clients} value={f.client} onChange={(company) => setF({ ...f, client: company })} onClientsChanged={() => qc.invalidateQueries({ queryKey: ["clients"] })} />
+              <input className={field} placeholder="Production name *" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
+              <select className={field} value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>
+                {["Commercial", "Film", "Television", "Photography", "Other"].map((t) => <option key={t}>{t}</option>)}
+              </select>
+              <input className={field} placeholder="Shoot location" value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} />
+              <label className="block"><span className="text-xs text-muted-foreground">Start date</span>
+                <input className={`${field} mt-1`} type="date" value={f.startDate} onChange={(e) => setF({ ...f, startDate: e.target.value })} /></label>
+              <label className="block"><span className="text-xs text-muted-foreground">End date</span>
+                <input className={`${field} mt-1`} type="date" value={f.endDate} onChange={(e) => setF({ ...f, endDate: e.target.value })} /></label>
+              <input className={field} type="number" min={0} placeholder="Budget (ZAR)" value={f.budget || ""} onChange={(e) => setF({ ...f, budget: +e.target.value })} />
+              <div className="flex items-center text-xs text-muted-foreground">{f.startDate && f.endDate ? `${days} shoot day(s)` : "Set a start and end date to calculate shoot days"}</div>
+            </div>
+
+            <div className="mt-5">
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pencil crew for key roles (optional)</h3>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {CREW_ROLES.map((role) => (
+                  <label key={role} className="block">
+                    <span className="text-xs text-muted-foreground">{role}</span>
+                    <select className={`${field} mt-1`} value={roleCrew[role] ?? ""} onChange={(e) => setRoleCrew({ ...roleCrew, [role]: e.target.value })}>
+                      <option value="">Unassigned</option>
+                      {crew.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <button type="button" onClick={() => setOpen(false)} className="rounded-sm border border-border px-4 py-2 text-sm font-semibold">Cancel</button>
+              <button className="rounded-sm bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Create draft</button>
+            </div>
+          </form>
+        </div>
       )}
       <div className="grid gap-3 md:hidden">
         {list.map((p) => (
