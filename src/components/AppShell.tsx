@@ -178,7 +178,7 @@ const tone: Record<string, string> = {
   Confirmed: "bg-success/20 text-success", confirmed: "bg-success/20 text-success",
   "On set": "bg-success/20 text-success",
   Active: "bg-success/20 text-success",
-  Penciled: "bg-primary/20 text-primary", pencil: "bg-primary/20 text-primary",
+  Penned: "bg-primary/20 text-primary", pencil: "bg-primary/20 text-primary",
   Upcoming: "bg-primary/20 text-primary",
   Draft: "bg-chart-3/20 text-chart-3",
   Pending: "bg-chart-3/20 text-chart-3",
@@ -199,6 +199,7 @@ const tone: Record<string, string> = {
 // still keys off the raw value, this only changes what's printed.
 const statusLabel: Record<string, string> = {
   awaiting_crew_confirmation: "Pending confirmation",
+  pencil: "Penned",
 };
 
 export function Badge({ children }: { children: string }) {

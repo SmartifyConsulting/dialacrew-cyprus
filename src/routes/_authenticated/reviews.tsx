@@ -34,8 +34,11 @@ function ReviewsPage() {
           {reviews.length === 0 && <li className="p-4 text-sm text-muted-foreground">No reviews yet. People on your jobs can rate you from the Members list.</li>}
           {reviews.map((r) => (
             <li key={r.id} className="p-4">
-              <div className="flex items-center gap-1">{[1, 2, 3, 4, 5].map((n) => <Star key={n} className={`h-4 w-4 ${n <= r.rating ? "fill-primary text-primary" : "text-muted-foreground"}`} />)}<span className="ml-2 text-xs text-muted-foreground">{r.reviewer_name} · {new Date(r.created_at).toLocaleDateString("en-ZA")}</span></div>
-              {r.comment && <p className="mt-1 text-sm">{r.comment}</p>}
+              {/* Crew see only their star rating with a date/time stamp — never the comment or who left it. */}
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((n) => <Star key={n} className={`h-4 w-4 ${n <= r.rating ? "fill-primary text-primary" : "text-muted-foreground"}`} />)}
+                <span className="ml-2 text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" })}</span>
+              </div>
             </li>
           ))}
         </ul>

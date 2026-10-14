@@ -5,7 +5,7 @@ import { Sparkles, Save, Trash2, Star, CheckCircle2, Plus, ArrowLeftRight } from
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Panel } from "@/components/AppShell";
-import { useCrew } from "@/lib/db";
+import { useBookings, useCrew } from "@/lib/db";
 import { matchBrief, type MatchResult } from "@/lib/memory.functions";
 import { providerTotal } from "@/lib/costing";
 import { zar, type Production } from "@/lib/demo-data";
@@ -15,6 +15,7 @@ type Asset = { id: string; crew_id: string; name: string; category: string; dail
 type Scenario = { id: string; name: string; selection: Selection; total: number; created_at: string };
 
 const field = "w-full rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
+const addDays = (iso: string, n: number) => { const d = new Date(iso + "T00:00:00"); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 const btn = "inline-flex items-center gap-1.5 rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50";
 const ghost = "inline-flex items-center gap-1 rounded-sm border border-border px-2 py-1 text-xs hover:border-primary hover:text-primary";
 
@@ -31,7 +32,23 @@ export function ScenarioPlanner({ p }: { p: Production }) {
   const qc = useQueryClient();
   const match = useServerFn(matchBrief);
   const crew = useCrew().data ?? [];
+  const allBookings = useBookings().data ?? [];
   const days = Math.max(1, p.days || 1);
+
+  // This production's full shoot date range — crew with a clashing booking elsewhere aren't available for it.
+  const rangeStart = p.date || null;
+  const rangeEnd = p.endDate || (p.date ? addDays(p.date, days - 1) : null);
+  const availableForRange = useMemo(() => {
+    const busy = new Set<string>();
+    if (rangeStart && rangeEnd) {
+      for (const b of allBookings) {
+        if (b.productionId === p.id || !b.bookingDate || b.status === "cancelled") continue;
+        const bEnd = addDays(b.bookingDate, Math.max(1, b.days || 1) - 1);
+        if (b.bookingDate <= rangeEnd && bEnd >= rangeStart && b.crewId) busy.add(b.crewId);
+      }
+    }
+    return (crewId: string) => !busy.has(crewId);
+  }, [allBookings, p.id, rangeStart, rangeEnd]);
   const assets = useQuery({
     queryKey: ["all-crew-assets"],
     queryFn: async () => { const { data, error } = await supabase.from("crew_assets").select("id, crew_id, name, category, daily_fee"); if (error) throw error; return (data ?? []).map((a) => ({ ...a, daily_fee: Number(a.daily_fee) })) as Asset[]; },
@@ -46,7 +63,7 @@ export function ScenarioPlanner({ p }: { p: Production }) {
   });
 
   const [sel, setSel] = useState<Selection>({});
-  const [name, setName] = useState("Scenario A");
+  const [name, setName] = useState("Option A");
   const [brief, setBrief] = useState(p.summary ?? "");
   const [busy, setBusy] = useState(false);
   const [ai, setAi] = useState<MatchResult | null>(null);
@@ -88,7 +105,7 @@ export function ScenarioPlanner({ p }: { p: Production }) {
 
   async function save() {
     if (!Object.keys(sel).length) { toast.error("Select at least one crew member."); return; }
-    const clean = name.trim() || "Untitled scenario";
+    const clean = name.trim() || "Untitled option";
     const dup = scenarios.data?.find((x) => x.name.toLowerCase() === clean.toLowerCase() && x.id !== activeId);
     if (dup) { toast.error(`"${clean}" already exists — pick it from the dropdown to update it, or use another name.`); return; }
     const result = { selection: sel, total };
@@ -102,7 +119,7 @@ export function ScenarioPlanner({ p }: { p: Production }) {
   }
   function pick(id: string) {
     setActiveId(id);
-    if (!id) { setSel({}); setName(`Scenario ${String.fromCharCode(65 + Math.min(scenarios.data?.length ?? 0, 25))}`); return; }
+    if (!id) { setSel({}); setName(`Option ${String.fromCharCode(65 + Math.min(scenarios.data?.length ?? 0, 25))}`); return; }
     const s = scenarios.data?.find((x) => x.id === id);
     if (s) { setSel(s.selection); setName(s.name); }
   }
@@ -113,7 +130,7 @@ export function ScenarioPlanner({ p }: { p: Production }) {
   }
   // Commit: pencil the chosen group's crew + kit on the production, then drop the other sandbox groups.
   async function commit(s: Scenario) {
-    if (!confirm(`Commit "${s.name}"? Its crew will be pencilled in and the other scenarios removed.`)) return;
+    if (!confirm(`Commit "${s.name}"? Its crew will be pencilled in and the other options removed.`)) return;
     setCommitting(true);
     try {
       const rows = Object.keys(s.selection).map((crewId) => ({
@@ -162,11 +179,11 @@ export function ScenarioPlanner({ p }: { p: Production }) {
 
       <Panel title={`Sandbox · ${days} day(s)`} right={<input className="w-40 rounded-sm border border-input bg-background px-2 py-1 text-xs" placeholder="Filter crew" value={filter} onChange={(e) => setFilter(e.target.value)} />}>
         <div className="flex flex-wrap items-center gap-2 border-b border-border p-4">
-          <select className="rounded-sm border border-input bg-background px-2 py-2 text-sm" value={activeId} onChange={(e) => pick(e.target.value)} aria-label="Scenario">
-            <option value="">+ New scenario</option>
+          <select className="rounded-sm border border-input bg-background px-2 py-2 text-sm" value={activeId} onChange={(e) => pick(e.target.value)} aria-label="Option">
+            <option value="">+ New option</option>
             {(scenarios.data ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
-          <input className="min-w-40 flex-1 rounded-sm border border-input bg-background px-2 py-2 text-sm" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} aria-label="Scenario name" placeholder="Scenario name" />
+          <input className="min-w-40 flex-1 rounded-sm border border-input bg-background px-2 py-2 text-sm" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} aria-label="Option name" placeholder="Option name" />
           {activeId && <button className={ghost} onClick={() => pick("")}><Plus className="h-3 w-3" /> New</button>}
         </div>
         <div className="border-b border-border px-4 py-3"><BudgetBar used={total} budget={p.budget} /></div>
@@ -181,7 +198,12 @@ export function ScenarioPlanner({ p }: { p: Production }) {
                   <input type="checkbox" checked={on} onChange={() => toggleCrew(c.id)} className="h-4 w-4 accent-primary" />
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-semibold">{c.name} <span className="font-normal text-muted-foreground">· {aiWhy[c.id]?.suggested_role ?? c.role}</span></div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground"><Star className="h-3 w-3 text-primary" /> {c.rating.toFixed(1)} · {zar(c.dayRate)}/day · {c.available ? "Available" : "Unavailable"}</div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Star className="h-3 w-3 text-primary" /> {c.rating.toFixed(1)} · {zar(c.dayRate)}/day ·{" "}
+                      <span className={c.available && availableForRange(c.id) ? "text-success" : "text-destructive"}>
+                        {!c.available ? "Unavailable" : availableForRange(c.id) ? `Available ${rangeStart ? "for these dates" : ""}` : "Booked these dates"}
+                      </span>
+                    </div>
                     {aiWhy[c.id] && <div className="text-xs text-primary">AI: {aiWhy[c.id]?.why}</div>}
                   </div>
                   {on && <span className="text-sm font-semibold">{zar(line)}</span>}
@@ -219,11 +241,11 @@ export function ScenarioPlanner({ p }: { p: Production }) {
             <div><span className="text-muted-foreground">Estimate:</span> <b>{zar(total)}</b> for {Object.keys(sel).length} crew</div>
             <div className={`text-xs ${variance < 0 ? "text-destructive" : "text-success"}`}>{variance < 0 ? `${zar(-variance)} over` : `${zar(variance)} under`} budget of {zar(p.budget)}</div>
           </div>
-          <button onClick={save} className={`${btn} ml-auto`}><Save className="h-4 w-4" /> {activeId ? "Update scenario" : "Save scenario"}</button>
+          <button onClick={save} className={`${btn} ml-auto`}><Save className="h-4 w-4" /> {activeId ? "Update option" : "Save option"}</button>
         </div>
       </Panel>
 
-      <Panel title={`Compare scenarios (${scenarios.data?.length ?? 0})`}>
+      <Panel title={`Compare options (${scenarios.data?.length ?? 0})`}>
         {!scenarios.data?.length ? <p className="p-4 text-sm text-muted-foreground">No drafts yet. Save one above, then build another with a different group to compare.</p> : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

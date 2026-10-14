@@ -3,12 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
-import { Pencil, Trash2, Upload } from "lucide-react";
+import { Copy, Pencil, Search, Trash2, Upload } from "lucide-react";
 import { Badge, ClientBadge, Page, Panel } from "@/components/AppShell";
 import { AddressAutocomplete } from "@/components/site/SiteTabs";
 import { zar } from "@/lib/demo-data";
 import { useCreatePencil, useCrew, useProductions } from "@/lib/db";
 import { useQueryClient } from "@tanstack/react-query";
+import { useRole, useSession } from "@/lib/auth";
 
 export const Route = createFileRoute("/_authenticated/productions/")({
   validateSearch: (s: Record<string, unknown>): { new?: boolean } => (s["new"] ? { new: true } : {}),
@@ -146,6 +147,9 @@ function Productions() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { new: openOnLoad } = Route.useSearch();
+  const { session } = useSession();
+  const role = useRole(session?.user.id);
+  const isProducer = role.data === "producer" || (role.data as string) === "admin";
   const clientsQuery = useQuery({
     queryKey: ["clients"],
     queryFn: async () => { const { data, error } = await supabase.from("clients").select("id, name, company").order("company"); if (error) throw error; return data ?? []; },
@@ -154,36 +158,52 @@ function Productions() {
   const crew = useCrew().data ?? [];
   const createPencil = useCreatePencil();
   const [open, setOpen] = useState(!!openOnLoad);
-  const blankForm = { name: "", client: "", type: "Commercial", location: "", startDate: "", endDate: "", budget: 0 };
+  const [duplicating, setDuplicating] = useState(false);
+  const blankForm = { name: "", client: "", jobId: "", type: "Commercial", location: "", startDate: "", endDate: "", budget: 0 };
   const [f, setF] = useState(blankForm);
   const [roleCrew, setRoleCrew] = useState<Record<string, string>>({});
   const [editingId, setEditingId] = useState<string | null>(null); // editing an existing production
   const [draftId, setDraftId] = useState<string | null>(null); // autosaved draft while creating a new one
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const [search, setSearch] = useState("");
+
+  const filteredList = list.filter((p) => !search.trim() || (p.jobId ?? "").toLowerCase().includes(search.trim().toLowerCase()) || p.name.toLowerCase().includes(search.trim().toLowerCase()));
 
   // Shoot days is inclusive of both the start and end date.
   const days = f.startDate && f.endDate ? Math.max(1, Math.round((+new Date(f.endDate) - +new Date(f.startDate)) / 86400000) + 1) : 1;
+  const jobIdTaken = (id: string) => list.some((p) => p.id !== editingId && (p.jobId ?? "").trim().toLowerCase() === id.trim().toLowerCase());
 
-  const resetForm = () => { setF(blankForm); setRoleCrew({}); setEditingId(null); setDraftId(null); setSaveState("idle"); };
+  const resetForm = () => { setF(blankForm); setRoleCrew({}); setEditingId(null); setDraftId(null); setSaveState("idle"); setDuplicating(false); };
   const closeModal = () => { setOpen(false); resetForm(); if (openOnLoad) navigate({ to: "/productions", search: {}, replace: true }); };
   const openNew = () => { resetForm(); setOpen(true); };
   const openEdit = (p: (typeof list)[number]) => {
-    setF({ name: p.name, client: p.client, type: p.type, location: p.location, startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget });
+    setF({ name: p.name, client: p.client, jobId: p.jobId ?? "", type: p.type, location: p.location, startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget });
     setRoleCrew({});
     setEditingId(p.id);
     setDraftId(null);
     setSaveState("idle");
+    setDuplicating(false);
+    setOpen(true);
+  };
+  const openDuplicate = (p: (typeof list)[number]) => {
+    setF({ name: `${p.name} (copy)`, client: p.client, jobId: "", type: p.type, location: p.location, startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget });
+    setRoleCrew({});
+    setEditingId(null);
+    setDraftId(null);
+    setSaveState("idle");
+    setDuplicating(true);
     setOpen(true);
   };
 
   // Autosave a Draft as the user fills in the new-production form, so an abandoned form isn't lost —
-  // only while creating (not while editing an existing production, which saves explicitly).
+  // only while creating (not while editing an existing production, which saves explicitly). Needs a
+  // unique Job ID before it will persist anything.
   useEffect(() => {
     if (!open || editingId) return;
-    if (!f.name.trim() || !f.client.trim()) return;
+    if (!f.name.trim() || !f.client.trim() || !f.jobId.trim() || jobIdTaken(f.jobId)) return;
     const t = setTimeout(async () => {
       setSaveState("saving");
-      const payload = { name: f.name, client: f.client, type: f.type, location: f.location, budget: f.budget, date: f.startDate || null, end_date: f.endDate || null, days };
+      const payload = { name: f.name, client: f.client, job_id: f.jobId.trim(), type: f.type, location: f.location, budget: f.budget, date: f.startDate || null, end_date: f.endDate || null, days };
       if (draftId) {
         const { error } = await supabase.from("productions").update(payload).eq("id", draftId);
         if (error) { toast.error(error.message); return; }
@@ -198,7 +218,7 @@ function Productions() {
     }, 800);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [f.name, f.client, f.type, f.location, f.startDate, f.endDate, f.budget, open, editingId]);
+  }, [f.name, f.client, f.jobId, f.type, f.location, f.startDate, f.endDate, f.budget, open, editingId]);
 
   async function deleteProduction(p: (typeof list)[number]) {
     if (!window.confirm(`Delete "${p.name}"? This can't be undone.`)) return;
@@ -209,12 +229,18 @@ function Productions() {
   }
 
   // New productions start as a Draft so the team can sandbox crew groups against the budget before committing;
-  // editing an existing one keeps its current status.
+  // editing an existing one keeps its current status. Client, Job ID, name, start/end date and budget are
+  // all compulsory, and a Job ID can never repeat one already in use.
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!f.name || !f.client) { toast.error("Name and client are required"); return; }
-    if (f.startDate && f.endDate && f.endDate < f.startDate) { toast.error("End date can't be before the start date"); return; }
-    const payload = { name: f.name, client: f.client, type: f.type, location: f.location, budget: f.budget, date: f.startDate || null, end_date: f.endDate || null, days };
+    if (!f.client.trim()) { toast.error("Client is required"); return; }
+    if (!f.jobId.trim()) { toast.error("Job ID is required"); return; }
+    if (!f.name.trim()) { toast.error("Production name is required"); return; }
+    if (!f.startDate || !f.endDate) { toast.error("Start and end date are required"); return; }
+    if (f.endDate < f.startDate) { toast.error("End date can't be before the start date"); return; }
+    if (!f.budget) { toast.error("Budget is required"); return; }
+    if (jobIdTaken(f.jobId)) { toast.error(`Job ID "${f.jobId}" is already in use — pick a different one.`); return; }
+    const payload = { name: f.name, client: f.client, job_id: f.jobId.trim(), type: f.type, location: f.location, budget: f.budget, date: f.startDate || null, end_date: f.endDate || null, days };
     const targetId = editingId ?? draftId;
     const { data, error } = targetId
       ? await supabase.from("productions").update(payload).eq("id", targetId).select("id").single()
@@ -236,13 +262,13 @@ function Productions() {
   };
 
   return (
-    <Page title="Productions" subtitle="Start from the client brief, then break it down into crew and resources."
-      actions={<button onClick={openNew} className="rounded-sm bg-primary px-4 py-2 font-display text-sm font-semibold text-primary-foreground">+ New production</button>}>
-      {open && (
+    <Page open title="Productions" subtitle="Start from the client brief, then break it down into crew and resources."
+      actions={isProducer ? <button onClick={openNew} className="rounded-sm bg-primary px-4 py-2 font-display text-sm font-semibold text-primary-foreground">+ New production</button> : undefined}>
+      {open && isProducer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={closeModal}>
           <form onSubmit={submit} onClick={(e) => e.stopPropagation()} className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-sm border border-border bg-card p-5 shadow-lg">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-display text-lg font-semibold">{editingId ? "Edit production" : "New production"}</h2>
+              <h2 className="font-display text-lg font-semibold">{editingId ? "Edit production" : duplicating ? "Duplicate production" : "New production"}</h2>
               <div className="flex items-center gap-3">
                 {!editingId && saveState !== "idle" && (
                   <span className="text-xs text-muted-foreground">{saveState === "saving" ? "Saving draft…" : "Draft saved"}</span>
@@ -254,6 +280,10 @@ function Productions() {
               <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Production info</h3>
               <div className="grid gap-3 md:grid-cols-2">
                 <ClientPicker clients={clients} value={f.client} onChange={(company) => setF({ ...f, client: company })} onClientsChanged={() => qc.invalidateQueries({ queryKey: ["clients"] })} />
+                <div>
+                  <input className={field} placeholder="Job ID *" value={f.jobId} onChange={(e) => setF({ ...f, jobId: e.target.value })} />
+                  {f.jobId.trim() && jobIdTaken(f.jobId) && <p className="mt-1 text-xs text-destructive">That Job ID is already in use.</p>}
+                </div>
                 <input className={field} placeholder="Production name *" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
                 <select className={field} value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>
                   {["Commercial", "Film", "Television", "Photography", "Other"].map((t) => <option key={t}>{t}</option>)}
@@ -261,12 +291,12 @@ function Productions() {
                 <AddressAutocomplete className={field} placeholder="Shoot location" value={f.location}
                   onChange={(v) => setF({ ...f, location: v })}
                   onSelect={(s) => setF({ ...f, location: s.label })} />
-                <label className="block"><span className="text-xs text-muted-foreground">Start date</span>
+                <label className="block"><span className="text-xs text-muted-foreground">Start date *</span>
                   <input className={`${field} mt-1`} type="date" value={f.startDate} onChange={(e) => setF({ ...f, startDate: e.target.value })} /></label>
-                <label className="block"><span className="text-xs text-muted-foreground">End date</span>
+                <label className="block"><span className="text-xs text-muted-foreground">End date *</span>
                   <input className={`${field} mt-1`} type="date" value={f.endDate} onChange={(e) => setF({ ...f, endDate: e.target.value })} /></label>
-                <input className={field} type="number" min={0} placeholder="Budget (ZAR)" value={f.budget || ""} onChange={(e) => setF({ ...f, budget: +e.target.value })} />
-                <div className="flex items-center text-xs text-muted-foreground">{f.startDate && f.endDate ? `${days} shoot day(s)` : "Set a start and end date to calculate shoot days"}</div>
+                <input className={field} type="number" min={0} placeholder="Budget (ZAR) *" value={f.budget || ""} onChange={(e) => setF({ ...f, budget: +e.target.value })} />
+                <div className="flex items-center text-xs text-muted-foreground">{f.startDate && f.endDate ? `${days} shoot day(s)` : "Start and end date are required"}</div>
               </div>
             </div>
 
@@ -293,18 +323,29 @@ function Productions() {
           </form>
         </div>
       )}
+      <div className="relative mb-4 max-w-sm">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <input className={`${field} pl-9`} placeholder="Search by Job ID or name" value={search} onChange={(e) => setSearch(e.target.value)} />
+      </div>
       <div className="grid gap-3 md:hidden">
-        {list.map((p) => (
+        {filteredList.length === 0 && <p className="text-sm text-muted-foreground">No productions match "{search}".</p>}
+        {filteredList.map((p) => (
           <div key={p.id} className="rounded-sm border border-border bg-card p-4">
             <div className="flex items-start justify-between gap-2">
               <Link to="/productions/$id" params={{ id: p.id }} className="min-w-0 flex-1">
                 <div className="truncate font-semibold hover:text-primary">{p.name}</div>
+                {p.jobId && <div className="text-xs text-muted-foreground">Job ID: {p.jobId}</div>}
                 <div className="mt-1 flex items-center gap-2"><ClientBadge name={p.client} /><span className="text-xs text-muted-foreground">{p.type}</span></div>
               </Link>
               <div className="flex shrink-0 items-center gap-2">
                 <Badge>{p.status}</Badge>
-                <button onClick={() => openEdit(p)} className="text-muted-foreground hover:text-primary" aria-label={`Edit ${p.name}`}><Pencil className="h-4 w-4" /></button>
-                <button onClick={() => deleteProduction(p)} className="text-muted-foreground hover:text-destructive" aria-label={`Delete ${p.name}`}><Trash2 className="h-4 w-4" /></button>
+                {isProducer && (
+                  <>
+                    <button onClick={() => openEdit(p)} className="text-muted-foreground hover:text-primary" aria-label={`Edit ${p.name}`}><Pencil className="h-4 w-4" /></button>
+                    <button onClick={() => openDuplicate(p)} className="text-muted-foreground hover:text-primary" aria-label={`Duplicate ${p.name}`}><Copy className="h-4 w-4" /></button>
+                    <button onClick={() => deleteProduction(p)} className="text-muted-foreground hover:text-destructive" aria-label={`Delete ${p.name}`}><Trash2 className="h-4 w-4" /></button>
+                  </>
+                )}
               </div>
             </div>
             <div className="mt-2 text-xs text-muted-foreground">{p.date || "Date TBC"} · {p.days} day(s) · {p.location}</div>
@@ -316,12 +357,14 @@ function Productions() {
       <div className="hidden md:block"><Panel title="All productions">
         <table className="w-full text-sm">
           <thead className="text-left text-[11px] text-muted-foreground">
-            <tr>{["Production", "Type", "Location", "Date", "Days", "Budget", "Status", ""].map((h) => <th key={h} className="px-4 py-2 font-medium">{h}</th>)}</tr>
+            <tr>{["Production", "Job ID", "Type", "Location", "Date", "Days", "Budget", "Status", ""].map((h) => <th key={h} className="px-4 py-2 font-medium">{h}</th>)}</tr>
           </thead>
           <tbody>
-            {list.map((p) => (
+            {filteredList.length === 0 && <tr><td colSpan={9} className="px-4 py-6 text-center text-muted-foreground">No productions match "{search}".</td></tr>}
+            {filteredList.map((p) => (
               <tr key={p.id} className="border-t border-border hover:bg-muted/50">
                 <td className="px-4 py-2.5 font-medium"><Link to="/productions/$id" params={{ id: p.id }} className="hover:text-primary">{p.name}</Link><div className="mt-1"><ClientBadge name={p.client} /></div></td>
+                <td className="px-4 text-muted-foreground">{p.jobId ?? "—"}</td>
                 <td className="px-4">{p.type}</td>
                 <td className="px-4 text-muted-foreground">{p.location}</td>
                 <td className="px-4 text-muted-foreground">{p.date}</td>
@@ -329,10 +372,13 @@ function Productions() {
                 <td className="px-4">{zar(p.budget)}</td>
                 <td className="px-4"><Badge>{p.status}</Badge></td>
                 <td className="px-4">
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => openEdit(p)} className="text-muted-foreground hover:text-primary" aria-label={`Edit ${p.name}`}><Pencil className="h-4 w-4" /></button>
-                    <button onClick={() => deleteProduction(p)} className="text-muted-foreground hover:text-destructive" aria-label={`Delete ${p.name}`}><Trash2 className="h-4 w-4" /></button>
-                  </div>
+                  {isProducer && (
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => openEdit(p)} className="text-muted-foreground hover:text-primary" aria-label={`Edit ${p.name}`}><Pencil className="h-4 w-4" /></button>
+                      <button onClick={() => openDuplicate(p)} className="text-muted-foreground hover:text-primary" aria-label={`Duplicate ${p.name}`}><Copy className="h-4 w-4" /></button>
+                      <button onClick={() => deleteProduction(p)} className="text-muted-foreground hover:text-destructive" aria-label={`Delete ${p.name}`}><Trash2 className="h-4 w-4" /></button>
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}

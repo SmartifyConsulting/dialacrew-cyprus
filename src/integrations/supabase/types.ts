@@ -1147,6 +1147,7 @@ export type Database = {
           crew_needed: number
           date: string | null
           end_date: string | null
+          job_id: string | null
           days: number
           geofence_m: number
           id: string
@@ -1169,6 +1170,7 @@ export type Database = {
           crew_needed?: number
           date?: string | null
           end_date?: string | null
+          job_id?: string | null
           days?: number
           geofence_m?: number
           id?: string
@@ -1191,6 +1193,7 @@ export type Database = {
           crew_needed?: number
           date?: string | null
           end_date?: string | null
+          job_id?: string | null
           days?: number
           geofence_m?: number
           id?: string
@@ -1250,6 +1253,38 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "production_locations_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_risks: {
+        Row: {
+          id: string
+          production_id: string
+          text: string
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          production_id: string
+          text: string
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          production_id?: string
+          text?: string
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_risks_production_id_fkey"
             columns: ["production_id"]
             isOneToOne: false
             referencedRelation: "productions"

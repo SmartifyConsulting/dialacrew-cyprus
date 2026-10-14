@@ -186,6 +186,43 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
   );
 }
 
+/* ---------------- Production checklist (roles attached, ticked once confirmed) ---------------- */
+function ProductionChecklist({ p }: Pick<Ctx, "p">) {
+  const rows = useQuery({
+    queryKey: ["production-checklist", p.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("bookings")
+        .select("id, role, status, crew_members(name)")
+        .eq("production_id", p.id).neq("status", "cancelled").order("role");
+      if (error) throw error;
+      return data ?? [];
+    },
+  }).data ?? [];
+
+  if (rows.length === 0) return null;
+
+  return (
+    <Panel title="Production Checklist">
+      <ul className="divide-y divide-border text-sm">
+        {rows.map((r) => {
+          const confirmed = r.status === "confirmed" || r.status === "in_progress" || r.status === "completed" || r.status === "payment_released";
+          const name = (r.crew_members as { name: string } | null)?.name;
+          return (
+            <li key={r.id} className="flex items-center gap-3 px-4 py-2.5">
+              {confirmed ? <CheckCircle2 className="h-4 w-4 shrink-0 text-success" /> : <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />}
+              <span className="min-w-0 flex-1">
+                <span className="font-medium">{r.role}</span>
+                {name && <span className="text-muted-foreground"> · {name}</span>}
+              </span>
+              {!confirmed && <span className="shrink-0 text-xs text-muted-foreground">Not yet confirmed</span>}
+            </li>
+          );
+        })}
+      </ul>
+    </Panel>
+  );
+}
+
 /* ---------------- Overview ---------------- */
 export function OverviewTab({ p, isProducer }: Ctx) {
   const inv = useInvalidate();
@@ -263,6 +300,8 @@ export function OverviewTab({ p, isProducer }: Ctx) {
           </dl>
         </div>
       </Panel>
+
+      <ProductionChecklist p={p} />
 
       <Panel title="Site information" right={isProducer ? (
         <div className="flex items-center gap-3">
