@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Booking, Crew, Production } from "@/lib/demo-data";
 
-export type ChangeRequest = { id: string; kind: string; production: string; who: string; detail: string; amount: number; state: string };
+export type ChangeRequest = { id: string; kind: string; production: string; who: string; detail: string; amount: number; state: string; createdAt: string };
 
 const toProduction = (r: any): Production => ({
   id: r.id, name: r.name, client: r.client, type: r.type, location: r.location, date: r.date ?? "",
@@ -22,6 +22,7 @@ const toBooking = (r: any): Booking => ({
   bookingDate: r.booking_date ?? null, callTime: r.call_time ?? null, wrapTime: r.wrap_time ?? null,
   pencilPriority: r.pencil_priority ?? null, pencilExpiresAt: r.pencil_expires_at ?? null,
   createdBy: r.created_by ?? null, cancelledReason: r.cancelled_reason ?? null,
+  createdAt: r.created_at,
 });
 
 const run = async <T,>(p: PromiseLike<{ data: any; error: any }>, map: (r: any) => T): Promise<T[]> => {
@@ -44,7 +45,7 @@ export const useBookings = () => useQuery({
 });
 export const useRequests = () => useQuery({
   queryKey: ["requests"],
-  queryFn: () => run(supabase.from("change_requests").select("*").order("id"), (r) => ({ ...r, amount: Number(r.amount) }) as ChangeRequest),
+  queryFn: () => run(supabase.from("change_requests").select("*").order("id"), (r) => ({ ...r, amount: Number(r.amount), createdAt: r.created_at }) as ChangeRequest),
 });
 
 export const useCreateProduction = () => {

@@ -26,8 +26,8 @@ function initials(name: string) {
 function NavAvatar({ name, path, size = 40 }: { name: string; path?: string | null; size?: number }) {
   const url = useSignedUrl(path).data;
   return url
-    ? <img src={url} alt={name} style={{ width: size, height: size }} className="shrink-0 rounded-full object-cover" />
-    : <span style={{ width: size, height: size }} className="grid shrink-0 place-items-center rounded-full bg-primary text-sm font-bold text-primary-foreground">{initials(name)}</span>;
+    ? <img src={url} alt={name} style={{ width: size, height: size }} className="shrink-0 rounded-full border border-white object-cover" />
+    : <span style={{ width: size, height: size }} className="grid shrink-0 place-items-center rounded-full border border-white bg-primary text-sm font-bold text-primary-foreground">{initials(name)}</span>;
 }
 
 type NavItem = { to: string; label: string; icon: LucideIcon };
@@ -62,7 +62,7 @@ export const navByRole: Record<string, NavItem[]> = {
 
 function BottomNav({ items }: { items: NavItem[] }) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-nav text-nav-foreground md:hidden" aria-label="Main menu">
+    <nav className="fixed inset-x-0 bottom-0 z-40 bg-nav text-nav-foreground md:hidden" aria-label="Main menu">
       <ul className="flex">
         {items.map((n) => (
           <li key={n.label} className="flex-1">
@@ -95,7 +95,7 @@ export function TopNav() {
   return (
     <>
       {signedIn && (
-        <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-nav-foreground/10 bg-nav text-nav-foreground md:flex" aria-label="Main menu">
+        <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col bg-nav text-nav-foreground md:flex" aria-label="Main menu">
           <Link to="/dashboard" className="px-5 py-5"><img src={logo.url} alt="Book a Crew" className="h-12 w-auto" /></Link>
           <nav className="flex flex-1 flex-col gap-1 px-3">
             {items.map((n) => (
@@ -104,7 +104,7 @@ export function TopNav() {
               </Link>
             ))}
           </nav>
-          <div className="border-t border-nav-foreground/10 p-4">
+          <div className="p-4">
             <Link to="/profile" className="flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-nav-foreground/10">
               <NavAvatar name={me.data?.full_name || me.data?.email || "?"} path={me.data?.avatar_url ?? null} />
               <div className="min-w-0 flex-1">
@@ -205,7 +205,13 @@ const CLIENT_COLORS = [
   "bg-amber-600 text-white", "bg-cyan-600 text-white",
 ];
 
+// Pinned overrides take priority over the hashed palette — e.g. Savanna Gin is always green, everywhere.
+const CLIENT_COLOR_OVERRIDES: Record<string, string> = {
+  "Savanna Gin": "bg-green-600 text-white",
+};
+
 function clientColor(name: string) {
+  if (CLIENT_COLOR_OVERRIDES[name]) return CLIENT_COLOR_OVERRIDES[name];
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
   return CLIENT_COLORS[h % CLIENT_COLORS.length];
@@ -215,7 +221,25 @@ export function ClientBadge({ name }: { name: string }) {
   return <span className={`inline-block rounded-sm px-2 py-0.5 text-xs font-semibold ${clientColor(name)}`}>{name}</span>;
 }
 
-export function Panel({ title, children, right }: { title: string; children: ReactNode; right?: ReactNode }) {
+// Highlights pinned client-color overrides wherever their name appears in free text (not just badges).
+const HIGHLIGHT_NAMES = Object.keys(CLIENT_COLOR_OVERRIDES);
+
+export function Highlight({ text }: { text: string }) {
+  if (!text) return null;
+  const pattern = new RegExp(`(${HIGHLIGHT_NAMES.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`, "g");
+  const parts = text.split(pattern);
+  return (
+    <>
+      {parts.map((part, i) =>
+        HIGHLIGHT_NAMES.includes(part)
+          ? <span key={i} className="font-semibold text-green-600">{part}</span>
+          : <span key={i}>{part}</span>
+      )}
+    </>
+  );
+}
+
+export function Panel({ title, children, right }: { title: ReactNode; children: ReactNode; right?: ReactNode }) {
   return (
     <section className="rounded-sm border border-border bg-card">
       <div className="flex items-center justify-between border-b border-border px-4 py-2.5">

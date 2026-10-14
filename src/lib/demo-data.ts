@@ -22,6 +22,7 @@ export type Booking = {
   bookingDate?: string | null; callTime?: string | null; wrapTime?: string | null;
   pencilPriority?: number | null; pencilExpiresAt?: string | null;
   createdBy?: string | null; cancelledReason?: string | null;
+  createdAt?: string;
 };
 
 export const zar = (n: number) => "R" + n.toLocaleString("en-ZA");

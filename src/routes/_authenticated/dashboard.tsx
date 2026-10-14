@@ -1,7 +1,7 @@
 import { overtimeAmount, shiftLabel, type OvertimeShift } from "@/lib/costing";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check } from "lucide-react";
-import { Badge, ClientBadge, Page, Panel } from "@/components/AppShell";
+import { Badge, ClientBadge, Highlight, Page, Panel } from "@/components/AppShell";
 import { zar } from "@/lib/demo-data";
 import { useBookings, useCrew, useProductions, useRequestOvertime, useRequests, useRespondToBooking, useSetRequestState } from "@/lib/db";
 import { useState } from "react";
@@ -174,9 +174,16 @@ function Dashboard() {
   const today = onSet ? bookings.filter((b) => b.productionId === onSet.id) : [];
   const dateLabel = new Date().toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const activity = [
-    ...reqs.filter((r) => r.state !== "Pending").map((r) => ({ id: `r${r.id}`, text: `${r.kind} for ${r.who} ${r.state.toLowerCase()}`, sub: r.production })),
-    ...bookings.filter((b) => b.status === "confirmed").map((b) => ({ id: `b${b.id}`, text: `${crewName(b.crewId)} confirmed as ${b.role}`, sub: prodName(b.productionId) })),
-  ].slice(0, 8);
+    ...reqs.filter((r) => r.state !== "Pending").map((r) => ({ id: `r${r.id}`, text: `${r.kind} for ${r.who} ${r.state.toLowerCase()}`, sub: r.production, at: r.createdAt })),
+    ...bookings.filter((b) => b.status === "confirmed").map((b) => ({ id: `b${b.id}`, text: `${crewName(b.crewId)} confirmed as ${b.role}`, sub: prodName(b.productionId), at: b.createdAt ?? "" })),
+  ].sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, 8);
+  const activityStamp = (iso: string) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const sameDay = d.toDateString() === new Date().toDateString();
+    const time = d.toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" });
+    return sameDay ? time : `${d.toLocaleDateString("en-ZA", { day: "numeric", month: "short" })} · ${time}`;
+  };
 
   return (
     <Page title={`${greet}${first ? `, ${first}` : ""}`} subtitle={dateLabel}
@@ -200,7 +207,7 @@ function Dashboard() {
                 <li key={r.id} className="px-4 py-3">
                   <div className="flex justify-between text-xs font-semibold text-primary"><span>{r.kind}</span><span>{zar(r.amount)}</span></div>
                   <div className="mt-1 text-sm">{r.detail}</div>
-                  <div className="text-xs text-muted-foreground">{r.who} · {r.production}</div>
+                  <div className="text-xs text-muted-foreground">{r.who} · <Highlight text={r.production} /></div>
                   <div className="mt-2 flex gap-2">
                     <button onClick={() => setState.mutate({ id: r.id, state: "Approved" })} className="rounded-md bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">Approve</button>
                     <button onClick={() => setState.mutate({ id: r.id, state: "Declined" })} className="rounded-md border border-border px-3 py-1 text-xs font-semibold">Decline</button>
@@ -213,7 +220,7 @@ function Dashboard() {
                   <div className="min-w-0 flex-1">
                     <div className="font-medium">{crewName(b.crewId)} accepted your {b.pencilPriority === 2 ? "2nd" : "1st"} pencil</div>
                     <div className="truncate text-xs text-muted-foreground">
-                      {prodName(b.productionId)} · {b.role}{b.bookingDate ? ` · ${b.bookingDate}` : ""} · {zar(b.crewRate)} a day
+                      <Highlight text={prodName(b.productionId)} /> · {b.role}{b.bookingDate ? ` · ${b.bookingDate}` : ""} · {zar(b.crewRate)} a day
                     </div>
                   </div>
                   <button onClick={() => respondToBooking.mutate({ id: b.id, status: "confirmed" })} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Confirm booking</button>
@@ -232,7 +239,7 @@ function Dashboard() {
               ))}
             </div>
           }>
-            <div className="grid gap-3 p-4 sm:grid-cols-2">
+            <div className="grid gap-3 p-4">
               {filteredProductions.length === 0 && <p className="text-sm text-muted-foreground">No {prodFilter.toLowerCase()} productions.</p>}
               {filteredProductions.map((p) => {
                 const pct = p.crewNeeded ? Math.min(100, Math.round((p.crewBooked / p.crewNeeded) * 100)) : 0;
@@ -240,7 +247,7 @@ function Dashboard() {
                   <Link key={p.id} to="/productions/$id" params={{ id: p.id }} className="block rounded-lg border border-border bg-background p-4 transition hover:border-primary">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="truncate font-semibold">{p.name}</div>
+                        <div className="truncate font-semibold"><Highlight text={p.name} /></div>
                         <div className="mt-1 flex items-center gap-2"><ClientBadge name={p.client} /><span className="truncate text-xs text-muted-foreground">{p.date}</span></div>
                       </div>
                       <Badge>{p.status}</Badge>
@@ -253,7 +260,7 @@ function Dashboard() {
             </div>
           </Panel>
 
-          <Panel title={`On set today${onSet ? ` · ${onSet.name}` : ""}`}>
+          <Panel title={<>On set today{onSet && <> · <Highlight text={onSet.name} /></>}</>}>
             <ul className="divide-y divide-border text-sm">
               {today.length === 0 && <li className="p-4 text-muted-foreground">Nobody on set today.</li>}
               {today.map((b) => (
@@ -274,7 +281,11 @@ function Dashboard() {
               {activity.map((a) => (
                 <li key={a.id} className="flex gap-3 px-4 py-2.5">
                   <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
-                  <span><span className="block">{a.text}</span><span className="text-xs text-muted-foreground">{a.sub}</span></span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block"><Highlight text={a.text} /></span>
+                    <span className="text-xs text-muted-foreground"><Highlight text={a.sub} /></span>
+                  </span>
+                  <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">{activityStamp(a.at)}</span>
                 </li>
               ))}
             </ul>
