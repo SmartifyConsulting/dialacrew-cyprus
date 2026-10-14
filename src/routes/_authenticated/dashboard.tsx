@@ -2,7 +2,7 @@ import { overtimeAmount, shiftLabel, type OvertimeShift } from "@/lib/costing";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check } from "lucide-react";
 import { Badge, ClientBadge, Page, Panel, clientColor } from "@/components/AppShell";
-import { zar, type Production } from "@/lib/demo-data";
+import { zar, type Booking, type Production } from "@/lib/demo-data";
 import { useBookings, useCrew, useProductions, useRequestOvertime, useRequests, useRespondToBooking, useSetRequestState } from "@/lib/db";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -144,21 +144,25 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 const isoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
+type MiniCalDot = { id: string; bg: string; client: string; location: string; time: string };
+
 // Compact current-month grid with a colored dot per client shooting that day — a quick-glance version
-// of the full /calendar page, not a replacement for it.
-function MiniCalendar({ productions }: { productions: Production[] }) {
+// of the full /calendar page, not a replacement for it. Each dot's tooltip shows client, location and time.
+function MiniCalendar({ productions, bookings }: { productions: Production[]; bookings: Booking[] }) {
   const today = new Date();
-  const byDay = new Map<string, string[]>();
+  const byDay = new Map<string, MiniCalDot[]>();
   for (const p of productions) {
     if (!p.date) continue;
     const start = new Date(p.date + "T00:00:00");
     for (let i = 0; i < Math.max(1, p.days); i++) {
       const d = new Date(start); d.setDate(d.getDate() + i);
       const k = isoDate(d);
-      const bg = clientColor(p.client).split(" ")[0]!;
-      const list = byDay.get(k) ?? [];
-      if (!list.includes(bg)) list.push(bg);
-      byDay.set(k, list);
+      const callTimes = bookings.filter((b) => b.productionId === p.id && b.bookingDate === k && b.callTime).map((b) => b.callTime!).sort();
+      const dot: MiniCalDot = {
+        id: `${p.id}-${k}`, bg: clientColor(p.client).split(" ")[0]!, client: p.client,
+        location: p.location || p.address || "Location TBC", time: callTimes[0] ? callTimes[0].slice(0, 5) : "Time TBC",
+      };
+      byDay.set(k, [...(byDay.get(k) ?? []), dot]);
     }
   }
   const first = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -183,7 +187,9 @@ function MiniCalendar({ productions }: { productions: Production[] }) {
               <div key={i} className={`flex h-9 flex-col items-center justify-center rounded-md text-[11px] ${d && isoDate(d) === todayIso ? "bg-primary/10 font-semibold text-primary" : "text-muted-foreground"}`}>
                 {d && <span>{d.getDate()}</span>}
                 <span className="mt-0.5 flex h-1.5 gap-0.5">
-                  {dots.slice(0, 3).map((c, j) => <span key={j} className={`h-1.5 w-1.5 rounded-full ${c}`} />)}
+                  {dots.slice(0, 3).map((dot) => (
+                    <span key={dot.id} title={`${dot.client} · ${dot.location} · ${dot.time}`} className={`h-1.5 w-1.5 rounded-full ${dot.bg}`} />
+                  ))}
                 </span>
               </div>
             );
@@ -336,7 +342,7 @@ function Dashboard() {
         </div>
 
         <div className="space-y-5">
-          <MiniCalendar productions={productions} />
+          <MiniCalendar productions={productions} bookings={bookings} />
           <Panel title="Live activity" right={<span className="text-xs text-muted-foreground">Across web and mobile</span>}>
             <ul className="divide-y divide-border text-sm">
               {activity.length === 0 && <li className="p-4 text-muted-foreground">No activity yet.</li>}

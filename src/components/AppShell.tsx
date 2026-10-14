@@ -157,7 +157,7 @@ export function Page({ title, subtitle, actions, children, open }: { title: stri
     <div className="min-h-screen bg-background">
       <TopNav />
       <div className="md:pl-60">
-      <main className="mx-auto max-w-7xl px-4 py-6 pb-36 md:pb-6 md:pt-4">
+      <main className="mx-auto max-w-7xl px-4 py-8 pb-36 md:pb-6 md:pt-12">
         <RoleGate open={open}>
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
             <div>
@@ -195,8 +195,14 @@ const tone: Record<string, string> = {
   Wrapped: "bg-muted text-muted-foreground",
 };
 
+// Friendly display text for raw status values shown verbatim in some tables — the tone lookup above
+// still keys off the raw value, this only changes what's printed.
+const statusLabel: Record<string, string> = {
+  awaiting_crew_confirmation: "Pending confirmation",
+};
+
 export function Badge({ children }: { children: string }) {
-  return <span className={`inline-block rounded-sm px-2 py-0.5 text-xs font-semibold ${tone[children] ?? "bg-muted text-muted-foreground"}`}>{children}</span>;
+  return <span className={`inline-block rounded-sm px-2 py-0.5 text-xs font-semibold ${tone[children] ?? "bg-muted text-muted-foreground"}`}>{statusLabel[children] ?? children}</span>;
 }
 
 // Fixed palette so each client name always lands on the same color — makes client identity scannable at a glance.
