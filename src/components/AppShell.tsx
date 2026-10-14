@@ -206,13 +206,6 @@ const CLIENT_COLORS = [
   "bg-orange-500 text-white", "bg-red-700 text-white", "bg-fuchsia-600 text-white", "bg-violet-600 text-white",
   "bg-indigo-600 text-white", "bg-cyan-700 text-white", "bg-amber-700 text-white", "bg-stone-600 text-white",
 ];
-// Plain-text equivalent of each CLIENT_COLORS entry, same index — written out literally (not derived by
-// string-replacing "bg-" at runtime) so Tailwind's class scanner can actually see and generate them.
-const CLIENT_TEXT_COLORS = [
-  "text-orange-500", "text-red-700", "text-fuchsia-600", "text-violet-600",
-  "text-indigo-600", "text-cyan-700", "text-amber-700", "text-stone-600",
-];
-const bgToTextColor = (bgClass: string) => CLIENT_TEXT_COLORS[CLIENT_COLORS.indexOf(bgClass)] ?? "text-foreground";
 
 // Every client name seen anywhere in the app is registered here up front (alphabetically), so the same
 // name always gets the same color on every screen and every reload — not just within one page's render
@@ -244,34 +237,8 @@ function clientColor(name: string) {
   return color;
 }
 
-// "Savanna Gin" is the production name, not the client ("Savanna Drinks Co." is) — but it's pinned to the
-// same color as that client's badge so the two read as the same company wherever either appears.
-const CLIENT_COLOR_OVERRIDES: Record<string, string> = {
-  "Savanna Gin": clientColor("Savanna Drinks Co."),
-};
-
 export function ClientBadge({ name }: { name: string }) {
   return <span className={`inline-block rounded-sm px-2 py-0.5 text-xs font-semibold ${clientColor(name)}`}>{name}</span>;
-}
-
-// Highlights pinned client-color overrides wherever their name appears in free text (not just badges).
-// Uses the override's own badge color as text color so it always matches that badge, instead of a
-// hardcoded color that can drift out of sync.
-const HIGHLIGHT_NAMES = Object.keys(CLIENT_COLOR_OVERRIDES);
-
-export function Highlight({ text }: { text: string }) {
-  if (!text) return null;
-  const pattern = new RegExp(`(${HIGHLIGHT_NAMES.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`, "g");
-  const parts = text.split(pattern);
-  return (
-    <>
-      {parts.map((part, i) =>
-        HIGHLIGHT_NAMES.includes(part)
-          ? <span key={i} className={`font-semibold ${bgToTextColor(CLIENT_COLOR_OVERRIDES[part]!)}`}>{part}</span>
-          : <span key={i}>{part}</span>
-      )}
-    </>
-  );
 }
 
 export function Panel({ title, children, right }: { title: ReactNode; children: ReactNode; right?: ReactNode }) {

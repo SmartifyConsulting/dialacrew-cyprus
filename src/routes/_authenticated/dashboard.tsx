@@ -1,7 +1,7 @@
 import { overtimeAmount, shiftLabel, type OvertimeShift } from "@/lib/costing";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check } from "lucide-react";
-import { Badge, ClientBadge, Highlight, Page, Panel } from "@/components/AppShell";
+import { Badge, ClientBadge, Page, Panel } from "@/components/AppShell";
 import { zar } from "@/lib/demo-data";
 import { useBookings, useCrew, useProductions, useRequestOvertime, useRequests, useRespondToBooking, useSetRequestState } from "@/lib/db";
 import { useState } from "react";
@@ -155,6 +155,8 @@ function Dashboard() {
   const crewName = (id: string | null) => (id ? crew.find((c) => c.id === id)?.name ?? "—" : "Open gig");
   const CrewLink = ({ id }: { id: string | null }) => id ? <Link to="/crew/$id" params={{ id }} className="hover:text-primary hover:underline">{crewName(id)}</Link> : <>{crewName(id)}</>;
   const prodName = (id: string) => productions.find((p) => p.id === id)?.name ?? "Production";
+  const clientByProdId = (id: string) => productions.find((p) => p.id === id)?.client;
+  const clientByProdName = (name: string) => productions.find((p) => p.name === name)?.client;
   const count = (s: string) => bookings.filter((b) => b.status === s).length;
   const secured = productions.reduce((a, p) => a + p.securedFunds, 0);
   const totalBudget = productions.reduce((a, p) => a + p.budget, 0);
@@ -175,8 +177,8 @@ function Dashboard() {
   const today = onSet ? bookings.filter((b) => b.productionId === onSet.id) : [];
   const dateLabel = new Date().toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const activity = [
-    ...reqs.filter((r) => r.state !== "Pending").map((r) => ({ id: `r${r.id}`, text: `${r.kind} for ${r.who} ${r.state.toLowerCase()}`, sub: r.production, at: r.createdAt })),
-    ...bookings.filter((b) => b.status === "confirmed").map((b) => ({ id: `b${b.id}`, text: `${crewName(b.crewId)} confirmed as ${b.role}`, sub: prodName(b.productionId), at: b.createdAt ?? "" })),
+    ...reqs.filter((r) => r.state !== "Pending").map((r) => ({ id: `r${r.id}`, text: `${r.kind} for ${r.who} ${r.state.toLowerCase()}`, sub: r.production, client: clientByProdName(r.production), at: r.createdAt })),
+    ...bookings.filter((b) => b.status === "confirmed").map((b) => ({ id: `b${b.id}`, text: `${crewName(b.crewId)} confirmed as ${b.role}`, sub: prodName(b.productionId), client: clientByProdId(b.productionId), at: b.createdAt ?? "" })),
   ].sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, 8);
   const activityStamp = (iso: string) => {
     if (!iso) return "";
@@ -208,7 +210,7 @@ function Dashboard() {
                 <li key={r.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm"><span className="font-semibold text-primary">{r.kind}</span> · {r.detail}</div>
-                    <div className="truncate text-xs text-muted-foreground">{r.who} · <Highlight text={r.production} /> · {zar(r.amount)}</div>
+                    <div className="flex flex-wrap items-center gap-1 truncate text-xs text-muted-foreground">{r.who} · {clientByProdName(r.production) && <ClientBadge name={clientByProdName(r.production)!} />} {r.production} · {zar(r.amount)}</div>
                   </div>
                   <div className="flex shrink-0 gap-2">
                     <button onClick={() => setState.mutate({ id: r.id, state: "Approved" })} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Approve</button>
@@ -221,8 +223,8 @@ function Dashboard() {
                   <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-success/20 text-success"><Check className="h-3.5 w-3.5" /></span>
                   <div className="min-w-0 flex-1">
                     <div className="font-medium"><CrewLink id={b.crewId} /> accepted your {b.pencilPriority === 2 ? "2nd" : "1st"} pencil</div>
-                    <div className="truncate text-xs text-muted-foreground">
-                      <Highlight text={prodName(b.productionId)} /> · {b.role}{b.bookingDate ? ` · ${b.bookingDate}` : ""} · {zar(b.crewRate)} a day
+                    <div className="flex flex-wrap items-center gap-1 truncate text-xs text-muted-foreground">
+                      {clientByProdId(b.productionId) && <ClientBadge name={clientByProdId(b.productionId)!} />} {prodName(b.productionId)} · {b.role}{b.bookingDate ? ` · ${b.bookingDate}` : ""} · {zar(b.crewRate)} a day
                     </div>
                   </div>
                   <button onClick={() => respondToBooking.mutate({ id: b.id, status: "confirmed" })} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Confirm booking</button>
@@ -249,7 +251,7 @@ function Dashboard() {
                   <Link key={p.id} to="/productions/$id" params={{ id: p.id }} className="block rounded-lg border border-border bg-background p-4 transition hover:border-primary">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="truncate font-semibold"><Highlight text={p.name} /></div>
+                        <div className="truncate font-semibold">{p.name}</div>
                         <div className="mt-1 flex items-center gap-2"><ClientBadge name={p.client} /><span className="truncate text-xs text-muted-foreground">{p.date}</span></div>
                       </div>
                       <Badge>{p.status}</Badge>
@@ -262,7 +264,7 @@ function Dashboard() {
             </div>
           </Panel>
 
-          <Panel title={<>On set today{onSet && <> · <Highlight text={onSet.name} /></>}</>}>
+          <Panel title={<>On set today{onSet && <> · {onSet.name}</>}</>}>
             <ul className="divide-y divide-border text-sm">
               {today.length === 0 && <li className="p-4 text-muted-foreground">Nobody on set today.</li>}
               {today.map((b) => (
@@ -284,8 +286,8 @@ function Dashboard() {
                 <li key={a.id} className="flex gap-3 px-4 py-2.5">
                   <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
                   <span className="min-w-0 flex-1">
-                    <span className="block"><Highlight text={a.text} /></span>
-                    <span className="text-xs text-muted-foreground"><Highlight text={a.sub} /></span>
+                    <span className="block">{a.text}</span>
+                    <span className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">{a.client && <ClientBadge name={a.client} />} {a.sub}</span>
                   </span>
                   <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">{activityStamp(a.at)}</span>
                 </li>
