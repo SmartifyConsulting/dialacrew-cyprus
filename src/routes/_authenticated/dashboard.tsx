@@ -75,52 +75,76 @@ function CrewDashboard() {
   }
   return (
     <Page open title="Home" subtitle="Your jobs and call times">
-      <SpotlightCard />
-      {todayJob && (() => {
+      {pencils.map((j) => {
+        const pr = j.productions as { name?: string; client?: string; address?: string; location?: string } | null;
+        const days = Number(j.days ?? 1);
+        const rate = Number(j.crew_rate ?? 0);
+        return (
+          <section key={j.id} className="mb-5 rounded-2xl border border-border bg-card p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <span className="rounded-full bg-warning/20 px-3 py-1 text-xs font-semibold text-foreground">{j.pencil_priority === 2 ? "2nd pencil" : "1st pencil"}</span>
+              <span className="text-xs text-muted-foreground">New pencil</span>
+            </div>
+            <div className="mt-3 font-display text-xl font-semibold">{pr?.name ?? "Production"}</div>
+            <div className="text-sm text-muted-foreground">{pr?.client ?? ""}{pr?.client ? " · " : ""}{j.role}</div>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+              <div><div className="text-xs text-muted-foreground">Date</div>{j.booking_date ?? "TBC"}{days > 1 ? ` · ${days} days` : ""}</div>
+              <div><div className="text-xs text-muted-foreground">Where</div>{pr?.address || pr?.location || "TBC"}</div>
+              <div><div className="text-xs text-muted-foreground">Day rate</div>{zar(rate)}</div>
+              <div><div className="text-xs text-muted-foreground">Total</div><span className="font-semibold">{zar(rate * days)}</span></div>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button onClick={() => respond(j.id, false)} className="rounded-xl border border-border py-3 text-sm font-semibold">Decline</button>
+              <button onClick={() => respond(j.id, true)} className="rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground">Accept pencil</button>
+            </div>
+          </section>
+        );
+      })}
+      {todayJob && !pencils.some((p) => p.id === todayJob.id) && (() => {
         const pr = todayJob.productions as { name?: string; address?: string; location?: string } | null;
         const where = pr?.address || pr?.location || "";
         return (
-          <section className="mb-5 rounded-lg bg-primary p-5 text-primary-foreground shadow-sm">
-            <div className="text-xs font-semibold opacity-80">{todayJob.booking_date === todayIso ? "Today" : "Next up"} · {todayJob.booking_date}</div>
+          <section className="mb-5 rounded-2xl bg-foreground p-5 text-background shadow-sm">
+            <div className="text-xs font-semibold opacity-70">{todayJob.booking_date === todayIso ? "Today" : "Next up"} · {todayJob.booking_date}</div>
             <div className="mt-1 font-display text-2xl font-semibold">{pr?.name ?? "Production"}</div>
-            <div className="mt-1 text-sm opacity-90">{todayJob.role}{todayJob.call_time ? ` · call ${todayJob.call_time.slice(0, 5)}` : ""}</div>
+            <div className="mt-1 text-sm opacity-80">{todayJob.role}{where ? ` · ${where}` : ""}</div>
+            <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
+              <div><div className="text-xs opacity-60">Call</div><div className="font-display text-xl font-semibold">{todayJob.call_time?.slice(0, 5) ?? "TBC"}</div></div>
+              <div><div className="text-xs opacity-60">Wrap</div><div className="font-display text-xl font-semibold">{todayJob.call_time ? `${String((Number(todayJob.call_time.slice(0, 2)) + 12) % 24).padStart(2, "0")}${todayJob.call_time.slice(2, 5)}` : "TBC"}</div></div>
+              <div><div className="text-xs opacity-60">Status</div><div className="font-semibold capitalize">{todayJob.status.replace(/_/g, " ")}</div></div>
+            </div>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Link to="/productions/$id" params={{ id: todayJob.production_id }} className="rounded-md bg-background px-4 py-2 text-sm font-semibold text-foreground">Open job · check in</Link>
-              {where && <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(where)}`} target="_blank" rel="noreferrer" className="rounded-md border border-primary-foreground/40 px-4 py-2 text-sm font-semibold">Directions</a>}
+              <Link to="/productions/$id" params={{ id: todayJob.production_id }} className="flex-1 rounded-xl bg-background py-3 text-center text-sm font-semibold text-foreground">Open job day</Link>
+              {where && <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(where)}`} target="_blank" rel="noreferrer" className="rounded-xl border border-background/40 px-4 py-3 text-sm font-semibold">Directions</a>}
             </div>
           </section>
         );
       })()}
-      {pencils.length > 0 && (
-        <div className="mb-5"><Panel title={`Job offers waiting (${pencils.length})`}>
-          <ul className="divide-y divide-border text-sm">
-            {pencils.map((j) => {
-              const pr = j.productions as { name?: string } | null;
-              return (
-                <li key={j.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-                  <div className="min-w-0 flex-1"><div className="font-semibold">{pr?.name ?? "Production"}</div><div className="text-xs text-muted-foreground">{j.pencil_priority === 2 ? "2nd pencil" : "1st pencil"} · {j.role} · {j.booking_date ?? ""}</div></div>
-                  <button onClick={() => respond(j.id, true)} className="rounded-md bg-success px-3 py-1.5 text-xs font-semibold text-primary-foreground">Accept</button>
-                  <button onClick={() => respond(j.id, false)} className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold">Decline</button>
+      {(() => {
+        const upcoming = live.filter((j) => j.id !== todayJob?.id && !pencils.includes(j) && (j.booking_date ?? "") >= todayIso).slice(0, 3);
+        return (
+          <div className="mb-5"><Panel title="Upcoming">
+            <ul className="divide-y divide-border text-sm">
+              {upcoming.length === 0 && <li className="p-4 text-muted-foreground">Nothing else booked yet.</li>}
+              {upcoming.map((j) => (
+                <li key={j.id} className="flex items-center justify-between px-4 py-3">
+                  <div><div className="font-semibold">{(j.productions as { name?: string } | null)?.name ?? "Production"}</div><div className="text-xs text-muted-foreground">{j.role}</div></div>
+                  <div className="text-xs text-muted-foreground">{j.booking_date}</div>
                 </li>
-              );
-            })}
-          </ul>
-        </Panel></div>
-      )}
-      <div className="mb-5"><Panel title="What Book a Crew has brought you">
-        <div className="grid grid-cols-2 gap-3 p-4 md:grid-cols-4">
-          <div className="rounded-lg bg-muted p-3"><div className="text-xs text-muted-foreground">Connections from the app</div><div className="mt-1 font-display text-2xl font-semibold">{new Set(jobs.map((j) => (j.productions as { client?: string } | null)?.client ?? j.production_id)).size}</div></div>
-          <div className="rounded-lg bg-muted p-3"><div className="text-xs text-muted-foreground">Money earned from the app</div><div className="mt-1 font-display text-2xl font-semibold text-success">{zar(paid + gigValue.earned)}</div></div>
-          <div className="rounded-lg bg-muted p-3"><div className="text-xs text-muted-foreground">Grab a Gig connections</div><div className="mt-1 font-display text-2xl font-semibold">{gigValue.connections}</div></div>
-          <div className="rounded-lg bg-muted p-3"><div className="text-xs text-muted-foreground">Gigs secured</div><div className="mt-1 font-display text-2xl font-semibold">{gigValue.count}</div></div>
-        </div>
-      </Panel></div>
+              ))}
+            </ul>
+            <div className="border-t border-border p-3 text-right"><Link to="/calendar" className="text-sm font-semibold text-primary">Open calendar →</Link></div>
+          </Panel></div>
+        );
+      })()}
+      <SpotlightCard />
       <div className="mb-5 grid gap-5 md:grid-cols-2">
         <Panel title="Earnings">
           <div className="grid grid-cols-2 gap-3 p-4">
             <div className="rounded-lg bg-success/10 p-3"><div className="text-xs text-muted-foreground">Paid</div><div className="mt-1 font-display text-2xl font-semibold text-success">{zar(paid)}</div></div>
             <div className="rounded-lg bg-primary/10 p-3"><div className="text-xs text-muted-foreground">Coming</div><div className="mt-1 font-display text-2xl font-semibold text-primary">{zar(pendingPay)}</div></div>
           </div>
+          <div className="border-t border-border p-3 text-right"><Link to="/earnings" className="text-sm font-semibold text-primary">See all earnings →</Link></div>
         </Panel>
         {todayJob && (
           <Panel title="Log overtime">
