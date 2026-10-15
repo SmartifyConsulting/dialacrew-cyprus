@@ -107,6 +107,7 @@ export type Database = {
           crew_id: string | null
           crew_rate: number
           days: number
+          escrow_released_at: string | null
           id: string
           job_completed_at: string | null
           payment_status: Database["public"]["Enums"]["payment_status"]
@@ -136,6 +137,7 @@ export type Database = {
           crew_id?: string | null
           crew_rate?: number
           days?: number
+          escrow_released_at?: string | null
           id?: string
           job_completed_at?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
@@ -165,6 +167,7 @@ export type Database = {
           crew_id?: string | null
           crew_rate?: number
           days?: number
+          escrow_released_at?: string | null
           id?: string
           job_completed_at?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
@@ -298,11 +301,99 @@ export type Database = {
         }
         Relationships: []
       }
+      community_gigs: {
+        Row: {
+          amount: number
+          call_time: string
+          cancelled_at: string | null
+          contact_phone: string
+          country: string
+          created_at: string
+          department: string
+          description: string
+          end_date: string | null
+          event_date: string
+          expires_at: string
+          id: string
+          kit_required: string
+          pay_type: string
+          penalty_amount: number
+          penalty_reason: string | null
+          posted_by: string
+          poster_name: string
+          role: string
+          secure_fee: number
+          secured_at: string | null
+          secured_by: string | null
+          secured_name: string | null
+          status: string
+          title: string
+          venue: string
+        }
+        Insert: {
+          amount: number
+          call_time: string
+          cancelled_at?: string | null
+          contact_phone: string
+          country: string
+          created_at?: string
+          department: string
+          description: string
+          end_date?: string | null
+          event_date: string
+          expires_at: string
+          id?: string
+          kit_required?: string
+          pay_type: string
+          penalty_amount?: number
+          penalty_reason?: string | null
+          posted_by?: string
+          poster_name: string
+          role: string
+          secure_fee?: number
+          secured_at?: string | null
+          secured_by?: string | null
+          secured_name?: string | null
+          status?: string
+          title: string
+          venue: string
+        }
+        Update: {
+          amount?: number
+          call_time?: string
+          cancelled_at?: string | null
+          contact_phone?: string
+          country?: string
+          created_at?: string
+          department?: string
+          description?: string
+          end_date?: string | null
+          event_date?: string
+          expires_at?: string
+          id?: string
+          kit_required?: string
+          pay_type?: string
+          penalty_amount?: number
+          penalty_reason?: string | null
+          posted_by?: string
+          poster_name?: string
+          role?: string
+          secure_fee?: number
+          secured_at?: string | null
+          secured_by?: string | null
+          secured_name?: string | null
+          status?: string
+          title?: string
+          venue?: string
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           address: string | null
           billing_email: string | null
           created_at: string
+          email_domain: string | null
           id: string
           name: string
           phone: string | null
@@ -311,6 +402,7 @@ export type Database = {
           address?: string | null
           billing_email?: string | null
           created_at?: string
+          email_domain?: string | null
           id?: string
           name: string
           phone?: string | null
@@ -319,6 +411,7 @@ export type Database = {
           address?: string | null
           billing_email?: string | null
           created_at?: string
+          email_domain?: string | null
           id?: string
           name?: string
           phone?: string | null
@@ -334,6 +427,7 @@ export type Database = {
           email: string
           id: string
           invited_by: string
+          role_title: string | null
           status: string
           token: string
         }
@@ -345,6 +439,7 @@ export type Database = {
           email: string
           id?: string
           invited_by?: string
+          role_title?: string | null
           status?: string
           token?: string
         }
@@ -356,12 +451,57 @@ export type Database = {
           email?: string
           id?: string
           invited_by?: string
+          role_title?: string | null
           status?: string
           token?: string
         }
         Relationships: [
           {
             foreignKeyName: "company_invites_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_join_requests: {
+        Row: {
+          company_id: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          email: string
+          full_name: string | null
+          id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          email: string
+          full_name?: string | null
+          id?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_join_requests_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
@@ -399,6 +539,7 @@ export type Database = {
           company_role: Database["public"]["Enums"]["company_role"]
           created_at: string
           id: string
+          is_admin: boolean
           user_id: string
         }
         Insert: {
@@ -406,6 +547,7 @@ export type Database = {
           company_role?: Database["public"]["Enums"]["company_role"]
           created_at?: string
           id?: string
+          is_admin?: boolean
           user_id: string
         }
         Update: {
@@ -413,6 +555,7 @@ export type Database = {
           company_role?: Database["public"]["Enums"]["company_role"]
           created_at?: string
           id?: string
+          is_admin?: boolean
           user_id?: string
         }
         Relationships: [
@@ -459,6 +602,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      crew_group_members: {
+        Row: {
+          crew_id: string
+          group_id: string
+        }
+        Insert: {
+          crew_id: string
+          group_id: string
+        }
+        Update: {
+          crew_id?: string
+          group_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crew_group_members_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crew_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "crew_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crew_groups: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
       crew_members: {
         Row: {
@@ -673,6 +867,53 @@ export type Database = {
             columns: ["crew_id"]
             isOneToOne: false
             referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gig_penalties: {
+        Row: {
+          amount: number
+          charged_at: string | null
+          created_at: string
+          failure: string | null
+          gig_id: string
+          id: string
+          reason: string | null
+          reference: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          charged_at?: string | null
+          created_at?: string
+          failure?: string | null
+          gig_id: string
+          id?: string
+          reason?: string | null
+          reference?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          charged_at?: string | null
+          created_at?: string
+          failure?: string | null
+          gig_id?: string
+          id?: string
+          reason?: string | null
+          reference?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gig_penalties_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "community_gigs"
             referencedColumns: ["id"]
           },
         ]
@@ -1074,6 +1315,36 @@ export type Database = {
           },
         ]
       }
+      payment_cards: {
+        Row: {
+          authorization_code: string
+          bank: string | null
+          card_type: string | null
+          email: string
+          last4: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          authorization_code: string
+          bank?: string | null
+          card_type?: string | null
+          email: string
+          last4?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          authorization_code?: string
+          bank?: string | null
+          card_type?: string | null
+          email?: string
+          last4?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           key: string
@@ -1091,6 +1362,88 @@ export type Database = {
           value?: Json
         }
         Relationships: []
+      }
+      production_escrow: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          escrow_transaction_id: string | null
+          production_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          escrow_transaction_id?: string | null
+          production_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          escrow_transaction_id?: string | null
+          production_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_escrow_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: true
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_locations: {
+        Row: {
+          address: string
+          created_at: string
+          ends_at: string | null
+          id: string
+          label: string
+          latitude: number | null
+          longitude: number | null
+          production_id: string
+          starts_at: string | null
+        }
+        Insert: {
+          address?: string
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          label: string
+          latitude?: number | null
+          longitude?: number | null
+          production_id: string
+          starts_at?: string | null
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          label?: string
+          latitude?: number | null
+          longitude?: number | null
+          production_id?: string
+          starts_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_locations_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       production_retrospectives: {
         Row: {
@@ -1136,6 +1489,38 @@ export type Database = {
           },
         ]
       }
+      production_risks: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          production_id: string
+          text: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          production_id: string
+          text: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          production_id?: string
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_risks_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       productions: {
         Row: {
           address: string
@@ -1146,11 +1531,11 @@ export type Database = {
           crew_booked: number
           crew_needed: number
           date: string | null
-          end_date: string | null
-          job_id: string | null
           days: number
+          end_date: string | null
           geofence_m: number
           id: string
+          job_id: string | null
           latitude: number | null
           location: string
           longitude: number | null
@@ -1169,11 +1554,11 @@ export type Database = {
           crew_booked?: number
           crew_needed?: number
           date?: string | null
-          end_date?: string | null
-          job_id?: string | null
           days?: number
+          end_date?: string | null
           geofence_m?: number
           id?: string
+          job_id?: string | null
           latitude?: number | null
           location?: string
           longitude?: number | null
@@ -1192,11 +1577,11 @@ export type Database = {
           crew_booked?: number
           crew_needed?: number
           date?: string | null
-          end_date?: string | null
-          job_id?: string | null
           days?: number
+          end_date?: string | null
           geofence_m?: number
           id?: string
+          job_id?: string | null
           latitude?: number | null
           location?: string
           longitude?: number | null
@@ -1216,136 +1601,10 @@ export type Database = {
           },
         ]
       }
-      production_locations: {
-        Row: {
-          id: string
-          production_id: string
-          label: string
-          address: string
-          latitude: number | null
-          longitude: number | null
-          starts_at: string | null
-          ends_at: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          production_id: string
-          label: string
-          address?: string
-          latitude?: number | null
-          longitude?: number | null
-          starts_at?: string | null
-          ends_at?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          production_id?: string
-          label?: string
-          address?: string
-          latitude?: number | null
-          longitude?: number | null
-          starts_at?: string | null
-          ends_at?: string | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "production_locations_production_id_fkey"
-            columns: ["production_id"]
-            isOneToOne: false
-            referencedRelation: "productions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      production_risks: {
-        Row: {
-          id: string
-          production_id: string
-          text: string
-          created_by: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          production_id: string
-          text: string
-          created_by?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          production_id?: string
-          text?: string
-          created_by?: string | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "production_risks_production_id_fkey"
-            columns: ["production_id"]
-            isOneToOne: false
-            referencedRelation: "productions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      crew_groups: {
-        Row: {
-          id: string
-          name: string
-          created_by: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          name: string
-          created_by?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          name?: string
-          created_by?: string | null
-          created_at?: string
-        }
-        Relationships: []
-      }
-      crew_group_members: {
-        Row: {
-          group_id: string
-          crew_id: string
-        }
-        Insert: {
-          group_id: string
-          crew_id: string
-        }
-        Update: {
-          group_id?: string
-          crew_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "crew_group_members_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "crew_groups"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "crew_group_members_crew_id_fkey"
-            columns: ["crew_id"]
-            isOneToOne: false
-            referencedRelation: "crew_members"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       profiles: {
         Row: {
           avatar_url: string | null
+          country: string | null
           created_at: string
           email: string
           full_name: string
@@ -1353,11 +1612,14 @@ export type Database = {
           phone: string | null
           role: string
           skills: string[]
+          social_opt_in: boolean
+          spotlight_featured_at: string | null
           suspended: boolean
           whatsapp_number: string | null
         }
         Insert: {
           avatar_url?: string | null
+          country?: string | null
           created_at?: string
           email: string
           full_name?: string
@@ -1365,11 +1627,14 @@ export type Database = {
           phone?: string | null
           role?: string
           skills?: string[]
+          social_opt_in?: boolean
+          spotlight_featured_at?: string | null
           suspended?: boolean
           whatsapp_number?: string | null
         }
         Update: {
           avatar_url?: string | null
+          country?: string | null
           created_at?: string
           email?: string
           full_name?: string
@@ -1377,6 +1642,8 @@ export type Database = {
           phone?: string | null
           role?: string
           skills?: string[]
+          social_opt_in?: boolean
+          spotlight_featured_at?: string | null
           suspended?: boolean
           whatsapp_number?: string | null
         }
@@ -1716,39 +1983,27 @@ export type Database = {
       }
       claim_crew_profile: { Args: never; Returns: string }
       claim_gig: { Args: { _booking: string }; Returns: undefined }
-      crew_on_time_pct: { Args: { _crew_id: string }; Returns: number }
-      get_banking_details: {
-        Args: { _crew_id: string }
+      company_should_auto_admin: {
+        Args: { _company: string }
+        Returns: boolean
+      }
+      company_team: {
+        Args: { _company: string }
         Returns: {
-          account_holder_name: string
-          bank_name: string
-          bank_country: string
-          bank_address: string
-          account_number: string
-          iban: string
-          swift_bic: string
-          routing_or_sort_code: string
-          currency: string
-          notes: string
-          updated_at: string
+          company_role: Database["public"]["Enums"]["company_role"]
+          email: string
+          full_name: string
+          is_admin: boolean
+          user_id: string
         }[]
       }
-      upsert_banking_details: {
-        Args: {
-          _crew_id: string
-          _account_holder_name: string
-          _bank_name: string
-          _bank_country: string
-          _bank_address: string
-          _account_number: string
-          _iban: string
-          _swift_bic: string
-          _routing_or_sort_code: string
-          _currency: string
-          _notes: string
-        }
+      complete_gig: { Args: { _gig: string }; Returns: undefined }
+      crew_on_time_pct: { Args: { _crew_id: string }; Returns: number }
+      decide_join_request: {
+        Args: { _approve: boolean; _request: string }
         Returns: undefined
       }
+      email_domain_of: { Args: { _email: string }; Returns: string }
       expire_pencils: { Args: never; Returns: undefined }
       generate_invoice: { Args: { _booking: string }; Returns: string }
       get_invite: {
@@ -1760,11 +2015,16 @@ export type Database = {
           valid: boolean
         }[]
       }
+      gig_setting: { Args: { _default: number; _key: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_company_admin: {
+        Args: { _company: string; _user: string }
         Returns: boolean
       }
       is_company_member: {
@@ -1796,6 +2056,16 @@ export type Database = {
         }[]
       }
       release_payment: { Args: { _booking: string }; Returns: string }
+      report_gig_no_show: { Args: { _gig: string }; Returns: number }
+      secure_gig: { Args: { _gig: string }; Returns: undefined }
+      secure_gig_paid: {
+        Args: { _gig: string; _user: string }
+        Returns: undefined
+      }
+      set_company_admin: {
+        Args: { _admin: boolean; _company: string; _user: string }
+        Returns: undefined
+      }
       site_members: {
         Args: { _prod: string }
         Returns: {
@@ -1809,6 +2079,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      withdraw_from_gig: { Args: { _gig: string }; Returns: number }
     }
     Enums: {
       app_role: "producer" | "crew" | "client" | "admin"
@@ -1824,7 +2095,12 @@ export type Database = {
         | "cancelled"
         | "disputed"
         | "open"
-      company_role: "owner" | "producer" | "production_manager" | "accounts"
+      company_role:
+        | "owner"
+        | "producer"
+        | "production_manager"
+        | "accounts"
+        | "other"
       payment_status:
         | "not_required"
         | "payment_required"
@@ -1976,7 +2252,13 @@ export const Constants = {
         "disputed",
         "open",
       ],
-      company_role: ["owner", "producer", "production_manager", "accounts"],
+      company_role: [
+        "owner",
+        "producer",
+        "production_manager",
+        "accounts",
+        "other",
+      ],
       payment_status: [
         "not_required",
         "payment_required",

@@ -1,3 +1,4 @@
+import type React from "react";
 import { overtimeAmount, shiftLabel, type OvertimeShift } from "@/lib/costing";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check } from "lucide-react";
@@ -18,6 +19,7 @@ function DashboardRouter() {
   const role = useRole(session?.user.id);
   if (role.isLoading) return <Page open title="Home"><p className="text-muted-foreground">Loading…</p></Page>;
   if (role.data === "crew") return <CrewDashboard />;
+  if (role.data === "client") return <PendingGate><Dashboard /></PendingGate>;
   return <Dashboard />;
 }
 
@@ -42,6 +44,20 @@ function CrewDashboard() {
   const earned = (s: string[]) => jobs.filter((j) => s.includes(j.status)).reduce((a, j) => a + Number(j.crew_rate ?? 0) * Number(j.days ?? 1), 0);
   const paid = earned(["payment_released", "completed"]);
   const pendingPay = earned(["confirmed", "in_progress", "awaiting_review"]);
+  const uid = session?.user.id;
+  const gigValue = useQuery({
+    queryKey: ["crew-gig-value", uid], enabled: !!uid,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("community_gigs").select("posted_by, status, amount").eq("secured_by", uid!);
+      if (error) throw error;
+      const rows = data ?? [];
+      return {
+        count: rows.length,
+        connections: new Set(rows.map((r) => r.posted_by)).size,
+        earned: rows.filter((r) => r.status === "completed").reduce((a, r) => a + Number(r.amount ?? 0), 0),
+      };
+    },
+  }).data ?? { count: 0, connections: 0, earned: 0 };
   async function logOvertime() {
     if (!todayJob) return;
     const pr = todayJob.productions as { name?: string } | null;
@@ -59,6 +75,7 @@ function CrewDashboard() {
   }
   return (
     <Page open title="Home" subtitle="Your jobs and call times">
+      <SpotlightCard />
       {todayJob && (() => {
         const pr = todayJob.productions as { name?: string; address?: string; location?: string } | null;
         const where = pr?.address || pr?.location || "";
@@ -90,6 +107,14 @@ function CrewDashboard() {
           </ul>
         </Panel></div>
       )}
+      <div className="mb-5"><Panel title="What Book a Crew has brought you">
+        <div className="grid grid-cols-2 gap-3 p-4 md:grid-cols-4">
+          <div className="rounded-lg bg-muted p-3"><div className="text-xs text-muted-foreground">Connections from the app</div><div className="mt-1 font-display text-2xl font-semibold">{new Set(jobs.map((j) => (j.productions as { client?: string } | null)?.client ?? j.production_id)).size}</div></div>
+          <div className="rounded-lg bg-muted p-3"><div className="text-xs text-muted-foreground">Money earned from the app</div><div className="mt-1 font-display text-2xl font-semibold text-success">{zar(paid + gigValue.earned)}</div></div>
+          <div className="rounded-lg bg-muted p-3"><div className="text-xs text-muted-foreground">Grab a Gig connections</div><div className="mt-1 font-display text-2xl font-semibold">{gigValue.connections}</div></div>
+          <div className="rounded-lg bg-muted p-3"><div className="text-xs text-muted-foreground">Gigs secured</div><div className="mt-1 font-display text-2xl font-semibold">{gigValue.count}</div></div>
+        </div>
+      </Panel></div>
       <div className="mb-5 grid gap-5 md:grid-cols-2">
         <Panel title="Earnings">
           <div className="grid grid-cols-2 gap-3 p-4">
@@ -362,5 +387,57 @@ function Dashboard() {
         </div>
       </div>
     </Page>
+  );
+}
+
+function PendingGate({ children }: { children: React.ReactNode }) {
+  const { session } = useSession();
+  const uid = session?.user.id;
+  const req = useQuery({
+    queryKey: ["my-join-request", uid], enabled: !!uid,
+    queryFn: async () => { const { data } = await supabase.from("company_join_requests").select("status, companies(name)").eq("user_id", uid!).order("created_at", { ascending: false }).limit(1).maybeSingle(); return data; },
+  });
+  if (req.isLoading) return <Page open title="Home"><p className="text-muted-foreground">Loading…</p></Page>;
+  if (req.data && req.data.status !== "approved") {
+    const name = (req.data.companies as { name?: string } | null)?.name ?? "your company";
+    return (
+      <Page open title="Registration pending approval">
+        <div className="max-w-lg rounded-lg border border-border bg-card p-5 text-sm">
+          {req.data.status === "pending"
+            ? <>Your email address belongs to <b>{name}</b>. For security, one of its admins needs to approve your registration. You'll get full access as soon as they do.</>
+            : <>An admin at <b>{name}</b> declined this registration. Please contact them if you think this is a mistake.</>}
+        </div>
+      </Page>
+    );
+  }
+  return <>{children}</>;
+}
+
+const COUNTRY_OPTIONS = ["South Africa", "Namibia", "Botswana", "Kenya", "Nigeria", "Cyprus", "United Kingdom"];
+function SpotlightCard() {
+  const { session } = useSession();
+  const uid = session?.user.id;
+  const qc = useQueryClient();
+  const me = useQuery({
+    queryKey: ["my-spotlight", uid], enabled: !!uid,
+    queryFn: async () => { const { data } = await supabase.from("profiles").select("social_opt_in, country").eq("id", uid!).maybeSingle(); return data; },
+  });
+  async function save(patch: { social_opt_in?: boolean; country?: string }) {
+    const { error } = await supabase.from("profiles").update(patch).eq("id", uid!);
+    if (error) return void toast.error(friendlyError(error));
+    toast.success("Saved"); qc.invalidateQueries({ queryKey: ["my-spotlight", uid] });
+  }
+  if (!me.data) return null;
+  return (
+    <div className="mb-5 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-4 text-sm">
+      <label className="flex flex-1 items-center gap-2">
+        <input type="checkbox" checked={me.data.social_opt_in} onChange={(e) => save({ social_opt_in: e.target.checked })} />
+        Feature me on Book a Crew social media
+      </label>
+      <select className="rounded-sm border border-input bg-background px-2 py-1" value={me.data.country ?? ""} onChange={(e) => save({ country: e.target.value })}>
+        <option value="">Country…</option>
+        {COUNTRY_OPTIONS.map((c) => <option key={c}>{c}</option>)}
+      </select>
+    </div>
   );
 }

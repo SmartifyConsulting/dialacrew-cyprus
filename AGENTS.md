@@ -28,3 +28,6 @@
 - Client MemoryBank (company_memory) is rebuilt by AI from production_retrospectives + crew_reviews + bookings in src/lib/memory.functions.ts; AI calls go through src/lib/ai.server.ts — one learning path for retros, matcher and relearn.
 - Production site page = fixed Overview widget on the left + tabbed feed on the right; tab lists per role live in productions.$id.tsx (CREW_TABS / MANAGER_TABS) — one place decides who sees what.
 - Any site member can rate co-workers (crew_reviews RLS via is_site_member, never self) — ratings are peer-driven, not producer-only.
+- Escrow: one Escrow.com transaction per production (production_escrow), bookings are line items; all calls in src/lib/escrow.functions.ts — fewer fees, one funding step.
+- Grab a Gig card payments go through Paystack in src/lib/paystack.functions.ts; securing a gig is only done server-side after a verified payment (secure_gig_paid, service role), penalties queue in gig_penalties and charge the saved card token — clients can't skip paying.
+- Company staff onboarding: companies.email_domain is claimed by the owner only after email verification; same-domain signups without an invite get a company_join_requests row and stay 'client' until a company admin (is_company_admin) approves — never grant access from an unverified domain match.

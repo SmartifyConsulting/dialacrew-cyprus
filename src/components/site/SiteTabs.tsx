@@ -338,7 +338,7 @@ export function OverviewTab({ p, isProducer }: Ctx) {
   );
 }
 
-/* ---------------- Members (with Rate Me for everyone) ---------------- */
+/* ---------------- Members (only producers can rate; crew never rate anyone) ---------------- */
 export function MembersList({ p, userId, isProducer }: Ctx) {
   const members = useSiteMembers(p.id).data ?? [];
   const [rating, setRating] = useState<{ crewId: string; name: string } | null>(null);

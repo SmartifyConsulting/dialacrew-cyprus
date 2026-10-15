@@ -36,6 +36,55 @@
       "when": 1791392630316,
       "tag": "0004_site_members_rate_each_other",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792008245861,
+      "tag": "0005_invite_other_role",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792010032445,
+      "tag": "0006_production_escrow",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792010284685,
+      "tag": "0007_community_gigs",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792010728932,
+      "tag": "0008_configurable_gig_fees",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792049646800,
+      "tag": "0009_crew_cannot_rate_social_optin",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792084237835,
+      "tag": "0010_company_domains_spotlight_paystack",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792084321149,
+      "tag": "0011_company_admins_manage_invites",
+      "breakpoints": true
     }
   ]
 }

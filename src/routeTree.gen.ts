@@ -25,6 +25,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedGigsRouteImport } from './routes/_authenticated/gigs'
+import { Route as AuthenticatedGrabAGigRouteImport } from './routes/_authenticated/grab-a-gig'
 import { Route as AuthenticatedMemoryRouteImport } from './routes/_authenticated/memory'
 import { Route as AuthenticatedPaymentsRouteImport } from './routes/_authenticated/payments'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
@@ -113,6 +114,11 @@ const AuthenticatedGigsRoute = AuthenticatedGigsRouteImport.update({
   path: '/gigs',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedGrabAGigRoute = AuthenticatedGrabAGigRouteImport.update({
+  id: '/grab-a-gig',
+  path: '/grab-a-gig',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMemoryRoute = AuthenticatedMemoryRouteImport.update({
   id: '/memory',
   path: '/memory',
@@ -172,6 +178,7 @@ export interface FileRoutesByFullPath {
   '/calendar': typeof AuthenticatedCalendarRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/gigs': typeof AuthenticatedGigsRoute
+  '/grab-a-gig': typeof AuthenticatedGrabAGigRoute
   '/memory': typeof AuthenticatedMemoryRoute
   '/payments': typeof AuthenticatedPaymentsRoute
   '/profile': typeof AuthenticatedProfileRoute
@@ -197,6 +204,7 @@ export interface FileRoutesByTo {
   '/calendar': typeof AuthenticatedCalendarRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/gigs': typeof AuthenticatedGigsRoute
+  '/grab-a-gig': typeof AuthenticatedGrabAGigRoute
   '/memory': typeof AuthenticatedMemoryRoute
   '/payments': typeof AuthenticatedPaymentsRoute
   '/profile': typeof AuthenticatedProfileRoute
@@ -224,6 +232,7 @@ export interface FileRoutesById {
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/gigs': typeof AuthenticatedGigsRoute
+  '/_authenticated/grab-a-gig': typeof AuthenticatedGrabAGigRoute
   '/_authenticated/memory': typeof AuthenticatedMemoryRoute
   '/_authenticated/payments': typeof AuthenticatedPaymentsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
@@ -251,6 +260,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/dashboard'
     | '/gigs'
+    | '/grab-a-gig'
     | '/memory'
     | '/payments'
     | '/profile'
@@ -276,6 +286,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/dashboard'
     | '/gigs'
+    | '/grab-a-gig'
     | '/memory'
     | '/payments'
     | '/profile'
@@ -302,6 +313,7 @@ export interface FileRouteTypes {
     | '/_authenticated/calendar'
     | '/_authenticated/dashboard'
     | '/_authenticated/gigs'
+    | '/_authenticated/grab-a-gig'
     | '/_authenticated/memory'
     | '/_authenticated/payments'
     | '/_authenticated/profile'
@@ -441,6 +453,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedGigsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/grab-a-gig': {
+      id: '/_authenticated/grab-a-gig'
+      path: '/grab-a-gig'
+      fullPath: '/grab-a-gig'
+      preLoaderRoute: typeof AuthenticatedGrabAGigRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/memory': {
       id: '/_authenticated/memory'
       path: '/memory'
@@ -505,6 +524,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedGigsRoute: typeof AuthenticatedGigsRoute
+  AuthenticatedGrabAGigRoute: typeof AuthenticatedGrabAGigRoute
   AuthenticatedMemoryRoute: typeof AuthenticatedMemoryRoute
   AuthenticatedPaymentsRoute: typeof AuthenticatedPaymentsRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
@@ -520,6 +540,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedGigsRoute: AuthenticatedGigsRoute,
+  AuthenticatedGrabAGigRoute: AuthenticatedGrabAGigRoute,
   AuthenticatedMemoryRoute: AuthenticatedMemoryRoute,
   AuthenticatedPaymentsRoute: AuthenticatedPaymentsRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,

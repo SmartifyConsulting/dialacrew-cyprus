@@ -121,7 +121,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminPage,
 });
 
-const TABS = ["Users", "Crew", "Import", "Companies", "Bookings", "Payments", "Invoices", "Inventory", "Disputes", "Reviews", "Memberships", "Audit Log"] as const;
+const TABS = ["Users", "Crew", "Import", "Companies", "Bookings", "Payments", "Invoices", "Inventory", "Disputes", "Reviews", "Memberships", "Gig Fees", "Social Spotlight", "Audit Log"] as const;
 const btn = "rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground";
 
 function AdminPage() {
@@ -160,8 +160,59 @@ function AdminPage() {
       {tab === "Disputes" && <DisputesTab />}
       {tab === "Reviews" && <ReviewsTab />}
       {tab === "Memberships" && <MembershipsTab />}
+      {tab === "Gig Fees" && <GigFeesTab />}
+      {tab === "Social Spotlight" && <SpotlightTab />}
       {tab === "Audit Log" && <AuditLogTab />}
     </Page>
+  );
+}
+
+const GIG_FEES = [
+  { key: "gig_secure_fee", label: "Fee to secure a gig (R)", def: 50 },
+  { key: "gig_penalty_fee", label: "Penalty for no-show or late withdrawal (R)", def: 500 },
+  { key: "gig_notice_hours", label: "Notice needed to withdraw without penalty (hours)", def: 24 },
+] as const;
+
+function GigFeesTab() {
+  const qc = useQueryClient();
+  const { data } = useQuery({
+    queryKey: ["gig-fees"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("platform_settings").select("key,value").in("key", GIG_FEES.map((f) => f.key));
+      if (error) throw error;
+      return Object.fromEntries((data ?? []).map((r) => [r.key, Number(r.value)]));
+    },
+  });
+  const [form, setForm] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+  const val = (k: string, d: number) => form[k] ?? String(data?.[k] ?? d);
+
+  async function save() {
+    const rows = GIG_FEES.map((f) => ({ key: f.key, value: Number(val(f.key, f.def)) }));
+    if (rows.some((r) => !Number.isFinite(r.value) || r.value < 0)) { toast.error("Enter amounts of 0 or more"); return; }
+    setSaving(true);
+    const { error } = await supabase.from("platform_settings").upsert(rows.map((r) => ({ ...r, updated_at: new Date().toISOString() })));
+    setSaving(false);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success("Gig fees saved"); setForm({}); qc.invalidateQueries({ queryKey: ["gig-fees"] });
+  }
+
+  return (
+    <Panel title="Grab a Gig fees and penalties">
+      <div className="space-y-4 p-4">
+        <p className="text-sm text-muted-foreground">New gigs use the securing fee in place when they are posted. Penalties apply to withdrawals and no-shows from now on.</p>
+        <div className="grid gap-4 sm:grid-cols-3">
+          {GIG_FEES.map((f) => (
+            <label key={f.key} className="block text-sm">
+              <span className="text-muted-foreground">{f.label}</span>
+              <input type="number" min={0} className="mt-1 w-full rounded-sm border border-input bg-background px-3 py-2"
+                value={val(f.key, f.def)} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} />
+            </label>
+          ))}
+        </div>
+        <button onClick={save} disabled={saving} className={btn}>{saving ? "Saving…" : "Save changes"}</button>
+      </div>
+    </Panel>
   );
 }
 
@@ -605,6 +656,43 @@ function CheckoutDialog({ item, onClose, onDone }: { item: { id: string; name: s
           <button disabled={busy} onClick={submit} className={`${btn} disabled:opacity-60`}>{busy ? "Saving…" : "Check out"}</button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function SpotlightTab() {
+  const [country, setCountry] = useState("All");
+  const list = useQuery({
+    queryKey: ["admin-spotlight"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select("id, full_name, email, country, created_at, spotlight_featured_at").eq("social_opt_in", true).order("created_at", { ascending: false });
+      if (error) throw error; return data ?? [];
+    },
+  });
+  async function feature(id: string, on: boolean) {
+    const { error } = await supabase.from("profiles").update({ spotlight_featured_at: on ? new Date().toISOString() : null }).eq("id", id);
+    if (error) return void toast.error(error.message);
+    list.refetch();
+  }
+  const rows = (list.data ?? []).filter((r) => country === "All" || (r.country ?? "Unknown") === country);
+  const countries = ["All", ...Array.from(new Set((list.data ?? []).map((r) => r.country ?? "Unknown")))];
+  return (
+    <div className="rounded-sm border border-border bg-card">
+      <div className="flex items-center justify-between p-4">
+        <p className="text-sm text-muted-foreground">New members who agreed to be featured on social media. Newest first.</p>
+        <select className="rounded-sm border border-input bg-background px-2 py-1 text-sm" value={country} onChange={(e) => setCountry(e.target.value)}>
+          {countries.map((c) => <option key={c}>{c}</option>)}
+        </select>
+      </div>
+      <ul className="divide-y divide-border">
+        {rows.length === 0 && <li className="p-4 text-sm text-muted-foreground">Nobody yet.</li>}
+        {rows.map((r) => (
+          <li key={r.id} className="flex items-center justify-between px-4 py-2.5 text-sm">
+            <div><div className="font-medium">{r.full_name || r.email}</div><div className="text-xs text-muted-foreground">{r.country ?? "Unknown"} · joined {new Date(r.created_at).toLocaleDateString("en-ZA")}</div></div>
+            <button onClick={() => feature(r.id, !r.spotlight_featured_at)} className="text-xs text-primary hover:underline">{r.spotlight_featured_at ? `Featured ${new Date(r.spotlight_featured_at).toLocaleDateString("en-ZA")} · undo` : "Mark as featured"}</button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

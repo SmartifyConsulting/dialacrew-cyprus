@@ -22,7 +22,7 @@ const toBooking = (r: any): Booking => ({
   bookingDate: r.booking_date ?? null, callTime: r.call_time ?? null, wrapTime: r.wrap_time ?? null,
   pencilPriority: r.pencil_priority ?? null, pencilExpiresAt: r.pencil_expires_at ?? null,
   createdBy: r.created_by ?? null, cancelledReason: r.cancelled_reason ?? null,
-  createdAt: r.created_at,
+  createdAt: r.created_at, ...({ escrowReleasedAt: r.escrow_released_at ?? null } as object),
 });
 
 const run = async <T,>(p: PromiseLike<{ data: any; error: any }>, map: (r: any) => T): Promise<T[]> => {

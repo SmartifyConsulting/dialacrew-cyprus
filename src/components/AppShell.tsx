@@ -1,9 +1,9 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode } from "react";
-import { Briefcase, Building2, Home, Search, Shield, Star, User, type LucideIcon, Wallet, CalendarDays } from "lucide-react";
+import { Megaphone, Briefcase, Building2, Home, Search, Shield, Star, User, type LucideIcon, Wallet, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useRole, useSession } from "@/lib/auth";
+import { useCompany, useRole, useSession } from "@/lib/auth";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useSignedUrl } from "@/lib/site";
 import logo from "@/assets/bookacrew-sa-logo.png.asset.json";
@@ -26,8 +26,8 @@ function initials(name: string) {
 function NavAvatar({ name, path, size = 40 }: { name: string; path?: string | null; size?: number }) {
   const url = useSignedUrl(path).data;
   return url
-    ? <img src={url} alt={name} style={{ width: size, height: size }} className="shrink-0 rounded-full border border-white object-cover" />
-    : <span style={{ width: size, height: size }} className="grid shrink-0 place-items-center rounded-full border border-white bg-primary text-sm font-bold text-primary-foreground">{initials(name)}</span>;
+    ? <img src={url} alt={name} style={{ width: size, height: size }} className="shrink-0 rounded-full border-2 border-white object-cover" />
+    : <span style={{ width: size, height: size }} className="grid shrink-0 place-items-center rounded-full border-2 border-white bg-primary text-sm font-bold text-primary-foreground">{initials(name)}</span>;
 }
 
 type NavItem = { to: string; label: string; icon: LucideIcon };
@@ -45,6 +45,7 @@ export const navByRole: Record<string, NavItem[]> = {
     { to: "/dashboard", label: "Dashboard", icon: Home },
     { to: "/calendar", label: "Calendar", icon: CalendarDays },
     { to: "/gigs", label: "Find Gigs", icon: Search },
+    { to: "/grab-a-gig", label: "Grab a Gig", icon: Megaphone },
     { to: "/reviews", label: "Reviews", icon: Star },
     { to: "/profile", label: "Profile", icon: User },
   ],
@@ -82,7 +83,11 @@ export function TopNav() {
   const me = useMyProfile(session?.user.id);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const items = navByRole[role.data ?? "client"] ?? navByRole["client"]!;
+  const company = useCompany(session?.user.id);
+  const companyName = company.data?.companies?.name;
+  const baseItems = navByRole[role.data ?? "client"] ?? navByRole["client"]!;
+  const isTeam = role.data === "producer" || role.data === "admin";
+  const items = baseItems.map((n) => (isTeam && n.to === "/profile" && companyName ? { ...n, label: `${companyName} Settings` } : n));
 
   async function signOut() {
     await queryClient.cancelQueries();
@@ -96,7 +101,7 @@ export function TopNav() {
     <>
       {signedIn && (
         <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col bg-nav text-nav-foreground md:flex" aria-label="Main menu">
-          <Link to="/dashboard" className="px-5 py-5"><img src={logo.url} alt="Book a Crew" className="h-12 w-auto" /></Link>
+          <Link to="/dashboard" className="flex justify-center px-5 py-5"><img src={logo.url} alt="Book a Crew" className="h-28 w-auto" /></Link>
           <nav className="flex flex-1 flex-col gap-1 px-3">
             {items.map((n) => (
               <Link key={n.label} to={n.to} className="flex items-center gap-3 rounded-xl px-4 py-3 font-sans text-[15px] font-medium text-nav-foreground/85 transition-colors hover:bg-nav-foreground/10 hover:text-nav-foreground" activeProps={{ className: "bg-nav-foreground/15 !text-nav-foreground font-semibold" }}>
