@@ -41,10 +41,11 @@ export const navByRole: Record<string, NavItem[]> = {
     { to: "/payments", label: "Payments", icon: Wallet },
   ],
   crew: [
-    { to: "/dashboard", label: "Dashboard", icon: Home },
-    { to: "/profile", label: "Profile", icon: User },
+    { to: "/dashboard", label: "Home", icon: Home },
     { to: "/calendar", label: "Calendar", icon: CalendarDays },
     { to: "/gigs", label: "Find Gigs", icon: Search },
+    { to: "/earnings", label: "Earnings", icon: Wallet },
+    { to: "/profile", label: "Profile", icon: User },
     { to: "/reviews", label: "Reviews", icon: Star },
   ],
   client: [{ to: "/profile", label: "My Profile", icon: User }],
@@ -128,7 +129,7 @@ export function TopNav() {
             </div>
           </div>
         </div>
-        {signedIn && <BottomNav items={items} />}
+        {signedIn && <BottomNav items={items.slice(0, 5)} />}
       </header>
       {/* A single bell, pinned to the grey canvas (not a white header bar) at every breakpoint. */}
       {signedIn && (
