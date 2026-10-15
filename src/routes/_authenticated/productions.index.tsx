@@ -8,7 +8,7 @@ import { Copy, Pencil, Search, Trash2, Upload } from "lucide-react";
 import { Badge, ClientBadge, Page, Panel } from "@/components/AppShell";
 import { AddressAutocomplete } from "@/components/site/SiteTabs";
 import { zar } from "@/lib/demo-data";
-import { useCreatePencil, useCrew, useProductions } from "@/lib/db";
+import { useProductions } from "@/lib/db";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRole, useSession } from "@/lib/auth";
 
@@ -26,12 +26,6 @@ export const Route = createFileRoute("/_authenticated/productions/")({
 });
 
 const field = "w-full rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
-
-// Logical on-set order: direction, camera, lighting, art/costume/hair-MU, support.
-const CREW_ROLES = [
-  "Director", "Director of Photography", "Focus Puller", "Gaffer", "Art Department", "Wardrobe", "Make-Up",
-  "Catering", "Production Assistant",
-] as const;
 
 type ClientRow = { id: string; name: string; company: string };
 
@@ -156,13 +150,10 @@ function Productions() {
     queryFn: async () => { const { data, error } = await supabase.from("clients").select("id, name, company").order("company"); if (error) throw error; return data ?? []; },
   });
   const clients = clientsQuery.data ?? [];
-  const crew = useCrew().data ?? [];
-  const createPencil = useCreatePencil();
   const [open, setOpen] = useState(!!openOnLoad);
   const [duplicating, setDuplicating] = useState(false);
-  const blankForm = { name: "", client: "", jobId: "", type: "Commercial", location: "", startDate: "", endDate: "", budget: 0 };
+  const blankForm = { name: "", client: "", jobId: "", type: "Commercial", location: "", startDate: "", endDate: "", budget: 0, description: "" };
   const [f, setF] = useState(blankForm);
-  const [roleCrew, setRoleCrew] = useState<Record<string, string>>({});
   const [editingId, setEditingId] = useState<string | null>(null); // editing an existing production
   const [draftId, setDraftId] = useState<string | null>(null); // autosaved draft while creating a new one
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
@@ -174,12 +165,11 @@ function Productions() {
   const days = f.startDate && f.endDate ? Math.max(1, Math.round((+new Date(f.endDate) - +new Date(f.startDate)) / 86400000) + 1) : 1;
   const jobIdTaken = (id: string) => list.some((p) => p.id !== editingId && (p.jobId ?? "").trim().toLowerCase() === id.trim().toLowerCase());
 
-  const resetForm = () => { setF(blankForm); setRoleCrew({}); setEditingId(null); setDraftId(null); setSaveState("idle"); setDuplicating(false); };
+  const resetForm = () => { setF(blankForm); setEditingId(null); setDraftId(null); setSaveState("idle"); setDuplicating(false); };
   const closeModal = () => { setOpen(false); resetForm(); if (openOnLoad) navigate({ to: "/productions", search: {}, replace: true }); };
   const openNew = () => { resetForm(); setOpen(true); };
   const openEdit = (p: (typeof list)[number]) => {
-    setF({ name: p.name, client: p.client, jobId: p.jobId ?? "", type: p.type, location: p.location, startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget });
-    setRoleCrew({});
+    setF({ name: p.name, client: p.client, jobId: p.jobId ?? "", type: p.type, location: p.location, startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget, description: p.summary ?? "" });
     setEditingId(p.id);
     setDraftId(null);
     setSaveState("idle");
@@ -187,8 +177,7 @@ function Productions() {
     setOpen(true);
   };
   const openDuplicate = (p: (typeof list)[number]) => {
-    setF({ name: `${p.name} (copy)`, client: p.client, jobId: "", type: p.type, location: p.location, startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget });
-    setRoleCrew({});
+    setF({ name: `${p.name} (copy)`, client: p.client, jobId: "", type: p.type, location: p.location, startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget, description: p.summary ?? "" });
     setEditingId(null);
     setDraftId(null);
     setSaveState("idle");
@@ -204,7 +193,7 @@ function Productions() {
     if (!f.name.trim() || !f.client.trim() || !f.jobId.trim() || jobIdTaken(f.jobId)) return;
     const t = setTimeout(async () => {
       setSaveState("saving");
-      const payload = { name: f.name, client: f.client, job_id: f.jobId.trim(), type: f.type, location: f.location, budget: f.budget, date: f.startDate || null, end_date: f.endDate || null, days };
+      const payload = { name: f.name, client: f.client, job_id: f.jobId.trim(), type: f.type, location: f.location, budget: f.budget, date: f.startDate || null, end_date: f.endDate || null, days, summary: f.description };
       if (draftId) {
         const { error } = await supabase.from("productions").update(payload).eq("id", draftId);
         if (error) { toast.error(friendlyError(error)); return; }
@@ -219,7 +208,7 @@ function Productions() {
     }, 800);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [f.name, f.client, f.jobId, f.type, f.location, f.startDate, f.endDate, f.budget, open, editingId]);
+  }, [f.name, f.client, f.jobId, f.type, f.location, f.startDate, f.endDate, f.budget, f.description, open, editingId]);
 
   async function deleteProduction(p: (typeof list)[number]) {
     if (!window.confirm(`Delete "${p.name}"? This can't be undone.`)) return;
@@ -241,19 +230,12 @@ function Productions() {
     if (f.endDate < f.startDate) { toast.error("End date can't be before the start date"); return; }
     if (!f.budget) { toast.error("Budget is required"); return; }
     if (jobIdTaken(f.jobId)) { toast.error(`Job ID "${f.jobId}" is already in use — pick a different one.`); return; }
-    const payload = { name: f.name, client: f.client, job_id: f.jobId.trim(), type: f.type, location: f.location, budget: f.budget, date: f.startDate || null, end_date: f.endDate || null, days };
+    const payload = { name: f.name, client: f.client, job_id: f.jobId.trim(), type: f.type, location: f.location, budget: f.budget, date: f.startDate || null, end_date: f.endDate || null, days, summary: f.description };
     const targetId = editingId ?? draftId;
     const { data, error } = targetId
       ? await supabase.from("productions").update(payload).eq("id", targetId).select("id").single()
       : await supabase.from("productions").insert({ ...payload, status: "Draft" }).select("id").single();
     if (error) { toast.error(friendlyError(error)); return; }
-    const assigned = Object.entries(roleCrew).filter(([, crewId]) => crewId);
-    for (const [role, crewId] of assigned) {
-      const rate = crew.find((c) => c.id === crewId)?.dayRate ?? 0;
-      try {
-        await createPencil.mutateAsync({ productionId: data.id, crewId, role, bookingDate: f.startDate, crewRate: rate, clientCharge: rate, days });
-      } catch (err) { toast.error(`Could not pencil ${role}: ${(err as Error).message}`); }
-    }
     qc.invalidateQueries({ queryKey: ["productions"] });
     const wasEditing = !!editingId;
     setOpen(false);
@@ -280,11 +262,11 @@ function Productions() {
             <div className="rounded-sm border border-border p-4">
               <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Production info</h3>
               <div className="grid gap-3 md:grid-cols-2">
-                <ClientPicker clients={clients} value={f.client} onChange={(company) => setF({ ...f, client: company })} onClientsChanged={() => qc.invalidateQueries({ queryKey: ["clients"] })} />
                 <div>
                   <input className={field} placeholder="Job ID *" value={f.jobId} onChange={(e) => setF({ ...f, jobId: e.target.value })} />
                   {f.jobId.trim() && jobIdTaken(f.jobId) && <p className="mt-1 text-xs text-destructive">That Job ID is already in use.</p>}
                 </div>
+                <ClientPicker clients={clients} value={f.client} onChange={(company) => setF({ ...f, client: company })} onClientsChanged={() => qc.invalidateQueries({ queryKey: ["clients"] })} />
                 <input className={field} placeholder="Production name *" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
                 <select className={field} value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>
                   {["Commercial", "Film", "Television", "Photography", "Other"].map((t) => <option key={t}>{t}</option>)}
@@ -298,25 +280,12 @@ function Productions() {
                   <input className={`${field} mt-1`} type="date" value={f.endDate} onChange={(e) => setF({ ...f, endDate: e.target.value })} /></label>
                 <input className={field} type="number" min={0} placeholder="Budget (ZAR) *" value={f.budget || ""} onChange={(e) => setF({ ...f, budget: +e.target.value })} />
                 <div className="flex items-center text-xs text-muted-foreground">{f.startDate && f.endDate ? `${days} shoot day(s)` : "Start and end date are required"}</div>
+                <label className="block sm:col-span-2"><span className="text-xs text-muted-foreground">Description</span>
+                  <textarea rows={3} className={`${field} mt-1`} placeholder="Brief, look, shots, anything the team should know"
+                    value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} /></label>
               </div>
             </div>
 
-            {!editingId && (
-              <div className="mt-4 rounded-sm border border-border p-4">
-                <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pencil crew for key roles (optional)</h3>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {CREW_ROLES.map((role) => (
-                    <label key={role} className="block">
-                      <span className="text-xs text-muted-foreground">{role}</span>
-                      <select className={`${field} mt-1`} value={roleCrew[role] ?? ""} onChange={(e) => setRoleCrew({ ...roleCrew, [role]: e.target.value })}>
-                        <option value="">Unassigned</option>
-                        {crew.map((c) => <option key={c.id} value={c.id}>{c.name} · ★{c.rating.toFixed(1)} · {zar(c.dayRate)}/day</option>)}
-                      </select>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
             <div className="mt-4 flex justify-end gap-2">
               <button type="button" onClick={closeModal} className="rounded-sm border border-border px-4 py-2 text-sm font-semibold">Cancel</button>
               <button className="rounded-sm bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">{editingId ? "Save changes" : "Create draft"}</button>

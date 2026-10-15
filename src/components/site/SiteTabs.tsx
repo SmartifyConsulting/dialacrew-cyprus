@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
-import { CheckCircle2, Circle, Download, FileText, LogIn, LogOut, MapPin, Mic, Paperclip, Plus, Star, Trash2, Users } from "lucide-react";
+import { CheckCircle2, Circle, Download, FileText, LogIn, LogOut, MapPin, Mic, Paperclip, Pencil, Plus, Star, Trash2, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge, Panel } from "@/components/AppShell";
 import { AudioRecorder } from "@/components/AudioRecorder";
@@ -110,33 +110,51 @@ function FileLink({ path, name }: { path: string; name: string }) {
 }
 
 /* ---------------- Location points (multi-stop schedule) — lives inside Site information ---------------- */
+const blankLocationForm = { label: "", address: "", latitude: "", longitude: "", startsAt: "", endsAt: "" };
+const toLocalInput = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(0, 16) : "");
+
 function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
   const inv = useInvalidate();
   const points = useLocationPoints(p.id).data ?? [];
   const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [lf, setLf] = useState({ label: "", address: "", latitude: "", longitude: "", startsAt: "", endsAt: "" });
+  const [lf, setLf] = useState(blankLocationForm);
 
-  async function addPoint() {
+  function startAdd() { setLf(blankLocationForm); setEditingId(null); setAdding(true); }
+  function startEdit(pt: { id: string; label: string; address: string; latitude: number | null; longitude: number | null; starts_at: string | null; ends_at: string | null }) {
+    setLf({
+      label: pt.label, address: pt.address ?? "", latitude: pt.latitude?.toString() ?? "", longitude: pt.longitude?.toString() ?? "",
+      startsAt: toLocalInput(pt.starts_at), endsAt: toLocalInput(pt.ends_at),
+    });
+    setEditingId(pt.id);
+    setAdding(true);
+  }
+  function cancelForm() { setAdding(false); setEditingId(null); setLf(blankLocationForm); }
+
+  async function savePoint() {
     if (!lf.label.trim()) { toast.error("Give this location a name"); return; }
     setBusy(true);
-    const { error } = await supabase.from("production_locations").insert({
-      production_id: p.id, label: lf.label.trim(), address: lf.address.trim(),
+    const payload = {
+      label: lf.label.trim(), address: lf.address.trim(),
       latitude: lf.latitude ? Number(lf.latitude) : null, longitude: lf.longitude ? Number(lf.longitude) : null,
       starts_at: lf.startsAt ? new Date(lf.startsAt).toISOString() : null,
       ends_at: lf.endsAt ? new Date(lf.endsAt).toISOString() : null,
-    });
+    };
+    const { error } = editingId
+      ? await supabase.from("production_locations").update(payload).eq("id", editingId)
+      : await supabase.from("production_locations").insert({ production_id: p.id, ...payload });
     setBusy(false);
     if (error) { toast.error(friendlyError(error)); return; }
-    toast.success("Location point added");
-    setLf({ label: "", address: "", latitude: "", longitude: "", startsAt: "", endsAt: "" });
-    setAdding(false);
+    toast.success(editingId ? "Location point updated" : "Location point added");
+    cancelForm();
     inv(["location-points", p.id]);
   }
 
   async function removePoint(id: string) {
     const { error } = await supabase.from("production_locations").delete().eq("id", id);
     if (error) { toast.error(friendlyError(error)); return; }
+    if (id === editingId) cancelForm();
     inv(["location-points", p.id]);
   }
 
@@ -147,7 +165,7 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
       <div className="flex items-center justify-between px-4 pt-4">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Location points</h3>
         {isProducer && !adding && (
-          <button onClick={() => setAdding(true)} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> Add location point</button>
+          <button onClick={startAdd} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> Add location point</button>
         )}
       </div>
       <ul className="divide-y divide-border text-sm">
@@ -161,7 +179,12 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
                 {pt.starts_at ? when(pt.starts_at) : "Start TBC"}{pt.ends_at ? ` → ${when(pt.ends_at)}` : ""}
               </div>
             </div>
-            {isProducer && <button onClick={() => removePoint(pt.id)} className="text-muted-foreground hover:text-destructive" aria-label={`Remove ${pt.label}`}><Trash2 className="h-4 w-4" /></button>}
+            {isProducer && (
+              <div className="flex shrink-0 items-center gap-2">
+                <button onClick={() => startEdit(pt)} className="text-muted-foreground hover:text-primary" aria-label={`Edit ${pt.label}`}><Pencil className="h-3.5 w-3.5" /></button>
+                <button onClick={() => removePoint(pt.id)} className="text-muted-foreground hover:text-destructive" aria-label={`Remove ${pt.label}`}><Trash2 className="h-4 w-4" /></button>
+              </div>
+            )}
           </li>
         ))}
       </ul>
@@ -178,8 +201,8 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
               <input type="datetime-local" className={`${input} mt-1 w-full`} value={lf.endsAt} onChange={(e) => setLf({ ...lf, endsAt: e.target.value })} /></label>
           </div>
           <div className="flex gap-2">
-            <button disabled={busy} onClick={addPoint} className={btn}>{busy ? "Saving…" : "Save location"}</button>
-            <button onClick={() => setAdding(false)} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold">Cancel</button>
+            <button disabled={busy} onClick={savePoint} className={btn}>{busy ? "Saving…" : editingId ? "Update location" : "Save location"}</button>
+            <button onClick={cancelForm} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold">Cancel</button>
           </div>
         </div>
       )}
@@ -187,9 +210,17 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
   );
 }
 
-/* ---------------- Production checklist (roles attached, ticked once confirmed) ---------------- */
+// Logical on-set order: direction, camera, lighting, art/costume/hair-MU, support. Every production
+// shows all of these on its checklist, ticked once that role has a confirmed booking — there's no
+// separate "pencil crew" step at creation time, assignment happens via Find Crew / pencilling as usual.
+export const CREW_ROLES = [
+  "Director", "Director of Photography", "Focus Puller", "Gaffer", "Art Department", "Wardrobe", "Make-Up",
+  "Catering", "Production Assistant",
+] as const;
+
+/* ---------------- Production checklist (standard roles, ticked once confirmed) ---------------- */
 function ProductionChecklist({ p }: Pick<Ctx, "p">) {
-  const rows = useQuery({
+  const bookings = useQuery({
     queryKey: ["production-checklist", p.id],
     queryFn: async () => {
       const { data, error } = await supabase.from("bookings")
@@ -200,19 +231,36 @@ function ProductionChecklist({ p }: Pick<Ctx, "p">) {
     },
   }).data ?? [];
 
-  if (rows.length === 0) return null;
+  const confirmedStatuses = ["confirmed", "in_progress", "completed", "payment_released"];
+  const byRole = (role: string) => bookings.filter((b) => b.role.trim().toLowerCase() === role.toLowerCase());
+  const extras = bookings.filter((b) => !CREW_ROLES.some((r) => r.toLowerCase() === b.role.trim().toLowerCase()));
 
   return (
     <Panel title="Production Checklist">
       <ul className="divide-y divide-border text-sm">
-        {rows.map((r) => {
-          const confirmed = r.status === "confirmed" || r.status === "in_progress" || r.status === "completed" || r.status === "payment_released";
-          const name = (r.crew_members as { name: string } | null)?.name;
+        {CREW_ROLES.map((role) => {
+          const matches = byRole(role);
+          const confirmed = matches.some((b) => confirmedStatuses.includes(b.status));
+          const names = matches.map((b) => (b.crew_members as { name: string } | null)?.name).filter(Boolean).join(", ");
           return (
-            <li key={r.id} className="flex items-center gap-3 px-4 py-2.5">
+            <li key={role} className="flex items-center gap-3 px-4 py-2.5">
               {confirmed ? <CheckCircle2 className="h-4 w-4 shrink-0 text-success" /> : <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />}
               <span className="min-w-0 flex-1">
-                <span className="font-medium">{r.role}</span>
+                <span className="font-medium">{role}</span>
+                {names && <span className="text-muted-foreground"> · {names}</span>}
+              </span>
+              <span className="shrink-0 text-xs text-muted-foreground">{matches.length === 0 ? "Unassigned" : confirmed ? "Confirmed" : "Not yet confirmed"}</span>
+            </li>
+          );
+        })}
+        {extras.map((b) => {
+          const confirmed = confirmedStatuses.includes(b.status);
+          const name = (b.crew_members as { name: string } | null)?.name;
+          return (
+            <li key={b.id} className="flex items-center gap-3 px-4 py-2.5">
+              {confirmed ? <CheckCircle2 className="h-4 w-4 shrink-0 text-success" /> : <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />}
+              <span className="min-w-0 flex-1">
+                <span className="font-medium">{b.role}</span>
                 {name && <span className="text-muted-foreground"> · {name}</span>}
               </span>
               {!confirmed && <span className="shrink-0 text-xs text-muted-foreground">Not yet confirmed</span>}
@@ -293,6 +341,7 @@ export function OverviewTab({ p, isProducer }: Ctx) {
             <p className="whitespace-pre-wrap">{p.summary || "No summary yet."}</p>
           )}
           <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <dt>Job ID</dt><dd className="text-foreground">{p.jobId || "—"}</dd>
             <dt>Client</dt><dd className="text-foreground">{p.client}</dd>
             <dt>Type</dt><dd className="text-foreground">{p.type}</dd>
             <dt>Shoot</dt><dd className="text-foreground">{p.date || "TBC"} · {p.days} day(s)</dd>
@@ -302,9 +351,7 @@ export function OverviewTab({ p, isProducer }: Ctx) {
         </div>
       </Panel>
 
-      <ProductionChecklist p={p} />
-
-      <Panel title="Site information" right={isProducer ? (
+      <Panel title="Itinerary" right={isProducer ? (
         <div className="flex items-center gap-3">
           {saveState !== "idle" && <span className="text-xs text-muted-foreground">{saveState === "saving" ? "Saving…" : "Saved"}</span>}
           <button onClick={() => setEditing(!editing)} className="text-xs font-semibold text-primary hover:underline">{editing ? "Done" : "Edit"}</button>
@@ -334,6 +381,8 @@ export function OverviewTab({ p, isProducer }: Ctx) {
         </div>
         <LocationPoints p={p} isProducer={isProducer} />
       </Panel>
+
+      <ProductionChecklist p={p} />
     </div>
   );
 }
