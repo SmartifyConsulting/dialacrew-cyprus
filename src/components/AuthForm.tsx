@@ -23,6 +23,7 @@ export function AuthForm() {
   const [skills, setSkills] = useState<string[]>([]);
   const [customSkill, setCustomSkill] = useState("");
   const [agreed, setAgreed] = useState(false);
+  const [socialOptIn, setSocialOptIn] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [wait, setWait] = useState(0);
