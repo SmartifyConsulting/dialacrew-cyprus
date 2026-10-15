@@ -41,8 +41,8 @@ export const navByRole: Record<string, NavItem[]> = {
     { to: "/payments", label: "Payments", icon: Wallet },
   ],
   crew: [
-    { to: "/profile", label: "Profile", icon: User },
     { to: "/dashboard", label: "Dashboard", icon: Home },
+    { to: "/profile", label: "Profile", icon: User },
     { to: "/calendar", label: "Calendar", icon: CalendarDays },
     { to: "/gigs", label: "Find Gigs", icon: Search },
     { to: "/reviews", label: "Reviews", icon: Star },
