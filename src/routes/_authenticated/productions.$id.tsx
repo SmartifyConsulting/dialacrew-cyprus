@@ -8,7 +8,7 @@ import { useMyCrewId, useMyName } from "@/lib/site";
 import { RetroTab } from "@/components/site/RetroTab";
 import { ScenarioPlanner } from "@/components/site/ScenarioPlanner";
 import { ProjectInsights } from "@/components/site/ProjectInsights";
-import { AssetsTab, CommercialsTab, DocumentsTab, MembersList, OverviewTab, PostsTab, RegisterTab, TasksTab } from "@/components/site/SiteTabs";
+import { AssetsTab, ChecklistsPanel, CommercialsTab, DocumentsTab, MembersList, OverviewTab, PostsTab, RegisterTab, TasksTab } from "@/components/site/SiteTabs";
 
 export const Route = createFileRoute("/_authenticated/productions/$id")({
   validateSearch: (s: Record<string, unknown>): { tab?: string } => (typeof s["tab"] === "string" ? { tab: s["tab"] } : {}),
@@ -27,8 +27,8 @@ export const Route = createFileRoute("/_authenticated/productions/$id")({
 
 // Crew see only Posts, Members, Tasks, Equipment (Overview is the fixed left widget).
 // Find Crew (scenario planner) opens from the header button beside the status badge.
-const CREW_TABS = ["Posts", "Members", "Tasks", "Equipment"] as const;
-const MANAGER_TABS = ["Posts", "Members", "Tasks", "Equipment", "Documents", "Budget", "Review"] as const;
+const CREW_TABS = ["Posts", "Members", "Checklists", "Tasks", "Equipment"] as const;
+const MANAGER_TABS = ["Posts", "Members", "Checklists", "Tasks", "Equipment", "Documents", "Budget", "Review"] as const;
 type Tab = (typeof MANAGER_TABS)[number] | "Find Crew";
 
 function ProductionSite() {
@@ -81,6 +81,7 @@ function ProductionSite() {
           <div className="w-full [&>*]:w-full">
           {tab === "Posts" && <PostsTab {...ctx} />}
           {tab === "Members" && <div className="space-y-5"><MembersList {...ctx} /><RegisterTab {...ctx} /></div>}
+          {tab === "Checklists" && <ChecklistsPanel p={p} isProducer={isProducer} />}
           {tab === "Tasks" && <TasksTab {...ctx} />}
           {tab === "Equipment" && <AssetsTab {...ctx} bookings={bookings} crewNames={crewNames} />}
           {tab === "Documents" && isProducer && <DocumentsTab {...ctx} />}

@@ -175,15 +175,21 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
 
   if (!isProducer && points.length === 0) return null;
 
+  function mapHref(pt: { label: string; address: string; latitude: number | null; longitude: number | null }) {
+    if (pt.latitude != null && pt.longitude != null) return `https://www.google.com/maps?q=${pt.latitude},${pt.longitude}`;
+    if (pt.address) return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pt.address)}`;
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pt.label)}`;
+  }
+
   return (
     <div>
       {isProducer && !adding && (
         <div className="flex justify-end px-4 pt-4">
-          <button onClick={startAdd} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> Add location point</button>
+          <button onClick={startAdd} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> Add Itinerary Item</button>
         </div>
       )}
       <ul className="divide-y divide-border text-sm">
-        {points.length === 0 && <li className="p-4 text-muted-foreground">No location points yet.</li>}
+        {points.length === 0 && <li className="p-4 text-muted-foreground">No itinerary items yet.</li>}
         {points.map((pt) => (
           <li key={pt.id}
             draggable={isProducer && points.length > 1}
@@ -194,11 +200,10 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
             className={`flex items-start justify-between gap-3 px-4 py-3 ${dragOverId === pt.id && dragId && dragId !== pt.id ? "bg-muted" : ""}`}>
             {isProducer && points.length > 1 && <GripVertical className="mt-0.5 h-4 w-4 shrink-0 cursor-grab text-muted-foreground" />}
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 font-medium"><MapPin className="h-3.5 w-3.5 text-primary" /> {pt.label}</div>
-              {pt.address && <div className="text-xs text-muted-foreground">{pt.address}</div>}
-              <div className="text-xs text-muted-foreground">
-                {pt.starts_at ? when(pt.starts_at) : "Start TBC"}{pt.ends_at ? ` → ${when(pt.ends_at)}` : ""}
-              </div>
+              <div className="font-medium">{pt.starts_at ? when(pt.starts_at) : "Date TBC"}{pt.ends_at ? ` → ${when(pt.ends_at)}` : ""}</div>
+              <a href={mapHref(pt)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary hover:underline">
+                <MapPin className="h-3.5 w-3.5 text-primary" /> {pt.label}{pt.address ? ` · ${pt.address}` : ""}
+              </a>
             </div>
             {isProducer && (
               <div className="flex shrink-0 items-center gap-2">
@@ -297,7 +302,7 @@ function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
 }
 
 /* ---------------- Custom checklists (producers add checklists + items, e.g. "Wardrobe checklist") ---------------- */
-function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
+export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
   const inv = useInvalidate();
   const checklists = (useChecklists(p.id).data ?? []) as Array<{ id: string; title: string; production_checklist_items: Array<{ id: string; label: string; done: boolean }> }>;
   const [addingList, setAddingList] = useState(false);
@@ -468,8 +473,6 @@ export function OverviewTab({ p, isProducer }: Ctx) {
       <Panel title="Itinerary">
         <LocationPoints p={p} isProducer={isProducer} />
       </Panel>
-
-      <ChecklistsPanel p={p} isProducer={isProducer} />
     </div>
   );
 }
@@ -482,6 +485,9 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
   const [rating, setRating] = useState<{ crewId: string; name: string } | null>(null);
   const lastByCrew = new Map<string, (typeof rows)[number]>();
   for (const r of rows) if (r.crew_id && !lastByCrew.has(r.crew_id)) lastByCrew.set(r.crew_id, r);
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const isShootDay = !!p.date && todayStr >= p.date && todayStr <= (p.endDate ?? p.date);
+  const isActive = p.status === "Active";
 
   async function mark(kind: "in" | "out", crewId: string, name: string) {
     const { error } = await supabase.from("site_attendance").insert({ production_id: p.id, crew_id: crewId, user_id: userId, person_name: name, kind, source: "manual" });
@@ -491,8 +497,23 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
 
   return (
     <div className="space-y-5">
+      {isProducer && isActive && (() => {
+        const st = members.map((m) => { const l = lastByCrew.get(m.crew_id); return !l ? "na" : l.kind === "in" ? "on" : "out"; });
+        const cards: [string, number | string, string][] = [
+          ["On set", st.filter((s) => s === "on").length, "text-success"],
+          ["Not arrived", isShootDay ? st.filter((s) => s === "na").length : "—", "text-destructive"],
+          ["Wrapped", st.filter((s) => s === "out").length, "text-muted-foreground"],
+        ];
+        return (
+          <div className="grid grid-cols-3 gap-3">
+            {cards.map(([l, v, c]) => (
+              <div key={l} className="rounded-xl border border-border bg-card p-4 shadow-sm"><div className="text-xs text-muted-foreground">{l}</div><div className={`mt-1 font-display text-3xl font-semibold ${c}`}>{v}</div></div>
+            ))}
+          </div>
+        );
+      })()}
       <CrewRoleStatus p={p} />
-      <Panel title={`Confirmed Members (${members.length})`}>
+      <Panel title={`${isActive ? "Members on Set" : "Confirmed Members"} (${members.length})`}>
         <table className="w-full text-sm">
           <thead className="text-left text-[11px] text-muted-foreground">
             <tr>
@@ -719,7 +740,7 @@ export function MessagesTab({ p, userId, myName }: Ctx & { bookings: Booking[]; 
 /* ---------------- Register (geolocation ins & outs) ---------------- */
 export function RegisterTab({ p, isProducer, userId, myName, myCrewId }: Ctx) {
   const reg = useRegister(p.id);
-  const members = useSiteMembers(p.id).data ?? [];
+  const points = useLocationPoints(p.id).data ?? [];
   const inv = useInvalidate();
   const [auto, setAuto] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -728,7 +749,12 @@ export function RegisterTab({ p, isProducer, userId, myName, myCrewId }: Ctx) {
   const lastByCrew = new Map<string, (typeof rows)[number]>();
   for (const r of rows) if (r.crew_id && !lastByCrew.has(r.crew_id)) lastByCrew.set(r.crew_id, r);
   const myLast = myCrewId ? lastByCrew.get(myCrewId) : undefined;
-  const hasSite = p.latitude != null && p.longitude != null;
+  // The production's own address/lat/long fields were retired in favour of itinerary items —
+  // use the first itinerary item with coordinates as the site to geofence against.
+  const sitePoint = points.find((pt) => pt.latitude != null && pt.longitude != null);
+  const siteLat = sitePoint?.latitude ?? p.latitude;
+  const siteLon = sitePoint?.longitude ?? p.longitude;
+  const hasSite = siteLat != null && siteLon != null;
   const radius = p.geofenceM ?? 10;
 
   async function trySync() {
@@ -746,7 +772,7 @@ export function RegisterTab({ p, isProducer, userId, myName, myCrewId }: Ctx) {
   }, []);
 
   async function mark(kind: "in" | "out", crewId: string, name: string, source: string, coords?: GeolocationCoordinates) {
-    const distance = coords && hasSite ? distanceMeters(coords.latitude, coords.longitude, p.latitude!, p.longitude!) : null;
+    const distance = coords && hasSite ? distanceMeters(coords.latitude, coords.longitude, siteLat!, siteLon!) : null;
     const row = {
       production_id: p.id, crew_id: crewId, user_id: userId, person_name: name, kind, source,
       latitude: coords?.latitude ?? null, longitude: coords?.longitude ?? null,
@@ -787,7 +813,7 @@ export function RegisterTab({ p, isProducer, userId, myName, myCrewId }: Ctx) {
   useEffect(() => {
     if (!auto || !myCrewId || !hasSite || !navigator.geolocation) return undefined;
     const id = navigator.geolocation.watchPosition(async (pos) => {
-      const d = distanceMeters(pos.coords.latitude, pos.coords.longitude, p.latitude!, p.longitude!);
+      const d = distanceMeters(pos.coords.latitude, pos.coords.longitude, siteLat!, siteLon!);
       const inside = isOnSite(d, radius);
       if (inside !== state.current) {
         state.current = inside;
@@ -800,19 +826,8 @@ export function RegisterTab({ p, isProducer, userId, myName, myCrewId }: Ctx) {
 
   return (
     <div className="space-y-5">
-      {isProducer && (() => {
-        const st = members.map((m) => { const l = lastByCrew.get(m.crew_id); return !l ? "na" : l.kind === "in" ? "on" : "out"; });
-        const cards: [string, number, string][] = [["On set", st.filter((s) => s === "on").length, "text-success"], ["Not arrived", st.filter((s) => s === "na").length, "text-destructive"], ["Wrapped", st.filter((s) => s === "out").length, "text-muted-foreground"]];
-        return (
-          <div className="grid grid-cols-3 gap-3">
-            {cards.map(([l, v, c]) => (
-              <div key={l} className="rounded-xl border border-border bg-card p-4 shadow-sm"><div className="text-xs text-muted-foreground">{l}</div><div className={`mt-1 font-display text-3xl font-semibold ${c}`}>{v}</div></div>
-            ))}
-          </div>
-        );
-      })()}
       {isProducer && <OvertimeApprovals production={p.name} />}
-      {!hasSite && <p className="rounded-sm border border-primary/40 bg-primary/10 p-3 text-sm">The site location isn't set yet{isProducer ? " — add it under Overview so check-ins can be verified." : ", so check-ins can't be verified yet."}</p>}
+      {!hasSite && <p className="rounded-sm border border-primary/40 bg-primary/10 p-3 text-sm">No itinerary item has an address with coordinates yet{isProducer ? " — add one under Itinerary so check-ins can be verified." : ", so check-ins can't be verified yet."}</p>}
       {myCrewId && (
         <Panel title="My attendance">
           <div className="flex flex-wrap items-center gap-3 p-4">
@@ -829,23 +844,25 @@ export function RegisterTab({ p, isProducer, userId, myName, myCrewId }: Ctx) {
           )}
         </Panel>
       )}
-      <Panel title="Register — all ins and outs">
-        <table className="w-full text-sm">
-          <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Time</th><th className="px-4">Member</th><th className="px-4">In/Out</th><th className="px-4">How</th><th className="px-4">Location</th></tr></thead>
-          <tbody>
-            {rows.length === 0 && <tr><td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">No entries yet.</td></tr>}
-            {rows.map((r) => (
-              <tr key={r.id} className="border-t border-border">
-                <td className="px-4 py-2 text-xs">{when(r.created_at)}</td>
-                <td className="px-4">{r.person_name}</td>
-                <td className="px-4 font-semibold">{r.kind}</td>
-                <td className="px-4 text-xs text-muted-foreground">{r.source === "geofence" ? "Automatic" : r.source === "gps" ? "GPS" : "Marked by producer"}</td>
-                <td className="px-4 text-xs">{r.on_site == null ? "—" : r.on_site ? <span className="text-success">On site ({r.distance_m}m)</span> : <span className="text-destructive">Off site ({r.distance_m}m)</span>}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Panel>
+      {p.status === "Active" && (
+        <Panel title="Register — all ins and outs">
+          <table className="w-full text-sm">
+            <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Time</th><th className="px-4">Member</th><th className="px-4">In/Out</th><th className="px-4">How</th><th className="px-4">Location</th></tr></thead>
+            <tbody>
+              {rows.length === 0 && <tr><td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">No entries yet.</td></tr>}
+              {rows.map((r) => (
+                <tr key={r.id} className="border-t border-border">
+                  <td className="px-4 py-2 text-xs">{when(r.created_at)}</td>
+                  <td className="px-4">{r.person_name}</td>
+                  <td className="px-4 font-semibold">{r.kind}</td>
+                  <td className="px-4 text-xs text-muted-foreground">{r.source === "geofence" ? "Automatic" : r.source === "gps" ? "GPS" : "Marked by producer"}</td>
+                  <td className="px-4 text-xs">{r.on_site == null ? "—" : r.on_site ? <span className="text-success">On site ({r.distance_m}m)</span> : <span className="text-destructive">Off site ({r.distance_m}m)</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Panel>
+      )}
     </div>
   );
 }
