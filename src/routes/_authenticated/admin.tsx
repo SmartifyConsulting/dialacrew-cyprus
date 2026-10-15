@@ -78,7 +78,11 @@ function ImportTab() {
       <Panel title="Import crew from CSV">
         <div className="space-y-3 p-4">
           <p className="text-sm text-muted-foreground">Upload a CSV with a header row. Map its columns to crew fields below, preview, then import. Required: name, role, department.</p>
-          <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={(e) => onFile(e.target.files?.[0])} className="text-sm" />
+          <label className="inline-flex w-fit cursor-pointer items-center rounded-sm bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground">
+            Upload
+            <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={(e) => onFile(e.target.files?.[0])} className="hidden" />
+          </label>
+          {csv && <p className="text-xs text-muted-foreground">{csv.rows.length} row(s) loaded.</p>}
           {csv && (
             <>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -121,13 +125,32 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminPage,
 });
 
-const TABS = ["Users", "Crew", "Import", "Companies", "Bookings", "Payments", "Invoices", "Inventory", "Disputes", "Reviews", "Memberships", "Gig Fees", "Social Spotlight", "Audit Log"] as const;
+const ADMIN_GROUPS = [
+  { name: "People & Organisations", tabs: ["Users", "Crew", "Companies", "Memberships"] },
+  { name: "Operations", tabs: ["Bookings", "Inventory", "Import"] },
+  { name: "Finance", tabs: ["Payments", "Invoices", "Gig Fees"] },
+  { name: "Trust & Compliance", tabs: ["Disputes", "Reviews"] },
+  { name: "Engagement", tabs: ["Social Spotlights"] },
+  { name: "Platform Management", tabs: ["Configuration", "System Settings", "Audit Log"] },
+] as const;
+type AdminGroup = (typeof ADMIN_GROUPS)[number]["name"];
+type AdminTab = (typeof ADMIN_GROUPS)[number]["tabs"][number];
 const btn = "rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground";
+
+function PlaceholderTab({ name }: { name: string }) {
+  return (
+    <Panel title={name}>
+      <p className="p-4 text-sm text-muted-foreground">Nothing configurable here yet.</p>
+    </Panel>
+  );
+}
 
 function AdminPage() {
   const { session } = useSession();
   const role = useRole(session?.user.id);
-  const [tab, setTab] = useState<(typeof TABS)[number]>("Users");
+  const [group, setGroup] = useState<AdminGroup>(ADMIN_GROUPS[0].name);
+  const activeGroup = ADMIN_GROUPS.find((g) => g.name === group)!;
+  const [tab, setTab] = useState<AdminTab>(activeGroup.tabs[0]);
 
   if (role.isLoading) return <Page open title="Admin"><p className="text-muted-foreground">Loading…</p></Page>;
   if (role.data !== "admin") {
@@ -141,12 +164,23 @@ function AdminPage() {
     );
   }
 
+  function selectGroup(g: (typeof ADMIN_GROUPS)[number]) {
+    setGroup(g.name);
+    setTab(g.tabs[0]);
+  }
+
   return (
     <Page open title="Admin" subtitle="Platform operations and oversight">
-      <nav className="mb-5 flex gap-1 overflow-x-auto border-b border-border">
-        {TABS.map((t) => (
+      <nav className="mb-1 flex gap-1 overflow-x-auto border-b border-border">
+        {ADMIN_GROUPS.map((g) => (
+          <button key={g.name} onClick={() => selectGroup(g)}
+            className={`whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-semibold ${group === g.name ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>{g.name}</button>
+        ))}
+      </nav>
+      <nav className="mb-5 flex gap-1 overflow-x-auto">
+        {activeGroup.tabs.map((t) => (
           <button key={t} onClick={() => setTab(t)}
-            className={`whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-semibold ${tab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>{t}</button>
+            className={`whitespace-nowrap rounded-sm px-3 py-1.5 text-xs font-semibold ${tab === t ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>{t}</button>
         ))}
       </nav>
       {tab === "Users" && <UsersTab />}
@@ -161,8 +195,10 @@ function AdminPage() {
       {tab === "Reviews" && <ReviewsTab />}
       {tab === "Memberships" && <MembershipsTab />}
       {tab === "Gig Fees" && <GigFeesTab />}
-      {tab === "Social Spotlight" && <SpotlightTab />}
+      {tab === "Social Spotlights" && <SpotlightTab />}
       {tab === "Audit Log" && <AuditLogTab />}
+      {tab === "Configuration" && <PlaceholderTab name="Configuration" />}
+      {tab === "System Settings" && <PlaceholderTab name="System Settings" />}
     </Page>
   );
 }

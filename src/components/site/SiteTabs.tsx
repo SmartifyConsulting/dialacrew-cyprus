@@ -514,7 +514,7 @@ export function OverviewTab({ p, isProducer }: Ctx) {
 
   return (
     <div className="space-y-5">
-      <Panel title="Overview" collapsible right={isProducer && saveState !== "idle" ? (
+      <Panel title="Overview" right={isProducer && saveState !== "idle" ? (
         <span className="text-xs text-muted-foreground">{saveState === "saving" ? "Saving…" : "Saved"}</span>
       ) : undefined}>
         <div className="space-y-3 p-4 text-sm">
@@ -535,7 +535,7 @@ export function OverviewTab({ p, isProducer }: Ctx) {
         </div>
       </Panel>
 
-      <Panel title="Itinerary" collapsible>
+      <Panel title="Itinerary">
         <LocationPoints p={p} isProducer={isProducer} />
       </Panel>
     </div>
