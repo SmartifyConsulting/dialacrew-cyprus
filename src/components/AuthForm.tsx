@@ -92,6 +92,7 @@ export function AuthForm() {
               first_name: firstName.trim(), last_name: lastName.trim(),
               phone: phone.trim() ? `${dialCode} ${phone.trim().replace(/^0+/, "")}` : "", role,
               ...(role === "producer" && !invite ? { company_name: companyName } : {}),
+              social_opt_in: role === "crew" && socialOptIn,
               ...(role === "crew" && !invite ? { skills } : {}),
               ...(invite ? { invite_token: inviteToken } : {}),
             },
@@ -99,6 +100,7 @@ export function AuthForm() {
         });
         if (error) throw error;
         if (data.session) {
+          if (socialOptIn) await supabase.from("profiles").update({ social_opt_in: true }).eq("id", data.session.user.id);
           const { data: docs } = await supabase.from("legal_documents").select("id").eq("active", true).in("doc_type", ["terms", "privacy_policy"]);
           if (docs?.length) await supabase.from("legal_acceptances").insert(docs.map((d) => ({ user_id: data.session!.user.id, document_id: d.id, user_agent: navigator.userAgent })));
         }
@@ -207,6 +209,12 @@ export function AuthForm() {
           </ul>
         )}
       </div>
+      {mode === "signup" && role === "crew" && (
+        <label className="flex items-start gap-2 text-xs text-muted-foreground">
+          <input type="checkbox" className="mt-0.5 accent-primary" checked={socialOptIn} onChange={(e) => setSocialOptIn(e.target.checked)} />
+          <span>Yes, Book a Crew may feature me on its social media in my country (optional).</span>
+        </label>
+      )}
       {mode === "signup" && (
         <label className="flex items-start gap-2 text-xs text-muted-foreground">
           <input type="checkbox" className="mt-0.5 accent-primary" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />

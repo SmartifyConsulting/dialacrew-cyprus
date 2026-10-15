@@ -338,8 +338,8 @@ export function OverviewTab({ p, isProducer }: Ctx) {
   );
 }
 
-/* ---------------- Members (with Rate Me for everyone) ---------------- */
-export function MembersList({ p, userId }: Ctx) {
+/* ---------------- Members (only producers can rate; crew never rate anyone) ---------------- */
+export function MembersList({ p, userId, isProducer }: Ctx) {
   const members = useSiteMembers(p.id).data ?? [];
   const [rating, setRating] = useState<{ crewId: string; name: string } | null>(null);
   return (
@@ -354,7 +354,7 @@ export function MembersList({ p, userId }: Ctx) {
                 <Link to="/crew/$id" params={{ id: m.crew_id }} className="block truncate text-sm font-semibold hover:text-primary">{m.name}</Link>
                 <div className="truncate text-xs text-muted-foreground">{m.role} · {m.department}</div>
               </div>
-              {m.user_id !== userId && <button onClick={() => setRating({ crewId: m.crew_id, name: m.name })} className="rounded-sm border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10">Rate me</button>}
+              {isProducer && m.user_id !== userId && <button onClick={() => setRating({ crewId: m.crew_id, name: m.name })} className="rounded-sm border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10">Rate me</button>}
             </li>
           ))}
         </ul>
