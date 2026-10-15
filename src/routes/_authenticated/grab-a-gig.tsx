@@ -135,7 +135,7 @@ function GrabAGig() {
       {isCrew && (
         <label className="my-4 flex items-start gap-2 rounded-xl border border-border bg-card p-3 text-sm">
           <input type="checkbox" className="mt-1" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
-          <span>I agree: if I secure a gig and don't show up or deliver, or I give less than 24 hours' notice, a penalty fee will be charged automatically from my bank account.</span>
+          <span>I agree: if I secure a gig and don't show up or deliver, or I give less than 24 hours' notice, a penalty fee will be charged automatically to the card I pay with.</span>
         </label>
       )}
 
