@@ -1363,6 +1363,111 @@ export type Database = {
         }
         Relationships: []
       }
+      production_checklist_item_photos: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          path: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          path: string
+          uploaded_by?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          path?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_checklist_item_photos_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "production_checklist_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_checklist_items: {
+        Row: {
+          checklist_id: string
+          created_at: string
+          created_by: string
+          done: boolean
+          id: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          checklist_id: string
+          created_at?: string
+          created_by?: string
+          done?: boolean
+          id?: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          checklist_id?: string
+          created_at?: string
+          created_by?: string
+          done?: boolean
+          id?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_checklist_items_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "production_checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_checklists: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          production_id: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          production_id: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          production_id?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_checklists_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_escrow: {
         Row: {
           amount: number
@@ -1785,111 +1890,6 @@ export type Database = {
             columns: ["production_id"]
             isOneToOne: false
             referencedRelation: "productions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      production_checklists: {
-        Row: {
-          created_at: string
-          created_by: string
-          id: string
-          production_id: string
-          sort_order: number
-          title: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string
-          id?: string
-          production_id: string
-          sort_order?: number
-          title: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string
-          id?: string
-          production_id?: string
-          sort_order?: number
-          title?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "production_checklists_production_id_fkey"
-            columns: ["production_id"]
-            isOneToOne: false
-            referencedRelation: "productions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      production_checklist_items: {
-        Row: {
-          checklist_id: string
-          created_at: string
-          created_by: string
-          done: boolean
-          id: string
-          label: string
-          sort_order: number
-        }
-        Insert: {
-          checklist_id: string
-          created_at?: string
-          created_by?: string
-          done?: boolean
-          id?: string
-          label: string
-          sort_order?: number
-        }
-        Update: {
-          checklist_id?: string
-          created_at?: string
-          created_by?: string
-          done?: boolean
-          id?: string
-          label?: string
-          sort_order?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "production_checklist_items_checklist_id_fkey"
-            columns: ["checklist_id"]
-            isOneToOne: false
-            referencedRelation: "production_checklists"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      production_checklist_item_photos: {
-        Row: {
-          created_at: string
-          id: string
-          item_id: string
-          path: string
-          uploaded_by: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          item_id: string
-          path: string
-          uploaded_by?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          item_id?: string
-          path?: string
-          uploaded_by?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "production_checklist_item_photos_item_id_fkey"
-            columns: ["item_id"]
-            isOneToOne: false
-            referencedRelation: "production_checklist_items"
             referencedColumns: ["id"]
           },
         ]
