@@ -64,6 +64,13 @@
       "when": 1792010728932,
       "tag": "0008_configurable_gig_fees",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792049646800,
+      "tag": "0009_crew_cannot_rate_social_optin",
+      "breakpoints": true
     }
   ]
 }

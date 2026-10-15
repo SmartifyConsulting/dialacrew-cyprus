@@ -1484,6 +1484,7 @@ export type Database = {
           phone: string | null
           role: string
           skills: string[]
+          social_opt_in: boolean
           suspended: boolean
           whatsapp_number: string | null
         }
@@ -1496,6 +1497,7 @@ export type Database = {
           phone?: string | null
           role?: string
           skills?: string[]
+          social_opt_in?: boolean
           suspended?: boolean
           whatsapp_number?: string | null
         }
@@ -1508,6 +1510,7 @@ export type Database = {
           phone?: string | null
           role?: string
           skills?: string[]
+          social_opt_in?: boolean
           suspended?: boolean
           whatsapp_number?: string | null
         }
