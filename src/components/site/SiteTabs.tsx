@@ -161,13 +161,12 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
   if (!isProducer && points.length === 0) return null;
 
   return (
-    <div className="border-t border-border">
-      <div className="flex items-center justify-between px-4 pt-4">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Location points</h3>
-        {isProducer && !adding && (
+    <div>
+      {isProducer && !adding && (
+        <div className="flex justify-end px-4 pt-4">
           <button onClick={startAdd} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> Add location point</button>
-        )}
-      </div>
+        </div>
+      )}
       <ul className="divide-y divide-border text-sm">
         {points.length === 0 && <li className="p-4 text-muted-foreground">No location points yet.</li>}
         {points.map((pt) => (
@@ -351,34 +350,7 @@ export function OverviewTab({ p, isProducer }: Ctx) {
         </div>
       </Panel>
 
-      <Panel title="Itinerary" right={isProducer ? (
-        <div className="flex items-center gap-3">
-          {saveState !== "idle" && <span className="text-xs text-muted-foreground">{saveState === "saving" ? "Saving…" : "Saved"}</span>}
-          <button onClick={() => setEditing(!editing)} className="text-xs font-semibold text-primary hover:underline">{editing ? "Done" : "Edit"}</button>
-        </div>
-      ) : undefined}>
-        <div className="space-y-3 p-4 text-sm">
-          {isProducer && editing ? (
-            <>
-              <label className="block"><span className="text-xs text-muted-foreground">Site address</span>
-                <AddressAutocomplete className={`${input} mt-1 w-full`} placeholder="Street, suburb, city" value={f.address}
-                  onChange={(v) => update({ address: v })}
-                  onSelect={(s) => update({ address: s.label, latitude: s.lat, longitude: s.lon })} /></label>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <label><span className="text-xs text-muted-foreground">Latitude</span><input className={`${input} mt-1 w-full`} value={f.latitude} onChange={(e) => update({ latitude: e.target.value })} /></label>
-                <label><span className="text-xs text-muted-foreground">Longitude</span><input className={`${input} mt-1 w-full`} value={f.longitude} onChange={(e) => update({ longitude: e.target.value })} /></label>
-                <label><span className="text-xs text-muted-foreground">Site radius (m)</span><input type="number" className={`${input} mt-1 w-full`} value={f.geofence} onChange={(e) => update({ geofence: e.target.value })} /></label>
-              </div>
-              <button onClick={useHere} className="inline-flex items-center gap-1 text-xs text-primary hover:underline"><MapPin className="h-3 w-3" /> Use my current location as the site location</button>
-            </>
-          ) : (
-            <div className="flex gap-2"><MapPin className="h-4 w-4 text-primary" /> {p.address || p.location || "Address not set"}</div>
-          )}
-          {(p.address || p.latitude) && (
-            <a className="inline-flex text-xs text-primary hover:underline" target="_blank" rel="noopener noreferrer"
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.latitude ? `${p.latitude},${p.longitude}` : p.address ?? "")}`}>Open in maps</a>
-          )}
-        </div>
+      <Panel title="Itinerary">
         <LocationPoints p={p} isProducer={isProducer} />
       </Panel>
 
