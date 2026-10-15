@@ -25,8 +25,8 @@
 - [x] Escrow.com: one pool per production, batch release at wrap
 - [x] Grab a Gig marketplace (fee to secure, 24h no-show penalty)
 - [x] Admin-configurable gig fees, penalty and notice hours
-- [ ] Stripe: save card when securing a gig, charge fee + penalties
+- [ ] Paystack: pay fee when securing a gig, save card, auto-charge penalties (built; waiting on Paystack secret key)
 - [ ] Crew value dashboard (connections, earnings, Grab a Gig)
-- [ ] Social-media opt-in at signup + admin spotlight queue
-- [ ] Email-domain company onboarding, pending approval, 2 extra admins
-- [ ] Crew can never rate anyone
+- [x] Social-media opt-in at signup + admin spotlight queue + crew toggle
+- [x] Email-domain company onboarding, pending approval, 2 extra admins
+- [x] Crew can never rate anyone
