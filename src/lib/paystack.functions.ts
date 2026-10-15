@@ -36,7 +36,7 @@ export const startGigCheckout = createServerFn({ method: "POST" })
         email,
         amount: Math.round(Number(gig.secure_fee) * 100),
         currency: "ZAR",
-        callback_url: origin ? `${origin}/grab-a-gig` : undefined,
+        callback_url: origin ? `${origin}/gigs` : undefined,
         metadata: { gig_id: gig.id, user_id: context.userId, purpose: "gig_secure" },
       }),
     });

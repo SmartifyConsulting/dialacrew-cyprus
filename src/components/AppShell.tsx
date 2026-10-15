@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode } from "react";
-import { Megaphone, Briefcase, Building2, Home, Search, Shield, Star, User, type LucideIcon, Wallet, CalendarDays } from "lucide-react";
+import { Briefcase, Building2, Home, Search, Shield, Star, User, type LucideIcon, Wallet, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany, useRole, useSession } from "@/lib/auth";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -41,12 +41,11 @@ export const navByRole: Record<string, NavItem[]> = {
     { to: "/payments", label: "Payments", icon: Wallet },
   ],
   crew: [
+    { to: "/profile", label: "Profile", icon: User },
     { to: "/dashboard", label: "Dashboard", icon: Home },
     { to: "/calendar", label: "Calendar", icon: CalendarDays },
     { to: "/gigs", label: "Find Gigs", icon: Search },
-    { to: "/grab-a-gig", label: "Grab a Gig", icon: Megaphone },
     { to: "/reviews", label: "Reviews", icon: Star },
-    { to: "/profile", label: "Profile", icon: User },
   ],
   client: [{ to: "/profile", label: "My Profile", icon: User }],
   admin: [
@@ -121,11 +120,11 @@ export function TopNav() {
         </aside>
       )}
       <header className={`sticky top-0 z-30 ${signedIn ? "md:pl-60" : ""}`}>
-        <div className={signedIn ? "border-b border-border bg-card md:hidden" : "bg-nav text-nav-foreground"}>
+        <div className={signedIn ? "bg-nav text-nav-foreground md:hidden" : "bg-nav text-nav-foreground"}>
           <div className={`flex items-center gap-4 px-4 py-8 ${signedIn ? "" : "mx-auto max-w-7xl"}`}>
             {signedIn && <Link to="/dashboard" className="shrink-0"><img src={logo.url} alt="Book a Crew" className="h-20 w-auto" /></Link>}
             <div className="ml-auto flex items-center gap-3">
-              {signedIn && <button onClick={signOut} className="rounded-sm border border-border px-3 py-1 font-display text-xs font-semibold">Sign out</button>}
+              {signedIn && <button onClick={signOut} className="rounded-sm border border-nav-foreground/30 px-3 py-1 font-display text-xs font-semibold text-nav-foreground">Sign out</button>}
             </div>
           </div>
         </div>
