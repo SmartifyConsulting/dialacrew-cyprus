@@ -159,7 +159,7 @@ function CrewPage() {
                 <div key={l} className="rounded-lg bg-muted p-3"><dt className="text-[11px] text-muted-foreground">{l}</dt><dd className="mt-1 font-semibold">{v}</dd></div>
               ))}
             </dl>
-            {open.kit && <div className="mt-5"><div className="text-xs font-semibold text-muted-foreground">Kit</div><p className="mt-1 text-sm">{open.kit}</p></div>}
+            {open.kit && <div className="mt-5"><div className="text-xs font-semibold text-muted-foreground">Equipment</div><p className="mt-1 text-sm">{open.kit}</p></div>}
             <div className="mt-6 flex gap-2">
               <button onClick={() => { setPencilling({ id: open.id, name: open.name, role: open.role, dayRate: open.dayRate }); setOpen(null); }} className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Pencil</button>
               <Link to="/crew/$id" params={{ id: open.id }} className="flex-1 rounded-md border border-border px-4 py-2 text-center text-sm font-semibold">Full profile</Link>

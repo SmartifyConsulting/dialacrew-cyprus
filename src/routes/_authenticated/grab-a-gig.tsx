@@ -123,7 +123,7 @@ function GrabAGig() {
             <label className="text-sm">Posting expires *<input type="datetime-local" className={field} value={form.expires_at} onChange={set("expires_at")} /></label>
             <label className="text-sm md:col-span-2">Venue / address *<input className={field} value={form.venue} onChange={set("venue")} /></label>
             <label className="text-sm">Country *<select className={field} value={form.country} onChange={set("country")}>{COUNTRIES.map((c) => <option key={c}>{c}</option>)}</select></label>
-            <label className="text-sm">Kit required<input className={field} value={form.kit_required} onChange={set("kit_required")} /></label>
+            <label className="text-sm">Equipment required<input className={field} value={form.kit_required} onChange={set("kit_required")} /></label>
             <label className="text-sm">Pay type *<select className={field} value={form.pay_type} onChange={set("pay_type")}><option value="day_rate">Day rate</option><option value="fixed">Fixed price</option></select></label>
             <label className="text-sm">Amount (R) *<input type="number" min="1" className={field} value={form.amount} onChange={set("amount")} /></label>
             <label className="text-sm md:col-span-2">Description *<textarea rows={3} className={field} value={form.description} onChange={set("description")} /></label>
@@ -150,7 +150,7 @@ function GrabAGig() {
             <p className="text-sm text-muted-foreground">{g.role} · {g.department}</p>
             <p className="mt-2 text-sm">{g.event_date}{g.end_date ? ` – ${g.end_date}` : ""} · call {String(g.call_time).slice(0, 5)}</p>
             <p className="text-sm">{g.venue}, {g.country}</p>
-            {g.kit_required && <p className="text-sm text-muted-foreground">Kit: {g.kit_required}</p>}
+            {g.kit_required && <p className="text-sm text-muted-foreground">Equipment: {g.kit_required}</p>}
             <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{g.description}</p>
             <p className="mt-3 text-xl font-bold text-foreground">{rand(g.amount)} <span className="text-sm font-normal text-muted-foreground">{g.pay_type === "fixed" ? "fixed" : "per day"}</span></p>
             <p className="text-xs text-muted-foreground">Posted by {g.poster_name} · expires {new Date(g.expires_at).toLocaleString("en-ZA")}</p>

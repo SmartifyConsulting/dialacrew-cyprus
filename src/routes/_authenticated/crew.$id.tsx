@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_authenticated/crew/$id")({
 
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
 const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground";
-const TABS = ["About", "Projects", "Kit & props", "Banking"] as const;
+const TABS = ["About", "Projects", "Equipment", "Banking"] as const;
 
 function CrewProfile() {
   const { id } = Route.useParams();
@@ -41,7 +41,7 @@ function CrewProfile() {
   const role = useRole(session?.user.id);
   const inv = useInvalidate();
   const { tab: tabParam } = Route.useSearch();
-  const initialTab: (typeof TABS)[number] = tabParam === "kit" ? "Kit & props" : "About";
+  const initialTab: (typeof TABS)[number] = tabParam === "kit" ? "Equipment" : "About";
   const [tab, setTab] = useState<(typeof TABS)[number]>(initialTab);
   useEffect(() => { setTab(initialTab); }, [initialTab]);
   const [editing, setEditing] = useState(false);
@@ -146,7 +146,7 @@ function CrewProfile() {
               ))}
             </ul>
           )}
-          {tab === "Kit & props" && <Kit crewId={id} items={assets.data ?? []} canEdit={canEdit} onChange={refresh} />}
+          {tab === "Equipment" && <Kit crewId={id} items={assets.data ?? []} canEdit={canEdit} onChange={refresh} />}
           {tab === "Banking" && canEdit && <BankingTab crewId={id} />}
         </div>
       </div>
@@ -506,7 +506,7 @@ function Kit({ crewId, items, canEdit, onChange }: { crewId: string; items: { id
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">Equipment and props this provider can bring. Dial a Crew selects items per job and the fees are added to the provider's total.</p>
-      {items.length === 0 && <p className="text-sm text-muted-foreground">No kit or props captured yet.</p>}
+      {items.length === 0 && <p className="text-sm text-muted-foreground">No equipment or props captured yet.</p>}
       {items.map((a) => (
         <div key={a.id} className="flex items-center gap-3 rounded-sm border border-border p-3">
           <Package className="h-4 w-4 text-primary" /><span className="flex-1 text-sm">{a.name} <span className="text-xs text-muted-foreground">· {a.category}</span></span>

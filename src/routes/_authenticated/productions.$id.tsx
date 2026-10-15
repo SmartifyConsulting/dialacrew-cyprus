@@ -25,10 +25,10 @@ export const Route = createFileRoute("/_authenticated/productions/$id")({
   component: ProductionSite,
 });
 
-// Crew see only Posts, Members, Tasks, Kit (Overview is the fixed left widget).
+// Crew see only Posts, Members, Tasks, Equipment (Overview is the fixed left widget).
 // Find Crew (scenario planner) opens from the header button beside the status badge.
-const CREW_TABS = ["Posts", "Members", "Tasks", "Kit"] as const;
-const MANAGER_TABS = ["Posts", "Members", "Tasks", "Kit", "Documents", "Budget", "Review"] as const;
+const CREW_TABS = ["Posts", "Members", "Tasks", "Equipment"] as const;
+const MANAGER_TABS = ["Posts", "Members", "Tasks", "Equipment", "Documents", "Budget", "Review"] as const;
 type Tab = (typeof MANAGER_TABS)[number] | "Find Crew";
 
 function ProductionSite() {
@@ -82,7 +82,7 @@ function ProductionSite() {
           {tab === "Posts" && <PostsTab {...ctx} />}
           {tab === "Members" && <div className="space-y-5"><MembersList {...ctx} /><RegisterTab {...ctx} /></div>}
           {tab === "Tasks" && <TasksTab {...ctx} />}
-          {tab === "Kit" && <AssetsTab {...ctx} bookings={bookings} crewNames={crewNames} />}
+          {tab === "Equipment" && <AssetsTab {...ctx} bookings={bookings} crewNames={crewNames} />}
           {tab === "Documents" && isProducer && <DocumentsTab {...ctx} />}
           {tab === "Budget" && isProducer && <CommercialsTab {...ctx} bookings={bookings} crewNames={crewNames} requests={requests} />}
           {tab === "Find Crew" && isProducer && <ScenarioPlanner p={p} />}

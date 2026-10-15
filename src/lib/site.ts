@@ -45,7 +45,11 @@ export const useMessages = (pid: string, bookingId: string | "all") => useQuery(
 export const useTasks = (pid: string) => useQuery(q(["tasks", pid], () => supabase.from("site_tasks").select("*").eq("production_id", pid).order("created_at")));
 export const useDocs = (pid: string) => useQuery(q(["docs", pid], () => supabase.from("site_documents").select("*").eq("production_id", pid).order("created_at", { ascending: false })));
 export const useRegister = (pid: string) => useQuery(q(["register", pid], () => supabase.from("site_attendance").select("*").eq("production_id", pid).order("created_at", { ascending: false })));
-export const useLocationPoints = (pid: string) => useQuery(q(["location-points", pid], () => supabase.from("production_locations").select("*").eq("production_id", pid).order("starts_at", { ascending: true, nullsFirst: false })));
+export const useLocationPoints = (pid: string) => useQuery(q(["location-points", pid], () => supabase.from("production_locations").select("*").eq("production_id", pid).order("sort_order", { ascending: true })));
+export const useChecklists = (pid: string) => useQuery(q(["checklists", pid], () => supabase.from("production_checklists").select("*, production_checklist_items(*)")
+  .eq("production_id", pid)
+  .order("sort_order", { ascending: true })
+  .order("sort_order", { ascending: true, referencedTable: "production_checklist_items" })));
 export const useCrewAssets = (enabled: boolean) => useQuery(q(["crew-assets"], () => supabase.from("crew_assets").select("*").order("name"), enabled));
 export const useBookingAssets = (enabled: boolean) => useQuery(q(["booking-assets"], () => supabase.from("booking_assets").select("*"), enabled));
 export const useReviews = (crewId?: string) => useQuery(q(["reviews", crewId ?? "all"], () => {

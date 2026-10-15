@@ -306,7 +306,7 @@ export function ScenarioPlanner({ p }: { p: Production }) {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="text-left text-xs text-muted-foreground">
-                <tr><th className="px-4 py-2">Draft</th><th className="px-2">Crew</th><th className="px-2">Kit items</th><th className="px-2">Estimate</th><th className="px-2 w-40">Budget used</th><th /></tr>
+                <tr><th className="px-4 py-2">Draft</th><th className="px-2">Crew</th><th className="px-2">Equipment items</th><th className="px-2">Estimate</th><th className="px-2 w-40">Budget used</th><th /></tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {scenarios.data.map((s) => {

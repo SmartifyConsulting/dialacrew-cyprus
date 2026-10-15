@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
-import { CheckCircle2, Circle, Download, FileText, LogIn, LogOut, MapPin, Mic, Paperclip, Pencil, Plus, Star, Trash2, Users } from "lucide-react";
+import { CheckCircle2, Circle, Download, FileText, GripVertical, LogIn, LogOut, MapPin, Mic, Paperclip, Pencil, Plus, Star, Trash2, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge, Panel } from "@/components/AppShell";
 import { AudioRecorder } from "@/components/AudioRecorder";
@@ -12,7 +12,7 @@ import { assetsTotal, providerTotal } from "@/lib/costing";
 import { distanceMeters, getPosition, isOnSite } from "@/lib/geo";
 import { isOnline, pendingCount, queueCheckin, syncQueue } from "@/lib/offline-checkin";
 import {
-  signedUrl, uploadFile, useBookingAssets, useCrewAssets, useDocs, useInvalidate, useLocationPoints, useMessages, usePosts, useRegister,
+  signedUrl, uploadFile, useBookingAssets, useChecklists, useCrewAssets, useDocs, useInvalidate, useLocationPoints, useMessages, usePosts, useRegister,
   useReviews, useSignedUrl, useSiteMembers, useTasks,
 } from "@/lib/site";
 import { useCreateOpenGig, useRequests, useSetRequestState } from "@/lib/db";
@@ -120,6 +120,8 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [lf, setLf] = useState(blankLocationForm);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   function startAdd() { setLf(blankLocationForm); setEditingId(null); setAdding(true); }
   function startEdit(pt: { id: string; label: string; address: string; latitude: number | null; longitude: number | null; starts_at: string | null; ends_at: string | null }) {
@@ -143,7 +145,7 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
     };
     const { error } = editingId
       ? await supabase.from("production_locations").update(payload).eq("id", editingId)
-      : await supabase.from("production_locations").insert({ production_id: p.id, ...payload });
+      : await supabase.from("production_locations").insert({ production_id: p.id, sort_order: points.length, ...payload });
     setBusy(false);
     if (error) { toast.error(friendlyError(error)); return; }
     toast.success(editingId ? "Location point updated" : "Location point added");
@@ -155,6 +157,19 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
     const { error } = await supabase.from("production_locations").delete().eq("id", id);
     if (error) { toast.error(friendlyError(error)); return; }
     if (id === editingId) cancelForm();
+    inv(["location-points", p.id]);
+  }
+
+  async function reorder(fromId: string, toId: string) {
+    if (fromId === toId) return;
+    const order = points.map((pt) => pt.id);
+    const from = order.indexOf(fromId);
+    const to = order.indexOf(toId);
+    if (from === -1 || to === -1) return;
+    order.splice(to, 0, order.splice(from, 1)[0]!);
+    const results = await Promise.all(order.map((id, i) => supabase.from("production_locations").update({ sort_order: i }).eq("id", id)));
+    const error = results.find((r) => r.error)?.error;
+    if (error) { toast.error(friendlyError(error)); return; }
     inv(["location-points", p.id]);
   }
 
@@ -170,7 +185,14 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
       <ul className="divide-y divide-border text-sm">
         {points.length === 0 && <li className="p-4 text-muted-foreground">No location points yet.</li>}
         {points.map((pt) => (
-          <li key={pt.id} className="flex items-start justify-between gap-3 px-4 py-3">
+          <li key={pt.id}
+            draggable={isProducer && points.length > 1}
+            onDragStart={() => setDragId(pt.id)}
+            onDragOver={(e) => { if (isProducer) { e.preventDefault(); setDragOverId(pt.id); } }}
+            onDrop={(e) => { e.preventDefault(); if (dragId) reorder(dragId, pt.id); setDragId(null); setDragOverId(null); }}
+            onDragEnd={() => { setDragId(null); setDragOverId(null); }}
+            className={`flex items-start justify-between gap-3 px-4 py-3 ${dragOverId === pt.id && dragId && dragId !== pt.id ? "bg-muted" : ""}`}>
+            {isProducer && points.length > 1 && <GripVertical className="mt-0.5 h-4 w-4 shrink-0 cursor-grab text-muted-foreground" />}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 font-medium"><MapPin className="h-3.5 w-3.5 text-primary" /> {pt.label}</div>
               {pt.address && <div className="text-xs text-muted-foreground">{pt.address}</div>}
@@ -217,8 +239,8 @@ export const CREW_ROLES = [
   "Catering", "Production Assistant",
 ] as const;
 
-/* ---------------- Production checklist (standard roles, ticked once confirmed) ---------------- */
-function ProductionChecklist({ p }: Pick<Ctx, "p">) {
+/* ---------------- Crew role status (standard roles, ticked once confirmed) — shown on Members tab ---------------- */
+function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
   const bookings = useQuery({
     queryKey: ["production-checklist", p.id],
     queryFn: async () => {
@@ -235,7 +257,7 @@ function ProductionChecklist({ p }: Pick<Ctx, "p">) {
   const extras = bookings.filter((b) => !CREW_ROLES.some((r) => r.toLowerCase() === b.role.trim().toLowerCase()));
 
   return (
-    <Panel title="Production Checklist">
+    <Panel title="Crew roles">
       <ul className="divide-y divide-border text-sm">
         {CREW_ROLES.map((role) => {
           const matches = byRole(role);
@@ -268,6 +290,96 @@ function ProductionChecklist({ p }: Pick<Ctx, "p">) {
         })}
       </ul>
     </Panel>
+  );
+}
+
+/* ---------------- Custom checklists (producers add checklists + items, e.g. "Wardrobe checklist") ---------------- */
+function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
+  const inv = useInvalidate();
+  const checklists = (useChecklists(p.id).data ?? []) as Array<{ id: string; title: string; production_checklist_items: Array<{ id: string; label: string; done: boolean }> }>;
+  const [addingList, setAddingList] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newItem, setNewItem] = useState<Record<string, string>>({});
+
+  async function addChecklist() {
+    if (!newTitle.trim()) return;
+    const { error } = await supabase.from("production_checklists").insert({ production_id: p.id, title: newTitle.trim(), sort_order: checklists.length });
+    if (error) { toast.error(friendlyError(error)); return; }
+    setNewTitle("");
+    setAddingList(false);
+    inv(["checklists", p.id]);
+  }
+
+  async function removeChecklist(id: string) {
+    const { error } = await supabase.from("production_checklists").delete().eq("id", id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    inv(["checklists", p.id]);
+  }
+
+  async function addItem(checklistId: string, count: number) {
+    const label = (newItem[checklistId] ?? "").trim();
+    if (!label) return;
+    const { error } = await supabase.from("production_checklist_items").insert({ checklist_id: checklistId, label, sort_order: count });
+    if (error) { toast.error(friendlyError(error)); return; }
+    setNewItem((prev) => ({ ...prev, [checklistId]: "" }));
+    inv(["checklists", p.id]);
+  }
+
+  async function toggleItem(id: string, done: boolean) {
+    const { error } = await supabase.from("production_checklist_items").update({ done: !done }).eq("id", id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    inv(["checklists", p.id]);
+  }
+
+  async function removeItem(id: string) {
+    const { error } = await supabase.from("production_checklist_items").delete().eq("id", id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    inv(["checklists", p.id]);
+  }
+
+  if (!isProducer && checklists.length === 0) return null;
+
+  return (
+    <div className="space-y-5">
+      {checklists.map((c) => (
+        <Panel key={c.id} title={c.title} right={isProducer && (
+          <button onClick={() => removeChecklist(c.id)} className="text-muted-foreground hover:text-destructive" aria-label={`Remove ${c.title}`}><Trash2 className="h-3.5 w-3.5" /></button>
+        )}>
+          <ul className="divide-y divide-border text-sm">
+            {c.production_checklist_items.length === 0 && <li className="p-4 text-muted-foreground">No items yet.</li>}
+            {c.production_checklist_items.map((item) => (
+              <li key={item.id} className="flex items-center gap-3 px-4 py-2.5">
+                <button onClick={() => isProducer && toggleItem(item.id, item.done)} disabled={!isProducer} aria-label={item.done ? `Mark ${item.label} not done` : `Mark ${item.label} done`}>
+                  {item.done ? <CheckCircle2 className="h-4 w-4 shrink-0 text-success" /> : <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />}
+                </button>
+                <span className={`min-w-0 flex-1 ${item.done ? "text-muted-foreground line-through" : ""}`}>{item.label}</span>
+                {isProducer && <button onClick={() => removeItem(item.id)} className="text-muted-foreground hover:text-destructive" aria-label={`Remove ${item.label}`}><Trash2 className="h-3.5 w-3.5" /></button>}
+              </li>
+            ))}
+          </ul>
+          {isProducer && (
+            <form onSubmit={(e) => { e.preventDefault(); addItem(c.id, c.production_checklist_items.length); }} className="flex gap-2 border-t border-border p-3">
+              <input className={`${input} flex-1`} placeholder="Add item…" value={newItem[c.id] ?? ""} onChange={(e) => setNewItem((prev) => ({ ...prev, [c.id]: e.target.value }))} />
+              <button type="submit" className={btn}>Add</button>
+            </form>
+          )}
+        </Panel>
+      ))}
+
+      {isProducer && (
+        addingList ? (
+          <div className="flex gap-2 rounded-sm border border-border bg-card p-3">
+            <input autoFocus className={`${input} flex-1`} placeholder="Checklist name, e.g. Wardrobe checklist"
+              value={newTitle} onChange={(e) => setNewTitle(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") addChecklist(); if (e.key === "Escape") { setAddingList(false); setNewTitle(""); } }} />
+            <button onClick={addChecklist} className={btn}>Add</button>
+            <button onClick={() => { setAddingList(false); setNewTitle(""); }} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold">Cancel</button>
+          </div>
+        ) : (
+          <button onClick={() => setAddingList(true)} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> Add checklist</button>
+        )
+      )}
+    </div>
   );
 }
 
@@ -354,7 +466,7 @@ export function OverviewTab({ p, isProducer }: Ctx) {
         <LocationPoints p={p} isProducer={isProducer} />
       </Panel>
 
-      <ProductionChecklist p={p} />
+      <ChecklistsPanel p={p} isProducer={isProducer} />
     </div>
   );
 }
@@ -381,6 +493,7 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
           ))}
         </ul>
       </Panel>
+      <CrewRoleStatus p={p} />
       {rating && <RateDialog {...rating} productionId={p.id} onClose={() => setRating(null)} />}
     </div>
   );
@@ -813,7 +926,7 @@ export function AssetsTab({ p, isProducer, bookings, crewNames }: Ctx & { bookin
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">{isProducer ? "Tick the kit and props from each provider's inventory that Dial a Crew has selected for this job. Each fee is added to that provider's total." : "Kit and props selected for this job."}</p>
+      <p className="text-sm text-muted-foreground">{isProducer ? "Tick the equipment and props from each provider's inventory that Dial a Crew has selected for this job. Each fee is added to that provider's total." : "Equipment and props selected for this job."}</p>
       {isProducer && rows.length > 0 && (
         <div className="flex items-center justify-between rounded-sm border border-primary/40 bg-primary/10 px-4 py-3">
           <span className="text-sm font-semibold">Running cost as selected</span>

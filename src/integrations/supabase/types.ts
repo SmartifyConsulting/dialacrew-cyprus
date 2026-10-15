@@ -1411,6 +1411,7 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           production_id: string
+          sort_order: number
           starts_at: string | null
         }
         Insert: {
@@ -1422,6 +1423,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           production_id: string
+          sort_order?: number
           starts_at?: string | null
         }
         Update: {
@@ -1433,6 +1435,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           production_id?: string
+          sort_order?: number
           starts_at?: string | null
         }
         Relationships: [
@@ -1782,6 +1785,79 @@ export type Database = {
             columns: ["production_id"]
             isOneToOne: false
             referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_checklists: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          production_id: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          production_id: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          production_id?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_checklists_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_checklist_items: {
+        Row: {
+          checklist_id: string
+          created_at: string
+          created_by: string
+          done: boolean
+          id: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          checklist_id: string
+          created_at?: string
+          created_by?: string
+          done?: boolean
+          id?: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          checklist_id?: string
+          created_at?: string
+          created_by?: string
+          done?: boolean
+          id?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_checklist_items_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "production_checklists"
             referencedColumns: ["id"]
           },
         ]
