@@ -71,6 +71,13 @@
       "when": 1792049646800,
       "tag": "0009_crew_cannot_rate_social_optin",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792084237835,
+      "tag": "0010_company_domains_spotlight_paystack",
+      "breakpoints": true
     }
   ]
 }

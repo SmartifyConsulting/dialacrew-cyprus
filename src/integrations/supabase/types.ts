@@ -393,6 +393,7 @@ export type Database = {
           address: string | null
           billing_email: string | null
           created_at: string
+          email_domain: string | null
           id: string
           name: string
           phone: string | null
@@ -401,6 +402,7 @@ export type Database = {
           address?: string | null
           billing_email?: string | null
           created_at?: string
+          email_domain?: string | null
           id?: string
           name: string
           phone?: string | null
@@ -409,6 +411,7 @@ export type Database = {
           address?: string | null
           billing_email?: string | null
           created_at?: string
+          email_domain?: string | null
           id?: string
           name?: string
           phone?: string | null
@@ -462,6 +465,50 @@ export type Database = {
           },
         ]
       }
+      company_join_requests: {
+        Row: {
+          company_id: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          email: string
+          full_name: string | null
+          id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          email: string
+          full_name?: string | null
+          id?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_join_requests_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_memory: {
         Row: {
           client: string
@@ -492,6 +539,7 @@ export type Database = {
           company_role: Database["public"]["Enums"]["company_role"]
           created_at: string
           id: string
+          is_admin: boolean
           user_id: string
         }
         Insert: {
@@ -499,6 +547,7 @@ export type Database = {
           company_role?: Database["public"]["Enums"]["company_role"]
           created_at?: string
           id?: string
+          is_admin?: boolean
           user_id: string
         }
         Update: {
@@ -506,6 +555,7 @@ export type Database = {
           company_role?: Database["public"]["Enums"]["company_role"]
           created_at?: string
           id?: string
+          is_admin?: boolean
           user_id?: string
         }
         Relationships: [
@@ -817,6 +867,53 @@ export type Database = {
             columns: ["crew_id"]
             isOneToOne: false
             referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gig_penalties: {
+        Row: {
+          amount: number
+          charged_at: string | null
+          created_at: string
+          failure: string | null
+          gig_id: string
+          id: string
+          reason: string | null
+          reference: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          charged_at?: string | null
+          created_at?: string
+          failure?: string | null
+          gig_id: string
+          id?: string
+          reason?: string | null
+          reference?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          charged_at?: string | null
+          created_at?: string
+          failure?: string | null
+          gig_id?: string
+          id?: string
+          reason?: string | null
+          reference?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gig_penalties_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "community_gigs"
             referencedColumns: ["id"]
           },
         ]
@@ -1218,6 +1315,36 @@ export type Database = {
           },
         ]
       }
+      payment_cards: {
+        Row: {
+          authorization_code: string
+          bank: string | null
+          card_type: string | null
+          email: string
+          last4: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          authorization_code: string
+          bank?: string | null
+          card_type?: string | null
+          email: string
+          last4?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          authorization_code?: string
+          bank?: string | null
+          card_type?: string | null
+          email?: string
+          last4?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           key: string
@@ -1477,6 +1604,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          country: string | null
           created_at: string
           email: string
           full_name: string
@@ -1485,11 +1613,13 @@ export type Database = {
           role: string
           skills: string[]
           social_opt_in: boolean
+          spotlight_featured_at: string | null
           suspended: boolean
           whatsapp_number: string | null
         }
         Insert: {
           avatar_url?: string | null
+          country?: string | null
           created_at?: string
           email: string
           full_name?: string
@@ -1498,11 +1628,13 @@ export type Database = {
           role?: string
           skills?: string[]
           social_opt_in?: boolean
+          spotlight_featured_at?: string | null
           suspended?: boolean
           whatsapp_number?: string | null
         }
         Update: {
           avatar_url?: string | null
+          country?: string | null
           created_at?: string
           email?: string
           full_name?: string
@@ -1511,6 +1643,7 @@ export type Database = {
           role?: string
           skills?: string[]
           social_opt_in?: boolean
+          spotlight_featured_at?: string | null
           suspended?: boolean
           whatsapp_number?: string | null
         }
@@ -1850,8 +1983,27 @@ export type Database = {
       }
       claim_crew_profile: { Args: never; Returns: string }
       claim_gig: { Args: { _booking: string }; Returns: undefined }
+      company_should_auto_admin: {
+        Args: { _company: string }
+        Returns: boolean
+      }
+      company_team: {
+        Args: { _company: string }
+        Returns: {
+          company_role: Database["public"]["Enums"]["company_role"]
+          email: string
+          full_name: string
+          is_admin: boolean
+          user_id: string
+        }[]
+      }
       complete_gig: { Args: { _gig: string }; Returns: undefined }
       crew_on_time_pct: { Args: { _crew_id: string }; Returns: number }
+      decide_join_request: {
+        Args: { _approve: boolean; _request: string }
+        Returns: undefined
+      }
+      email_domain_of: { Args: { _email: string }; Returns: string }
       expire_pencils: { Args: never; Returns: undefined }
       generate_invoice: { Args: { _booking: string }; Returns: string }
       get_invite: {
@@ -1869,6 +2021,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_company_admin: {
+        Args: { _company: string; _user: string }
         Returns: boolean
       }
       is_company_member: {
@@ -1902,6 +2058,14 @@ export type Database = {
       release_payment: { Args: { _booking: string }; Returns: string }
       report_gig_no_show: { Args: { _gig: string }; Returns: number }
       secure_gig: { Args: { _gig: string }; Returns: undefined }
+      secure_gig_paid: {
+        Args: { _gig: string; _user: string }
+        Returns: undefined
+      }
+      set_company_admin: {
+        Args: { _admin: boolean; _company: string; _user: string }
+        Returns: undefined
+      }
       site_members: {
         Args: { _prod: string }
         Returns: {
