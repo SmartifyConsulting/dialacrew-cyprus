@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { startGigCheckout, verifyGigCheckout, chargeGigPenalties } from "@/lib/paystack.functions";
 import { toast } from "sonner";
 import { Page, Panel } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,6 +39,17 @@ function GrabAGig() {
   const [form, setForm] = useState(empty);
   const [showForm, setShowForm] = useState(false);
   const [agree, setAgree] = useState(false);
+  const startCheckout = useServerFn(startGigCheckout);
+  const verifyCheckout = useServerFn(verifyGigCheckout);
+  const chargePenalties = useServerFn(chargeGigPenalties);
+  useEffect(() => {
+    const ref = new URLSearchParams(window.location.search).get("reference");
+    if (!ref || !uid) return;
+    window.history.replaceState(null, "", "/grab-a-gig");
+    verifyCheckout({ data: { reference: ref } })
+      .then(() => { toast.success("Payment received — the gig is yours. Your card is saved for any penalties."); qc.invalidateQueries({ queryKey: ["community-gigs"] }); })
+      .catch((e) => toast.error((e as Error).message));
+  }, [uid]); // eslint-disable-line react-hooks/exhaustive-deps
   const gigs = useQuery({
     queryKey: ["community-gigs"], enabled: !!uid,
     queryFn: async () => {
@@ -67,21 +80,30 @@ function GrabAGig() {
   }
   async function secure(g: Gig) {
     if (!agree) return void toast.error("Please accept the no-show terms first.");
-    const { error } = await supabase.rpc("secure_gig" as never, { _gig: g.id } as never);
-    if (error) return void toast.error(error.message);
-    toast.success(`Gig secured — ${rand(g.secure_fee)} fee applies`); refresh();
+    try {
+      const { url } = await startCheckout({ data: { gigId: g.id } });
+      window.location.href = url;
+    } catch (e) { toast.error((e as Error).message); }
+  }
+  async function penalise(gigId: string) {
+    try {
+      const r = await chargePenalties({ data: { gigId } });
+      if (r.failed) toast.error("The penalty couldn't be charged to the saved card — it's been recorded for follow-up.");
+    } catch (e) { toast.error((e as Error).message); }
   }
   async function withdraw(g: Gig) {
     const late = lateWithdrawal(g.event_date, g.call_time);
-    if (!confirm(late ? "Less than 24 hours' notice — a penalty fee will be charged. Withdraw anyway?" : "Withdraw from this gig?")) return;
+    if (!confirm(late ? "Less than 24 hours' notice — a penalty fee will be charged to your card. Withdraw anyway?" : "Withdraw from this gig?")) return;
     const { data, error } = await supabase.rpc("withdraw_from_gig" as never, { _gig: g.id } as never);
     if (error) return void toast.error(error.message);
-    toast.success(Number(data) > 0 ? `Withdrawn. Penalty of ${rand(Number(data))} recorded.` : "Withdrawn — the gig is back on the board."); refresh();
+    if (Number(data) > 0) await penalise(g.id);
+    toast.success(Number(data) > 0 ? `Withdrawn. Penalty of ${rand(Number(data))} charged.` : "Withdrawn — the gig is back on the board."); refresh();
   }
   async function act(fn: "report_gig_no_show" | "complete_gig", g: Gig) {
     const { error } = await supabase.rpc(fn as never, { _gig: g.id } as never);
     if (error) return void toast.error(error.message);
-    toast.success(fn === "complete_gig" ? "Marked as done" : "No-show reported, penalty recorded"); refresh();
+    if (fn === "report_gig_no_show") await penalise(g.id);
+    toast.success(fn === "complete_gig" ? "Marked as done" : "No-show reported, penalty charged"); refresh();
   }
 
   const isCrew = role === "crew";
@@ -113,7 +135,7 @@ function GrabAGig() {
       {isCrew && (
         <label className="my-4 flex items-start gap-2 rounded-xl border border-border bg-card p-3 text-sm">
           <input type="checkbox" className="mt-1" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
-          <span>I agree: if I secure a gig and don't show up or deliver, or I give less than 24 hours' notice, a penalty fee will be charged automatically from my bank account.</span>
+          <span>I agree: if I secure a gig and don't show up or deliver, or I give less than 24 hours' notice, a penalty fee will be charged automatically to the card I pay with.</span>
         </label>
       )}
 

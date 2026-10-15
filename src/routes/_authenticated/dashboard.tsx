@@ -1,3 +1,4 @@
+import type React from "react";
 import { overtimeAmount, shiftLabel, type OvertimeShift } from "@/lib/costing";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check } from "lucide-react";
@@ -18,6 +19,7 @@ function DashboardRouter() {
   const role = useRole(session?.user.id);
   if (role.isLoading) return <Page open title="Home"><p className="text-muted-foreground">Loading…</p></Page>;
   if (role.data === "crew") return <CrewDashboard />;
+  if (role.data === "client") return <PendingGate><Dashboard /></PendingGate>;
   return <Dashboard />;
 }
 
@@ -73,6 +75,7 @@ function CrewDashboard() {
   }
   return (
     <Page open title="Home" subtitle="Your jobs and call times">
+      <SpotlightCard />
       {todayJob && (() => {
         const pr = todayJob.productions as { name?: string; address?: string; location?: string } | null;
         const where = pr?.address || pr?.location || "";
@@ -384,5 +387,57 @@ function Dashboard() {
         </div>
       </div>
     </Page>
+  );
+}
+
+function PendingGate({ children }: { children: React.ReactNode }) {
+  const { session } = useSession();
+  const uid = session?.user.id;
+  const req = useQuery({
+    queryKey: ["my-join-request", uid], enabled: !!uid,
+    queryFn: async () => { const { data } = await supabase.from("company_join_requests").select("status, companies(name)").eq("user_id", uid!).order("created_at", { ascending: false }).limit(1).maybeSingle(); return data; },
+  });
+  if (req.isLoading) return <Page open title="Home"><p className="text-muted-foreground">Loading…</p></Page>;
+  if (req.data && req.data.status !== "approved") {
+    const name = (req.data.companies as { name?: string } | null)?.name ?? "your company";
+    return (
+      <Page open title="Registration pending approval">
+        <div className="max-w-lg rounded-lg border border-border bg-card p-5 text-sm">
+          {req.data.status === "pending"
+            ? <>Your email address belongs to <b>{name}</b>. For security, one of its admins needs to approve your registration. You'll get full access as soon as they do.</>
+            : <>An admin at <b>{name}</b> declined this registration. Please contact them if you think this is a mistake.</>}
+        </div>
+      </Page>
+    );
+  }
+  return <>{children}</>;
+}
+
+const COUNTRY_OPTIONS = ["South Africa", "Namibia", "Botswana", "Kenya", "Nigeria", "Cyprus", "United Kingdom"];
+function SpotlightCard() {
+  const { session } = useSession();
+  const uid = session?.user.id;
+  const qc = useQueryClient();
+  const me = useQuery({
+    queryKey: ["my-spotlight", uid], enabled: !!uid,
+    queryFn: async () => { const { data } = await supabase.from("profiles").select("social_opt_in, country").eq("id", uid!).maybeSingle(); return data; },
+  });
+  async function save(patch: { social_opt_in?: boolean; country?: string }) {
+    const { error } = await supabase.from("profiles").update(patch).eq("id", uid!);
+    if (error) return void toast.error(friendlyError(error));
+    toast.success("Saved"); qc.invalidateQueries({ queryKey: ["my-spotlight", uid] });
+  }
+  if (!me.data) return null;
+  return (
+    <div className="mb-5 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-4 text-sm">
+      <label className="flex flex-1 items-center gap-2">
+        <input type="checkbox" checked={me.data.social_opt_in} onChange={(e) => save({ social_opt_in: e.target.checked })} />
+        Feature me on Book a Crew social media
+      </label>
+      <select className="rounded-sm border border-input bg-background px-2 py-1" value={me.data.country ?? ""} onChange={(e) => save({ country: e.target.value })}>
+        <option value="">Country…</option>
+        {COUNTRY_OPTIONS.map((c) => <option key={c}>{c}</option>)}
+      </select>
+    </div>
   );
 }

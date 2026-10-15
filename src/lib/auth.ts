@@ -45,7 +45,7 @@ export function useCompany(userId: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("company_users")
-        .select("company_role, companies(id, name, billing_email, phone, address)")
+        .select("company_role, is_admin, companies(id, name, billing_email, phone, address, email_domain)")
         .eq("user_id", userId!)
         .maybeSingle();
       if (error) throw error;
