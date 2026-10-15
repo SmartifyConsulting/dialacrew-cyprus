@@ -6,6 +6,7 @@ import { AlertTriangle, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Panel } from "@/components/AppShell";
 import { zar, type Production } from "@/lib/demo-data";
+import { useLocationPoints } from "@/lib/site";
 
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
 const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50";
@@ -37,8 +38,11 @@ export function ProjectInsights({ p, isProducer }: { p: Production; isProducer: 
     enabled: isProducer,
   });
 
+  const points = useLocationPoints(p.id).data ?? [];
+  const hasSite = !!p.address || p.latitude != null || points.some((pt) => pt.latitude != null && pt.longitude != null);
+
   const autoRisks: string[] = [];
-  if (!p.address && !p.latitude) autoRisks.push("Site location not set — check-ins can't be confirmed.");
+  if (!hasSite) autoRisks.push("Site location not set — check-ins can't be confirmed.");
   if (p.crewBooked < p.crewNeeded) autoRisks.push(`${p.crewNeeded - p.crewBooked} crew position(s) still open.`);
   if (p.securedFunds < p.budget) autoRisks.push(`Funds secured ${zar(p.securedFunds)} of ${zar(p.budget)} budget.`);
   for (const r of mem.data?.risks ?? []) autoRisks.push(r);

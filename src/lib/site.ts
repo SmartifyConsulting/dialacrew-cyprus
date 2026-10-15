@@ -46,7 +46,7 @@ export const useTasks = (pid: string) => useQuery(q(["tasks", pid], () => supaba
 export const useDocs = (pid: string) => useQuery(q(["docs", pid], () => supabase.from("site_documents").select("*").eq("production_id", pid).order("created_at", { ascending: false })));
 export const useRegister = (pid: string) => useQuery(q(["register", pid], () => supabase.from("site_attendance").select("*").eq("production_id", pid).order("created_at", { ascending: false })));
 export const useLocationPoints = (pid: string) => useQuery(q(["location-points", pid], () => supabase.from("production_locations").select("*").eq("production_id", pid).order("sort_order", { ascending: true })));
-export const useChecklists = (pid: string) => useQuery(q(["checklists", pid], () => supabase.from("production_checklists").select("*, production_checklist_items(*)")
+export const useChecklists = (pid: string) => useQuery(q(["checklists", pid], () => supabase.from("production_checklists").select("*, production_checklist_items(*, production_checklist_item_photos(*))")
   .eq("production_id", pid)
   .order("sort_order", { ascending: true })
   .order("sort_order", { ascending: true, referencedTable: "production_checklist_items" })));

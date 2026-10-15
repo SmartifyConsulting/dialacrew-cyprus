@@ -1862,6 +1862,38 @@ export type Database = {
           },
         ]
       }
+      production_checklist_item_photos: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          path: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          path: string
+          uploaded_by?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          path?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_checklist_item_photos_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "production_checklist_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_documents: {
         Row: {
           category: string

@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
-import { CheckCircle2, Circle, Download, FileText, GripVertical, LogIn, LogOut, MapPin, Mic, Paperclip, Pencil, Plus, Star, Trash2, Users } from "lucide-react";
+import { Camera, CheckCircle2, Circle, Download, FileText, GripVertical, LogIn, LogOut, MapPin, Mic, Paperclip, Pencil, Plus, Star, Trash2, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge, Panel } from "@/components/AppShell";
 import { AudioRecorder } from "@/components/AudioRecorder";
@@ -302,12 +302,35 @@ function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
 }
 
 /* ---------------- Custom checklists (producers add checklists + items, e.g. "Wardrobe checklist") ---------------- */
+type ChecklistItemPhoto = { id: string; path: string };
+type ChecklistItem = { id: string; label: string; done: boolean; production_checklist_item_photos: ChecklistItemPhoto[] };
+
+function ChecklistItemPhotoThumb({ photo, canDelete, onDelete }: { photo: ChecklistItemPhoto; canDelete: boolean; onDelete: () => void }) {
+  const url = useSignedUrl(photo.path).data;
+  return (
+    <div className="group relative h-16 w-16 shrink-0">
+      {url ? (
+        <a href={url} target="_blank" rel="noreferrer"><img src={url} alt="Continuity reference" className="h-16 w-16 rounded-sm object-cover" /></a>
+      ) : (
+        <div className="h-16 w-16 animate-pulse rounded-sm bg-muted" />
+      )}
+      {canDelete && (
+        <button onClick={onDelete} aria-label="Remove photo"
+          className="absolute -right-1.5 -top-1.5 hidden rounded-full bg-destructive p-0.5 text-destructive-foreground group-hover:block">
+          <Trash2 className="h-3 w-3" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
   const inv = useInvalidate();
-  const checklists = (useChecklists(p.id).data ?? []) as Array<{ id: string; title: string; production_checklist_items: Array<{ id: string; label: string; done: boolean }> }>;
+  const checklists = (useChecklists(p.id).data ?? []) as Array<{ id: string; title: string; production_checklist_items: ChecklistItem[] }>;
   const [addingList, setAddingList] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newItem, setNewItem] = useState<Record<string, string>>({});
+  const [uploadingItem, setUploadingItem] = useState<string | null>(null);
 
   async function addChecklist() {
     if (!newTitle.trim()) return;
@@ -345,6 +368,26 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
     inv(["checklists", p.id]);
   }
 
+  async function addPhotos(itemId: string, files: FileList | null) {
+    if (!files?.length) return;
+    setUploadingItem(itemId);
+    try {
+      for (const file of Array.from(files)) {
+        const path = await uploadFile(`${p.id}/checklist-photos/${itemId}`, file, file.name);
+        const { error } = await supabase.from("production_checklist_item_photos").insert({ item_id: itemId, path });
+        if (error) throw error;
+      }
+      inv(["checklists", p.id]);
+    } catch (e) { toast.error(friendlyError(e)); }
+    setUploadingItem(null);
+  }
+
+  async function removePhoto(id: string) {
+    const { error } = await supabase.from("production_checklist_item_photos").delete().eq("id", id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    inv(["checklists", p.id]);
+  }
+
   if (!isProducer && checklists.length === 0) return null;
 
   return (
@@ -356,12 +399,27 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
           <ul className="divide-y divide-border text-sm">
             {c.production_checklist_items.length === 0 && <li className="p-4 text-muted-foreground">No items yet.</li>}
             {c.production_checklist_items.map((item) => (
-              <li key={item.id} className="flex items-center gap-3 px-4 py-2.5">
-                <button onClick={() => isProducer && toggleItem(item.id, item.done)} disabled={!isProducer} aria-label={item.done ? `Mark ${item.label} not done` : `Mark ${item.label} done`}>
-                  {item.done ? <CheckCircle2 className="h-4 w-4 shrink-0 text-success" /> : <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />}
-                </button>
-                <span className={`min-w-0 flex-1 ${item.done ? "text-muted-foreground line-through" : ""}`}>{item.label}</span>
-                {isProducer && <button onClick={() => removeItem(item.id)} className="text-muted-foreground hover:text-destructive" aria-label={`Remove ${item.label}`}><Trash2 className="h-3.5 w-3.5" /></button>}
+              <li key={item.id} className="px-4 py-2.5">
+                <div className="flex items-center gap-3">
+                  <button onClick={() => isProducer && toggleItem(item.id, item.done)} disabled={!isProducer} aria-label={item.done ? `Mark ${item.label} not done` : `Mark ${item.label} done`}>
+                    {item.done ? <CheckCircle2 className="h-4 w-4 shrink-0 text-success" /> : <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />}
+                  </button>
+                  <span className={`min-w-0 flex-1 ${item.done ? "text-muted-foreground line-through" : ""}`}>{item.label}</span>
+                  {isProducer && (
+                    <label className="cursor-pointer text-muted-foreground hover:text-primary" aria-label={`Add photo to ${item.label}`}>
+                      {uploadingItem === item.id ? <span className="text-xs">Uploading…</span> : <Camera className="h-4 w-4" />}
+                      <input type="file" accept="image/*" multiple hidden disabled={uploadingItem === item.id} onChange={(e) => { addPhotos(item.id, e.target.files); e.target.value = ""; }} />
+                    </label>
+                  )}
+                  {isProducer && <button onClick={() => removeItem(item.id)} className="text-muted-foreground hover:text-destructive" aria-label={`Remove ${item.label}`}><Trash2 className="h-3.5 w-3.5" /></button>}
+                </div>
+                {item.production_checklist_item_photos.length > 0 && (
+                  <div className="ml-7 mt-2 flex flex-wrap gap-2">
+                    {item.production_checklist_item_photos.map((photo) => (
+                      <ChecklistItemPhotoThumb key={photo.id} photo={photo} canDelete={isProducer} onDelete={() => removePhoto(photo.id)} />
+                    ))}
+                  </div>
+                )}
               </li>
             ))}
           </ul>
