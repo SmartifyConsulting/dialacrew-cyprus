@@ -2,7 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Page, clientColor } from "@/components/AppShell";
+import { useRole, useSession } from "@/lib/auth";
 import { useBookings, useProductions } from "@/lib/db";
+import { useMyCrewId } from "@/lib/site";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
   head: () => ({
@@ -21,6 +23,10 @@ export const Route = createFileRoute("/_authenticated/calendar")({
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 function CalendarPage() {
+  const { session } = useSession();
+  const role = useRole(session?.user.id);
+  const isCrewOnly = role.data === "crew";
+  const myCrewId = useMyCrewId(isCrewOnly).data ?? null;
   const prods = useProductions().data ?? [];
   const bookings = useBookings().data ?? [];
   const [month, setMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
@@ -29,12 +35,16 @@ function CalendarPage() {
   const byDay = new Map<string, { id: string; name: string; client: string; crew: number }[]>();
   for (const p of prods) {
     if (!p.date) continue;
-    const start = new Date(p.date + "T00:00:00");
-    for (let i = 0; i < Math.max(1, p.days); i++) {
+    const myBooking = isCrewOnly ? bookings.find((b) => b.productionId === p.id && b.crewId === myCrewId && b.status !== "cancelled") : undefined;
+    if (isCrewOnly && !myBooking) continue;
+    const spanStart = isCrewOnly && myBooking?.bookingDate ? myBooking.bookingDate : p.date;
+    const spanDays = isCrewOnly && myBooking ? Math.max(1, myBooking.days || 1) : Math.max(1, p.days);
+    const start = new Date(`${spanStart}T00:00:00`);
+    for (let i = 0; i < spanDays; i++) {
       const d = new Date(start); d.setDate(d.getDate() + i);
       const k = iso(d);
       const crew = bookings.filter((b) => b.productionId === p.id && b.status !== "cancelled").length;
-      byDay.set(k, [...(byDay.get(k) ?? []), { id: p.id, name: p.name, client: p.client, crew }]);
+      byDay.set(k, [...(byDay.get(k) ?? []), { id: p.id, name: p.name, client: p.client, crew: isCrewOnly ? 0 : crew }]);
     }
   }
 

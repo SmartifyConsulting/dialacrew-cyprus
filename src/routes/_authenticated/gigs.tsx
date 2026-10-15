@@ -143,6 +143,7 @@ function GigsPage() {
               </div>
             )}
 
+            <h4 className="mt-6 text-sm font-semibold uppercase tracking-wide text-primary">Find a gig</h4>
             {isCrew && (
               <label className="my-4 flex items-start gap-2 rounded-xl border border-border bg-card p-3 text-sm">
                 <input type="checkbox" className="mt-1" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
