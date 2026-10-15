@@ -1,12 +1,86 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { Heart, Trash2, Users } from "lucide-react";
 import { Page } from "@/components/AppShell";
 import { useRole, useSession } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 import { zar } from "@/lib/demo-data";
 import { useCreateCrewGroup, useCreatePencil, useCrewSearch, useDeleteCrewGroup, useCrewGroups, useDepartments, useFavourites, useProductions, useToggleFavourite } from "@/lib/db";
+
+function monthMatrix(year: number, month: number) {
+  const startDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells: (number | null)[] = Array(startDay).fill(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  while (cells.length % 7 !== 0) cells.push(null);
+  return cells;
+}
+
+function AvailabilityCalendar({ crewId }: { crewId: string }) {
+  const blocked = useQuery({
+    queryKey: ["crew-availability", crewId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("bookings").select("booking_date, days, status").eq("crew_id", crewId).neq("status", "cancelled");
+      if (error) throw error;
+      const set = new Set<string>();
+      for (const b of data ?? []) {
+        if (!b.booking_date) continue;
+        const start = new Date(`${b.booking_date}T00:00:00`);
+        for (let i = 0; i < Math.max(1, b.days || 1); i++) {
+          const d = new Date(start);
+          d.setDate(d.getDate() + i);
+          set.add(d.toISOString().slice(0, 10));
+        }
+      }
+      return set;
+    },
+  }).data ?? new Set<string>();
+
+  const today = new Date();
+  const todayIso = today.toISOString().slice(0, 10);
+  const months = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
+    return { year: d.getFullYear(), month: d.getMonth() };
+  });
+
+  return (
+    <div className="mt-6">
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="text-sm font-semibold">Availability — next 6 months</h3>
+        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+          <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-sm bg-muted" /> Available</span>
+          <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-sm bg-destructive/60" /> Booked</span>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        {months.map(({ year, month }) => (
+          <div key={`${year}-${month}`} className="rounded-sm border border-border p-2">
+            <div className="mb-1 text-center text-xs font-semibold">{new Date(year, month, 1).toLocaleDateString("en-ZA", { month: "long", year: "numeric" })}</div>
+            <div className="grid grid-cols-7 gap-0.5 text-center text-[9px] text-muted-foreground">
+              {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => <div key={i}>{d}</div>)}
+            </div>
+            <div className="grid grid-cols-7 gap-0.5">
+              {monthMatrix(year, month).map((day, i) => {
+                if (day == null) return <div key={i} />;
+                const iso = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                const isBlocked = blocked.has(iso);
+                return (
+                  <div key={i} title={isBlocked ? `Booked ${iso}` : iso}
+                    className={`grid aspect-square place-items-center rounded-sm text-[9px] ${isBlocked ? "bg-destructive/60 text-destructive-foreground" : "bg-muted/50 text-foreground"} ${iso === todayIso ? "ring-1 ring-primary" : ""}`}>
+                    {day}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/_authenticated/crew/")({
   head: () => ({
@@ -164,6 +238,7 @@ function CrewPage() {
               <button onClick={() => { setPencilling({ id: open.id, name: open.name, role: open.role, dayRate: open.dayRate }); setOpen(null); }} className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Pencil</button>
               <Link to="/crew/$id" params={{ id: open.id }} className="flex-1 rounded-md border border-border px-4 py-2 text-center text-sm font-semibold">Full profile</Link>
             </div>
+            <AvailabilityCalendar crewId={open.id} />
           </aside>
         </div>
       )}

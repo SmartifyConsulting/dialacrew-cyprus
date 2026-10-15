@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_authenticated/crew/$id")({
 
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
 const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground";
-const TABS = ["About", "Projects", "Equipment", "Banking"] as const;
+const TABS = ["About", "Projects", "Portfolio", "Equipment", "Banking"] as const;
 
 function CrewProfile() {
   const { id } = Route.useParams();
@@ -125,17 +125,6 @@ function CrewProfile() {
                   <div key={l}><div className="font-display text-3xl font-bold">{v}</div><div className="text-xs text-muted-foreground">{l}</div></div>
                 ))}
               </section>
-              {(m.portfolio_url || m.youtube_url || m.vimeo_url || m.instagram_url) && (
-                <section className="border-t border-border pt-5">
-                  <h3 className="mb-2 font-semibold">Portfolio & links</h3>
-                  <div className="flex flex-wrap gap-3 text-sm">
-                    {m.portfolio_url && <a href={m.portfolio_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Portfolio / showreel</a>}
-                    {m.youtube_url && <a href={m.youtube_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">YouTube</a>}
-                    {m.vimeo_url && <a href={m.vimeo_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Vimeo</a>}
-                    {m.instagram_url && <a href={m.instagram_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Instagram</a>}
-                  </div>
-                </section>
-              )}
             </div>
           )}
           {tab === "Projects" && (
@@ -145,6 +134,16 @@ function CrewProfile() {
                 <ProjectRow key={j.id} job={j} userId={session?.user.id} canRespond={canEdit && m.user_id === session?.user.id} isProducer={role.data === "producer"} onChange={() => { jobs.refetch(); }} />
               ))}
             </ul>
+          )}
+          {tab === "Portfolio" && (
+            m.portfolio_url || m.youtube_url || m.vimeo_url || m.instagram_url ? (
+              <div className="flex flex-wrap gap-3 text-sm">
+                {m.portfolio_url && <a href={m.portfolio_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Portfolio / showreel</a>}
+                {m.youtube_url && <a href={m.youtube_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">YouTube</a>}
+                {m.vimeo_url && <a href={m.vimeo_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Vimeo</a>}
+                {m.instagram_url && <a href={m.instagram_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Instagram</a>}
+              </div>
+            ) : <p className="text-sm text-muted-foreground">No portfolio links added yet.</p>
           )}
           {tab === "Equipment" && <Kit crewId={id} items={assets.data ?? []} canEdit={canEdit} onChange={refresh} />}
           {tab === "Banking" && canEdit && <BankingTab crewId={id} />}
