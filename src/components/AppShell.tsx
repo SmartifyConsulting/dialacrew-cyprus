@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { type ReactNode } from "react";
-import { Megaphone, Briefcase, Building2, Home, Search, Shield, Star, User, type LucideIcon, Wallet, CalendarDays } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { ChevronDown, Megaphone, Briefcase, Building2, Home, Search, Shield, Star, User, type LucideIcon, Wallet, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany, useRole, useSession } from "@/lib/auth";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -254,14 +254,22 @@ export function ClientBadge({ name }: { name: string }) {
   return <span className={`inline-block rounded-sm px-2 py-0.5 text-xs font-semibold ${clientColor(name)}`}>{name}</span>;
 }
 
-export function Panel({ title, children, right }: { title: ReactNode; children: ReactNode; right?: ReactNode }) {
+export function Panel({ title, children, right, collapsible, defaultOpen = true }: { title: ReactNode; children: ReactNode; right?: ReactNode; collapsible?: boolean; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <section className="rounded-sm border border-border bg-card">
-      <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-        <h2 className="font-display text-sm font-semibold uppercase tracking-wide text-primary">{title}</h2>
+      <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
+        {collapsible ? (
+          <button onClick={() => setOpen((o) => !o)} className="flex min-w-0 flex-1 items-center gap-1.5 text-left" aria-expanded={open}>
+            <ChevronDown className={`h-4 w-4 shrink-0 text-primary transition-transform ${open ? "" : "-rotate-90"}`} />
+            <h2 className="font-display text-sm font-semibold uppercase tracking-wide text-primary">{title}</h2>
+          </button>
+        ) : (
+          <h2 className="font-display text-sm font-semibold uppercase tracking-wide text-primary">{title}</h2>
+        )}
         {right}
       </div>
-      {children}
+      {(!collapsible || open) && children}
     </section>
   );
 }

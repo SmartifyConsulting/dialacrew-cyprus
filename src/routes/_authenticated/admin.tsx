@@ -236,10 +236,28 @@ function UsersTab() {
       return (p.data ?? []).map((u) => ({ ...u, roles: roles.get(u.id) ?? [] }));
     },
   });
+  const ROLES = ["producer", "crew", "client", "admin"] as const;
+  const [addingRole, setAddingRole] = useState<Record<string, string>>({});
+
   async function toggleSuspend(id: string, suspended: boolean) {
     const { error } = await supabase.from("profiles").update({ suspended: !suspended }).eq("id", id);
     if (error) { toast.error(friendlyError(error)); return; }
     toast.success(!suspended ? "User suspended" : "User reactivated");
+    inv(["admin-users"]);
+  }
+  async function addRole(userId: string) {
+    const role = addingRole[userId] as (typeof ROLES)[number] | undefined;
+    if (!role) return;
+    const { error } = await supabase.from("user_roles").insert({ user_id: userId, role });
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success("Role added");
+    setAddingRole((prev) => ({ ...prev, [userId]: "" }));
+    inv(["admin-users"]);
+  }
+  async function removeRole(userId: string, role: string) {
+    const { error } = await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role as (typeof ROLES)[number]);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success("Role removed");
     inv(["admin-users"]);
   }
   return (
@@ -251,7 +269,21 @@ function UsersTab() {
             <tr key={u.id} className="border-t border-border">
               <td className="px-4 py-2 font-medium">{u.full_name || "—"}</td>
               <td className="px-4 text-muted-foreground">{u.email}</td>
-              <td className="px-4">{u.roles.join(", ") || "—"}</td>
+              <td className="px-4">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {u.roles.map((r) => (
+                    <span key={r} className="inline-flex items-center gap-1 rounded-sm bg-muted px-1.5 py-0.5 text-xs">
+                      {r}
+                      <button onClick={() => removeRole(u.id, r)} aria-label={`Remove ${r} role`} className="text-muted-foreground hover:text-destructive">×</button>
+                    </span>
+                  ))}
+                  <select className={`${invField} py-0.5 text-xs`} value={addingRole[u.id] ?? ""} onChange={(e) => setAddingRole((prev) => ({ ...prev, [u.id]: e.target.value }))}>
+                    <option value="">+ role</option>
+                    {ROLES.filter((r) => !u.roles.includes(r)).map((r) => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                  {addingRole[u.id] && <button onClick={() => addRole(u.id)} className="text-xs text-primary hover:underline">Add</button>}
+                </div>
+              </td>
               <td className="px-4">{u.suspended ? <Badge>Declined</Badge> : <Badge>Confirmed</Badge>}</td>
               <td className="px-4"><button onClick={() => toggleSuspend(u.id, u.suspended)} className="text-xs text-primary hover:underline">{u.suspended ? "Reactivate" : "Suspend"}</button></td>
             </tr>
@@ -263,55 +295,75 @@ function UsersTab() {
 }
 
 function CrewTab() {
+  const inv = useInv();
   const crew = useQuery({
     queryKey: ["admin-crew"],
     queryFn: async () => { const { data, error } = await supabase.from("crew_members").select("id, name, role, department, day_rate, rating, available").order("name"); if (error) throw error; return data ?? []; },
   });
-  return (
-    <Panel title={`Crew (${crew.data?.length ?? 0})`}>
-      <table className="w-full text-sm">
-        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Name</th><th className="px-4">Role</th><th className="px-4">Department</th><th className="px-4">Rate</th><th className="px-4">Rating</th></tr></thead>
-        <tbody>{(crew.data ?? []).map((c) => (
-          <tr key={c.id} className="border-t border-border"><td className="px-4 py-2 font-medium">{c.name}</td><td className="px-4">{c.role}</td><td className="px-4">{c.department}</td><td className="px-4">{zar(c.day_rate)}</td><td className="px-4">★ {c.rating}</td></tr>
-        ))}</tbody>
-      </table>
-    </Panel>
-  );
-}
+  const [editing, setEditing] = useState<string | null>(null);
+  const [draft, setDraft] = useState({ name: "", role: "", department: "", day_rate: "" });
+  const [adding, setAdding] = useState(false);
+  const [newCrew, setNewCrew] = useState({ name: "", role: "", department: "", day_rate: "" });
 
-function CompaniesTab() {
-  const companies = useQuery({
-    queryKey: ["admin-companies"],
-    queryFn: async () => { const { data, error } = await supabase.from("companies").select("id, name, billing_email, phone, created_at, company_users(count)"); if (error) throw error; return data ?? []; },
-  });
-  return (
-    <Panel title={`Companies (${companies.data?.length ?? 0})`}>
-      <table className="w-full text-sm">
-        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Name</th><th className="px-4">Billing email</th><th className="px-4">Phone</th><th className="px-4">Users</th></tr></thead>
-        <tbody>{(companies.data ?? []).map((c) => (
-          <tr key={c.id} className="border-t border-border"><td className="px-4 py-2 font-medium">{c.name}</td><td className="px-4 text-muted-foreground">{c.billing_email || "—"}</td><td className="px-4">{c.phone || "—"}</td><td className="px-4">{(c.company_users as unknown as { count: number }[])?.[0]?.count ?? 0}</td></tr>
-        ))}</tbody>
-      </table>
-      {companies.data?.length === 0 && <p className="p-4 text-sm text-muted-foreground">No companies yet.</p>}
-    </Panel>
-  );
-}
+  function startEdit(c: { id: string; name: string; role: string; department: string; day_rate: number }) {
+    setEditing(c.id);
+    setDraft({ name: c.name, role: c.role, department: c.department, day_rate: String(c.day_rate) });
+  }
 
-function BookingsTab() {
-  const bookings = useQuery({
-    queryKey: ["admin-bookings"],
-    queryFn: async () => { const { data, error } = await supabase.from("bookings").select("id, role, status, payment_status, booking_date, crew_members(name), productions(name)").order("booking_date", { ascending: false }); if (error) throw error; return data ?? []; },
-  });
+  async function saveEdit(id: string) {
+    const { error } = await supabase.from("crew_members").update({ name: draft.name.trim(), role: draft.role.trim(), department: draft.department.trim(), day_rate: Number(draft.day_rate) || 0 }).eq("id", id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success("Crew member updated");
+    setEditing(null);
+    inv(["admin-crew"], ["crew"], ["crew-search"]);
+  }
+
+  async function addCrew() {
+    if (!newCrew.name.trim() || !newCrew.role.trim() || !newCrew.department.trim()) { toast.error("Name, role and department are required"); return; }
+    const { error } = await supabase.from("crew_members").insert({ name: newCrew.name.trim(), role: newCrew.role.trim(), department: newCrew.department.trim(), day_rate: Number(newCrew.day_rate) || 0 });
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success("Crew member added");
+    setNewCrew({ name: "", role: "", department: "", day_rate: "" });
+    setAdding(false);
+    inv(["admin-crew"], ["crew"], ["crew-search"], ["departments"]);
+  }
+
+  async function removeCrew(id: string) {
+    const { error } = await supabase.from("crew_members").delete().eq("id", id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success("Crew member removed");
+    inv(["admin-crew"], ["crew"], ["crew-search"]);
+  }
+
   return (
-    <Panel title={`Bookings (${bookings.data?.length ?? 0})`}>
+    <Panel title={`Crew (${crew.data?.length ?? 0})`} right={!adding && (
+      <button onClick={() => setAdding(true)} className="text-xs font-semibold text-primary hover:underline">+ Add crew member</button>
+    )}>
+      {adding && (
+        <div className="flex flex-wrap items-end gap-2 border-b border-border p-4">
+          <input placeholder="Name" className={`${invField} min-w-40`} value={newCrew.name} onChange={(e) => setNewCrew({ ...newCrew, name: e.target.value })} />
+          <input placeholder="Role" className={`${invField} min-w-32`} value={newCrew.role} onChange={(e) => setNewCrew({ ...newCrew, role: e.target.value })} />
+          <input placeholder="Department" className={`${invField} min-w-32`} value={newCrew.department} onChange={(e) => setNewCrew({ ...newCrew, department: e.target.value })} />
+          <input type="number" placeholder="Day rate" className={`${invField} w-28`} value={newCrew.day_rate} onChange={(e) => setNewCrew({ ...newCrew, day_rate: e.target.value })} />
+          <button onClick={addCrew} className={btn}>Add</button>
+          <button onClick={() => setAdding(false)} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold">Cancel</button>
+        </div>
+      )}
       <table className="w-full text-sm">
-        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Production</th><th className="px-4">Crew</th><th className="px-4">Role</th><th className="px-4">Date</th><th className="px-4">Status</th><th className="px-4">Payment</th></tr></thead>
-        <tbody>{(bookings.data ?? []).map((b) => (
-          <tr key={b.id} className="border-t border-border">
-            <td className="px-4 py-2 font-medium">{(b.productions as { name: string } | null)?.name}</td>
-            <td className="px-4">{(b.crew_members as { name: string } | null)?.name}</td>
-            <td className="px-4">{b.role}</td><td className="px-4">{b.booking_date}</td>
-            <td className="px-4"><Badge>{b.status}</Badge></td><td className="px-4 text-xs text-muted-foreground">{b.payment_status}</td>
+        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Name</th><th className="px-4">Role</th><th className="px-4">Department</th><th className="px-4">Rate</th><th className="px-4">Rating</th><th className="px-4">Action</th></tr></thead>
+        <tbody>{(crew.data ?? []).map((c) => editing === c.id ? (
+          <tr key={c.id} className="border-t border-border">
+            <td className="px-4 py-2"><input className={`${invField} w-full`} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></td>
+            <td className="px-4"><input className={`${invField} w-full`} value={draft.role} onChange={(e) => setDraft({ ...draft, role: e.target.value })} /></td>
+            <td className="px-4"><input className={`${invField} w-full`} value={draft.department} onChange={(e) => setDraft({ ...draft, department: e.target.value })} /></td>
+            <td className="px-4"><input type="number" className={`${invField} w-24`} value={draft.day_rate} onChange={(e) => setDraft({ ...draft, day_rate: e.target.value })} /></td>
+            <td className="px-4">★ {c.rating}</td>
+            <td className="px-4 flex gap-2"><button onClick={() => saveEdit(c.id)} className="text-xs text-primary hover:underline">Save</button><button onClick={() => setEditing(null)} className="text-xs text-muted-foreground hover:underline">Cancel</button></td>
+          </tr>
+        ) : (
+          <tr key={c.id} className="border-t border-border">
+            <td className="px-4 py-2 font-medium">{c.name}</td><td className="px-4">{c.role}</td><td className="px-4">{c.department}</td><td className="px-4">{zar(c.day_rate)}</td><td className="px-4">★ {c.rating}</td>
+            <td className="px-4 flex gap-2"><button onClick={() => startEdit(c)} className="text-xs text-primary hover:underline">Edit</button><button onClick={() => removeCrew(c.id)} className="text-xs text-destructive hover:underline">Delete</button></td>
           </tr>
         ))}</tbody>
       </table>
@@ -319,11 +371,144 @@ function BookingsTab() {
   );
 }
 
+function CompaniesTab() {
+  const inv = useInv();
+  const companies = useQuery({
+    queryKey: ["admin-companies"],
+    queryFn: async () => { const { data, error } = await supabase.from("companies").select("id, name, billing_email, phone, created_at, company_users(count)"); if (error) throw error; return data ?? []; },
+  });
+  const [editing, setEditing] = useState<string | null>(null);
+  const [draft, setDraft] = useState({ name: "", billing_email: "", phone: "" });
+  const [adding, setAdding] = useState(false);
+  const [newCo, setNewCo] = useState({ name: "", billing_email: "", phone: "" });
+
+  function startEdit(c: { id: string; name: string; billing_email: string | null; phone: string | null }) {
+    setEditing(c.id);
+    setDraft({ name: c.name, billing_email: c.billing_email ?? "", phone: c.phone ?? "" });
+  }
+
+  async function saveEdit(id: string) {
+    const { error } = await supabase.from("companies").update({ name: draft.name.trim(), billing_email: draft.billing_email.trim(), phone: draft.phone.trim() }).eq("id", id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success("Company updated");
+    setEditing(null);
+    inv(["admin-companies"]);
+  }
+
+  async function addCompany() {
+    if (!newCo.name.trim()) { toast.error("Company name is required"); return; }
+    const { error } = await supabase.from("companies").insert({ name: newCo.name.trim(), billing_email: newCo.billing_email.trim(), phone: newCo.phone.trim() });
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success("Company added");
+    setNewCo({ name: "", billing_email: "", phone: "" });
+    setAdding(false);
+    inv(["admin-companies"]);
+  }
+
+  async function removeCompany(id: string) {
+    const { error } = await supabase.from("companies").delete().eq("id", id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success("Company removed");
+    inv(["admin-companies"]);
+  }
+
+  return (
+    <Panel title={`Companies (${companies.data?.length ?? 0})`} right={!adding && (
+      <button onClick={() => setAdding(true)} className="text-xs font-semibold text-primary hover:underline">+ Add company</button>
+    )}>
+      {adding && (
+        <div className="flex flex-wrap items-end gap-2 border-b border-border p-4">
+          <input placeholder="Company name" className={`${invField} min-w-48`} value={newCo.name} onChange={(e) => setNewCo({ ...newCo, name: e.target.value })} />
+          <input placeholder="Billing email" className={`${invField} min-w-48`} value={newCo.billing_email} onChange={(e) => setNewCo({ ...newCo, billing_email: e.target.value })} />
+          <input placeholder="Phone" className={`${invField} min-w-36`} value={newCo.phone} onChange={(e) => setNewCo({ ...newCo, phone: e.target.value })} />
+          <button onClick={addCompany} className={btn}>Add</button>
+          <button onClick={() => setAdding(false)} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold">Cancel</button>
+        </div>
+      )}
+      <table className="w-full text-sm">
+        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Name</th><th className="px-4">Billing email</th><th className="px-4">Phone</th><th className="px-4">Users</th><th className="px-4">Action</th></tr></thead>
+        <tbody>{(companies.data ?? []).map((c) => editing === c.id ? (
+          <tr key={c.id} className="border-t border-border">
+            <td className="px-4 py-2"><input className={`${invField} w-full`} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></td>
+            <td className="px-4"><input className={`${invField} w-full`} value={draft.billing_email} onChange={(e) => setDraft({ ...draft, billing_email: e.target.value })} /></td>
+            <td className="px-4"><input className={`${invField} w-full`} value={draft.phone} onChange={(e) => setDraft({ ...draft, phone: e.target.value })} /></td>
+            <td className="px-4">{(c.company_users as unknown as { count: number }[])?.[0]?.count ?? 0}</td>
+            <td className="px-4 flex gap-2"><button onClick={() => saveEdit(c.id)} className="text-xs text-primary hover:underline">Save</button><button onClick={() => setEditing(null)} className="text-xs text-muted-foreground hover:underline">Cancel</button></td>
+          </tr>
+        ) : (
+          <tr key={c.id} className="border-t border-border">
+            <td className="px-4 py-2 font-medium">{c.name}</td><td className="px-4 text-muted-foreground">{c.billing_email || "—"}</td><td className="px-4">{c.phone || "—"}</td><td className="px-4">{(c.company_users as unknown as { count: number }[])?.[0]?.count ?? 0}</td>
+            <td className="px-4 flex gap-2"><button onClick={() => startEdit(c)} className="text-xs text-primary hover:underline">Edit</button><button onClick={() => removeCompany(c.id)} className="text-xs text-destructive hover:underline">Delete</button></td>
+          </tr>
+        ))}</tbody>
+      </table>
+      {companies.data?.length === 0 && <p className="p-4 text-sm text-muted-foreground">No companies yet.</p>}
+    </Panel>
+  );
+}
+
+const BOOKING_STATUSES = ["draft", "open", "pencil", "awaiting_crew_confirmation", "confirmed", "in_progress", "awaiting_review", "completed", "payment_released", "cancelled", "disputed"] as const;
+
+function BookingsTab() {
+  const inv = useInv();
+  const bookings = useQuery({
+    queryKey: ["admin-bookings"],
+    queryFn: async () => { const { data, error } = await supabase.from("bookings").select("id, role, status, payment_status, booking_date, crew_members(name), productions(name)").order("booking_date", { ascending: false }); if (error) throw error; return data ?? []; },
+  });
+
+  async function setStatus(id: string, status: (typeof BOOKING_STATUSES)[number]) {
+    const { error } = await supabase.from("bookings").update({ status }).eq("id", id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success("Booking status updated");
+    inv(["admin-bookings"], ["admin-payments"]);
+  }
+
+  async function removeBooking(id: string) {
+    const { error } = await supabase.from("bookings").delete().eq("id", id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success("Booking deleted");
+    inv(["admin-bookings"], ["admin-payments"]);
+  }
+
+  return (
+    <Panel title={`Bookings (${bookings.data?.length ?? 0})`}>
+      <table className="w-full text-sm">
+        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Production</th><th className="px-4">Crew</th><th className="px-4">Role</th><th className="px-4">Date</th><th className="px-4">Status</th><th className="px-4">Payment</th><th className="px-4">Action</th></tr></thead>
+        <tbody>{(bookings.data ?? []).map((b) => (
+          <tr key={b.id} className="border-t border-border">
+            <td className="px-4 py-2 font-medium">{(b.productions as { name: string } | null)?.name}</td>
+            <td className="px-4">{(b.crew_members as { name: string } | null)?.name}</td>
+            <td className="px-4">{b.role}</td><td className="px-4">{b.booking_date}</td>
+            <td className="px-4">
+              <select className={`${invField} py-1`} value={b.status} onChange={(e) => setStatus(b.id, e.target.value as (typeof BOOKING_STATUSES)[number])}>
+                {BOOKING_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </td>
+            <td className="px-4 text-xs text-muted-foreground">{b.payment_status}</td>
+            <td className="px-4"><button onClick={() => removeBooking(b.id)} className="text-xs text-destructive hover:underline">Delete</button></td>
+          </tr>
+        ))}</tbody>
+      </table>
+    </Panel>
+  );
+}
+
+const PAYMENT_STATUSES = ["not_required", "payment_required", "payment_received", "funds_held", "awaiting_release", "release_authorised", "payment_released", "payment_failed", "payment_disputed"] as const;
+
 function PaymentsTab() {
+  const inv = useInv();
   const rows = useQuery({
     queryKey: ["admin-payments"],
     queryFn: async () => { const { data, error } = await supabase.from("bookings").select("id, crew_rate, days, payment_status, crew_members(name), productions(name)").neq("payment_status", "not_required"); if (error) throw error; return data ?? []; },
   });
+
+  async function setStatus(id: string, payment_status: (typeof PAYMENT_STATUSES)[number]) {
+    const { error } = await supabase.from("bookings").update({ payment_status }).eq("id", id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success("Payment status updated");
+    inv(["admin-payments"], ["admin-bookings"]);
+  }
+
   return (
     <Panel title={`Payments (${rows.data?.length ?? 0})`}>
       <table className="w-full text-sm">
@@ -333,7 +518,11 @@ function PaymentsTab() {
             <td className="px-4 py-2 font-medium">{(b.productions as { name: string } | null)?.name}</td>
             <td className="px-4">{(b.crew_members as { name: string } | null)?.name}</td>
             <td className="px-4">{zar(b.crew_rate * b.days)}</td>
-            <td className="px-4"><Badge>{b.payment_status}</Badge></td>
+            <td className="px-4">
+              <select className={`${invField} py-1`} value={b.payment_status} onChange={(e) => setStatus(b.id, e.target.value as (typeof PAYMENT_STATUSES)[number])}>
+                {PAYMENT_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </td>
           </tr>
         ))}</tbody>
       </table>
@@ -341,22 +530,45 @@ function PaymentsTab() {
   );
 }
 
+const INVOICE_STATUSES = ["draft", "sent", "paid", "overdue", "cancelled"];
+
 function InvoicesTab() {
+  const inv = useInv();
   const invoices = useQuery({
     queryKey: ["admin-invoices"],
     queryFn: async () => { const { data, error } = await supabase.from("invoices").select("*, crew_members(name), productions(name)").order("created_at", { ascending: false }); if (error) throw error; return data ?? []; },
   });
+
+  async function setStatus(id: string, status: string) {
+    const { error } = await supabase.from("invoices").update({ status }).eq("id", id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success("Invoice status updated");
+    inv(["admin-invoices"]);
+  }
+
+  async function removeInvoice(id: string) {
+    const { error } = await supabase.from("invoices").delete().eq("id", id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success("Invoice deleted");
+    inv(["admin-invoices"]);
+  }
+
   return (
     <Panel title={`Invoices (${invoices.data?.length ?? 0})`}>
       <table className="w-full text-sm">
-        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Invoice #</th><th className="px-4">Crew</th><th className="px-4">Production</th><th className="px-4">Subtotal</th><th className="px-4">VAT</th><th className="px-4">Total</th><th className="px-4">Status</th></tr></thead>
+        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Invoice #</th><th className="px-4">Crew</th><th className="px-4">Production</th><th className="px-4">Subtotal</th><th className="px-4">VAT</th><th className="px-4">Total</th><th className="px-4">Status</th><th className="px-4">Action</th></tr></thead>
         <tbody>{(invoices.data ?? []).map((i) => (
           <tr key={i.id} className="border-t border-border">
             <td className="px-4 py-2 font-medium">{i.invoice_number}</td>
             <td className="px-4">{(i.crew_members as { name: string } | null)?.name}</td>
             <td className="px-4">{(i.productions as { name: string } | null)?.name}</td>
             <td className="px-4">{zar(i.subtotal)}</td><td className="px-4">{zar(i.vat_amount)}</td><td className="px-4 font-semibold">{zar(i.total)}</td>
-            <td className="px-4"><Badge>{i.status}</Badge></td>
+            <td className="px-4">
+              <select className={`${invField} py-1`} value={i.status} onChange={(e) => setStatus(i.id, e.target.value)}>
+                {INVOICE_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </td>
+            <td className="px-4"><button onClick={() => removeInvoice(i.id)} className="text-xs text-destructive hover:underline">Delete</button></td>
           </tr>
         ))}</tbody>
       </table>
@@ -379,6 +591,11 @@ function DisputesTab() {
     if (error) { toast.error(friendlyError(error)); return; }
     toast.success("Dispute updated"); inv(["admin-disputes"]);
   }
+  async function remove(id: string) {
+    const { error } = await supabase.from("disputes").delete().eq("id", id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success("Dispute deleted"); inv(["admin-disputes"]);
+  }
   return (
     <Panel title={`Disputes (${disputes.data?.length ?? 0})`}>
       <ul className="divide-y divide-border">
@@ -391,12 +608,15 @@ function DisputesTab() {
             </div>
             <p className="mt-1 text-sm">{d.description}</p>
             {d.resolution && <p className="mt-1 text-xs text-muted-foreground">Resolution: {d.resolution}</p>}
-            {d.status === "open" && (
-              <div className="mt-2 flex gap-2">
-                <button onClick={() => resolve(d.id, "resolved")} className={btn}>Resolve</button>
-                <button onClick={() => resolve(d.id, "rejected")} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold">Reject</button>
-              </div>
-            )}
+            <div className="mt-2 flex gap-2">
+              {d.status === "open" && (
+                <>
+                  <button onClick={() => resolve(d.id, "resolved")} className={btn}>Resolve</button>
+                  <button onClick={() => resolve(d.id, "rejected")} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold">Reject</button>
+                </>
+              )}
+              <button onClick={() => remove(d.id)} className="text-xs text-destructive hover:underline">Delete</button>
+            </div>
           </li>
         ))}
       </ul>
@@ -455,6 +675,17 @@ function MembershipsTab() {
     if (error) { toast.error(friendlyError(error)); return; }
     toast.success("Price updated"); inv(["admin-plans"]);
   }
+  const MEMBERSHIP_STATUSES = ["active", "cancelled", "expired", "pending"];
+  async function setMembershipStatus(id: string, status: string) {
+    const { error } = await supabase.from("memberships").update({ status }).eq("id", id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success("Membership status updated"); inv(["admin-memberships"]);
+  }
+  async function removeMembership(id: string) {
+    const { error } = await supabase.from("memberships").delete().eq("id", id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success("Membership removed"); inv(["admin-memberships"]);
+  }
   return (
     <div className="space-y-5">
       <Panel title="Pricing">
@@ -467,9 +698,18 @@ function MembershipsTab() {
       </Panel>
       <Panel title={`Memberships (${memberships.data?.length ?? 0})`}>
         <table className="w-full text-sm">
-          <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">User</th><th className="px-4">Type</th><th className="px-4">Status</th></tr></thead>
+          <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">User</th><th className="px-4">Type</th><th className="px-4">Status</th><th className="px-4">Action</th></tr></thead>
           <tbody>{(memberships.data ?? []).map((m) => (
-            <tr key={m.id} className="border-t border-border"><td className="px-4 py-2">{m.profile?.full_name || m.profile?.email || "—"}</td><td className="px-4">{m.membership_type}</td><td className="px-4"><Badge>{m.status}</Badge></td></tr>
+            <tr key={m.id} className="border-t border-border">
+              <td className="px-4 py-2">{m.profile?.full_name || m.profile?.email || "—"}</td>
+              <td className="px-4">{m.membership_type}</td>
+              <td className="px-4">
+                <select className={`${invField} py-1`} value={m.status} onChange={(e) => setMembershipStatus(m.id, e.target.value)}>
+                  {MEMBERSHIP_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </td>
+              <td className="px-4"><button onClick={() => removeMembership(m.id)} className="text-xs text-destructive hover:underline">Delete</button></td>
+            </tr>
           ))}</tbody>
         </table>
       </Panel>
@@ -525,6 +765,8 @@ function InventoryTab() {
   });
   const [newItem, setNewItem] = useState({ name: "", category: "Equipment", total_count: "1", notes: "" });
   const [checkoutFor, setCheckoutFor] = useState<{ id: string; name: string } | null>(null);
+  const [editingItem, setEditingItem] = useState<string | null>(null);
+  const [itemDraft, setItemDraft] = useState({ name: "", category: "Equipment", total_count: "1", notes: "" });
 
   async function addItem() {
     if (!newItem.name.trim()) return;
@@ -532,6 +774,17 @@ function InventoryTab() {
     if (error) { toast.error(friendlyError(error)); return; }
     toast.success("Item added");
     setNewItem({ name: "", category: "Equipment", total_count: "1", notes: "" });
+    inv(["admin-inventory-items"]);
+  }
+  function startEditItem(it: { id: string; name: string; category: string; total_count: number; notes: string | null }) {
+    setEditingItem(it.id);
+    setItemDraft({ name: it.name, category: it.category, total_count: String(it.total_count), notes: it.notes ?? "" });
+  }
+  async function saveEditItem(id: string) {
+    const { error } = await supabase.from("inventory_items").update({ name: itemDraft.name.trim(), category: itemDraft.category, total_count: Number(itemDraft.total_count) || 1, notes: itemDraft.notes }).eq("id", id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success("Item updated");
+    setEditingItem(null);
     inv(["admin-inventory-items"]);
   }
   async function removeItem(id: string) {
@@ -573,6 +826,25 @@ function InventoryTab() {
           <tbody>
             {(items.data ?? []).map((it) => {
               const out = outByItem.get(it.id) ?? 0;
+              if (editingItem === it.id) {
+                return (
+                  <tr key={it.id} className="border-t border-border">
+                    <td className="px-4 py-2"><input className={`${invField} w-full`} value={itemDraft.name} onChange={(e) => setItemDraft({ ...itemDraft, name: e.target.value })} /></td>
+                    <td className="px-4">
+                      <select className={invField} value={itemDraft.category} onChange={(e) => setItemDraft({ ...itemDraft, category: e.target.value })}>
+                        {INV_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+                      </select>
+                    </td>
+                    <td className="px-4"><input type="number" min="1" className={`${invField} w-20`} value={itemDraft.total_count} onChange={(e) => setItemDraft({ ...itemDraft, total_count: e.target.value })} /></td>
+                    <td className="px-4">{out}</td>
+                    <td className="px-4">{(Number(itemDraft.total_count) || 0) - out}</td>
+                    <td className="px-4 flex gap-2">
+                      <button onClick={() => saveEditItem(it.id)} className="text-xs text-primary hover:underline">Save</button>
+                      <button onClick={() => setEditingItem(null)} className="text-xs text-muted-foreground hover:underline">Cancel</button>
+                    </td>
+                  </tr>
+                );
+              }
               return (
                 <tr key={it.id} className="border-t border-border">
                   <td className="px-4 py-2 font-medium">{it.name}{it.notes && <div className="text-xs text-muted-foreground">{it.notes}</div>}</td>
@@ -582,6 +854,7 @@ function InventoryTab() {
                   <td className="px-4">{it.total_count - out}</td>
                   <td className="px-4 flex gap-2">
                     <button onClick={() => setCheckoutFor({ id: it.id, name: it.name })} className="text-xs text-primary hover:underline">Check out</button>
+                    <button onClick={() => startEditItem(it)} className="text-xs text-primary hover:underline">Edit</button>
                     <button onClick={() => removeItem(it.id)} className="text-xs text-destructive hover:underline">Delete</button>
                   </td>
                 </tr>

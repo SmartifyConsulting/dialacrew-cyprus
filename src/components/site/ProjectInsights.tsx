@@ -68,7 +68,7 @@ export function ProjectInsights({ p, isProducer }: { p: Production; isProducer: 
   if (!isProducer) return null;
 
   return (
-    <Panel title="Project Risks" right={!adding ? (
+    <Panel title="Project Risks" collapsible right={!adding ? (
       <button onClick={() => setAdding(true)} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> Add risk</button>
     ) : undefined}>
       {adding && (

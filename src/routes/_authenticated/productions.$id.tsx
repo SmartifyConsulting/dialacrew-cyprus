@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { MapPin, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, Sparkles } from "lucide-react";
 import { Badge, ClientBadge, Page } from "@/components/AppShell";
 import { useRole, useSession } from "@/lib/auth";
 import { useBookings, useCrew, useProductions, useRequests } from "@/lib/db";
@@ -45,6 +45,7 @@ function ProductionSite() {
   const myName = useMyName(userId || undefined).data ?? "";
   const { tab: tabParam } = Route.useSearch();
   const [tab, setTab] = useState<Tab>(tabParam === "find-crew" ? "Find Crew" : "Posts");
+  const [asideOpen, setAsideOpen] = useState(true);
   const p = prods.data?.find((x) => x.id === id);
   if (!p) return <Page open title={prods.isLoading ? "Loading…" : "Production not found"}>{null}</Page>;
   const crewNames = Object.fromEntries(crew.map((c) => [c.id, c.name]));
@@ -66,8 +67,15 @@ function ProductionSite() {
   return (
     <Page open title={p.name} subtitle={<span className="inline-flex items-center gap-2"><ClientBadge name={p.client} /> {p.type} · {p.date} · {p.days} day(s)</span>} actions={actions}>
       <div className="-mt-3 mb-4 flex items-center gap-1 text-sm text-muted-foreground"><MapPin className="h-4 w-4 text-primary" /> {p.address || p.location}</div>
-      <div className="grid gap-5 lg:grid-cols-[380px_minmax(0,1fr)]">
-        <aside className="space-y-5 lg:sticky lg:top-28 lg:self-start">
+      <div className={`grid gap-5 ${asideOpen ? "lg:grid-cols-[380px_minmax(0,1fr)]" : "lg:grid-cols-[auto_minmax(0,1fr)]"}`}>
+        <button onClick={() => setAsideOpen(true)} aria-label="Expand overview panel"
+          className={`${asideOpen ? "hidden" : "hidden lg:flex"} h-9 w-9 items-center justify-center rounded-sm border border-border bg-card text-muted-foreground hover:text-primary lg:sticky lg:top-28 lg:self-start`}>
+          <ChevronRight className="h-4 w-4" />
+        </button>
+        <aside className={`space-y-5 lg:sticky lg:top-28 lg:self-start ${asideOpen ? "" : "lg:hidden"}`}>
+          <button onClick={() => setAsideOpen(false)} className="hidden items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-primary lg:flex">
+            <ChevronLeft className="h-4 w-4" /> Collapse
+          </button>
           <OverviewTab {...ctx} />
           <ProjectInsights p={p} isProducer={isProducer} />
         </aside>

@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
-import { Camera, CheckCircle2, Circle, Download, FileText, GripVertical, LogIn, LogOut, MapPin, Mic, Paperclip, Pencil, Plus, Star, Trash2, Users } from "lucide-react";
+import { Camera, CheckCircle2, Circle, Download, FileText, GripVertical, ImageUp, LogIn, LogOut, MapPin, Mic, Paperclip, Pencil, Plus, Star, Trash2, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge, Panel } from "@/components/AppShell";
 import { AudioRecorder } from "@/components/AudioRecorder";
@@ -405,11 +405,18 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
                     {item.done ? <CheckCircle2 className="h-4 w-4 shrink-0 text-success" /> : <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />}
                   </button>
                   <span className={`min-w-0 flex-1 ${item.done ? "text-muted-foreground line-through" : ""}`}>{item.label}</span>
-                  {isProducer && (
-                    <label className="cursor-pointer text-muted-foreground hover:text-primary" aria-label={`Add photo to ${item.label}`}>
-                      {uploadingItem === item.id ? <span className="text-xs">Uploading…</span> : <Camera className="h-4 w-4" />}
-                      <input type="file" accept="image/*" multiple hidden disabled={uploadingItem === item.id} onChange={(e) => { addPhotos(item.id, e.target.files); e.target.value = ""; }} />
-                    </label>
+                  {isProducer && uploadingItem === item.id && <span className="text-xs text-muted-foreground">Uploading…</span>}
+                  {isProducer && uploadingItem !== item.id && (
+                    <>
+                      <label className="cursor-pointer text-muted-foreground hover:text-primary" aria-label={`Take photo for ${item.label}`}>
+                        <Camera className="h-4 w-4" />
+                        <input type="file" accept="image/*" capture="environment" hidden onChange={(e) => { addPhotos(item.id, e.target.files); e.target.value = ""; }} />
+                      </label>
+                      <label className="cursor-pointer text-muted-foreground hover:text-primary" aria-label={`Upload photos for ${item.label}`}>
+                        <ImageUp className="h-4 w-4" />
+                        <input type="file" accept="image/*" multiple hidden onChange={(e) => { addPhotos(item.id, e.target.files); e.target.value = ""; }} />
+                      </label>
+                    </>
                   )}
                   {isProducer && <button onClick={() => removeItem(item.id)} className="text-muted-foreground hover:text-destructive" aria-label={`Remove ${item.label}`}><Trash2 className="h-3.5 w-3.5" /></button>}
                 </div>
@@ -507,7 +514,7 @@ export function OverviewTab({ p, isProducer }: Ctx) {
 
   return (
     <div className="space-y-5">
-      <Panel title="Overview" right={isProducer && saveState !== "idle" ? (
+      <Panel title="Overview" collapsible right={isProducer && saveState !== "idle" ? (
         <span className="text-xs text-muted-foreground">{saveState === "saving" ? "Saving…" : "Saved"}</span>
       ) : undefined}>
         <div className="space-y-3 p-4 text-sm">
@@ -528,7 +535,7 @@ export function OverviewTab({ p, isProducer }: Ctx) {
         </div>
       </Panel>
 
-      <Panel title="Itinerary">
+      <Panel title="Itinerary" collapsible>
         <LocationPoints p={p} isProducer={isProducer} />
       </Panel>
     </div>
