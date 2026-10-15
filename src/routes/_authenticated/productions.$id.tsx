@@ -27,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/productions/$id")({
 
 // Crew see only Posts, Members, Tasks, Equipment (Overview is the fixed left widget).
 // Find Crew (scenario planner) opens from the header button beside the status badge.
-const CREW_TABS = ["Posts", "Members", "Checklists", "Tasks", "Equipment"] as const;
+const CREW_TABS = ["Posts", "Tasks"] as const;
 const MANAGER_TABS = ["Posts", "Members", "Checklists", "Tasks", "Equipment", "Documents", "Budget", "Review"] as const;
 type Tab = (typeof MANAGER_TABS)[number] | "Find Crew";
 
