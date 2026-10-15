@@ -78,6 +78,13 @@
       "when": 1792084237835,
       "tag": "0010_company_domains_spotlight_paystack",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792084321149,
+      "tag": "0011_company_admins_manage_invites",
+      "breakpoints": true
     }
   ]
 }
