@@ -239,7 +239,9 @@ export const CREW_ROLES = [
   "Catering", "Production Assistant",
 ] as const;
 
-/* ---------------- Crew role status (standard roles, ticked once confirmed) — shown on Members tab ---------------- */
+export const CONFIRMED_BOOKING_STATUSES = ["confirmed", "in_progress", "completed", "payment_released"];
+
+/* ---------------- Crew role required (standard roles still needing a confirmed booking) — shown on Members tab ---------------- */
 function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
   const bookings = useQuery({
     queryKey: ["production-checklist", p.id],
@@ -252,39 +254,40 @@ function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
     },
   }).data ?? [];
 
-  const confirmedStatuses = ["confirmed", "in_progress", "completed", "payment_released"];
   const byRole = (role: string) => bookings.filter((b) => b.role.trim().toLowerCase() === role.toLowerCase());
-  const extras = bookings.filter((b) => !CREW_ROLES.some((r) => r.toLowerCase() === b.role.trim().toLowerCase()));
+  // Once a role has a confirmed booking, it's done — drop it from this list entirely; it now shows under Confirmed Members instead.
+  const openRoles = CREW_ROLES.filter((role) => !byRole(role).some((b) => CONFIRMED_BOOKING_STATUSES.includes(b.status)));
+  const extras = bookings.filter((b) => !CREW_ROLES.some((r) => r.toLowerCase() === b.role.trim().toLowerCase()) && !CONFIRMED_BOOKING_STATUSES.includes(b.status));
+
+  if (openRoles.length === 0 && extras.length === 0) return null;
 
   return (
-    <Panel title="Crew roles">
+    <Panel title="Crew Role Required">
       <ul className="divide-y divide-border text-sm">
-        {CREW_ROLES.map((role) => {
+        {openRoles.map((role) => {
           const matches = byRole(role);
-          const confirmed = matches.some((b) => confirmedStatuses.includes(b.status));
           const names = matches.map((b) => (b.crew_members as { name: string } | null)?.name).filter(Boolean).join(", ");
           return (
             <li key={role} className="flex items-center gap-3 px-4 py-2.5">
-              {confirmed ? <CheckCircle2 className="h-4 w-4 shrink-0 text-success" /> : <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />}
+              <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />
               <span className="min-w-0 flex-1">
                 <span className="font-medium">{role}</span>
                 {names && <span className="text-muted-foreground"> · {names}</span>}
               </span>
-              <span className="shrink-0 text-xs text-muted-foreground">{matches.length === 0 ? "Unassigned" : confirmed ? "Confirmed" : "Not yet confirmed"}</span>
+              <span className="shrink-0 text-xs text-muted-foreground">{matches.length === 0 ? "Unassigned" : "Not yet confirmed"}</span>
             </li>
           );
         })}
         {extras.map((b) => {
-          const confirmed = confirmedStatuses.includes(b.status);
           const name = (b.crew_members as { name: string } | null)?.name;
           return (
             <li key={b.id} className="flex items-center gap-3 px-4 py-2.5">
-              {confirmed ? <CheckCircle2 className="h-4 w-4 shrink-0 text-success" /> : <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />}
+              <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />
               <span className="min-w-0 flex-1">
                 <span className="font-medium">{b.role}</span>
                 {name && <span className="text-muted-foreground"> · {name}</span>}
               </span>
-              {!confirmed && <span className="shrink-0 text-xs text-muted-foreground">Not yet confirmed</span>}
+              <span className="shrink-0 text-xs text-muted-foreground">Not yet confirmed</span>
             </li>
           );
         })}
@@ -473,27 +476,71 @@ export function OverviewTab({ p, isProducer }: Ctx) {
 
 /* ---------------- Members (only producers can rate; crew never rate anyone) ---------------- */
 export function MembersList({ p, userId, isProducer }: Ctx) {
-  const members = useSiteMembers(p.id).data ?? [];
+  const members = (useSiteMembers(p.id).data ?? []).filter((m) => CONFIRMED_BOOKING_STATUSES.includes(m.booking_status));
+  const rows = useRegister(p.id).data ?? [];
+  const inv = useInvalidate();
   const [rating, setRating] = useState<{ crewId: string; name: string } | null>(null);
+  const lastByCrew = new Map<string, (typeof rows)[number]>();
+  for (const r of rows) if (r.crew_id && !lastByCrew.has(r.crew_id)) lastByCrew.set(r.crew_id, r);
+
+  async function mark(kind: "in" | "out", crewId: string, name: string) {
+    const { error } = await supabase.from("site_attendance").insert({ production_id: p.id, crew_id: crewId, user_id: userId, person_name: name, kind, source: "manual" });
+    if (error) { toast.error(friendlyError(error)); return; }
+    inv(["register", p.id]);
+  }
+
   return (
-    <div>
-      <Panel title={`Members on the job (${members.length})`}>
-        <ul className="divide-y divide-border">
-          {members.length === 0 && <li className="p-4 text-sm text-muted-foreground">No crew booked yet.</li>}
-          {members.map((m) => (
-            <li key={m.crew_id} className="flex items-center gap-3 px-4 py-2.5">
-              <Avatar name={m.name} path={m.photo_url} />
-              <div className="min-w-0 flex-1">
-                <Link to="/crew/$id" params={{ id: m.crew_id }} className="block truncate text-sm font-semibold hover:text-primary">{m.name}</Link>
-                <div className="truncate text-xs text-muted-foreground">{m.role} · {m.department}</div>
-              </div>
-              {/* Only the production team rates crew — crew never rate anyone, including each other. */}
-              {isProducer && m.user_id !== userId && <button onClick={() => setRating({ crewId: m.crew_id, name: m.name })} className="rounded-sm border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10">Rate me</button>}
-            </li>
-          ))}
-        </ul>
-      </Panel>
+    <div className="space-y-5">
       <CrewRoleStatus p={p} />
+      <Panel title={`Confirmed Members (${members.length})`}>
+        <table className="w-full text-sm">
+          <thead className="text-left text-[11px] text-muted-foreground">
+            <tr>
+              <th className="px-4 py-2">Member</th>
+              <th className="px-4">Status</th>
+              <th className="px-4">Last movement</th>
+              {isProducer && <th className="px-4">Mark</th>}
+              {isProducer && <th className="px-4" />}
+            </tr>
+          </thead>
+          <tbody>
+            {members.length === 0 && <tr><td colSpan={isProducer ? 5 : 2} className="px-4 py-3 text-sm text-muted-foreground">No crew confirmed yet.</td></tr>}
+            {members.map((m) => {
+              const l = lastByCrew.get(m.crew_id);
+              const status = !l ? "Not arrived" : l.kind === "in" ? "On set" : "Wrapped";
+              return (
+                <tr key={m.crew_id} className="border-t border-border">
+                  <td className="px-4 py-2">
+                    <div className="flex items-center gap-3">
+                      <Avatar name={m.name} path={m.photo_url} />
+                      <div className="min-w-0">
+                        <Link to="/crew/$id" params={{ id: m.crew_id }} className="block truncate text-sm font-semibold hover:text-primary">{m.name}</Link>
+                        <div className="truncate text-xs text-muted-foreground">{m.role} · {m.department}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4"><Badge>{status}</Badge></td>
+                  <td className="px-4 text-xs text-muted-foreground">{l ? `${l.kind === "in" ? "In" : "Out"} · ${when(l.created_at)}${l.distance_m != null ? ` · ${l.distance_m}m` : ""}` : "—"}</td>
+                  {isProducer && (
+                    <td className="px-4">
+                      <div className="flex gap-2">
+                        <button className="text-xs text-primary hover:underline" onClick={() => mark("in", m.crew_id, m.name)}>In</button>
+                        <button className="text-xs text-primary hover:underline" onClick={() => mark("out", m.crew_id, m.name)}>Out</button>
+                      </div>
+                    </td>
+                  )}
+                  {/* Only the production team rates crew — crew never rate anyone, including each other. */}
+                  {isProducer && (
+                    <td className="px-4">
+                      {m.user_id !== userId && <button onClick={() => setRating({ crewId: m.crew_id, name: m.name })} className="rounded-sm border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10">Rate me</button>}
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </Panel>
       {rating && <RateDialog {...rating} productionId={p.id} onClose={() => setRating(null)} />}
     </div>
   );
@@ -782,28 +829,6 @@ export function RegisterTab({ p, isProducer, userId, myName, myCrewId }: Ctx) {
           )}
         </Panel>
       )}
-      <Panel title="Who's on site" right={<span className="text-xs text-muted-foreground">Radius {radius}m</span>}>
-        <table className="w-full text-sm">
-          <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Member</th><th className="px-4">Status</th><th className="px-4">Last movement</th>{isProducer && <th className="px-4">Mark</th>}</tr></thead>
-          <tbody>
-            {members.map((m) => {
-              const l = lastByCrew.get(m.crew_id);
-              const status = !l ? "Not arrived" : l.kind === "in" ? "On set" : "Wrapped";
-              return (
-                <tr key={m.crew_id} className="border-t border-border">
-                  <td className="px-4 py-2 font-medium"><Link to="/crew/$id" params={{ id: m.crew_id }} className="hover:text-primary">{m.name}</Link></td>
-                  <td className="px-4"><Badge>{status}</Badge></td>
-                  <td className="px-4 text-xs text-muted-foreground">{l ? `${l.kind === "in" ? "In" : "Out"} · ${when(l.created_at)}${l.distance_m != null ? ` · ${l.distance_m}m` : ""}` : "—"}</td>
-                  {isProducer && <td className="px-4"><div className="flex gap-2">
-                    <button className="text-xs text-primary hover:underline" onClick={() => mark("in", m.crew_id, m.name, "manual").catch((e) => toast.error(e.message))}>In</button>
-                    <button className="text-xs text-primary hover:underline" onClick={() => mark("out", m.crew_id, m.name, "manual").catch((e) => toast.error(e.message))}>Out</button>
-                  </div></td>}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </Panel>
       <Panel title="Register — all ins and outs">
         <table className="w-full text-sm">
           <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Time</th><th className="px-4">Member</th><th className="px-4">In/Out</th><th className="px-4">How</th><th className="px-4">Location</th></tr></thead>
