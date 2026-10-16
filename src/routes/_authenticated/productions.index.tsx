@@ -163,7 +163,8 @@ function Productions() {
 
   // Shoot days is inclusive of both the start and end date.
   const days = f.startDate && f.endDate ? Math.max(1, Math.round((+new Date(f.endDate) - +new Date(f.startDate)) / 86400000) + 1) : 1;
-  const jobIdTaken = (id: string) => list.some((p) => p.id !== editingId && (p.jobId ?? "").trim().toLowerCase() === id.trim().toLowerCase());
+  // Ignore the production being edited and the draft this form autosaved itself.
+  const jobIdTaken = (id: string) => list.some((p) => p.id !== editingId && p.id !== draftId && (p.jobId ?? "").trim().toLowerCase() === id.trim().toLowerCase());
 
   const resetForm = () => { setF(blankForm); setEditingId(null); setDraftId(null); setSaveState("idle"); setDuplicating(false); };
   const closeModal = () => { setOpen(false); resetForm(); if (openOnLoad) navigate({ to: "/productions", search: {}, replace: true }); };
