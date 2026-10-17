@@ -84,6 +84,49 @@ const field = "w-full rounded-sm border border-input bg-background px-3 py-2 tex
 const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground";
 const ROLES = ["producer", "production_manager", "accounts", "other"] as const;
 
+type CompanyBank = { bank_account_holder: string | null; bank_name: string | null; bank_account_number: string | null; bank_branch_code: string | null };
+
+function CompanyBankPanel({ companyId, canEdit, company }: { companyId: string; canEdit: boolean; company: CompanyBank | null | undefined }) {
+  const qc = useQueryClient();
+  const [holder, setHolder] = useState(company?.bank_account_holder ?? "");
+  const [bank, setBank] = useState(company?.bank_name ?? "");
+  const [account, setAccount] = useState(company?.bank_account_number ?? "");
+  const [branch, setBranch] = useState(company?.bank_branch_code ?? "");
+  const [busy, setBusy] = useState(false);
+  const complete = [holder, bank, account, branch].every((v) => v.trim());
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (!complete) { toast.error("Fill in every bank detail"); return; }
+    setBusy(true);
+    const { error } = await supabase.from("companies").update({
+      bank_account_holder: holder.trim(), bank_name: bank.trim(), bank_account_number: account.replace(/\s/g, ""), bank_branch_code: branch.trim(),
+    }).eq("id", companyId);
+    setBusy(false);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success("Bank details saved");
+    qc.invalidateQueries({ queryKey: ["company"] });
+  }
+
+  return (
+    <Panel title="Bank account (required)">
+      <form onSubmit={save} className="space-y-3 p-4">
+        {!complete && <p className="rounded-sm bg-destructive/10 p-2 text-xs text-destructive">Bank details are required before this company can pay crew.</p>}
+        <label className="block text-xs font-semibold text-muted-foreground">Account holder *
+          <input required disabled={!canEdit} className={`${field} mt-1`} value={holder} onChange={(e) => setHolder(e.target.value)} /></label>
+        <label className="block text-xs font-semibold text-muted-foreground">Bank name *
+          <input required disabled={!canEdit} className={`${field} mt-1`} value={bank} onChange={(e) => setBank(e.target.value)} /></label>
+        <label className="block text-xs font-semibold text-muted-foreground">Account number *
+          <input required disabled={!canEdit} inputMode="numeric" className={`${field} mt-1`} value={account} onChange={(e) => setAccount(e.target.value)} /></label>
+        <label className="block text-xs font-semibold text-muted-foreground">Branch code *
+          <input required disabled={!canEdit} inputMode="numeric" className={`${field} mt-1`} value={branch} onChange={(e) => setBranch(e.target.value)} /></label>
+        {canEdit && <button type="submit" disabled={busy || !complete} className={`${btn} disabled:opacity-60`}>{busy ? "Saving…" : "Save bank details"}</button>}
+        {!canEdit && <p className="text-xs text-muted-foreground">Only the company owner can change bank details.</p>}
+      </form>
+    </Panel>
+  );
+}
+
 function CompanyPanel({ userId }: { userId: string | undefined }) {
   const qc = useQueryClient();
   const company = useCompany(userId);
@@ -134,6 +177,8 @@ function CompanyPanel({ userId }: { userId: string | undefined }) {
             {!isOwner && <p className="mt-2 text-xs text-muted-foreground">Only company admins can invite and approve teammates.</p>}
           </div>
         </Panel>
+
+        {companyId && <CompanyBankPanel companyId={companyId} canEdit={isOwner} company={company.data.companies} />}
 
         {isOwner && (
           <Panel title="Invite a teammate">
@@ -239,7 +284,7 @@ function TeamPanel({ companyId, canManage, domain }: { companyId: string; canMan
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => decide(r.id, true)} className={btn}>Approve</button>
-                  <button onClick={() => decide(r.id, false)} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold">Decline</button>
+                  <button onClick={() => decide(r.id, false)} className="rounded-sm bg-destructive px-3 py-2 text-xs font-semibold text-destructive-foreground hover:bg-destructive/90">Decline</button>
                 </div>
               </li>
             ))}

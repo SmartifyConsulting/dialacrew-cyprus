@@ -391,6 +391,10 @@ export type Database = {
       companies: {
         Row: {
           address: string | null
+          bank_account_holder: string | null
+          bank_account_number: string | null
+          bank_branch_code: string | null
+          bank_name: string | null
           billing_email: string | null
           created_at: string
           email_domain: string | null
@@ -400,6 +404,10 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          bank_account_holder?: string | null
+          bank_account_number?: string | null
+          bank_branch_code?: string | null
+          bank_name?: string | null
           billing_email?: string | null
           created_at?: string
           email_domain?: string | null
@@ -409,6 +417,10 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          bank_account_holder?: string | null
+          bank_account_number?: string | null
+          bank_branch_code?: string | null
+          bank_name?: string | null
           billing_email?: string | null
           created_at?: string
           email_domain?: string | null

@@ -94,7 +94,7 @@ function CrewDashboard() {
               <div><div className="text-xs text-muted-foreground">Total</div><span className="font-semibold">{zar(rate * days)}</span></div>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2">
-              <button onClick={() => respond(j.id, false)} className="rounded-xl border border-border py-3 text-sm font-semibold">Decline</button>
+              <button onClick={() => respond(j.id, false)} className="rounded-xl bg-destructive py-3 text-sm font-semibold text-destructive-foreground hover:bg-destructive/90">Decline</button>
               <button onClick={() => respond(j.id, true)} className="rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground">Accept pencil</button>
             </div>
           </section>
@@ -327,7 +327,7 @@ function Dashboard() {
                   </div>
                   <div className="flex shrink-0 gap-2">
                     <button onClick={() => setState.mutate({ id: r.id, state: "Approved" })} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Approve</button>
-                    <button onClick={() => setState.mutate({ id: r.id, state: "Declined" })} className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold">Decline</button>
+                    <button onClick={() => setState.mutate({ id: r.id, state: "Declined" })} className="rounded-md bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground hover:bg-destructive/90">Decline</button>
                   </div>
                 </li>
               ))}

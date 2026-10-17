@@ -30,7 +30,7 @@ function OvertimeApprovals({ production }: { production: string }) {
             <div className="min-w-0 flex-1"><div className="font-semibold">{r.who}</div><div className="text-xs text-muted-foreground">{r.detail}</div></div>
             <span className="font-semibold">{zar(r.amount)}</span>
             <button onClick={() => setState.mutate({ id: r.id, state: "Approved" })} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Approve</button>
-            <button onClick={() => setState.mutate({ id: r.id, state: "Declined" })} className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold">Decline</button>
+            <button onClick={() => setState.mutate({ id: r.id, state: "Declined" })} className="rounded-md bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground hover:bg-destructive/90">Decline</button>
           </li>
         ))}
       </ul>
@@ -1310,7 +1310,6 @@ function SwapDialog({ booking, currentName, onClose, onDone }: { booking: Bookin
 /* ---------------- Commercials (producer only) ---------------- */
 export function CommercialsTab({ p, bookings, crewNames, requests }: Ctx & { bookings: Booking[]; crewNames: Record<string, string>; requests: { production: string; amount: number; state: string; kind: string; detail: string }[] }) {
   const selected = useBookingAssets(true).data ?? [];
-  const [clientView, setClientView] = useState(false);
   const rows = bookings.filter((b) => b.productionId === p.id).map((b) => {
     const lines = selected.filter((s) => s.booking_id === b.id).map((s) => ({ dailyFee: Number(s.daily_fee), days: s.days }));
     return { b, assets: assetsTotal(lines), cost: providerTotal(b.crewRate, b.days, lines), charge: b.clientCharge * b.days + assetsTotal(lines) };
@@ -1323,16 +1322,8 @@ export function CommercialsTab({ p, bookings, crewNames, requests }: Ctx & { boo
   const billing = rows.reduce((a, r) => a + r.charge, 0) + extrasTotal;
   return (
     <div className="space-y-5">
-      <div className="flex justify-end">
-        <div className="flex rounded-sm border border-border text-xs font-semibold">
-          <button onClick={() => setClientView(false)} className={`px-3 py-2 ${!clientView ? "bg-primary text-primary-foreground" : ""}`}>Producer view</button>
-          <button onClick={() => setClientView(true)} className={`px-3 py-2 ${clientView ? "bg-primary text-primary-foreground" : ""}`}>Client view</button>
-        </div>
-      </div>
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-border bg-border md:grid-cols-5">
-        {(clientView
-          ? [["Budget", fmtMoney(p.budget, p.currency)], ["Quoted to client", fmtMoney(billing, p.currency)], ["Crew booked", `${p.crewBooked}/${p.crewNeeded}`], ["Secured funds", fmtMoney(p.securedFunds, p.currency)], ["Balance due", fmtMoney(Math.max(0, billing - p.securedFunds), p.currency)]]
-          : [["Budget", fmtMoney(p.budget, p.currency)], ["Running cost", fmtMoney(running, p.currency)], ["Client billing", fmtMoney(billing, p.currency)], ["Margin", fmtMoney(billing - running, p.currency)], ["Budget left", fmtMoney(p.budget - running, p.currency)]]
+        {([["Budget", fmtMoney(p.budget, p.currency)], ["Running cost", fmtMoney(running, p.currency)], ["Client billing", fmtMoney(billing, p.currency)], ["Margin", fmtMoney(billing - running, p.currency)], ["Budget left", fmtMoney(p.budget - running, p.currency)]]
         ).map(([l, v]) => (
           <div key={l} className="bg-card px-4 py-3"><div className="text-[11px] text-muted-foreground">{l}</div><div className="font-display text-2xl font-semibold">{v}</div></div>
         ))}
@@ -1341,25 +1332,24 @@ export function CommercialsTab({ p, bookings, crewNames, requests }: Ctx & { boo
         <table className="w-full text-sm">
           <thead className="text-left text-[11px] text-muted-foreground"><tr>
             <th className="px-4 py-2">Role</th><th className="px-4">Provider</th><th className="px-4">Days</th>
-            {!clientView && <><th className="px-4">Crew rate</th><th className="px-4">Assets</th><th className="px-4">Provider total</th></>}
-            <th className="px-4">{clientView ? "Charge" : "Client charge"}</th><th className="px-4">Status</th></tr></thead>
+            <th className="px-4">Crew rate</th><th className="px-4">Assets</th><th className="px-4">Provider total</th>
+            <th className="px-4">Client charge</th><th className="px-4">Status</th></tr></thead>
           <tbody>
             {rows.map(({ b, assets, cost, charge }) => (
               <tr key={b.id} className="border-t border-border">
                 <td className="px-4 py-2.5 font-medium">{b.role}</td>
                 <td className="px-4">{b.crewId ? <Link to="/crew/$id" params={{ id: b.crewId }} className="hover:text-primary">{crewNames[b.crewId] ?? "Open"}</Link> : "Open"}</td>
                 <td className="px-4">{b.days}</td>
-                {!clientView && <><td className="px-4 text-muted-foreground">{zar(b.crewRate)}</td><td className="px-4">{zar(assets)}</td><td className="px-4 font-semibold">{zar(cost)}</td></>}
+                <td className="px-4 text-muted-foreground">{zar(b.crewRate)}</td><td className="px-4">{zar(assets)}</td><td className="px-4 font-semibold">{zar(cost)}</td>
                 <td className="px-4">{zar(charge)}</td><td className="px-4"><Badge>{b.status}</Badge></td>
               </tr>
             ))}
             {extras.map((r, i) => (
-              <tr key={i} className="border-t border-border"><td className="px-4 py-2.5 font-medium">{r.kind}</td><td className="px-4 text-muted-foreground" colSpan={clientView ? 2 : 5}>{r.detail}</td><td className="px-4">{zar(r.amount)}</td><td className="px-4"><Badge>Approved</Badge></td></tr>
+              <tr key={i} className="border-t border-border"><td className="px-4 py-2.5 font-medium">{r.kind}</td><td className="px-4 text-muted-foreground" colSpan={5}>{r.detail}</td><td className="px-4">{zar(r.amount)}</td><td className="px-4"><Badge>Approved</Badge></td></tr>
             ))}
           </tbody>
         </table>
       </Panel>
-      {clientView && <p className="text-xs text-muted-foreground">Client view hides internal crew rates, provider totals and margin.</p>}
     </div>
   );
 }

@@ -67,6 +67,7 @@ function CrewProfile() {
   const m = c.data;
   if (!m) return <Page open title={c.isLoading ? "Loading…" : "Profile not found"}>{null}</Page>;
   const canEdit = role.data === "producer" || role.data === "admin" || m.user_id === session?.user.id;
+  const isOwnProfile = m.user_id === session?.user.id;
   const done = (jobs.data ?? []).filter((j) => (j.productions as { status?: string } | null)?.status === "Wrapped").length;
   const refresh = () => inv(["crew-profile", id], ["crew"], ["crew-assets", id], ["crew-assets"]);
 
@@ -108,7 +109,7 @@ function CrewProfile() {
         </div>
 
         <nav className="flex gap-1 overflow-x-auto border-y border-border px-4">
-          {TABS.filter((t) => t !== "Banking" || canEdit).map((t) => <button key={t} onClick={() => setTab(t)} className={`whitespace-nowrap border-b-2 px-3 py-3 text-sm font-semibold ${tab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}>{t}</button>)}
+          {TABS.filter((t) => t !== "Banking" || isOwnProfile).map((t) => <button key={t} onClick={() => setTab(t)} className={`whitespace-nowrap border-b-2 px-3 py-3 text-sm font-semibold ${tab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}>{t}</button>)}
         </nav>
 
         <div className="p-6">
@@ -146,7 +147,7 @@ function CrewProfile() {
             ) : <p className="text-sm text-muted-foreground">No portfolio links added yet.</p>
           )}
           {tab === "Equipment" && <Kit crewId={id} items={assets.data ?? []} canEdit={canEdit} onChange={refresh} />}
-          {tab === "Banking" && canEdit && <BankingTab crewId={id} />}
+          {tab === "Banking" && isOwnProfile && <BankingTab crewId={id} />}
         </div>
       </div>
     </Page>
@@ -279,7 +280,7 @@ function ProjectRow({ job: j, userId, canRespond, isProducer, onChange }: { job:
       {canRespond && pending && (
         <div className="mt-2 flex gap-2">
           <button onClick={accept} className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Accept</button>
-          <button onClick={decline} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold">Decline</button>
+          <button onClick={decline} className="rounded-sm bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground hover:bg-destructive/90">Decline</button>
           <button onClick={() => setNegOpen(!negOpen)} className="ml-auto text-xs text-primary hover:underline">{negOpen ? "Hide rate negotiation" : "Negotiate rate"}</button>
         </div>
       )}
@@ -311,7 +312,7 @@ function ProjectRow({ job: j, userId, canRespond, isProducer, onChange }: { job:
               {n.status === "pending" && n.proposed_by !== userId && (
                 <div className="flex gap-2">
                   <button onClick={() => respondProposal(n.id, "accepted")} className="text-primary hover:underline">Accept</button>
-                  <button onClick={() => respondProposal(n.id, "declined")} className="text-muted-foreground hover:underline">Decline</button>
+                  <button onClick={() => respondProposal(n.id, "declined")} className="font-semibold text-destructive hover:underline">Decline</button>
                 </div>
               )}
             </div>
@@ -368,12 +369,11 @@ const blankBanking: BankingDetails = {
 
 // Banking details are encrypted at rest (pgcrypto, server-side key in Supabase Vault) and only ever
 // reach the client through SECURITY DEFINER RPCs that check the caller is this crew member or a
-// producer/admin. The password re-entry below is a step-up check in front of that — it doesn't touch
-// encryption, it just makes sure the person looking at the screen right now is really this account.
+// producer/admin.
+
 function BankingTab({ crewId }: { crewId: string }) {
   const { session } = useSession();
   const [unlocked, setUnlocked] = useState(false);
-  const [password, setPassword] = useState("");
   const [checking, setChecking] = useState(false);
   const [editing, setEditing] = useState(false);
   const [reveal, setReveal] = useState(false);
@@ -381,13 +381,9 @@ function BankingTab({ crewId }: { crewId: string }) {
   const [saving, setSaving] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
 
-  async function unlock() {
-    if (!session?.user.email) { toast.error("Can't verify your account — please sign in again."); return; }
-    if (!password) { toast.error("Enter your password"); return; }
+  async function load() {
     setChecking(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email: session.user.email, password });
-      if (error) { toast.error("Incorrect password"); return; }
       const { data, error: rpcError } = await (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<{ data: BankRow[] | null; error: Error | null }>)("get_banking_details", { _crew_id: crewId });
       if (rpcError) throw rpcError;
       const row = data?.[0];
@@ -400,7 +396,6 @@ function BankingTab({ crewId }: { crewId: string }) {
         setUpdatedAt(row.updated_at ?? null);
       }
       setUnlocked(true);
-      setPassword("");
     } catch (e) { toast.error(friendlyError(e)); }
     finally { setChecking(false); }
   }
@@ -423,17 +418,10 @@ function BankingTab({ crewId }: { crewId: string }) {
 
   const mask = (v: string) => (v ? `•••• ${v.slice(-4)}` : "—");
 
+  useEffect(() => { void load(); }, [crewId]);
+
   if (!unlocked) {
-    return (
-      <div className="mx-auto max-w-sm py-8 text-center">
-        <Lock className="mx-auto h-8 w-8 text-muted-foreground" />
-        <h3 className="mt-3 font-semibold">Confirm your password</h3>
-        <p className="mt-1 text-sm text-muted-foreground">Banking details are encrypted — re-enter your password to view or edit them.</p>
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && unlock()}
-          placeholder="Password" className={`${input} mt-4 w-full`} autoFocus />
-        <button disabled={checking} onClick={unlock} className={`${btn} mt-3 w-full disabled:opacity-60`}>{checking ? "Checking…" : "Unlock"}</button>
-      </div>
-    );
+    return <p className="py-8 text-center text-sm text-muted-foreground">{checking ? "Loading banking details…" : "Banking details couldn't be loaded."}</p>;
   }
 
   return (
