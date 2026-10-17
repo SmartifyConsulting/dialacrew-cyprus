@@ -267,8 +267,8 @@ function ProjectRow({ job: j, userId, canRespond, isProducer, onChange }: { job:
       )}
       {canRespond && pending && (
         <div className="mt-2 flex gap-2">
-          <button onClick={accept} className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Accept</button>
-          <button onClick={decline} className="rounded-sm bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground hover:bg-destructive/90">Decline</button>
+          <button onClick={accept} className="rounded-sm bg-success px-3 py-1.5 text-xs font-semibold text-white">Accept</button>
+          <button onClick={decline} className="rounded-sm bg-[#DC143C] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#DC143C]/90">Decline</button>
           <button onClick={() => setNegOpen(!negOpen)} className="ml-auto text-xs text-primary hover:underline">{negOpen ? "Hide rate negotiation" : "Negotiate rate"}</button>
         </div>
       )}

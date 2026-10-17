@@ -128,8 +128,8 @@ export function CrewOvertimePanel({ productionId, crewId, rate, date }: { produc
           </p>
           <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason for declining (optional)" className={`${input} mt-2 w-full`} />
           <div className="mt-2 flex gap-2">
-            <button disabled={busy} onClick={() => respond("accepted")} className={btn}>Accept</button>
-            <button disabled={busy} onClick={() => respond("declined")} className="rounded-sm bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground disabled:opacity-50">Decline</button>
+            <button disabled={busy} onClick={() => respond("accepted")} className="rounded-sm bg-success px-3 py-2 text-xs font-semibold text-white hover:bg-success/90">Accept</button>
+            <button disabled={busy} onClick={() => respond("declined")} className="rounded-sm bg-[#DC143C] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">Decline</button>
           </div>
         </>
       ) : (

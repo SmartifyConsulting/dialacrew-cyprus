@@ -283,8 +283,8 @@ function TeamPanel({ companyId, canManage, domain }: { companyId: string; canMan
                   <div className="text-xs text-muted-foreground">{r.email} · {new Date(r.created_at).toLocaleDateString("en-ZA")}</div>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => decide(r.id, true)} className={btn}>Approve</button>
-                  <button onClick={() => decide(r.id, false)} className="rounded-sm bg-destructive px-3 py-2 text-xs font-semibold text-destructive-foreground hover:bg-destructive/90">Decline</button>
+                  <button onClick={() => decide(r.id, true)} className="rounded-sm bg-success px-3 py-2 text-xs font-semibold text-white hover:bg-success/90">Approve</button>
+                  <button onClick={() => decide(r.id, false)} className="rounded-sm bg-[#DC143C] px-3 py-2 text-xs font-semibold text-white hover:bg-[#DC143C]/90">Decline</button>
                 </div>
               </li>
             ))}

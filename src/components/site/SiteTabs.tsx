@@ -31,8 +31,8 @@ function OvertimeApprovals({ production }: { production: string }) {
           <li key={r.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
             <div className="min-w-0 flex-1"><div className="font-semibold">{r.who}</div><div className="text-xs text-muted-foreground">{r.detail}</div></div>
             <span className="font-semibold">{zar(r.amount)}</span>
-            <button onClick={() => setState.mutate({ id: r.id, state: "Approved" })} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Approve</button>
-            <button onClick={() => setState.mutate({ id: r.id, state: "Declined" })} className="rounded-md bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground hover:bg-destructive/90">Decline</button>
+            <button onClick={() => setState.mutate({ id: r.id, state: "Approved" })} className="rounded-md bg-success px-3 py-1.5 text-xs font-semibold text-white">Approve</button>
+            <button onClick={() => setState.mutate({ id: r.id, state: "Declined" })} className="rounded-md bg-[#DC143C] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#DC143C]/90">Decline</button>
           </li>
         ))}
       </ul>
