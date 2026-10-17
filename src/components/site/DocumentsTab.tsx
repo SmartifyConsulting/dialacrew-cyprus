@@ -137,13 +137,13 @@ export function DocumentsTab({ p, userId, myName, isProducer }: { p: { id: strin
             {templates.map((t) => <option key={t.id} value={t.id}>{t.name}{t.is_default ? " (default)" : ""}</option>)}
           </select>
         ) : undefined}>
-        <ul className="divide-y divide-border">
-          {items.length === 0 && <li className="p-4 text-sm text-muted-foreground">No checklist items yet.</li>}
+        <ul className="grid gap-3 p-4 md:grid-cols-2">
+          {items.length === 0 && <li className="text-sm text-muted-foreground">No checklist items yet.</li>}
           {items.map((item) => {
             const itemDocs = docs.filter((d) => d.checklist_item_id === item.id);
             const done = itemDocs.length > 0;
             return (
-              <li key={item.id} className="px-4 py-3">
+              <li key={item.id} className="rounded-sm border border-border bg-card p-3">
                 <div className="flex items-center gap-3">
                   {done ? <CheckCircle2 className="h-4 w-4 shrink-0 text-success" /> : <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />}
                   <span className="min-w-0 flex-1 text-sm font-medium">{item.label}</span>
