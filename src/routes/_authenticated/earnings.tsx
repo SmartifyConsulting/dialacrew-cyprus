@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Badge, Page, Panel } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,7 +22,7 @@ function EarningsPage() {
   const jobs = useQuery({
     queryKey: ["crew-earnings", crewId], enabled: !!crewId,
     queryFn: async () => {
-      const { data, error } = await supabase.from("bookings").select("id, role, status, booking_date, crew_rate, days, productions(name, client)").eq("crew_id", crewId!).order("booking_date", { ascending: false });
+      const { data, error } = await supabase.from("bookings").select("id, production_id, role, status, booking_date, crew_rate, days, productions(name, client)").eq("crew_id", crewId!).order("booking_date", { ascending: false });
       if (error) throw error; return data ?? [];
     },
   }).data ?? [];
@@ -74,7 +74,7 @@ function EarningsPage() {
             const pr = j.productions as { name?: string; client?: string } | null;
             return (
               <li key={j.id} className="flex items-center gap-3 px-4 py-3">
-                <div className="min-w-0 flex-1"><div className="font-semibold">{pr?.name ?? "Production"}</div><div className="text-xs text-muted-foreground">{j.role} · {j.booking_date ?? ""}</div></div>
+                <div className="min-w-0 flex-1"><Link to="/productions/$id" params={{ id: j.production_id }} className="font-semibold hover:text-primary hover:underline">{pr?.name ?? "Production"}</Link><div className="text-xs text-muted-foreground">{j.role} · {j.booking_date ?? ""}</div></div>
                 <div className="text-right"><div className="font-semibold">{zar(total(j))}</div><Badge>{payLabel(j.status)}</Badge></div>
               </li>
             );
