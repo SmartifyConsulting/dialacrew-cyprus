@@ -18,6 +18,7 @@ import {
 import { useCancelBooking, useCreateOpenGig, useCrew, useRequests, useSetRequestState } from "@/lib/db";
 import { LocationRisks, ProjectWideRisks } from "@/components/site/ProjectInsights";
 import { Guidelines } from "@/components/site/Guidelines";
+import { PolishDescription } from "@/components/site/PolishDescription";
 import { OvertimeStatus, RequestOvertimeButton, liveRequest, useBookingRates, useNow, useOvertimeRequests } from "@/components/site/Overtime";
 
 function OvertimeApprovals({ production }: { production: string }) {
@@ -637,8 +638,11 @@ export function OverviewTab({ p, isProducer }: Ctx) {
       ) : undefined}>
         <div className="space-y-3 p-4 text-sm">
           {isProducer ? (
+            <>
             <label className="block"><span className="text-xs text-muted-foreground">Production summary</span>
               <textarea rows={4} className={`${input} mt-1 w-full`} value={f.summary} onChange={(e) => update({ summary: e.target.value })} /></label>
+              <PolishDescription text={f.summary} name={p.name} type={p.type} client={p.client} onPolished={(v) => update({ summary: v })} />
+            </>
           ) : (
             <p className="whitespace-pre-wrap">{p.summary || "No summary yet."}</p>
           )}
