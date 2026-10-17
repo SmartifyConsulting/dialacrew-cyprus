@@ -51,9 +51,9 @@ export type Database = {
         Relationships: []
       }
       site_photos: {
-        Row: { created_at: string; group_id: string | null; id: string; path: string; production_id: string; uploaded_by: string }
-        Insert: { created_at?: string; group_id?: string | null; id?: string; path: string; production_id: string; uploaded_by?: string }
-        Update: { created_at?: string; group_id?: string | null; id?: string; path?: string; production_id?: string; uploaded_by?: string }
+        Row: { created_at: string; group_id: string | null; id: string; location_id: string | null; path: string; production_id: string; uploaded_by: string }
+        Insert: { created_at?: string; group_id?: string | null; id?: string; location_id?: string | null; path: string; production_id: string; uploaded_by?: string }
+        Update: { created_at?: string; group_id?: string | null; id?: string; location_id?: string | null; path?: string; production_id?: string; uploaded_by?: string }
         Relationships: []
       }
       audit_logs: {
