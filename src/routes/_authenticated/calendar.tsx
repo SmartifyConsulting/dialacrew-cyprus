@@ -36,6 +36,7 @@ function CalendarPage() {
   const prods = useProductions().data ?? [];
   const bookings = useBookings().data ?? [];
   const [month, setMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
+  const [openTask, setOpenTask] = useState<string | null>(null);
 
   // map each day to the productions shooting on it (start date + days)
   const byDay = new Map<string, DayItem[]>();
@@ -148,10 +149,16 @@ function CalendarPage() {
               {dayTasks.length > 0 && (
                 <div className="mt-1 flex flex-wrap gap-1">
                   {dayTasks.map((t) => (
-                    <span key={t.id} title={`${t.done ? "Done" : "To do"}: ${t.title}`} aria-label={`${t.done ? "Done" : "To do"}: ${t.title}`}
-                      className={`inline-flex h-5 w-5 cursor-default items-center justify-center rounded-sm ${t.done ? "bg-success/20 text-success" : "bg-primary/20 text-primary"}`}>
-                      {t.done ? <CheckSquare className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
-                    </span>
+                    <button key={t.id} type="button" onClick={() => setOpenTask(openTask === t.id ? null : t.id)} aria-label={`${t.done ? "Done" : "To do"}: ${t.title}`}
+                      className={`relative inline-flex h-7 w-7 items-center justify-center rounded-md ${t.done ? "bg-success/20 text-success" : "bg-primary/20 text-primary"}`}>
+                      {t.done ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+                      {openTask === t.id && (
+                        <span className="absolute left-0 top-full z-10 mt-1 w-48 rounded-md border border-border bg-card p-2 text-left text-xs text-foreground shadow-lg">
+                          <span className="block font-semibold text-muted-foreground">{t.done ? "Done" : "To do"}</span>
+                          {t.title}
+                        </span>
+                      )}
+                    </button>
                   ))}
                 </div>
               )}
