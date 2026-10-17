@@ -3,7 +3,7 @@ import type React from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check } from "lucide-react";
 import { Badge, ClientBadge, Page, Panel, clientColor } from "@/components/AppShell";
-import { zar, type Booking, type Production } from "@/lib/demo-data";
+import { fmtMoney, zar, type Booking, type Production } from "@/lib/demo-data";
 import { useBookings, useCrew, useProductions, useRequests, useRespondToBooking, useSetRequestState } from "@/lib/db";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -306,7 +306,7 @@ function Dashboard() {
                       </div>
                       <Badge>{p.status}</Badge>
                     </div>
-                    <div className="mt-3 flex justify-between text-xs text-muted-foreground"><span>Crew {p.crewBooked}/{p.crewNeeded}</span><span>{zar(p.budget)}</span></div>
+                    <div className="mt-3 flex justify-between text-xs text-muted-foreground"><span>Crew {p.crewBooked}/{p.crewNeeded}</span><span>{fmtMoney(p.budget, p.currency)}</span></div>
                     <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} /></div>
                   </Link>
                 );

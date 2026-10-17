@@ -242,7 +242,7 @@ export function ScenarioPlanner({ p }: { p: Production }) {
             </div>
           </div>
         )}
-        <div className="border-b border-border px-4 py-3"><BudgetBar used={total} budget={p.budget} /></div>
+        <div className="border-b border-border px-4 py-3"><BudgetBar used={total} budget={p.budget} currency={p.currency} /></div>
         <ul className="max-h-[520px] divide-y divide-border overflow-y-auto">
           {shown.map((c) => {
             const on = !!sel[c.id];
@@ -321,7 +321,7 @@ export function ScenarioPlanner({ p }: { p: Production }) {
                       <td className="px-2">{Object.keys(s.selection).length}</td>
                       <td className="px-2">{kitCount}</td>
                       <td className="px-2 font-semibold">{zar(cost)}</td>
-                      <td className="px-2"><BudgetBar used={cost} budget={p.budget} compact /><div className={`text-[10px] ${v < 0 ? "text-destructive" : "text-muted-foreground"}`}>{v < 0 ? `${zar(-v)} over` : `${zar(v)} left`}</div></td>
+                      <td className="px-2"><BudgetBar used={cost} budget={p.budget} compact currency={p.currency} /><div className={`text-[10px] ${v < 0 ? "text-destructive" : "text-muted-foreground"}`}>{v < 0 ? `${fmtMoney(-v, p.currency)} over` : `${fmtMoney(v, p.currency)} left`}</div></td>
                       <td className="whitespace-nowrap px-2 text-right">
                         <button className={ghost} onClick={() => pick(s.id)}>Edit</button>{" "}
                         <button className={ghost} disabled={committing} onClick={() => commit(s)}><CheckCircle2 className="h-3 w-3" /> Commit</button>{" "}
@@ -342,12 +342,12 @@ export function ScenarioPlanner({ p }: { p: Production }) {
 /** Budget usage %: green under 85%, amber 85–100%, red over budget. */
 export function budgetPct(used: number, budget: number) { return budget > 0 ? Math.round((used / budget) * 100) : 0; }
 
-function BudgetBar({ used, budget, compact }: { used: number; budget: number; compact?: boolean }) {
+function BudgetBar({ used, budget, compact, currency = "ZAR" }: { used: number; budget: number; compact?: boolean; currency?: string | undefined }) {
   const pct = budgetPct(used, budget);
   const tone = pct > 100 ? "bg-destructive" : pct >= 85 ? "bg-chart-3" : "bg-success";
   return (
     <div>
-      {!compact && <div className="mb-1 flex justify-between text-xs"><span className="text-muted-foreground">Budget used</span><span className="font-semibold">{pct}% · {zar(used)} of {zar(budget)}</span></div>}
+      {!compact && <div className="mb-1 flex justify-between text-xs"><span className="text-muted-foreground">Budget used</span><span className="font-semibold">{pct}% · {fmtMoney(used, currency)} of {fmtMoney(budget, currency)}</span></div>}
       <div className={`${compact ? "h-1.5" : "h-2.5"} overflow-hidden rounded-full bg-muted`} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
         <div className={`h-full ${tone}`} style={{ width: `${Math.min(100, pct)}%` }} />
       </div>
