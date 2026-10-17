@@ -75,7 +75,7 @@ export function Guidelines({ p, isProducer }: { p: Production; isProducer: boole
       </div>
       {p.postRules
         ? <p className="mt-2 whitespace-pre-wrap text-sm">{p.postRules}</p>
-        : <p className="mt-2 text-sm text-muted-foreground">No guidelines set for this job yet.</p>}
+        : <p className="mt-2 text-sm text-muted-foreground">Provide guidelines for posts.</p>}
     </div>
   );
 }
