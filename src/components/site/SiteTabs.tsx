@@ -506,7 +506,7 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
   if (!isProducer && checklists.length === 0) return null;
 
   return (
-    <div className="space-y-5">
+    <div className="grid items-start gap-5 md:grid-cols-2">
       {checklists.map((c) => (
         <Panel key={c.id} title={c.title} right={isProducer && (
           <button onClick={() => removeChecklist(c.id)} className="text-muted-foreground hover:text-destructive" aria-label={`Remove ${c.title}`}><Trash2 className="h-3.5 w-3.5" /></button>
