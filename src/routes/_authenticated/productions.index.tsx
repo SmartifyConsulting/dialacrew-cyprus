@@ -11,7 +11,9 @@ import { useProductions } from "@/lib/db";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRole, useSession } from "@/lib/auth";
 import { PolishDescription } from "@/components/site/PolishDescription";
-import { uploadFile } from "@/lib/site";
+import { uploadFile, useSignedUrl } from "@/lib/site";
+import { ProductionAvatar } from "@/components/site/ProductionCover";
+import { ImageCropDialog } from "@/components/site/ImageCropDialog";
 
 export const Route = createFileRoute("/_authenticated/productions/")({
   validateSearch: (s: Record<string, unknown>): { new?: boolean } => (s["new"] ? { new: true } : {}),
@@ -159,6 +161,7 @@ function Productions() {
   const [draftId, setDraftId] = useState<string | null>(null); // autosaved draft while creating a new one
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [cropSource, setCropSource] = useState<File | null>(null); // picture waiting to be cropped
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [search, setSearch] = useState("");
 
@@ -169,12 +172,15 @@ function Productions() {
   // Ignore the production being edited and the draft this form autosaved itself.
   const jobIdTaken = (id: string) => list.some((p) => p.id !== editingId && p.id !== draftId && (p.jobId ?? "").trim().toLowerCase() === id.trim().toLowerCase());
 
-  const resetForm = () => { setF(blankForm); setEditingId(null); setDraftId(null); setSaveState("idle"); setDuplicating(false); setCoverFile(null); setCoverPreview(null); };
-  const pickCover = (file: File | undefined) => {
-    if (!file) return;
-    setCoverFile(file);
-    setCoverPreview(URL.createObjectURL(file));
+  const resetForm = () => { setF(blankForm); setEditingId(null); setDraftId(null); setSaveState("idle"); setDuplicating(false); setCoverFile(null); setCoverPreview(null); setCropSource(null); };
+  // A chosen picture is cropped first; the cropped square is what gets saved as the cover.
+  const pickCover = (file: File | undefined) => { if (file) setCropSource(file); };
+  const applyCrop = (cropped: File) => {
+    setCropSource(null);
+    setCoverFile(cropped);
+    setCoverPreview(URL.createObjectURL(cropped));
   };
+  const editingCoverUrl = useSignedUrl(list.find((x) => x.id === editingId)?.imagePath).data;
   const closeModal = () => { setOpen(false); resetForm(); if (openOnLoad) navigate({ to: "/productions", search: {}, replace: true }); };
   const openNew = () => { resetForm(); setOpen(true); };
   const openEdit = (p: (typeof list)[number]) => {
@@ -263,6 +269,7 @@ function Productions() {
   return (
     <Page open title="Productions" subtitle="Start from the client brief, then break it down into crew and resources."
       actions={isProducer ? <button onClick={openNew} className="rounded-sm bg-primary px-4 py-2 font-display text-sm font-semibold text-primary-foreground">+ New production</button> : undefined}>
+      <ImageCropDialog file={cropSource} onCancel={() => setCropSource(null)} onDone={applyCrop} />
       {open && isProducer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={closeModal}>
           <form onSubmit={submit} onClick={(e) => e.stopPropagation()} className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-sm border border-border bg-card p-5 shadow-lg">
@@ -279,7 +286,7 @@ function Productions() {
               <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Production info</h3>
               <div className="mb-4 flex items-center gap-4">
                 <label className="group relative grid h-24 w-24 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-2xl border border-dashed border-border bg-muted hover:border-primary" aria-label="Add a cover picture">
-                  {coverPreview ? <img src={coverPreview} alt="Cover preview" className="h-full w-full object-cover" /> : <span className="px-2 text-center text-[11px] font-semibold text-muted-foreground">Add cover picture</span>}
+                  {coverPreview ?? editingCoverUrl ? <img src={coverPreview ?? editingCoverUrl ?? ""} alt="Cover preview" className="h-full w-full object-cover" /> : <span className="px-2 text-center text-[11px] font-semibold text-muted-foreground">Add cover picture</span>}
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => { pickCover(e.target.files?.[0]); e.target.value = ""; }} />
                 </label>
                 <p className="text-xs text-muted-foreground">Square picture shown beside the production name. You can change it later from the production site.</p>
@@ -322,7 +329,8 @@ function Productions() {
         {filteredList.length === 0 && <p className="text-sm text-muted-foreground">No productions match "{search}".</p>}
         {filteredList.map((p) => (
           <div key={p.id} className="rounded-sm border border-border bg-card p-4">
-            <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start justify-between gap-3">
+              <ProductionAvatar name={p.name} imagePath={p.imagePath} className="h-12 w-12 text-sm" />
               <Link to="/productions/$id" params={{ id: p.id }} className="min-w-0 flex-1">
                 <div className="truncate font-semibold hover:text-primary">{p.name}</div>
                 {p.jobId && <div className="text-xs text-muted-foreground">Job ID: {p.jobId}</div>}
@@ -354,7 +362,12 @@ function Productions() {
             {filteredList.length === 0 && <tr><td colSpan={9} className="px-4 py-6 text-center text-muted-foreground">No productions match "{search}".</td></tr>}
             {filteredList.map((p) => (
               <tr key={p.id} className="border-t border-border hover:bg-muted/50">
-                <td className="px-4 py-2.5 font-medium"><Link to="/productions/$id" params={{ id: p.id }} className="hover:text-primary">{p.name}</Link><div className="mt-1"><ClientBadge name={p.client} /></div></td>
+                <td className="px-4 py-2.5 font-medium">
+                  <div className="flex items-center gap-3">
+                    <ProductionAvatar name={p.name} imagePath={p.imagePath} className="h-12 w-12 text-sm" />
+                    <div className="min-w-0"><Link to="/productions/$id" params={{ id: p.id }} className="hover:text-primary">{p.name}</Link><div className="mt-1"><ClientBadge name={p.client} /></div></div>
+                  </div>
+                </td>
                 <td className="px-4 text-muted-foreground">{p.jobId ?? "—"}</td>
                 <td className="px-4">{p.type}</td>
                 <td className="px-4 text-muted-foreground">{p.location}</td>
