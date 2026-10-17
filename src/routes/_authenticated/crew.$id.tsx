@@ -1,4 +1,3 @@
-import { overtimeAmount, shiftLabel, type OvertimeShift } from "@/lib/costing";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -13,7 +12,7 @@ import { zar } from "@/lib/demo-data";
 import { uploadFile, useInvalidate, useOnTimePct, useReviews } from "@/lib/site";
 import {
   useApproveJob, useCancelBooking, useClaimGig, useMarkJobCompleted, useMarkPaymentReceived, useNegotiations,
-  useOpenGigs, useProposeRate, useReleasePayment, useRequestOvertime, useRespondToBooking, useRespondToNegotiation,
+  useOpenGigs, useProposeRate, useReleasePayment, useRespondToBooking, useRespondToNegotiation,
 } from "@/lib/db";
 
 export const Route = createFileRoute("/_authenticated/crew/$id")({
@@ -185,11 +184,7 @@ function ProjectRow({ job: j, userId, canRespond, isProducer, onChange }: { job:
   const negotiations = useNegotiations(j.id, negOpen);
   const propose = useProposeRate();
   const respondNeg = useRespondToNegotiation();
-  const requestOT = useRequestOvertime();
   const [proposedRate, setProposedRate] = useState(String(j.crew_rate));
-  const [otOpen, setOtOpen] = useState(false);
-  const [ot, setOt] = useState<{ hours: string; shift: OvertimeShift; reason: string }>({ hours: "1", shift: "day", reason: "" });
-  const otAmount = overtimeAmount(Number(j.crew_rate ?? 0), Number(ot.hours) || 0, j.booking_date, ot.shift);
   const canAct = canRespond || isProducer;
   const pending = j.status === "pencil" || j.status === "awaiting_crew_confirmation";
   const onJob = j.status === "confirmed" || j.status === "in_progress";
@@ -217,15 +212,6 @@ function ProjectRow({ job: j, userId, canRespond, isProducer, onChange }: { job:
     catch (e) { toast.error(friendlyError(e)); }
   }
 
-  async function submitOvertime() {
-    const hours = Number(ot.hours), amount = otAmount;
-    if (!hours) { toast.error("Enter the extra hours"); return; }
-    try {
-      await requestOT.mutateAsync({ bookingId: j.id, production: pr?.name ?? "", who: "", hours, amount, reason: `${shiftLabel(j.booking_date, ot.shift)} · ${ot.reason || "No reason given"}` });
-      toast.success("Overtime request sent. If the producer doesn't respond, you may proceed at your own risk — Book a Crew isn't responsible for unauthorised overtime.");
-      setOtOpen(false); setOt({ hours: "1", shift: "day", reason: "" });
-    } catch (e) { toast.error(friendlyError(e)); }
-  }
 
   async function accept() {
     try { await respond.mutateAsync({ id: j.id, status: "confirmed" }); toast.success("Booking confirmed"); onChange(); }
@@ -286,23 +272,6 @@ function ProjectRow({ job: j, userId, canRespond, isProducer, onChange }: { job:
       )}
       {canAct && pending && !canRespond && (
         <button onClick={() => setNegOpen(!negOpen)} className="mt-2 text-xs text-primary hover:underline">{negOpen ? "Hide rate negotiation" : "Negotiate rate"}</button>
-      )}
-      {canRespond && onJob && (
-        <button onClick={() => setOtOpen(!otOpen)} className="mt-2 text-xs text-primary hover:underline">{otOpen ? "Hide overtime request" : "Request overtime"}</button>
-      )}
-      {otOpen && (
-        <div className="mt-2 space-y-2 rounded-sm border border-border bg-muted/30 p-3">
-          <div className="grid grid-cols-2 gap-2">
-            <label className="block"><span className="text-xs text-muted-foreground">Extra hours</span>
-              <input type="number" min="0.5" step="0.5" className="mt-1 w-full rounded-sm border border-input bg-background px-2 py-1 text-xs" value={ot.hours} onChange={(e) => setOt({ ...ot, hours: e.target.value })} /></label>
-            <label className="block"><span className="text-xs text-muted-foreground">Shift</span>
-              <select className="mt-1 w-full rounded-sm border border-input bg-background px-2 py-1 text-xs" value={ot.shift} onChange={(e) => setOt({ ...ot, shift: e.target.value as OvertimeShift })}><option value="day">Day</option><option value="night">Night (4pm–morning)</option></select></label>
-          </div>
-          <input placeholder="Reason" className="w-full rounded-sm border border-input bg-background px-2 py-1 text-xs" value={ot.reason} onChange={(e) => setOt({ ...ot, reason: e.target.value })} />
-          <p className="text-xs font-semibold">{shiftLabel(j.booking_date, ot.shift)}: R{otAmount.toLocaleString()}</p>
-          <p className="text-xs text-muted-foreground">Sent to the producer for authorisation. If they don't respond, you may proceed at your own risk — Book a Crew isn't responsible for unauthorised overtime.</p>
-          <button onClick={submitOvertime} className="rounded-sm bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground">Send request</button>
-        </div>
       )}
       {negOpen && (
         <div className="mt-2 space-y-2 rounded-sm border border-border bg-muted/30 p-3">

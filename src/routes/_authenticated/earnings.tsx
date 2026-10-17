@@ -56,6 +56,17 @@ function EarningsPage() {
           <div className="rounded-lg bg-muted p-3"><div className="text-xs text-muted-foreground">Money earned</div><div className="mt-1 font-display text-2xl font-semibold text-success">{zar(gigEarned)}</div></div>
         </div>
       </Panel></div>
+      <Panel title="Coming from gigs">
+        <ul className="divide-y divide-border text-sm">
+          {gigs.filter((g) => g.status === "secured" && (g.event_date ?? "") >= new Date().toISOString().slice(0, 10)).sort((a, b) => (a.event_date ?? "").localeCompare(b.event_date ?? "")).map((g) => (
+            <li key={g.id} className="flex items-center gap-3 px-4 py-3">
+              <div className="min-w-0 flex-1"><div className="font-semibold">{g.title}</div><div className="text-xs text-muted-foreground">{g.role} · {g.event_date}</div></div>
+              <div className="text-right"><div className="font-semibold">{zar(Number(g.amount ?? 0))}</div><Badge>Upcoming</Badge></div>
+            </li>
+          ))}
+          {gigs.filter((g) => g.status === "secured" && (g.event_date ?? "") >= new Date().toISOString().slice(0, 10)).length === 0 && <li className="p-4 text-muted-foreground">No gigs booked ahead.</li>}
+        </ul>
+      </Panel>
       <Panel title="Jobs">
         <ul className="divide-y divide-border text-sm">
           {jobs.length + gigs.length === 0 && <li className="p-4 text-muted-foreground">No earnings yet.</li>}

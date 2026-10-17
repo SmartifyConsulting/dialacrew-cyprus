@@ -668,6 +668,28 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
   const [fitRole, setFitRole] = useState<string | null>(null);
   const crewDirectory = useCrew().data ?? [];
   const cancelBooking = useCancelBooking();
+  const wraps = (useQuery({
+    queryKey: ["site-wraps", p.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("site_wraps").select("*").eq("production_id", p.id).order("wrapped_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  }).data) ?? [];
+  const wrapFor = (crewId: string) => wraps.find((w) => w.crew_id === crewId);
+  const clock = (iso: string) => new Date(iso).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" });
+  const packdown = (from: string, to: string) => {
+    const mins = Math.max(0, Math.round((new Date(to).getTime() - new Date(from).getTime()) / 60000));
+    return mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`;
+  };
+
+  async function wrapCrew(m: { crew_id: string; name: string }) {
+    if (!window.confirm(`Wrap ${m.name}? They'll be told they're no longer required. Pack-down time is paid until they check out.`)) return;
+    const { error } = await supabase.from("site_wraps").insert({ production_id: p.id, crew_id: m.crew_id });
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success(`${m.name} wrapped`);
+    inv(["site-wraps", p.id]);
+  }
 
   async function removeMember(m: { crew_id: string; name: string }) {
     if (!window.confirm(`Remove ${m.name} from this production? If the shoot is close, the cancellation penalty applies.`)) return;
@@ -742,7 +764,17 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
                       </div>
                     </div>
                   </td>
-                  <td className="px-4"><Badge>{status}</Badge></td>
+                  <td className="px-4">
+                    <Badge>{status}</Badge>
+                    {wrapFor(m.crew_id) && (() => {
+                      const w = wrapFor(m.crew_id)!;
+                      return (
+                        <div className="mt-1 text-[11px] text-muted-foreground">
+                          Wrapped {clock(w.wrapped_at)}{w.left_at ? ` · left ${clock(w.left_at)} · pack-down ${packdown(w.wrapped_at, w.left_at)}` : " · packing down"}
+                        </div>
+                      );
+                    })()}
+                  </td>
                   <td className="px-4 text-xs text-muted-foreground">{l ? `${l.kind === "in" ? "In" : "Out"} · ${when(l.created_at)}${l.distance_m != null ? ` · ${l.distance_m}m` : ""}` : "—"}</td>
                   {isProducer && (
                     <td className="px-4">
@@ -756,6 +788,7 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
                   {isProducer && (
                     <td className="px-4">
                       <div className="flex gap-2">
+                        <button onClick={() => wrapCrew(m)} disabled={!!wrapFor(m.crew_id)} className="rounded-sm border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40">Wrap</button>
                         <button onClick={() => removeMember(m)} aria-label={`Remove ${m.name}`} title="Remove from production" className="grid h-6 w-6 place-items-center rounded-sm border border-destructive text-destructive hover:bg-destructive/10"><Minus className="h-3.5 w-3.5" /></button>
                         {m.user_id !== userId && <button onClick={() => setRating({ crewId: m.crew_id, name: m.name })} className="rounded-sm border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10">Rate me</button>}
                       </div>

@@ -14,6 +14,12 @@ export type Database = {
   }
   public: {
     Tables: {
+      site_wraps: {
+        Row: { created_at: string; crew_id: string; id: string; left_at: string | null; production_id: string; wrapped_at: string; wrapped_by: string }
+        Insert: { created_at?: string; crew_id: string; id?: string; left_at?: string | null; production_id: string; wrapped_at?: string; wrapped_by?: string }
+        Update: { created_at?: string; crew_id?: string; id?: string; left_at?: string | null; production_id?: string; wrapped_at?: string; wrapped_by?: string }
+        Relationships: []
+      }
       site_photo_groups: {
         Row: { created_at: string; created_by: string; group_date: string | null; id: string; name: string; production_id: string }
         Insert: { created_at?: string; created_by?: string; group_date?: string | null; id?: string; name: string; production_id: string }

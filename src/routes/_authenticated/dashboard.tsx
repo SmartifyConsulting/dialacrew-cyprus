@@ -1,10 +1,10 @@
 import type React from "react";
-import { overtimeAmount, shiftLabel, type OvertimeShift } from "@/lib/costing";
+
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check } from "lucide-react";
 import { Badge, ClientBadge, Page, Panel, clientColor } from "@/components/AppShell";
 import { zar, type Booking, type Production } from "@/lib/demo-data";
-import { useBookings, useCrew, useProductions, useRequestOvertime, useRequests, useRespondToBooking, useSetRequestState } from "@/lib/db";
+import { useBookings, useCrew, useProductions, useRequests, useRespondToBooking, useSetRequestState } from "@/lib/db";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,12 +38,6 @@ function CrewDashboard() {
   const todayJob = live.find((j) => j.booking_date === todayIso) ?? live.find((j) => (j.booking_date ?? "") >= todayIso);
   const pencils = live.filter((j) => j.status === "pencil" || j.status === "awaiting_crew_confirmation");
   const { session } = useSession();
-  const myName = useMyName(session?.user.id).data ?? "Crew";
-  const requestOT = useRequestOvertime();
-  const [ot, setOt] = useState<{ hours: number; reason: string; shift: OvertimeShift }>({ hours: 1, reason: "", shift: "day" });
-  const earned = (s: string[]) => jobs.filter((j) => s.includes(j.status)).reduce((a, j) => a + Number(j.crew_rate ?? 0) * Number(j.days ?? 1), 0);
-  const paid = earned(["payment_released", "completed"]);
-  const pendingPay = earned(["confirmed", "in_progress", "awaiting_review"]);
   const uid = session?.user.id;
   const gigValue = useQuery({
     queryKey: ["crew-gig-value", uid], enabled: !!uid,
@@ -58,15 +52,6 @@ function CrewDashboard() {
       };
     },
   }).data ?? { count: 0, connections: 0, earned: 0 };
-  async function logOvertime() {
-    if (!todayJob) return;
-    const pr = todayJob.productions as { name?: string } | null;
-    try {
-      await requestOT.mutateAsync({ bookingId: todayJob.id, production: pr?.name ?? "", who: myName, hours: ot.hours, amount: overtimeAmount(Number(todayJob.crew_rate ?? 0), ot.hours, todayJob.booking_date, ot.shift), reason: `${shiftLabel(todayJob.booking_date, ot.shift)} · ${ot.reason || "Ran past wrap"}` });
-      toast.success("Overtime sent to the producer for approval");
-      setOt({ hours: 1, reason: "", shift: "day" });
-    } catch (e) { toast.error(friendlyError(e)); }
-  }
   async function respond(id: string, accept: boolean) {
     const { error } = await supabase.from("bookings").update({ status: accept ? "confirmed" : "cancelled" }).eq("id", id);
     if (error) { toast.error(friendlyError(error)); return; }
@@ -138,26 +123,6 @@ function CrewDashboard() {
         );
       })()}
       <SpotlightCard />
-      <div className="mb-5 grid gap-5 md:grid-cols-2">
-        <Panel title="Earnings">
-          <div className="grid grid-cols-2 gap-3 p-4">
-            <div className="rounded-lg bg-success/10 p-3"><div className="text-xs text-muted-foreground">Paid</div><div className="mt-1 font-display text-2xl font-semibold text-success">{zar(paid)}</div></div>
-            <div className="rounded-lg bg-primary/10 p-3"><div className="text-xs text-muted-foreground">Coming</div><div className="mt-1 font-display text-2xl font-semibold text-primary">{zar(pendingPay)}</div></div>
-          </div>
-          <div className="border-t border-border p-3 text-right"><Link to="/earnings" className="text-sm font-semibold text-primary">See all earnings →</Link></div>
-        </Panel>
-        {todayJob && (
-          <Panel title="Log overtime">
-            <div className="flex flex-wrap items-end gap-2 p-4">
-              <label className="text-xs text-muted-foreground">Hours<input type="number" min={0.5} step={0.5} value={ot.hours} onChange={(e) => setOt({ ...ot, hours: Number(e.target.value) })} className="mt-1 block w-20 rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground" /></label>
-              <label className="text-xs text-muted-foreground">Shift<select value={ot.shift} onChange={(e) => setOt({ ...ot, shift: e.target.value as OvertimeShift })} className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"><option value="day">Day</option><option value="night">Night (4pm–morning)</option></select></label>
-              <label className="flex-1 text-xs text-muted-foreground">Reason<input value={ot.reason} onChange={(e) => setOt({ ...ot, reason: e.target.value })} placeholder="Ran past wrap" className="mt-1 block w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground" /></label>
-              <button disabled={requestOT.isPending || ot.hours <= 0} onClick={logOvertime} className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60">Send</button>
-            </div>
-            <p className="px-4 pb-3 text-xs text-muted-foreground">{shiftLabel(todayJob.booking_date, ot.shift)}: {zar(overtimeAmount(Number(todayJob.crew_rate ?? 0), ot.hours, todayJob.booking_date, ot.shift))}. Weekends 1.5×, nights from 4pm 2×. Paid once the producer approves.</p>
-          </Panel>
-        )}
-      </div>
       <Panel title={`My jobs (${live.length})`}>
         <ul className="divide-y divide-border text-sm">
           {live.length === 0 && <li className="p-4 text-muted-foreground">No jobs yet. Open Find Gigs to grab one.</li>}
