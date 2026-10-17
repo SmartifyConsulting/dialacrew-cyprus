@@ -141,7 +141,7 @@ function CalendarPage() {
                 </p>
               )}
               {items.map((it) => (
-                <Link key={it.id} to="/productions/$id" params={{ id: it.id }} className={`mb-1 block truncate rounded-md px-1.5 py-0.5 text-xs font-medium hover:opacity-90 ${clientColor(it.client)}`}>
+                <Link key={it.id} to="/productions/$id" params={{ id: it.id }} title={it.name} className={`mb-1 block truncate rounded-xl px-1.5 py-0.5 text-xs font-medium hover:opacity-90 ${clientColor(it.client)}`}>
                   {it.name}{it.crew ? ` · ${it.crew} crew` : ""}
                 </Link>
               ))}
