@@ -155,7 +155,7 @@ function RoleGate({ children, open }: { children: ReactNode; open?: boolean | un
   return <>{children}</>;
 }
 
-export function Page({ title, subtitle, actions, children, open }: { title: string; subtitle?: ReactNode; actions?: ReactNode; children: ReactNode; open?: boolean }) {
+export function Page({ title, subtitle, actions, children, open }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode; children: ReactNode; open?: boolean }) {
   return (
     <div className="min-h-screen bg-background">
       <TopNav />

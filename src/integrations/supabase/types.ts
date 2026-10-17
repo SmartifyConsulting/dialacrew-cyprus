@@ -1708,6 +1708,7 @@ export type Database = {
           currency: string
           post_rules: string
           post_rules_hidden: boolean
+          image_path: string | null
           crew_needed: number
           date: string | null
           days: number
@@ -1735,6 +1736,7 @@ export type Database = {
           currency?: string
           post_rules?: string
           post_rules_hidden?: boolean
+          image_path?: string | null
           crew_needed?: number
           date?: string | null
           days?: number
@@ -1762,6 +1764,7 @@ export type Database = {
           currency?: string
           post_rules?: string
           post_rules_hidden?: boolean
+          image_path?: string | null
           crew_needed?: number
           date?: string | null
           days?: number
