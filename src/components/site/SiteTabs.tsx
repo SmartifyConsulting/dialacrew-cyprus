@@ -641,7 +641,7 @@ export function OverviewTab({ p, isProducer }: Ctx) {
             <>
             <label className="block"><span className="text-xs text-muted-foreground">Production summary</span>
               <textarea rows={4} className={`${input} mt-1 w-full`} value={f.summary} onChange={(e) => update({ summary: e.target.value })} /></label>
-              <PolishDescription text={f.summary} name={p.name} type={p.type} client={p.client} onPolished={(v) => update({ summary: v })} />
+              <div className="flex justify-end"><PolishDescription text={f.summary} name={p.name} type={p.type} client={p.client} onPolished={(v) => update({ summary: v })} /></div>
             </>
           ) : (
             <p className="whitespace-pre-wrap">{p.summary || "No summary yet."}</p>

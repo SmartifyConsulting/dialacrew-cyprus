@@ -281,7 +281,7 @@ function Productions() {
                 <label className="block sm:col-span-2"><span className="text-xs text-muted-foreground">Description</span>
                   <textarea rows={3} className={`${field} mt-1`} placeholder="Brief, look, shots, anything the team should know"
                     value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} /></label>
-                <div className="sm:col-span-2"><PolishDescription text={f.description} name={f.name} type={f.type} client={f.client} onPolished={(v) => setF({ ...f, description: v })} /></div>
+                <div className="flex justify-end sm:col-span-2"><PolishDescription text={f.description} name={f.name} type={f.type} client={f.client} onPolished={(v) => setF({ ...f, description: v })} /></div>
               </div>
             </div>
 
