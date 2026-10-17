@@ -18,6 +18,7 @@ import {
 import { useCancelBooking, useCreateOpenGig, useCrew, useRequests, useSetRequestState } from "@/lib/db";
 import { LocationRisks, ProjectWideRisks } from "@/components/site/ProjectInsights";
 import { Guidelines } from "@/components/site/Guidelines";
+import { LocationFee, LocationPhotos } from "@/components/site/LocationExtras";
 import { PolishDescription } from "@/components/site/PolishDescription";
 import { OvertimeStatus, RequestOvertimeButton, liveRequest, useBookingRates, useNow, useOvertimeRequests } from "@/components/site/Overtime";
 
@@ -289,6 +290,8 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
               {pt.starts_at && (pt.latitude != null && pt.longitude != null
                 ? <DayWeather lat={pt.latitude} lon={pt.longitude} date={localYmd(pt.starts_at)} />
                 : <p className="text-xs text-muted-foreground">Add a map location to see the forecast for this day.</p>)}
+              <LocationPhotos p={p} locationId={pt.id} isProducer={isProducer} />
+              {isProducer && <LocationFee p={p} locationId={pt.id} />}
               {isProducer && <LocationRisks p={p} locationId={pt.id} hasCoords={pt.latitude != null && pt.longitude != null} />}
             </div>
             {isProducer && (

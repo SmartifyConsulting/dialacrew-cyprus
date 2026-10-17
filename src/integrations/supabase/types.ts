@@ -56,6 +56,18 @@ export type Database = {
         Update: { created_at?: string; group_id?: string | null; id?: string; location_id?: string | null; path?: string; production_id?: string; uploaded_by?: string }
         Relationships: []
       }
+      production_location_fees: {
+        Row: { fee: number; location_id: string; production_id: string; updated_at: string }
+        Insert: { fee?: number; location_id: string; production_id: string; updated_at?: string }
+        Update: { fee?: number; location_id?: string; production_id?: string; updated_at?: string }
+        Relationships: []
+      }
+      production_location_photos: {
+        Row: { created_at: string; id: string; location_id: string; path: string; production_id: string; sort_order: number; uploaded_by: string }
+        Insert: { created_at?: string; id?: string; location_id: string; path: string; production_id: string; sort_order?: number; uploaded_by?: string }
+        Update: { created_at?: string; id?: string; location_id?: string; path?: string; production_id?: string; sort_order?: number; uploaded_by?: string }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
