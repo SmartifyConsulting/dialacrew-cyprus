@@ -49,7 +49,15 @@ const initials = (n: string) => n.split(" ").map((x) => x[0]).join("").slice(0, 
 
 type AddressSuggestion = { label: string; place: string; lat: string; lon: string };
 
-type NominatimAddress = { suburb?: string; neighbourhood?: string; quarter?: string; village?: string; hamlet?: string; city?: string; town?: string; municipality?: string; county?: string };
+type NominatimAddress = { house_number?: string; road?: string; pedestrian?: string; footway?: string; path?: string; suburb?: string; neighbourhood?: string; quarter?: string; village?: string; hamlet?: string; city?: string; town?: string; municipality?: string; county?: string };
+// "12 Main Street, Sea Point, Cape Town": the street through to the city, without province, postcode or country.
+function shortAddress(a: NominatimAddress | undefined, name: string | undefined, displayName: string) {
+  const street = [a?.house_number, a?.road ?? a?.pedestrian ?? a?.footway ?? a?.path].filter(Boolean).join(" ");
+  const area = [a?.suburb, a?.neighbourhood, a?.quarter, a?.village, a?.hamlet].find((v) => v && !/\bward\b/i.test(v));
+  const city = a?.city ?? a?.town ?? a?.municipality ?? a?.county;
+  const parts = [street || name, area, city].filter((v): v is string => !!v);
+  return [...new Set(parts)].join(", ") || displayName.split(", ").slice(0, 3).join(", ");
+}
 function placeFromAddress(a: NominatimAddress | undefined, fallback: string) {
   const area = a?.suburb ?? a?.neighbourhood ?? a?.quarter ?? a?.village ?? a?.hamlet;
   const city = a?.city ?? a?.town ?? a?.municipality ?? a?.county;
@@ -73,8 +81,8 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder, cl
       setLoading(true);
       try {
         const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${encodeURIComponent(value)}`);
-        const data = (await res.json()) as { display_name: string; lat: string; lon: string; address?: NominatimAddress }[];
-        setSuggestions(data.map((d) => ({ label: d.display_name, place: placeFromAddress(d.address, d.display_name.split(",")[0] ?? d.display_name), lat: d.lat, lon: d.lon })));
+        const data = (await res.json()) as { display_name: string; name?: string; lat: string; lon: string; address?: NominatimAddress }[];
+        setSuggestions(data.map((d) => ({ label: shortAddress(d.address, d.name, d.display_name), place: placeFromAddress(d.address, d.display_name.split(",")[0] ?? d.display_name), lat: d.lat, lon: d.lon })));
       } catch { setSuggestions([]); }
       setLoading(false);
     }, 400);
