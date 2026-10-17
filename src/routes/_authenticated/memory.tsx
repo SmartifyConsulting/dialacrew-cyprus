@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Page, Panel } from "@/components/AppShell";
 import { useRole, useSession } from "@/lib/auth";
+import { useAiUnlocked } from "@/lib/ai-access";
 import { matchBrief, refreshMemory, type MatchResult } from "@/lib/memory.functions";
 
 export const Route = createFileRoute("/_authenticated/memory")({
@@ -31,7 +32,8 @@ function MemoryPage() {
   const qc = useQueryClient();
   const { session } = useSession();
   const role = useRole(session?.user.id);
-  const allowed = role.data === "producer" || role.data === "admin";
+  const aiUnlocked = useAiUnlocked();
+  const allowed = role.data === "admin" || (role.data === "producer" && aiUnlocked);
   const clients = useQuery({
     queryKey: ["clients"],
     queryFn: async () => { const { data, error } = await supabase.from("clients").select("id, name, company").order("company"); if (error) throw error; return data ?? []; },

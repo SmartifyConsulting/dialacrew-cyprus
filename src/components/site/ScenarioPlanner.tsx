@@ -9,6 +9,7 @@ import { Panel } from "@/components/AppShell";
 import { useBookings, useCrew, useCrewGroups } from "@/lib/db";
 import { matchBrief, type MatchResult } from "@/lib/memory.functions";
 import { providerTotal } from "@/lib/costing";
+import { useAiUnlocked } from "@/lib/ai-access";
 import { fmtMoney, zar, type Production } from "@/lib/demo-data";
 
 type Selection = Record<string, string[]>; // crewId -> selected asset ids
@@ -34,6 +35,7 @@ export function ScenarioPlanner({ p }: { p: Production }) {
   const match = useServerFn(matchBrief);
   const crew = useCrew().data ?? [];
   const allBookings = useBookings().data ?? [];
+  const aiUnlocked = useAiUnlocked();
   const days = Math.max(1, p.days || 1);
 
   // This production's full shoot date range — crew with a clashing booking elsewhere aren't available for it.
@@ -183,7 +185,7 @@ export function ScenarioPlanner({ p }: { p: Production }) {
 
   return (
     <div className="w-full space-y-5">
-      <Panel title="Find crew · AI MemoryBank">
+      {aiUnlocked && <Panel title="Find crew · AI MemoryBank">
         <div className="grid gap-3 p-4">
           <p className="text-xs text-muted-foreground">Uses what the AI has learned about {p.client}. The AI picks crew and kit; you can change anything before saving.</p>
           <textarea className={`${field} min-h-24`} maxLength={4000} value={brief} onChange={(e) => setBrief(e.target.value)} placeholder="Describe the brief: look, shots, crew size…" />
@@ -196,7 +198,7 @@ export function ScenarioPlanner({ p }: { p: Production }) {
             </div>
           )}
         </div>
-      </Panel>
+      </Panel>}
 
       <Panel title={`Sandbox · ${days} day(s)`} right={<input className="w-40 rounded-sm border border-input bg-background px-2 py-1 text-xs" placeholder="Filter crew" value={filter} onChange={(e) => setFilter(e.target.value)} />}>
         <div className="flex flex-wrap items-center gap-2 border-b border-border p-4">
