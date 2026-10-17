@@ -44,7 +44,15 @@ const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-
 const when = (s: string) => new Date(s).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" });
 const initials = (n: string) => n.split(" ").map((x) => x[0]).join("").slice(0, 2).toUpperCase();
 
-type AddressSuggestion = { label: string; lat: string; lon: string };
+type AddressSuggestion = { label: string; place: string; lat: string; lon: string };
+
+type NominatimAddress = { suburb?: string; neighbourhood?: string; quarter?: string; village?: string; hamlet?: string; city?: string; town?: string; municipality?: string; county?: string };
+function placeFromAddress(a: NominatimAddress | undefined, fallback: string) {
+  const area = a?.suburb ?? a?.neighbourhood ?? a?.quarter ?? a?.village ?? a?.hamlet;
+  const city = a?.city ?? a?.town ?? a?.municipality ?? a?.county;
+  const parts = [area, city].filter((v): v is string => !!v);
+  return [...new Set(parts)].join(", ") || fallback;
+}
 
 // Debounced address lookup against OpenStreetMap's free Nominatim search — no API key needed.
 // Falls back to a plain text input (with no suggestions) if the request fails.
@@ -61,9 +69,9 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder, cl
     const t = setTimeout(async () => {
       setLoading(true);
       try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(value)}`);
-        const data = (await res.json()) as { display_name: string; lat: string; lon: string }[];
-        setSuggestions(data.map((d) => ({ label: d.display_name, lat: d.lat, lon: d.lon })));
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${encodeURIComponent(value)}`);
+        const data = (await res.json()) as { display_name: string; lat: string; lon: string; address?: NominatimAddress }[];
+        setSuggestions(data.map((d) => ({ label: d.display_name, place: placeFromAddress(d.address, d.display_name.split(",")[0] ?? d.display_name), lat: d.lat, lon: d.lon })));
       } catch { setSuggestions([]); }
       setLoading(false);
     }, 400);
@@ -191,10 +199,10 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
   function cancelForm() { setAdding(false); setEditingId(null); setLf(blankLocationForm); }
 
   async function savePoint() {
-    if (!lf.label.trim()) { toast.error("Give this location a name"); return; }
+    if (!lf.address.trim()) { toast.error("Pick the address from the list so the location gets its suburb and city"); return; }
     setBusy(true);
     const payload = {
-      label: lf.label.trim(), address: lf.address.trim(),
+      label: lf.label.trim() || lf.address.split(",").slice(0, 2).join(",").trim(), address: lf.address.trim(),
       latitude: lf.latitude ? Number(lf.latitude) : null, longitude: lf.longitude ? Number(lf.longitude) : null,
       starts_at: lf.startsAt ? new Date(lf.startsAt).toISOString() : null,
       ends_at: lf.endsAt ? new Date(lf.endsAt).toISOString() : null,
@@ -283,10 +291,9 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
       </ul>
       {isProducer && adding && (
         <div className="space-y-2 border-t border-border p-4">
-          <input className={`${input} w-full`} placeholder="Location name *" value={lf.label} onChange={(e) => setLf({ ...lf, label: e.target.value })} />
           <AddressAutocomplete className={`${input} w-full`} placeholder="Address — start typing to search" value={lf.address}
             onChange={(v) => setLf({ ...lf, address: v })}
-            onSelect={(s) => setLf({ ...lf, address: s.label, latitude: s.lat, longitude: s.lon })} />
+            onSelect={(s) => setLf({ ...lf, label: s.place, address: s.label, latitude: s.lat, longitude: s.lon })} />
           <div className="grid gap-2 sm:grid-cols-2">
             <label className="block"><span className="text-xs text-muted-foreground">Starts</span>
               <input type="datetime-local" className={`${input} mt-1 w-full`} value={lf.startsAt} onChange={(e) => setLf({ ...lf, startsAt: e.target.value })} /></label>
