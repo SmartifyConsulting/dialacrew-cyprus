@@ -17,6 +17,7 @@ import {
 } from "@/lib/site";
 import { useCancelBooking, useCreateOpenGig, useCrew, useRequests, useSetRequestState } from "@/lib/db";
 import { LocationRisks, ProjectWideRisks } from "@/components/site/ProjectInsights";
+import { Guidelines } from "@/components/site/Guidelines";
 import { OvertimeStatus, RequestOvertimeButton, liveRequest, useBookingRates, useNow, useOvertimeRequests } from "@/components/site/Overtime";
 
 function OvertimeApprovals({ production }: { production: string }) {
@@ -920,48 +921,6 @@ function RateDialog({ crewId, name, productionId, onClose }: { crewId: string; n
 }
 
 /* ---------------- Posts ---------------- */
-function RulesOfEngagement({ p, isProducer }: { p: Production; isProducer: boolean }) {
-  const qc = useQueryClient();
-  const [editing, setEditing] = useState(false);
-  const [text, setText] = useState(p.postRules ?? "");
-  const [busy, setBusy] = useState(false);
-
-  async function save() {
-    setBusy(true);
-    const { error } = await supabase.from("productions").update({ post_rules: text.trim() }).eq("id", p.id);
-    setBusy(false);
-    if (error) { toast.error(friendlyError(error)); return; }
-    toast.success("Rules saved");
-    setEditing(false);
-    qc.invalidateQueries({ queryKey: ["productions"] });
-  }
-
-  if (!editing) {
-    return (
-      <div className="rounded-sm border border-border bg-card p-4">
-        <div className="flex items-center justify-between">
-          <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Rules of engagement</div>
-          {isProducer && <button onClick={() => { setText(p.postRules ?? ""); setEditing(true); }} className="text-xs font-semibold text-primary hover:underline">{p.postRules ? "Edit" : "Set rules"}</button>}
-        </div>
-        {p.postRules
-          ? <p className="mt-2 whitespace-pre-wrap text-sm">{p.postRules}</p>
-          : <p className="mt-2 text-sm text-muted-foreground">{isProducer ? "No rules set yet. Set how the team should post on this job." : "The producer hasn't set rules for posts yet."}</p>}
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-2 rounded-sm border border-primary/40 bg-primary/5 p-4">
-      <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Rules of engagement</div>
-      <textarea rows={4} className={`${input} w-full`} placeholder="e.g. Tag the production in every photo. Keep posts about the work." value={text} onChange={(e) => setText(e.target.value)} />
-      <div className="flex gap-2">
-        <button disabled={busy} onClick={save} className={btn}>{busy ? "Saving…" : "Save rules"}</button>
-        <button onClick={() => setEditing(false)} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold">Cancel</button>
-      </div>
-    </div>
-  );
-}
-
 export function PostsTab({ p, userId, myName, isProducer }: Ctx) {
   const posts = usePosts(p.id);
   const inv = useInvalidate();
@@ -1006,7 +965,7 @@ export function PostsTab({ p, userId, myName, isProducer }: Ctx) {
 
   return (
     <div className="w-full space-y-4">
-      <RulesOfEngagement p={p} isProducer={isProducer} />
+      <Guidelines p={p} isProducer={isProducer} />
       <div className="rounded-sm border border-border bg-card p-4">
         <textarea rows={3} className={`${input} w-full`} placeholder="Share an update with everyone on this job…" value={body} onChange={(e) => setBody(e.target.value)} />
         {recording && <div className="mt-2"><AudioRecorder onCancel={() => setRecording(false)} onDone={(blob, transcript) => { setRecording(false); setAudio({ blob, transcript }); if (transcript) setBody((b) => (b ? `${b}\n${transcript}` : transcript)); }} /></div>}
