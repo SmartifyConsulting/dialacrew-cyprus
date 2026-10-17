@@ -48,7 +48,7 @@ export const useRequests = () => useQuery({
   queryFn: () => run(supabase.from("change_requests").select("*").order("id"), (r) => ({ ...r, amount: Number(r.amount), createdAt: r.created_at }) as ChangeRequest),
 });
 
-// Favourite Mix: a named, reusable group of crew members a producer has picked out as working well together.
+// Crew Combos: a named, reusable group of crew members a producer has picked out as working well together.
 export type CrewGroup = { id: string; name: string; memberIds: string[]; createdAt: string };
 
 export const useCrewGroups = () => useQuery({

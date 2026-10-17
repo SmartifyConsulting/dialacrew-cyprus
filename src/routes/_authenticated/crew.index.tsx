@@ -131,11 +131,11 @@ function CrewPage() {
   function startPicking() { setPicking(true); setPicked([]); setMixName(""); setMixOpen(false); }
   function cancelPicking() { setPicking(false); setPicked([]); setMixName(""); }
   async function saveMix() {
-    if (!mixName.trim()) { toast.error("Name this mix"); return; }
+    if (!mixName.trim()) { toast.error("Name this combo"); return; }
     if (picked.length < 2) { toast.error("Pick at least two crew members"); return; }
     try {
       await createGroup.mutateAsync({ name: mixName.trim(), crewIds: picked });
-      toast.success(`"${mixName.trim()}" saved — pick it from Favourite Mix next time you're crewing a job`);
+      toast.success(`"${mixName.trim()}" saved — pick it from Crew Combos next time you're crewing a job`);
       cancelPicking();
     } catch (e) { toast.error(friendlyError(e)); }
   }
@@ -151,8 +151,8 @@ function CrewPage() {
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={favOnly} onChange={(e) => setFavOnly(e.target.checked)} className="accent-primary" /> Favourites only</label>
         {isProducer && !picking && (
           <div className="relative ml-auto">
-            <button onClick={() => setMixOpen(!mixOpen)} className="flex items-center gap-1.5 rounded-sm border border-border bg-card px-3 py-2 text-sm font-semibold hover:border-primary" aria-label="Favourite Mix">
-              <Users className="h-4 w-4" /> Favourite Mix
+            <button onClick={() => setMixOpen(!mixOpen)} className="flex items-center gap-1.5 rounded-sm border border-border bg-card px-3 py-2 text-sm font-semibold hover:border-primary" aria-label="Crew Combos">
+              <Users className="h-4 w-4" /> Crew Combos
             </button>
             {mixOpen && (
               <div className="absolute right-0 z-20 mt-1 w-72 rounded-sm border border-border bg-card shadow-md">
@@ -173,7 +173,7 @@ function CrewPage() {
         {picking && (
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <span className="text-xs text-muted-foreground">{picked.length} selected</span>
-            <input value={mixName} onChange={(e) => setMixName(e.target.value)} placeholder="Name this mix" className="rounded-sm border border-input bg-card px-2 py-1.5 text-sm" />
+            <input value={mixName} onChange={(e) => setMixName(e.target.value)} placeholder="Name this combo" className="rounded-sm border border-input bg-card px-2 py-1.5 text-sm" />
             <button onClick={saveMix} disabled={createGroup.isPending} className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-60">{createGroup.isPending ? "Saving…" : "Save mix"}</button>
             <button onClick={cancelPicking} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold">Cancel</button>
           </div>

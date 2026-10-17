@@ -132,7 +132,7 @@ export function ScenarioPlanner({ p }: { p: Production }) {
     setSel((s) => { const n = { ...s }; delete n[from]; n[to] = []; return n; });
     toast.success(`Swapped ${crewName(from)} for ${crewName(to)}`);
   }
-  // Apply a saved Favourite Mix: add every available member to the sandbox, and flag whoever's
+  // Apply a saved Crew Combos: add every available member to the sandbox, and flag whoever's
   // booked elsewhere across this production's dates so they can be swapped out.
   function applyMix(group: { id: string; name: string; memberIds: string[] }) {
     const unavailable: string[] = [];
@@ -207,7 +207,7 @@ export function ScenarioPlanner({ p }: { p: Production }) {
           <input className="min-w-40 flex-1 rounded-sm border border-input bg-background px-2 py-2 text-sm" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} aria-label="Option name" placeholder="Option name" />
           {activeId && <button className={ghost} onClick={() => pick("")}><Plus className="h-3 w-3" /> New</button>}
           <div className="relative">
-            <button className={ghost} onClick={() => setMixOpen(!mixOpen)}><Users className="h-3 w-3" /> Favourite Mix</button>
+            <button className={ghost} onClick={() => setMixOpen(!mixOpen)}><Users className="h-3 w-3" /> Crew Combos</button>
             {mixOpen && (
               <div className="absolute right-0 z-20 mt-1 w-64 rounded-sm border border-border bg-card shadow-md">
                 <ul className="max-h-56 divide-y divide-border overflow-y-auto">
@@ -230,7 +230,7 @@ export function ScenarioPlanner({ p }: { p: Production }) {
               <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
               <div className="flex-1">
                 {mixNotice.unavailable.length === 0 ? (
-                  <span>"{mixNotice.name}" added — everyone in this mix is available for these dates.</span>
+                  <span>"{mixNotice.name}" added — everyone in this combo is available for these dates.</span>
                 ) : (
                   <span>
                     "{mixNotice.name}" added. <span className="inline-flex items-center gap-1 font-semibold text-destructive"><AlertTriangle className="h-3 w-3" /> {mixNotice.unavailable.length} of {mixNotice.total} member(s)</span>{" "}
@@ -272,7 +272,7 @@ export function ScenarioPlanner({ p }: { p: Production }) {
                     <select className="rounded-sm border border-input bg-background px-2 py-1 text-xs" value="" onChange={(e) => swap(c.id, e.target.value)} aria-label={`Swap ${c.name}`}>
                       <option value="">Swap for…</option>
                       {crew.filter((o) => !sel[o.id] && o.id !== c.id).sort((a, b) => Number(b.department === c.department) - Number(a.department === c.department)).map((o) => (
-                        <option key={o.id} value={o.id}>{o.name} · {o.role} · {zar(o.dayRate)}/day</option>
+                        <option key={o.id} value={o.id}>{`${o.name} · ${o.role} · ${zar(o.dayRate)}/day${(kitBy[o.id] ?? []).length ? ` · Gear: ${(kitBy[o.id] ?? []).map((a) => a.name).join(", ")}` : " · No gear listed"}`}</option>
                       ))}
                     </select>
                   </div>
