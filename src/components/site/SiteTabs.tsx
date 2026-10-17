@@ -112,6 +112,50 @@ function FileLink({ path, name }: { path: string; name: string }) {
 /* ---------------- Location points (multi-stop schedule) — lives inside Site information ---------------- */
 const blankLocationForm = { label: "", address: "", latitude: "", longitude: "", startsAt: "", endsAt: "" };
 const toLocalInput = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(0, 16) : "");
+const dayLabel = (iso: string) => new Date(iso).toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+const clockLabel = (iso: string) => new Date(iso).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" });
+const localYmd = (iso: string) => {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+const WEATHER_CODES: Record<number, string> = {
+  0: "Clear", 1: "Mostly clear", 2: "Partly cloudy", 3: "Overcast", 45: "Fog", 48: "Freezing fog",
+  51: "Light drizzle", 53: "Drizzle", 55: "Heavy drizzle", 61: "Light rain", 63: "Rain", 65: "Heavy rain",
+  66: "Freezing rain", 67: "Heavy freezing rain", 71: "Light snow", 73: "Snow", 75: "Heavy snow", 77: "Snow grains",
+  80: "Light showers", 81: "Showers", 82: "Heavy showers", 85: "Snow showers", 86: "Heavy snow showers",
+  95: "Thunderstorm", 96: "Thunderstorm with hail", 99: "Severe thunderstorm",
+};
+
+function DayWeather({ lat, lon, date }: { lat: number; lon: number; date: string }) {
+  const forecast = useQuery({
+    queryKey: ["weather", lat, lon, date],
+    queryFn: async () => {
+      const qs = new URLSearchParams({
+        latitude: String(lat), longitude: String(lon), timezone: "auto", start_date: date, end_date: date,
+        daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+      });
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?${qs}`);
+      if (!res.ok) throw new Error("forecast unavailable");
+      const j = (await res.json()) as { daily?: { weather_code?: number[]; temperature_2m_max?: number[]; temperature_2m_min?: number[]; precipitation_probability_max?: number[] } };
+      const d = j.daily;
+      if (!d?.weather_code?.length) throw new Error("no forecast");
+      return { code: d.weather_code[0]!, max: d.temperature_2m_max?.[0], min: d.temperature_2m_min?.[0], rain: d.precipitation_probability_max?.[0] };
+    },
+    staleTime: 3 * 60 * 60 * 1000,
+    retry: false,
+  });
+  if (forecast.isPending) return <p className="text-xs text-muted-foreground">Checking the forecast…</p>;
+  if (forecast.isError || !forecast.data) return <p className="text-xs text-muted-foreground">No forecast for this date yet (forecasts run up to 16 days ahead).</p>;
+  const w = forecast.data;
+  return (
+    <p className="text-xs font-medium text-foreground">
+      {WEATHER_CODES[w.code] ?? "Mixed conditions"}
+      {w.min != null && w.max != null ? ` · ${Math.round(w.min)}–${Math.round(w.max)}°C` : ""}
+      {w.rain != null ? ` · ${Math.round(w.rain)}% chance of rain` : ""}
+    </p>
+  );
+}
 
 function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
   const inv = useInvalidate();
@@ -185,12 +229,12 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
     <div>
       {isProducer && !adding && (
         <div className="flex justify-end px-4 pt-4">
-          <button onClick={startAdd} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> Add Itinerary Item</button>
+          <button onClick={startAdd} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> Add Location</button>
         </div>
       )}
       <ul className="divide-y divide-border text-sm">
-        {points.length === 0 && <li className="p-4 text-muted-foreground">No itinerary items yet.</li>}
-        {points.map((pt) => (
+        {points.length === 0 && <li className="p-4 text-muted-foreground">No locations yet.</li>}
+        {points.map((pt, i) => (
           <li key={pt.id}
             draggable={isProducer && points.length > 1}
             onDragStart={() => setDragId(pt.id)}
@@ -199,11 +243,22 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
             onDragEnd={() => { setDragId(null); setDragOverId(null); }}
             className={`flex items-start justify-between gap-3 px-4 py-3 ${dragOverId === pt.id && dragId && dragId !== pt.id ? "bg-muted" : ""}`}>
             {isProducer && points.length > 1 && <GripVertical className="mt-0.5 h-4 w-4 shrink-0 cursor-grab text-muted-foreground" />}
-            <div className="min-w-0 flex-1">
-              <div className="font-medium">{pt.starts_at ? when(pt.starts_at) : "Date TBC"}{pt.ends_at ? ` → ${when(pt.ends_at)}` : ""}</div>
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Location {i + 1}</div>
+              <div className="inline-block rounded-sm bg-primary/10 px-3 py-2">
+                <div className="text-base font-bold text-foreground">{pt.starts_at ? dayLabel(pt.starts_at) : "Date TBC"}</div>
+                {pt.starts_at && (
+                  <div className="text-xs text-muted-foreground">
+                    {clockLabel(pt.starts_at)}{pt.ends_at ? ` – ${clockLabel(pt.ends_at)}` : ""}
+                  </div>
+                )}
+              </div>
               <a href={mapHref(pt)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary hover:underline">
                 <MapPin className="h-3.5 w-3.5 text-primary" /> {pt.label}{pt.address ? ` · ${pt.address}` : ""}
               </a>
+              {pt.starts_at && (pt.latitude != null && pt.longitude != null
+                ? <DayWeather lat={pt.latitude} lon={pt.longitude} date={localYmd(pt.starts_at)} />
+                : <p className="text-xs text-muted-foreground">Add a map location to see the forecast for this day.</p>)}
             </div>
             {isProducer && (
               <div className="flex shrink-0 items-center gap-2">
@@ -535,7 +590,7 @@ export function OverviewTab({ p, isProducer }: Ctx) {
         </div>
       </Panel>
 
-      <Panel title="Itinerary">
+      <Panel title="Locations">
         <LocationPoints p={p} isProducer={isProducer} />
       </Panel>
     </div>
@@ -814,8 +869,8 @@ export function RegisterTab({ p, isProducer, userId, myName, myCrewId }: Ctx) {
   const lastByCrew = new Map<string, (typeof rows)[number]>();
   for (const r of rows) if (r.crew_id && !lastByCrew.has(r.crew_id)) lastByCrew.set(r.crew_id, r);
   const myLast = myCrewId ? lastByCrew.get(myCrewId) : undefined;
-  // The production's own address/lat/long fields were retired in favour of itinerary items —
-  // use the first itinerary item with coordinates as the site to geofence against.
+  // The production's own address/lat/long fields were retired in favour of locations —
+  // use the first location with coordinates as the site to geofence against.
   const sitePoint = points.find((pt) => pt.latitude != null && pt.longitude != null);
   const siteLat = sitePoint?.latitude ?? p.latitude;
   const siteLon = sitePoint?.longitude ?? p.longitude;
@@ -892,7 +947,7 @@ export function RegisterTab({ p, isProducer, userId, myName, myCrewId }: Ctx) {
   return (
     <div className="space-y-5">
       {isProducer && <OvertimeApprovals production={p.name} />}
-      {!hasSite && <p className="rounded-sm border border-primary/40 bg-primary/10 p-3 text-sm">No itinerary item has an address with coordinates yet{isProducer ? " — add one under Itinerary so check-ins can be verified." : ", so check-ins can't be verified yet."}</p>}
+      {!hasSite && <p className="rounded-sm border border-primary/40 bg-primary/10 p-3 text-sm">No location has an address with coordinates yet{isProducer ? " — add one under Locations so check-ins can be verified." : ", so check-ins can't be verified yet."}</p>}
       {myCrewId && (
         <Panel title="My attendance">
           <div className="flex flex-wrap items-center gap-3 p-4">
