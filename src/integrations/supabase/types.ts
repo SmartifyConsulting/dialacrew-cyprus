@@ -14,6 +14,18 @@ export type Database = {
   }
   public: {
     Tables: {
+      site_photo_groups: {
+        Row: { created_at: string; created_by: string; group_date: string | null; id: string; name: string; production_id: string }
+        Insert: { created_at?: string; created_by?: string; group_date?: string | null; id?: string; name: string; production_id: string }
+        Update: { created_at?: string; created_by?: string; group_date?: string | null; id?: string; name?: string; production_id?: string }
+        Relationships: []
+      }
+      site_photos: {
+        Row: { created_at: string; group_id: string | null; id: string; path: string; production_id: string; uploaded_by: string }
+        Insert: { created_at?: string; group_id?: string | null; id?: string; path: string; production_id: string; uploaded_by?: string }
+        Update: { created_at?: string; group_id?: string | null; id?: string; path?: string; production_id?: string; uploaded_by?: string }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string

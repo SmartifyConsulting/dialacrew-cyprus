@@ -7,6 +7,7 @@ import { useBookings, useCrew, useProductions, useRequests } from "@/lib/db";
 import { useMyCrewId, useMyName } from "@/lib/site";
 import { RetroTab } from "@/components/site/RetroTab";
 import { ScenarioPlanner } from "@/components/site/ScenarioPlanner";
+import { PhotosTab } from "@/components/site/PhotosTab";
 import { AssetsTab, ChecklistsPanel, CommercialsTab, DocumentsTab, MembersList, OverviewTab, PostsTab, RegisterTab, TasksTab } from "@/components/site/SiteTabs";
 
 export const Route = createFileRoute("/_authenticated/productions/$id")({
@@ -26,8 +27,8 @@ export const Route = createFileRoute("/_authenticated/productions/$id")({
 
 // Crew see only Posts, Members, Tasks, Equipment (Overview is the fixed left widget).
 // Find Crew (scenario planner) opens from the header button beside the status badge.
-const CREW_TABS = ["Posts", "Tasks"] as const;
-const MANAGER_TABS = ["Posts", "Crew", "Checklists", "Tasks", "Equipment", "Documents", "Budget", "Review"] as const;
+const CREW_TABS = ["Posts", "Tasks", "Photos"] as const;
+const MANAGER_TABS = ["Posts", "Crew", "Checklists", "Tasks", "Photos", "Equipment", "Documents", "Budget", "Review"] as const;
 type Tab = (typeof MANAGER_TABS)[number] | "Find Crew";
 
 function ProductionSite() {
@@ -89,6 +90,7 @@ function ProductionSite() {
           {tab === "Crew" && <div className="space-y-5"><MembersList {...ctx} /><RegisterTab {...ctx} /></div>}
           {tab === "Checklists" && <ChecklistsPanel p={p} isProducer={isProducer} />}
           {tab === "Tasks" && <TasksTab {...ctx} />}
+          {tab === "Photos" && <PhotosTab p={p} userId={userId} isProducer={isProducer} />}
           {tab === "Equipment" && <AssetsTab {...ctx} bookings={bookings} crewNames={crewNames} />}
           {tab === "Documents" && isProducer && <DocumentsTab {...ctx} />}
           {tab === "Budget" && isProducer && <CommercialsTab {...ctx} bookings={bookings} crewNames={crewNames} requests={requests} />}
