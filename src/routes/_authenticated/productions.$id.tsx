@@ -11,6 +11,7 @@ import { PhotosTab } from "@/components/site/PhotosTab";
 import { AuditTab } from "@/components/site/AuditTab";
 import { ProductionCover } from "@/components/site/ProductionCover";
 import { DocumentsTab } from "@/components/site/DocumentsTab";
+import { EquipmentAvailability } from "@/components/site/EquipmentAvailability";
 import { CrewOvertimePanel, useBookingRates } from "@/components/site/Overtime";
 import { ChecklistsPanel, CommercialsTab, MembersList, OverviewTab, PostsTab, RegisterTab, TasksTab } from "@/components/site/SiteTabs";
 
@@ -78,6 +79,7 @@ function ProductionSite() {
           </button>
           {myCrewId && <CrewOvertimePanel productionId={p.id} crewId={myCrewId} rate={rates[myCrewId] ?? 0} date={p.date || null} />}
           <OverviewTab {...ctx} />
+          {isProducer && tab === "Find Crew" && <EquipmentAvailability p={p} />}
         </aside>
         <section className="flex min-w-0 flex-col">
           <nav className="mb-4 flex w-full gap-1 overflow-x-auto rounded-sm border border-border bg-card">
