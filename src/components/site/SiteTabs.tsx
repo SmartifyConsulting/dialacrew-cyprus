@@ -511,10 +511,10 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
         <Panel key={c.id} title={c.title} right={isProducer && (
           <button onClick={() => removeChecklist(c.id)} className="text-muted-foreground hover:text-destructive" aria-label={`Remove ${c.title}`}><Trash2 className="h-3.5 w-3.5" /></button>
         )}>
-          <ul className="grid gap-3 p-4 text-sm md:grid-cols-2">
-            {c.production_checklist_items.length === 0 && <li className="text-muted-foreground">No items yet.</li>}
+          <ul className="divide-y divide-border text-sm">
+            {c.production_checklist_items.length === 0 && <li className="p-4 text-muted-foreground">No items yet.</li>}
             {c.production_checklist_items.map((item) => (
-              <li key={item.id} className="rounded-sm border border-border bg-card p-3">
+              <li key={item.id} className="px-4 py-2.5">
                 <div className="flex items-center gap-3">
                   <button onClick={() => isProducer && toggleItem(item.id, item.done)} disabled={!isProducer} aria-label={item.done ? `Mark ${item.label} not done` : `Mark ${item.label} done`}>
                     {item.done ? <CheckCircle2 className="h-4 w-4 shrink-0 text-success" /> : <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />}
