@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { Award, Briefcase, Camera, Eye, EyeOff, Lock, Mail, MapPin, Package, Phone, Plus, Star, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Page } from "@/components/AppShell";
+import { Page, Panel } from "@/components/AppShell";
 import { Avatar } from "@/components/site/SiteTabs";
 import { useRole, useSession } from "@/lib/auth";
 import { zar } from "@/lib/demo-data";
@@ -13,6 +13,7 @@ import { uploadFile, useInvalidate, useOnTimePct, useReviews } from "@/lib/site"
 import {
   useApproveJob, useCancelBooking, useClaimGig, useMarkJobCompleted, useMarkPaymentReceived, useNegotiations,
   useOpenGigs, useProposeRate, useReleasePayment, useRespondToBooking, useRespondToNegotiation,
+  useProductions,
 } from "@/lib/db";
 
 export const Route = createFileRoute("/_authenticated/crew/$id")({
@@ -32,7 +33,7 @@ export const Route = createFileRoute("/_authenticated/crew/$id")({
 
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
 const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground";
-const TABS = ["About", "Projects", "Portfolio", "Equipment", "Banking"] as const;
+const TABS = ["About", "Projects", "Portfolio", "Equipment", "Reviews", "Banking"] as const;
 
 function CrewProfile() {
   const { id } = Route.useParams();
@@ -146,6 +147,7 @@ function CrewProfile() {
             ) : <p className="text-sm text-muted-foreground">No portfolio links added yet.</p>
           )}
           {tab === "Equipment" && <Kit crewId={id} items={assets.data ?? []} canEdit={canEdit} onChange={refresh} />}
+          {tab === "Reviews" && <ReviewsTab crewId={id} />}
           {tab === "Banking" && isOwnProfile && <BankingTab crewId={id} />}
         </div>
       </div>
@@ -487,3 +489,35 @@ type BankRow = {
   account_number: string | null; iban: string | null; swift_bic: string | null; routing_or_sort_code: string | null;
   currency: string | null; notes: string | null; updated_at: string | null;
 };
+
+function ReviewsTab({ crewId }: { crewId: string }) {
+  const reviews = useReviews(crewId).data ?? [];
+  const productions = useProductions().data ?? [];
+  const onTime = useOnTimePct(crewId).data;
+  const avg = reviews.length ? reviews.reduce((a, r) => a + r.rating, 0) / reviews.length : 0;
+  const prodName = (id: string | null) => (id ? productions.find((p) => p.id === id)?.name ?? "Production" : "Production");
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-3 gap-px overflow-hidden rounded-sm border border-border bg-border">
+        {[[avg ? avg.toFixed(1) : "—", "Average rating"], [String(reviews.length), "Reviews"], [onTime != null ? `${onTime}%` : "—", "On-time"]].map(([v, l]) => (
+          <div key={l} className="bg-card p-3"><div className="font-display text-2xl font-bold">{v}</div><div className="text-xs text-muted-foreground">{l}</div></div>
+        ))}
+      </div>
+      <Panel title="All reviews">
+        <ul className="divide-y divide-border">
+          {reviews.length === 0 && <li className="p-4 text-sm text-muted-foreground">No reviews yet. People on their jobs can rate them from the Members list.</li>}
+          {reviews.map((r) => (
+            <li key={r.id} className="p-4">
+              {/* Shows the star rating, the production and when — never the comment or who left it. */}
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((n) => <Star key={n} className={`h-4 w-4 ${n <= r.rating ? "fill-primary text-primary" : "text-muted-foreground"}`} />)}
+                <span className="ml-2 text-sm font-medium">{prodName(r.production_id)}</span>
+              </div>
+              <div className="mt-0.5 text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" })}</div>
+            </li>
+          ))}
+        </ul>
+      </Panel>
+    </div>
+  );
+}
