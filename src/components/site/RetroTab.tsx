@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { saveRetrospective, type RetroForm } from "@/lib/memory.functions";
 import type { Production } from "@/lib/demo-data";
+import { useSession } from "@/lib/auth";
+import { AI_LEARNING_PRODUCTIONS, useAiLearningPhase } from "@/lib/site";
 
 const TYPES = ["Feature", "Commercial", "Short", "Music Video", "Doc"];
 const SIZES = ["<20", "20-50", "50+"];
@@ -39,6 +41,8 @@ function Pills({ opts, value, onChange }: { opts: string[]; value: string[]; onC
 }
 
 export function RetroTab({ p }: { p: Production }) {
+  const { session } = useSession();
+  const phase = useAiLearningPhase(p.id, session?.user.id);
   const qc = useQueryClient();
   const save = useServerFn(saveRetrospective);
   const existing = useQuery({
@@ -154,10 +158,18 @@ export function RetroTab({ p }: { p: Production }) {
 
       <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
         <div className="rounded-sm border border-primary/50 bg-card p-4">
-          <h3 className="mb-2 flex items-center gap-2 font-display text-sm text-primary"><Sparkles className="h-4 w-4" />AI Memory Summary</h3>
-          {out?.lessons ? <p className="rounded-sm bg-primary/10 p-3 text-sm"><strong>Lessons learned:</strong> {out.lessons}</p>
-            : <p className="text-xs text-muted-foreground">Save to generate the lessons-learned alert. It's added to {p.client}'s MemoryBank and used in future crew matching.</p>}
-          <pre className="mt-3 max-h-80 overflow-auto rounded-sm bg-background p-2 text-[10px] leading-snug text-muted-foreground">{JSON.stringify(out?.payload && Object.keys(out.payload).length ? out.payload : preview, null, 2)}</pre>
+          {phase.learning ? (
+            <p className="text-xs text-muted-foreground">
+              The AI memory summary unlocks after your first {AI_LEARNING_PRODUCTIONS} productions{phase.position ? ` (this is production ${phase.position} of ${AI_LEARNING_PRODUCTIONS})` : ""}. Saving this review still teaches the AI about {p.client}.
+            </p>
+          ) : (
+            <>
+              <h3 className="mb-2 flex items-center gap-2 font-display text-sm text-primary"><Sparkles className="h-4 w-4" />AI Memory Summary</h3>
+              {out?.lessons ? <p className="rounded-sm bg-primary/10 p-3 text-sm"><strong>Lessons learned:</strong> {out.lessons}</p>
+                : <p className="text-xs text-muted-foreground">Save to generate the lessons-learned alert. It's added to {p.client}'s MemoryBank and used in future crew matching.</p>}
+              <pre className="mt-3 max-h-80 overflow-auto rounded-sm bg-background p-2 text-[10px] leading-snug text-muted-foreground">{JSON.stringify(out?.payload && Object.keys(out.payload).length ? out.payload : preview, null, 2)}</pre>
+            </>
+          )}
           <button disabled={busy} className="mt-3 w-full rounded-sm bg-primary px-4 py-2 font-display text-sm font-semibold text-primary-foreground disabled:opacity-60">
             {busy ? "Learning…" : existing.data ? "Update review" : "Save review & teach AI"}
           </button>

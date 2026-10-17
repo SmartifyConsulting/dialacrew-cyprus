@@ -260,7 +260,9 @@ export function ScenarioPlanner({ p }: { p: Production }) {
                         {!c.available ? "Unavailable" : availableForRange(c.id) ? `Available ${rangeStart ? "for these dates" : ""}` : "Booked these dates"}
                       </span>
                     </div>
-                    {aiWhy[c.id] && <div className="text-xs text-primary">AI: {aiWhy[c.id]?.why}</div>}
+                    {aiWhy[c.id]
+                      ? <div className="mt-1 rounded-sm bg-primary/10 px-2 py-1.5 text-xs text-foreground"><span className="font-semibold">Why the AI picked {c.name}:</span> {aiWhy[c.id]?.why || "No reason was given. Check before selecting."}</div>
+                      : null}
                   </div>
                   {on && <span className="text-sm font-semibold">{zar(line)}</span>}
                 </label>

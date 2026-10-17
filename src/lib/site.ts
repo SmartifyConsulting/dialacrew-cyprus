@@ -75,3 +75,25 @@ export function useMyCrewId(enabled: boolean) {
     queryFn: async () => { const { data, error } = await supabase.rpc("claim_crew_profile"); if (error) throw error; return (data as string | null) ?? null; },
   });
 }
+
+export const AI_LEARNING_PRODUCTIONS = 5;
+
+/* A producer's first productions don't have enough history for the AI memory to make useful suggestions,
+   so the memory summary is withheld until they've run more than AI_LEARNING_PRODUCTIONS productions. */
+export function useAiLearningPhase(productionId: string, userId: string | undefined) {
+  const q = useQuery({
+    queryKey: ["producer-production-order", userId], enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("productions").select("id").eq("created_by", userId!).order("created_at", { ascending: true });
+      if (error) throw error;
+      return (data ?? []).map((r) => r.id);
+    },
+  });
+  const ids = q.data ?? [];
+  const index = ids.indexOf(productionId);
+  return {
+    learning: index !== -1 && index < AI_LEARNING_PRODUCTIONS,
+    position: index === -1 ? null : index + 1,
+    isReady: q.isSuccess,
+  };
+}

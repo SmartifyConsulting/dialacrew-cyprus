@@ -139,7 +139,7 @@ export const matchBrief = createServerFn({ method: "POST" })
         kit: { type: "array", items: S({ asset_id: str, name: str, owner: str, why: str }) },
       }),
       instructions:
-        "You are a production planner. Recommend crew and kit for the brief ONLY from the provided roster and kit lists (use their exact ids). Prefer available crew, strong ratings and matching skills. Use the client's MemoryBank (if any) to honour their known preferences, favour their trusted crew, avoid people they flagged, and raise their known risks; cite it in memory_insights. Keep 'why' to one sentence. analysis: 2-3 sentences. Pick a sensible crew size for the brief.",
+        "You are a production planner. Recommend crew and kit for the brief ONLY from the provided roster and kit lists (use their exact ids). Prefer available crew, strong ratings and matching skills. Use the client's MemoryBank (if any) to honour their known preferences, favour their trusted crew, avoid people they flagged, and raise their known risks; cite it in memory_insights. Every crew and kit suggestion MUST explain why it was chosen in 1-2 sentences that cite concrete facts from the data: the person's rating, day rate, experience, matching skills or department, availability, a relevant MemoryBank entry, or the kit's category and fee. Never give a generic reason such as 'good fit' without naming the fact behind it. If the memory bank is empty, say the suggestion is based on the roster alone, since there is no client history yet. analysis: 2-3 sentences. Pick a sensible crew size for the brief.",
       input: JSON.stringify({
         brief: data.brief, client: data.client, shoot_days: data.days, location: data.location,
         memory_bank: mem.data ?? null,

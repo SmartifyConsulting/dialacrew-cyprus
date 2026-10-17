@@ -1646,6 +1646,7 @@ export type Database = {
           client: string
           company_id: string | null
           created_at: string
+          created_by: string | null
           crew_booked: number
           crew_needed: number
           date: string | null
@@ -1669,6 +1670,7 @@ export type Database = {
           client: string
           company_id?: string | null
           created_at?: string
+          created_by?: string | null
           crew_booked?: number
           crew_needed?: number
           date?: string | null
@@ -1692,6 +1694,7 @@ export type Database = {
           client?: string
           company_id?: string | null
           created_at?: string
+          created_by?: string | null
           crew_booked?: number
           crew_needed?: number
           date?: string | null

@@ -6,7 +6,6 @@ import { friendlyError } from "@/lib/errors";
 import { useEffect, useRef, useState } from "react";
 import { Copy, Pencil, Search, Trash2, Upload } from "lucide-react";
 import { Badge, ClientBadge, Page, Panel } from "@/components/AppShell";
-import { AddressAutocomplete } from "@/components/site/SiteTabs";
 import { zar } from "@/lib/demo-data";
 import { useProductions } from "@/lib/db";
 import { useQueryClient } from "@tanstack/react-query";
@@ -272,9 +271,6 @@ function Productions() {
                 <select className={field} value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>
                   {["Commercial", "Film", "Television", "Photography", "Other"].map((t) => <option key={t}>{t}</option>)}
                 </select>
-                <AddressAutocomplete className={field} placeholder="Shoot location" value={f.location}
-                  onChange={(v) => setF({ ...f, location: v })}
-                  onSelect={(s) => setF({ ...f, location: s.label })} />
                 <label className="block"><span className="text-xs text-muted-foreground">Start date *</span>
                   <input className={`${field} mt-1`} type="date" value={f.startDate} onChange={(e) => setF({ ...f, startDate: e.target.value })} /></label>
                 <label className="block"><span className="text-xs text-muted-foreground">End date *</span>

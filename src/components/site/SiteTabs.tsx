@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
-import { Camera, CheckCircle2, Circle, Download, FileText, GripVertical, ImageUp, LogIn, LogOut, MapPin, Mic, Paperclip, Pencil, Plus, Star, Trash2, Users } from "lucide-react";
+import { Camera, CheckCircle2, Circle, Download, FileText, GripVertical, ImageUp, LogIn, LogOut, MapPin, Mic, Minus, Paperclip, Pencil, Plus, Star, Trash2, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge, Panel } from "@/components/AppShell";
 import { AudioRecorder } from "@/components/AudioRecorder";
@@ -15,7 +15,7 @@ import {
   signedUrl, uploadFile, useBookingAssets, useChecklists, useCrewAssets, useDocs, useInvalidate, useLocationPoints, useMessages, usePosts, useRegister,
   useReviews, useSignedUrl, useSiteMembers, useTasks,
 } from "@/lib/site";
-import { useCreateOpenGig, useCrew, useRequests, useSetRequestState } from "@/lib/db";
+import { useCancelBooking, useCreateOpenGig, useCrew, useRequests, useSetRequestState } from "@/lib/db";
 import { LocationRisks, ProjectWideRisks } from "@/components/site/ProjectInsights";
 
 function OvertimeApprovals({ production }: { production: string }) {
@@ -115,6 +115,17 @@ const blankLocationForm = { label: "", address: "", latitude: "", longitude: "",
 const toLocalInput = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(0, 16) : "");
 const dayLabel = (iso: string) => new Date(iso).toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
 const clockLabel = (iso: string) => new Date(iso).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" });
+const hasTime = (iso: string) => { const d = new Date(iso); return d.getHours() !== 0 || d.getMinutes() !== 0; };
+const timeRange = (start: string, end: string | null) => (hasTime(start) ? `${clockLabel(start)}${end ? ` – ${clockLabel(end)}` : ""}` : "Time TBC");
+
+function NumberedPin({ n }: { n: number }) {
+  return (
+    <span role="img" aria-label={`Location ${n}`} className="relative inline-flex h-10 w-8 shrink-0 justify-center">
+      <MapPin className="h-10 w-8 fill-primary text-primary" strokeWidth={1.75} />
+      <span className="absolute inset-x-0 top-[3px] flex h-[26px] items-center justify-center text-sm font-bold text-primary-foreground">{n}</span>
+    </span>
+  );
+}
 const localYmd = (iso: string) => {
   const d = new Date(iso);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -246,14 +257,12 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
             className={`flex items-start justify-between gap-3 rounded-sm border border-border bg-card p-4 ${dragOverId === pt.id && dragId && dragId !== pt.id ? "bg-muted" : ""}`}>
             {isProducer && points.length > 1 && <GripVertical className="mt-0.5 h-4 w-4 shrink-0 cursor-grab text-muted-foreground" />}
             <div className="min-w-0 flex-1 space-y-2">
-              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Location {i + 1}</div>
-              <div className="inline-block rounded-sm bg-primary/10 px-3 py-2">
-                <div className="text-base font-bold text-foreground">{pt.starts_at ? dayLabel(pt.starts_at) : "Date TBC"}</div>
-                {pt.starts_at && (
-                  <div className="text-xs text-muted-foreground">
-                    {clockLabel(pt.starts_at)}{pt.ends_at ? ` – ${clockLabel(pt.ends_at)}` : ""}
-                  </div>
-                )}
+              <div className="flex items-center gap-2">
+                <NumberedPin n={i + 1} />
+                <div className="inline-block rounded-sm bg-primary/10 px-3 py-2">
+                  <div className="text-base font-bold text-foreground">{pt.starts_at ? dayLabel(pt.starts_at) : "Date TBC"}</div>
+                  <div className="text-sm font-semibold text-foreground">{pt.starts_at ? timeRange(pt.starts_at, pt.ends_at) : "Time TBC"}</div>
+                </div>
               </div>
               <a href={mapHref(pt)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary hover:underline">
                 <MapPin className="h-3.5 w-3.5 text-primary" /> {pt.label}{pt.address ? ` · ${pt.address}` : ""}
@@ -305,7 +314,7 @@ export const CREW_ROLES = [
 export const CONFIRMED_BOOKING_STATUSES = ["confirmed", "in_progress", "completed", "payment_released"];
 
 /* ---------------- Crew role required (standard roles still needing a confirmed booking) — shown on Members tab ---------------- */
-function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
+function CrewRoleStatus({ p, onFind }: Pick<Ctx, "p"> & { onFind: (role: string) => void }) {
   const bookings = useQuery({
     queryKey: ["production-checklist", p.id],
     queryFn: async () => {
@@ -338,6 +347,8 @@ function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
                 {names && <span className="text-muted-foreground"> · {names}</span>}
               </span>
               <span className="shrink-0 text-xs text-muted-foreground">{matches.length === 0 ? "Unassigned" : "Not yet confirmed"}</span>
+              <button disabled={matches.length > 0} onClick={() => onFind(role)}
+                className="shrink-0 rounded-sm border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:border-border disabled:text-muted-foreground disabled:opacity-60 disabled:hover:bg-transparent">Find</button>
             </li>
           );
         })}
@@ -608,6 +619,20 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
   const [rating, setRating] = useState<{ crewId: string; name: string } | null>(null);
   const [fitRole, setFitRole] = useState<string | null>(null);
   const crewDirectory = useCrew().data ?? [];
+  const cancelBooking = useCancelBooking();
+
+  async function removeMember(m: { crew_id: string; name: string }) {
+    if (!window.confirm(`Remove ${m.name} from this production? If the shoot is close, the cancellation penalty applies.`)) return;
+    const { data: rows, error: lookupErr } = await supabase.from("bookings").select("id").eq("production_id", p.id).eq("crew_id", m.crew_id).neq("status", "cancelled");
+    if (lookupErr || !rows?.length) { toast.error("Couldn't find this crew member's booking."); return; }
+    try {
+      for (const r of rows) await cancelBooking.mutateAsync({ bookingId: r.id, reason: "Removed by the production team" });
+      toast.success(`${m.name} removed`);
+      inv(["site-members", p.id]);
+    } catch {
+      toast.error("Couldn't remove that crew member.");
+    }
+  }
   const lastByCrew = new Map<string, (typeof rows)[number]>();
   for (const r of rows) if (r.crew_id && !lastByCrew.has(r.crew_id)) lastByCrew.set(r.crew_id, r);
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -637,7 +662,7 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
           </div>
         );
       })()}
-      <CrewRoleStatus p={p} />
+      <CrewRoleStatus p={p} onFind={setFitRole} />
       {fitRole ? (
         <FitCrewPanel role={fitRole} crew={crewDirectory} confirmedIds={new Set(members.map((m) => m.crew_id))} onClear={() => setFitRole(null)} />
       ) : (
@@ -682,7 +707,7 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
                   {isProducer && (
                     <td className="px-4">
                       <div className="flex gap-2">
-                        <button onClick={() => setFitRole(m.role)} className="rounded-sm border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10">Find</button>
+                        <button onClick={() => removeMember(m)} aria-label={`Remove ${m.name}`} title="Remove from production" className="grid h-6 w-6 place-items-center rounded-sm border border-destructive text-destructive hover:bg-destructive/10"><Minus className="h-3.5 w-3.5" /></button>
                         {m.user_id !== userId && <button onClick={() => setRating({ crewId: m.crew_id, name: m.name })} className="rounded-sm border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10">Rate me</button>}
                       </div>
                     </td>
