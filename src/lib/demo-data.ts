@@ -2,7 +2,7 @@ export type Production = {
   id: string; name: string; client: string; type: string; location: string; jobId?: string | null;
   date: string; endDate?: string | null; days: number; status: "Draft" | "Active" | "Upcoming" | "Wrapped";
   budget: number; crewBooked: number; crewNeeded: number; securedFunds: number;
-  address?: string; summary?: string; latitude?: number | null; longitude?: number | null; geofenceM?: number;
+  address?: string; summary?: string; latitude?: number | null; longitude?: number | null; geofenceM?: number; currency?: string;
 };
 
 export type Crew = {
@@ -26,3 +26,5 @@ export type Booking = {
 };
 
 export const zar = (n: number) => "R" + n.toLocaleString("en-ZA");
+const CURRENCY_SYMBOLS: Record<string, string> = { ZAR: "R", EUR: "€", GBP: "£", USD: "$", AUD: "A$", NGN: "₦" };
+export const fmtMoney = (n: number, currency = "ZAR") => (CURRENCY_SYMBOLS[currency] ?? currency + " ") + n.toLocaleString("en-ZA");

@@ -6,7 +6,7 @@ import { friendlyError } from "@/lib/errors";
 import { useEffect, useRef, useState } from "react";
 import { Copy, Pencil, Search, Trash2, Upload } from "lucide-react";
 import { Badge, ClientBadge, Page, Panel } from "@/components/AppShell";
-import { zar } from "@/lib/demo-data";
+import { fmtMoney } from "@/lib/demo-data";
 import { useProductions } from "@/lib/db";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRole, useSession } from "@/lib/auth";
@@ -316,7 +316,7 @@ function Productions() {
               </div>
             </div>
             <div className="mt-2 text-xs text-muted-foreground">{p.date || "Date TBC"} · {p.days} day(s) · {p.location}</div>
-            <div className="mt-3 flex items-center justify-between text-sm"><span>{zar(p.budget)}</span><span className="text-xs text-muted-foreground">Crew {p.crewBooked}/{p.crewNeeded}</span></div>
+            <div className="mt-3 flex items-center justify-between text-sm"><span>{fmtMoney(p.budget, p.currency)}</span><span className="text-xs text-muted-foreground">Crew {p.crewBooked}/{p.crewNeeded}</span></div>
             <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary" style={{ width: `${p.crewNeeded ? Math.min(100, (p.crewBooked / p.crewNeeded) * 100) : 0}%` }} /></div>
           </div>
         ))}
@@ -336,7 +336,7 @@ function Productions() {
                 <td className="px-4 text-muted-foreground">{p.location}</td>
                 <td className="px-4 text-muted-foreground">{p.date}</td>
                 <td className="px-4">{p.days}</td>
-                <td className="px-4">{zar(p.budget)}</td>
+                <td className="px-4">{fmtMoney(p.budget, p.currency)}</td>
                 <td className="px-4"><Badge>{p.status}</Badge></td>
                 <td className="px-4">
                   {isProducer && (

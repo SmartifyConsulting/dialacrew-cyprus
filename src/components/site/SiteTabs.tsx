@@ -7,7 +7,7 @@ import { Camera, CheckCircle2, Circle, Download, FileText, GripVertical, ImageUp
 import { supabase } from "@/integrations/supabase/client";
 import { Badge, Panel } from "@/components/AppShell";
 import { AudioRecorder } from "@/components/AudioRecorder";
-import { zar, type Booking, type Crew, type Production } from "@/lib/demo-data";
+import { fmtMoney, zar, type Booking, type Crew, type Production } from "@/lib/demo-data";
 import { assetsTotal, providerTotal } from "@/lib/costing";
 import { distanceMeters, getPosition, isOnSite } from "@/lib/geo";
 import { isOnline, pendingCount, queueCheckin, syncQueue } from "@/lib/offline-checkin";
@@ -121,8 +121,8 @@ const timeRange = (start: string, end: string | null) => (hasTime(start) ? `${cl
 function NumberedPin({ n }: { n: number }) {
   return (
     <span role="img" aria-label={`Location ${n}`} className="relative inline-flex h-10 w-8 shrink-0 justify-center">
-      <MapPin className="h-10 w-8 fill-primary text-primary" strokeWidth={1.75} />
-      <span className="absolute inset-x-0 top-[3px] flex h-[26px] items-center justify-center text-sm font-bold text-primary-foreground">{n}</span>
+      <MapPin className="h-10 w-8 fill-destructive text-destructive" strokeWidth={1.75} />
+      <span className="absolute inset-x-0 top-[3px] flex h-[26px] items-center justify-center text-[10px] font-bold leading-none text-white">{n}</span>
     </span>
   );
 }
@@ -239,8 +239,7 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
 
   return (
     <div>
-      {isProducer && <div className="p-3"><ProjectWideRisks p={p} /></div>}
-      {isProducer && !adding && (
+      {isProducer && !adding && points.length === 0 && (
         <div className="flex justify-end px-4 pt-4">
           <button onClick={startAdd} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> Add Location</button>
         </div>
@@ -255,13 +254,14 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
             onDrop={(e) => { e.preventDefault(); if (dragId) reorder(dragId, pt.id); setDragId(null); setDragOverId(null); }}
             onDragEnd={() => { setDragId(null); setDragOverId(null); }}
             className={`flex items-start justify-between gap-3 rounded-sm border border-border bg-card p-4 ${dragOverId === pt.id && dragId && dragId !== pt.id ? "bg-muted" : ""}`}>
-            {isProducer && points.length > 1 && <GripVertical className="mt-0.5 h-4 w-4 shrink-0 cursor-grab text-muted-foreground" />}
+            {isProducer && points.length > 1 && <div className="flex h-10 shrink-0 items-center"><GripVertical className="h-4 w-4 cursor-grab text-muted-foreground" /></div>}
             <div className="min-w-0 flex-1 space-y-2">
-              <div className="flex items-center gap-2">
+              <div className="flex items-start gap-2">
                 <NumberedPin n={i + 1} />
-                <div className="inline-block rounded-sm bg-primary/10 px-3 py-2">
-                  <div className="text-base font-bold text-foreground">{pt.starts_at ? dayLabel(pt.starts_at) : "Date TBC"}</div>
-                  <div className="text-sm font-semibold text-foreground">{pt.starts_at ? timeRange(pt.starts_at, pt.ends_at) : "Time TBC"}</div>
+                <div>
+                  <div className="text-base font-bold text-foreground">{pt.label}</div>
+                  <div className="text-sm font-semibold text-foreground">{pt.starts_at ? dayLabel(pt.starts_at) : "Date TBC"}</div>
+                  <div className="text-sm text-foreground">{pt.starts_at ? timeRange(pt.starts_at, pt.ends_at) : "Time TBC"}</div>
                 </div>
               </div>
               <a href={mapHref(pt)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary hover:underline">
@@ -273,7 +273,7 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
               {isProducer && <LocationRisks p={p} locationId={pt.id} hasCoords={pt.latitude != null && pt.longitude != null} />}
             </div>
             {isProducer && (
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex h-10 shrink-0 items-center gap-2">
                 <button onClick={() => startEdit(pt)} className="text-muted-foreground hover:text-primary" aria-label={`Edit ${pt.label}`}><Pencil className="h-3.5 w-3.5" /></button>
                 <button onClick={() => removePoint(pt.id)} className="text-muted-foreground hover:text-destructive" aria-label={`Remove ${pt.label}`}><Trash2 className="h-4 w-4" /></button>
               </div>
@@ -299,6 +299,12 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
           </div>
         </div>
       )}
+      {isProducer && !adding && points.length > 0 && (
+        <div className="flex justify-end px-4 pb-4">
+          <button onClick={startAdd} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> Add Location</button>
+        </div>
+      )}
+      {isProducer && <div className="border-t border-border p-3"><ProjectWideRisks p={p} /></div>}
     </div>
   );
 }
@@ -330,11 +336,19 @@ function CrewRoleStatus({ p, onFind }: Pick<Ctx, "p"> & { onFind: (role: string)
   // Once a role has a confirmed booking, it's done — drop it from this list entirely; it now shows under Confirmed Members instead.
   const openRoles = CREW_ROLES.filter((role) => !byRole(role).some((b) => CONFIRMED_BOOKING_STATUSES.includes(b.status)));
   const extras = bookings.filter((b) => !CREW_ROLES.some((r) => r.toLowerCase() === b.role.trim().toLowerCase()) && !CONFIRMED_BOOKING_STATUSES.includes(b.status));
+  const unassignedRoles = openRoles.filter((role) => byRole(role).length === 0);
 
   if (openRoles.length === 0 && extras.length === 0) return null;
 
   return (
-    <Panel title="Crew Role Required">
+    <Panel title="Crew Role Required" right={
+      <select aria-label="Find a crew member for an unassigned role" value="" disabled={unassignedRoles.length === 0}
+        onChange={(e) => { if (e.target.value) onFind(e.target.value); }}
+        className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40">
+        <option value="">Find a Crew</option>
+        {unassignedRoles.map((r) => <option key={r} value={r}>{r}</option>)}
+      </select>
+    }>
       <ul className="divide-y divide-border text-sm">
         {openRoles.map((role) => {
           const matches = byRole(role);
@@ -347,8 +361,6 @@ function CrewRoleStatus({ p, onFind }: Pick<Ctx, "p"> & { onFind: (role: string)
                 {names && <span className="text-muted-foreground"> · {names}</span>}
               </span>
               <span className="shrink-0 text-xs text-muted-foreground">{matches.length === 0 ? "Unassigned" : "Not yet confirmed"}</span>
-              <button disabled={matches.length > 0} onClick={() => onFind(role)}
-                className="shrink-0 rounded-sm border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:border-border disabled:text-muted-foreground disabled:opacity-60 disabled:hover:bg-transparent">Find</button>
             </li>
           );
         })}
@@ -599,7 +611,7 @@ export function OverviewTab({ p, isProducer }: Ctx) {
             <dt>Type</dt><dd className="text-foreground">{p.type}</dd>
             <dt>Shoot</dt><dd className="text-foreground">{p.date || "TBC"} · {p.days} day(s)</dd>
             <dt>Crew</dt><dd className="text-foreground">{p.crewBooked} / {p.crewNeeded}</dd>
-            {isProducer && <><dt>Budget</dt><dd className="text-foreground">{zar(p.budget)}</dd></>}
+            {isProducer && <><dt>Budget</dt><dd className="text-foreground">{fmtMoney(p.budget, p.currency)}</dd></>}
           </dl>
         </div>
       </Panel>
@@ -1156,7 +1168,7 @@ export function AssetsTab({ p, isProducer, bookings, crewNames }: Ctx & { bookin
       {isProducer && rows.length > 0 && (
         <div className="flex items-center justify-between rounded-sm border border-primary/40 bg-primary/10 px-4 py-3">
           <span className="text-sm font-semibold">Running cost as selected</span>
-          <span className="font-display text-2xl font-bold text-primary">{zar(grandTotal)}</span>
+          <span className="font-display text-2xl font-bold text-primary">{fmtMoney(grandTotal, p.currency)}</span>
         </div>
       )}
       {rows.length === 0 && <p className="text-sm text-muted-foreground">No crew booked yet.</p>}
@@ -1269,8 +1281,8 @@ export function CommercialsTab({ p, bookings, crewNames, requests }: Ctx & { boo
       </div>
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-border bg-border md:grid-cols-5">
         {(clientView
-          ? [["Budget", zar(p.budget)], ["Quoted to client", zar(billing)], ["Crew booked", `${p.crewBooked}/${p.crewNeeded}`], ["Secured funds", zar(p.securedFunds)], ["Balance due", zar(Math.max(0, billing - p.securedFunds))]]
-          : [["Budget", zar(p.budget)], ["Running cost", zar(running)], ["Client billing", zar(billing)], ["Margin", zar(billing - running)], ["Budget left", zar(p.budget - running)]]
+          ? [["Budget", fmtMoney(p.budget, p.currency)], ["Quoted to client", fmtMoney(billing, p.currency)], ["Crew booked", `${p.crewBooked}/${p.crewNeeded}`], ["Secured funds", fmtMoney(p.securedFunds, p.currency)], ["Balance due", fmtMoney(Math.max(0, billing - p.securedFunds), p.currency)]]
+          : [["Budget", fmtMoney(p.budget, p.currency)], ["Running cost", fmtMoney(running, p.currency)], ["Client billing", fmtMoney(billing, p.currency)], ["Margin", fmtMoney(billing - running, p.currency)], ["Budget left", fmtMoney(p.budget - running, p.currency)]]
         ).map(([l, v]) => (
           <div key={l} className="bg-card px-4 py-3"><div className="text-[11px] text-muted-foreground">{l}</div><div className="font-display text-2xl font-semibold">{v}</div></div>
         ))}

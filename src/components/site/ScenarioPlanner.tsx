@@ -9,7 +9,7 @@ import { Panel } from "@/components/AppShell";
 import { useBookings, useCrew, useCrewGroups } from "@/lib/db";
 import { matchBrief, type MatchResult } from "@/lib/memory.functions";
 import { providerTotal } from "@/lib/costing";
-import { zar, type Production } from "@/lib/demo-data";
+import { fmtMoney, zar, type Production } from "@/lib/demo-data";
 
 type Selection = Record<string, string[]>; // crewId -> selected asset ids
 type Asset = { id: string; crew_id: string; name: string; category: string; daily_fee: number };
@@ -296,8 +296,8 @@ export function ScenarioPlanner({ p }: { p: Production }) {
         </ul>
         <div className="flex flex-wrap items-center gap-3 border-t border-border p-4">
           <div className="text-sm">
-            <div><span className="text-muted-foreground">Estimate:</span> <b>{zar(total)}</b> for {Object.keys(sel).length} crew</div>
-            <div className={`text-xs ${variance < 0 ? "text-destructive" : "text-success"}`}>{variance < 0 ? `${zar(-variance)} over` : `${zar(variance)} under`} budget of {zar(p.budget)}</div>
+            <div><span className="text-muted-foreground">Estimate:</span> <b>{fmtMoney(total, p.currency)}</b> for {Object.keys(sel).length} crew</div>
+            <div className={`text-xs ${variance < 0 ? "text-destructive" : "text-success"}`}>{variance < 0 ? `${fmtMoney(-variance, p.currency)} over` : `${fmtMoney(variance, p.currency)} under`} budget of {fmtMoney(p.budget, p.currency)}</div>
           </div>
           <button onClick={save} className={`${btn} ml-auto`}><Save className="h-4 w-4" /> {activeId ? "Update option" : "Save option"}</button>
         </div>

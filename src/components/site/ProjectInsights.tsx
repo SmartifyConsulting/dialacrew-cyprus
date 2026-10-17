@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { AlertTriangle, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { zar, type Production } from "@/lib/demo-data";
+import { fmtMoney, type Production } from "@/lib/demo-data";
 
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
 const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50";
@@ -58,7 +58,7 @@ function ManualRisk({ risk, productionId }: { risk: Risk; productionId: string }
   }
   return (
     <li className="flex items-start gap-2">
-      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
       <span className="flex-1">{risk.text}</span>
       <button onClick={remove} className="text-muted-foreground hover:text-destructive" aria-label="Remove risk"><Trash2 className="h-3.5 w-3.5" /></button>
     </li>
@@ -76,7 +76,7 @@ export function ProjectWideRisks({ p }: { p: Production }) {
 
   const auto: string[] = [];
   if (p.crewBooked < p.crewNeeded) auto.push(`${p.crewNeeded - p.crewBooked} crew position(s) still open.`);
-  if (p.securedFunds < p.budget) auto.push(`Funds secured ${zar(p.securedFunds)} of ${zar(p.budget)} budget.`);
+  if (p.securedFunds < p.budget) auto.push(`Funds secured ${fmtMoney(p.securedFunds, p.currency)} of ${fmtMoney(p.budget, p.currency)} budget.`);
   for (const r of mem.data?.risks ?? []) auto.push(r);
   for (const a of mem.data?.avoid ?? []) auto.push(`Client flagged: ${a}`);
   const manual = (risks.data ?? []).filter((r) => r.location_id === null);
@@ -90,7 +90,7 @@ export function ProjectWideRisks({ p }: { p: Production }) {
       {adding && <div className="mt-3"><RiskForm productionId={p.id} locationId={null} onDone={() => setAdding(false)} /></div>}
       <ul className="mt-3 space-y-2 text-sm">
         {auto.length === 0 && manual.length === 0 && <li className="text-muted-foreground">No project-wide risks flagged.</li>}
-        {auto.map((r) => <li key={r} className="flex gap-2"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> {r}</li>)}
+        {auto.map((r) => <li key={r} className="flex gap-2"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" /> {r}</li>)}
         {manual.map((r) => <ManualRisk key={r.id} risk={r} productionId={p.id} />)}
       </ul>
     </div>
@@ -111,7 +111,7 @@ export function LocationRisks({ p, locationId, hasCoords }: { p: Production; loc
       </div>
       {adding && <RiskForm productionId={p.id} locationId={locationId} onDone={() => setAdding(false)} />}
       <ul className="space-y-2 text-sm">
-        {!hasCoords && <li className="flex gap-2"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> No map location set — check-ins can't be confirmed here.</li>}
+        {!hasCoords && <li className="flex gap-2"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" /> No map location set — check-ins can't be confirmed here.</li>}
         {manual.map((r) => <ManualRisk key={r.id} risk={r} productionId={p.id} />)}
         {hasCoords && manual.length === 0 && <li className="text-muted-foreground">No risks flagged.</li>}
       </ul>

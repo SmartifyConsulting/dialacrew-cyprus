@@ -1648,6 +1648,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           crew_booked: number
+          currency: string
           crew_needed: number
           date: string | null
           days: number
@@ -1672,6 +1673,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           crew_booked?: number
+          currency?: string
           crew_needed?: number
           date?: string | null
           days?: number
@@ -1696,6 +1698,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           crew_booked?: number
+          currency?: string
           crew_needed?: number
           date?: string | null
           days?: number

@@ -6,6 +6,7 @@ import { lovable } from "@/integrations/lovable/index";
 import { PasswordInput, fieldClass, labelClass, submitClass } from "@/components/PasswordInput";
 import { mapAuthError, passwordChecks, usePlatformSetting } from "@/lib/auth";
 import { SERVICE_SKILLS } from "@/lib/skills";
+import { COUNTRIES } from "@/lib/countries";
 
 /** Sign-in / sign-up card shared by the home page and /auth. */
 export function AuthForm() {
@@ -20,6 +21,7 @@ export function AuthForm() {
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<"crew" | "client" | "producer">("crew");
   const [companyName, setCompanyName] = useState("");
+  const [country, setCountry] = useState("ZA");
   const [skills, setSkills] = useState<string[]>([]);
   const [customSkill, setCustomSkill] = useState("");
   const [agreed, setAgreed] = useState(false);
@@ -93,6 +95,7 @@ export function AuthForm() {
               first_name: firstName.trim(), last_name: lastName.trim(),
               phone: phone.trim() ? `${dialCode} ${phone.trim().replace(/^0+/, "")}` : "", role,
               ...(role === "producer" && !invite ? { company_name: companyName } : {}),
+              ...(role === "producer" ? { country } : {}),
               social_opt_in: role === "crew" && socialOptIn,
               ...(role === "crew" && !invite ? { skills } : {}),
               ...(invite ? { invite_token: inviteToken } : {}),
@@ -165,6 +168,13 @@ export function AuthForm() {
           {!invite && producerSignupEnabled && role === "producer" && (
             <div><label className={labelClass} htmlFor="companyName">Company name</label>
               <input id="companyName" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} className={fieldClass} /></div>
+          )}
+          {role === "producer" && (
+            <div><label className={labelClass} htmlFor="producerCountry">Country you produce in</label>
+              <select id="producerCountry" required value={country} onChange={(e) => setCountry(e.target.value)} className={fieldClass}>
+                {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name} ({c.currency})</option>)}
+              </select>
+              <p className="mt-1 text-[11px] text-muted-foreground">New productions are priced in this country's currency.</p></div>
           )}
           {!invite && role === "crew" && (
             <div>
