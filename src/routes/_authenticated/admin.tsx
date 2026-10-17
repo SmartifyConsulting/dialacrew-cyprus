@@ -7,6 +7,7 @@ import { Page, Badge, Panel } from "@/components/AppShell";
 import { useRole, useSession } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { zar } from "@/lib/demo-data";
+import { DocumentChecklistsAdmin } from "@/components/admin/DocumentChecklistsAdmin";
 
 const REQUIRED_FIELDS = ["name", "role", "department"] as const;
 const CREW_FIELDS = [...REQUIRED_FIELDS, "location", "email", "phone", "day_rate", "experience"] as const;
@@ -131,6 +132,7 @@ const ADMIN_GROUPS = [
   { name: "Finance", tabs: ["Payments", "Invoices", "Gig Fees"] },
   { name: "Trust & Compliance", tabs: ["Disputes", "Reviews"] },
   { name: "Engagement", tabs: ["Social Spotlights"] },
+  { name: "Documents", tabs: ["Document Checklists"] },
   { name: "Platform Management", tabs: ["Configuration", "System Settings", "Audit Log"] },
 ] as const;
 type AdminGroup = (typeof ADMIN_GROUPS)[number]["name"];
@@ -196,6 +198,7 @@ function AdminPage() {
       {tab === "Memberships" && <MembershipsTab />}
       {tab === "Gig Fees" && <GigFeesTab />}
       {tab === "Social Spotlights" && <SpotlightTab />}
+      {tab === "Document Checklists" && <DocumentChecklistsAdmin />}
       {tab === "Audit Log" && <AuditLogTab />}
       {tab === "Configuration" && <PlaceholderTab name="Configuration" />}
       {tab === "System Settings" && <PlaceholderTab name="System Settings" />}

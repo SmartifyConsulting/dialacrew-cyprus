@@ -20,6 +20,24 @@ export type Database = {
         Update: { accepted_at?: string | null; crew_id?: string; decline_reason?: string | null; ended_at?: string | null; id?: string; production_id?: string; requested_at?: string; requested_by?: string; responded_at?: string | null; shift?: string; status?: string }
         Relationships: []
       }
+      document_checklist_templates: {
+        Row: { created_at: string; created_by: string | null; id: string; is_default: boolean; kind: string; name: string }
+        Insert: { created_at?: string; created_by?: string | null; id?: string; is_default?: boolean; kind?: string; name: string }
+        Update: { created_at?: string; created_by?: string | null; id?: string; is_default?: boolean; kind?: string; name?: string }
+        Relationships: []
+      }
+      document_checklist_template_items: {
+        Row: { amount: number | null; id: string; label: string; sort_order: number; template_id: string }
+        Insert: { amount?: number | null; id?: string; label: string; sort_order?: number; template_id: string }
+        Update: { amount?: number | null; id?: string; label?: string; sort_order?: number; template_id?: string }
+        Relationships: []
+      }
+      production_document_items: {
+        Row: { created_at: string; id: string; label: string; production_id: string; sort_order: number }
+        Insert: { created_at?: string; id?: string; label: string; production_id: string; sort_order?: number }
+        Update: { created_at?: string; id?: string; label?: string; production_id?: string; sort_order?: number }
+        Relationships: []
+      }
       site_wraps: {
         Row: { created_at: string; crew_id: string; id: string; left_at: string | null; production_id: string; wrapped_at: string; wrapped_by: string }
         Insert: { created_at?: string; crew_id: string; id?: string; left_at?: string | null; production_id: string; wrapped_at?: string; wrapped_by?: string }
@@ -1958,6 +1976,7 @@ export type Database = {
       site_documents: {
         Row: {
           category: string
+          checklist_item_id: string | null
           created_at: string
           id: string
           name: string
@@ -1969,6 +1988,7 @@ export type Database = {
         }
         Insert: {
           category?: string
+          checklist_item_id?: string | null
           created_at?: string
           id?: string
           name: string
@@ -1980,6 +2000,7 @@ export type Database = {
         }
         Update: {
           category?: string
+          checklist_item_id?: string | null
           created_at?: string
           id?: string
           name?: string

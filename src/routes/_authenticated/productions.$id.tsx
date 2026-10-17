@@ -9,8 +9,9 @@ import { RetroTab } from "@/components/site/RetroTab";
 import { ScenarioPlanner } from "@/components/site/ScenarioPlanner";
 import { PhotosTab } from "@/components/site/PhotosTab";
 import { AuditTab } from "@/components/site/AuditTab";
+import { DocumentsTab } from "@/components/site/DocumentsTab";
 import { CrewOvertimePanel, useBookingRates } from "@/components/site/Overtime";
-import { AssetsTab, ChecklistsPanel, CommercialsTab, DocumentsTab, MembersList, OverviewTab, PostsTab, RegisterTab, TasksTab } from "@/components/site/SiteTabs";
+import { AssetsTab, ChecklistsPanel, CommercialsTab, MembersList, OverviewTab, PostsTab, RegisterTab, TasksTab } from "@/components/site/SiteTabs";
 
 export const Route = createFileRoute("/_authenticated/productions/$id")({
   validateSearch: (s: Record<string, unknown>): { tab?: string } => (typeof s["tab"] === "string" ? { tab: s["tab"] } : {}),
@@ -97,7 +98,7 @@ function ProductionSite() {
           {tab === "Audit" && isProducer && <AuditTab p={p} />}
           {tab === "BTS Photos" && <PhotosTab p={p} userId={userId} isProducer={isProducer} />}
           {tab === "Equipment" && <AssetsTab {...ctx} bookings={bookings} crewNames={crewNames} />}
-          {tab === "Documents" && isProducer && <DocumentsTab {...ctx} />}
+          {tab === "Documents" && isProducer && <DocumentsTab p={p} userId={userId} myName={myName} isProducer={isProducer} />}
           {tab === "Budget" && isProducer && <CommercialsTab {...ctx} bookings={bookings} crewNames={crewNames} requests={requests} />}
           {tab === "Find Crew" && isProducer && <ScenarioPlanner p={p} />}
           {tab === "Review" && isProducer && <RetroTab p={p} />}
