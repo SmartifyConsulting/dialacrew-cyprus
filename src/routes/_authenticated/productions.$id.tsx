@@ -67,7 +67,7 @@ function ProductionSite() {
   return (
     <Page open title={<span className="inline-flex items-center gap-4"><ProductionCover p={p} isProducer={isProducer} />{p.name}</span>} subtitle={<span className="inline-flex items-center gap-2"><ClientBadge name={p.client} /> {p.type} · {p.date} · {p.days} day(s)</span>} actions={actions}>
       <div className="-mt-3 mb-4 flex items-center gap-1 text-sm text-muted-foreground"><MapPin className="h-4 w-4 text-primary" /> {p.address || p.location}</div>
-      <div className={`grid gap-5 ${asideOpen ? "lg:grid-cols-[380px_minmax(0,1fr)]" : "lg:grid-cols-[auto_minmax(0,1fr)]"}`}>
+      <div className={`grid gap-5 ${tab === "Checklists" ? "lg:grid-cols-1" : asideOpen ? "lg:grid-cols-[380px_minmax(0,1fr)]" : "lg:grid-cols-[auto_minmax(0,1fr)]"}`}>
         <button onClick={() => setAsideOpen(true)} aria-label="Expand overview panel"
           className={`${asideOpen ? "hidden" : "hidden lg:flex"} h-9 w-9 items-center justify-center rounded-sm border border-border bg-card text-muted-foreground hover:text-primary lg:sticky lg:top-28 lg:self-start`}>
           <ChevronRight className="h-4 w-4" />
