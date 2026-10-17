@@ -41,7 +41,7 @@ function RiskForm({ productionId, locationId, onDone }: { productionId: string; 
 
   return (
     <div className="flex gap-2">
-      <input className={`${input} flex-1`} placeholder="Describe the risk" value={text} onChange={(e) => setText(e.target.value)}
+      <input className={`${input} min-w-0 flex-1`} placeholder="Describe the risk" value={text} onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter") add(); }} autoFocus />
       <button disabled={busy} onClick={add} className={btn}>{busy ? "Adding…" : "Add"}</button>
       <button onClick={onDone} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold">Cancel</button>

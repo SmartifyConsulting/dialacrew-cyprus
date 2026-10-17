@@ -1369,6 +1369,7 @@ export type Database = {
           id: string
           item_id: string
           path: string
+          sort_order: number
           uploaded_by: string
         }
         Insert: {
@@ -1376,6 +1377,7 @@ export type Database = {
           id?: string
           item_id: string
           path: string
+          sort_order?: number
           uploaded_by?: string
         }
         Update: {
@@ -1383,6 +1385,7 @@ export type Database = {
           id?: string
           item_id?: string
           path?: string
+          sort_order?: number
           uploaded_by?: string
         }
         Relationships: [
@@ -2006,6 +2009,7 @@ export type Database = {
           done: boolean
           due_date: string | null
           id: string
+          is_public: boolean
           production_id: string
           title: string
         }
@@ -2016,6 +2020,7 @@ export type Database = {
           done?: boolean
           due_date?: string | null
           id?: string
+          is_public?: boolean
           production_id: string
           title: string
         }
@@ -2026,6 +2031,7 @@ export type Database = {
           done?: boolean
           due_date?: string | null
           id?: string
+          is_public?: boolean
           production_id?: string
           title?: string
         }

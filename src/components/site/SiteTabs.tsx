@@ -295,10 +295,10 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
             onChange={(v) => setLf({ ...lf, address: v })}
             onSelect={(s) => setLf({ ...lf, label: s.place, address: s.label, latitude: s.lat, longitude: s.lon })} />
           <div className="grid gap-2 sm:grid-cols-2">
-            <label className="block"><span className="text-xs text-muted-foreground">Starts</span>
-              <input type="datetime-local" className={`${input} mt-1 w-full`} value={lf.startsAt} onChange={(e) => setLf({ ...lf, startsAt: e.target.value })} /></label>
-            <label className="block"><span className="text-xs text-muted-foreground">Ends</span>
-              <input type="datetime-local" className={`${input} mt-1 w-full`} value={lf.endsAt} onChange={(e) => setLf({ ...lf, endsAt: e.target.value })} /></label>
+            <label className="block min-w-0"><span className="text-xs text-muted-foreground">Starts</span>
+              <input type="datetime-local" className={`${input} mt-1 w-full min-w-0`} value={lf.startsAt} onChange={(e) => setLf({ ...lf, startsAt: e.target.value })} /></label>
+            <label className="block min-w-0"><span className="text-xs text-muted-foreground">Ends</span>
+              <input type="datetime-local" className={`${input} mt-1 w-full min-w-0`} value={lf.endsAt} onChange={(e) => setLf({ ...lf, endsAt: e.target.value })} /></label>
           </div>
           <div className="flex gap-2">
             <button disabled={busy} onClick={savePoint} className={btn}>{busy ? "Saving…" : editingId ? "Update location" : "Save location"}</button>
@@ -390,23 +390,34 @@ function CrewRoleStatus({ p, onFind }: Pick<Ctx, "p"> & { onFind: (role: string)
 }
 
 /* ---------------- Custom checklists (producers add checklists + items, e.g. "Wardrobe checklist") ---------------- */
-type ChecklistItemPhoto = { id: string; path: string };
+type ChecklistItemPhoto = { id: string; path: string; sort_order: number };
 type ChecklistItem = { id: string; label: string; done: boolean; production_checklist_item_photos: ChecklistItemPhoto[] };
 
-function ChecklistItemPhotoThumb({ photo, canDelete, onDelete }: { photo: ChecklistItemPhoto; canDelete: boolean; onDelete: () => void }) {
+function ChecklistItemPhotoThumb({ photo, index, count, canEdit, onDelete, onMove }: {
+  photo: ChecklistItemPhoto; index: number; count: number; canEdit: boolean; onDelete: () => void; onMove: (dir: -1 | 1) => void;
+}) {
   const url = useSignedUrl(photo.path).data;
   return (
-    <div className="group relative h-16 w-16 shrink-0">
-      {url ? (
-        <a href={url} target="_blank" rel="noreferrer"><img src={url} alt="Continuity reference" className="h-16 w-16 rounded-sm object-cover" /></a>
-      ) : (
-        <div className="h-16 w-16 animate-pulse rounded-sm bg-muted" />
-      )}
-      {canDelete && (
-        <button onClick={onDelete} aria-label="Remove photo"
-          className="absolute -right-1.5 -top-1.5 hidden rounded-full bg-destructive p-0.5 text-destructive-foreground group-hover:block">
-          <Trash2 className="h-3 w-3" />
-        </button>
+    <div className="flex w-16 shrink-0 flex-col items-center gap-1">
+      <div className="relative">
+        {url ? (
+          <a href={url} target="_blank" rel="noreferrer"><img src={url} alt={`Photo ${index + 1}`} className="h-16 w-16 rounded-sm object-cover" /></a>
+        ) : (
+          <div className="h-16 w-16 animate-pulse rounded-sm bg-muted" />
+        )}
+        {canEdit && (
+          <button onClick={onDelete} aria-label="Remove photo"
+            className="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-0.5 text-destructive-foreground">
+            <Trash2 className="h-3 w-3" />
+          </button>
+        )}
+      </div>
+      {canEdit && (
+        <div className="flex items-center gap-1 text-xs">
+          <button onClick={() => onMove(-1)} disabled={index === 0} aria-label="Move photo earlier" className="rounded-sm border border-border px-1.5 text-muted-foreground hover:text-primary disabled:opacity-30">←</button>
+          <span className="w-4 text-center font-semibold">{index + 1}</span>
+          <button onClick={() => onMove(1)} disabled={index === count - 1} aria-label="Move photo later" className="rounded-sm border border-border px-1.5 text-muted-foreground hover:text-primary disabled:opacity-30">→</button>
+        </div>
       )}
     </div>
   );
@@ -460,9 +471,11 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
     if (!files?.length) return;
     setUploadingItem(itemId);
     try {
+      const { count } = await supabase.from("production_checklist_item_photos").select("id", { count: "exact", head: true }).eq("item_id", itemId);
+      let next = count ?? 0;
       for (const file of Array.from(files)) {
         const path = await uploadFile(`${p.id}/checklist-photos/${itemId}`, file, file.name);
-        const { error } = await supabase.from("production_checklist_item_photos").insert({ item_id: itemId, path });
+        const { error } = await supabase.from("production_checklist_item_photos").insert({ item_id: itemId, path, sort_order: next++ });
         if (error) throw error;
       }
       inv(["checklists", p.id]);
@@ -472,6 +485,18 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
 
   async function removePhoto(id: string) {
     const { error } = await supabase.from("production_checklist_item_photos").delete().eq("id", id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    inv(["checklists", p.id]);
+  }
+
+  async function movePhoto(photos: ChecklistItemPhoto[], photoId: string, dir: -1 | 1) {
+    const i = photos.findIndex((x) => x.id === photoId);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= photos.length) return;
+    const reordered = [...photos];
+    [reordered[i], reordered[j]] = [reordered[j]!, reordered[i]!];
+    const results = await Promise.all(reordered.map((ph, k) => supabase.from("production_checklist_item_photos").update({ sort_order: k }).eq("id", ph.id)));
+    const error = results.find((r) => r.error)?.error;
     if (error) { toast.error(friendlyError(error)); return; }
     inv(["checklists", p.id]);
   }
@@ -508,13 +533,17 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
                   )}
                   {isProducer && <button onClick={() => removeItem(item.id)} className="text-muted-foreground hover:text-destructive" aria-label={`Remove ${item.label}`}><Trash2 className="h-3.5 w-3.5" /></button>}
                 </div>
-                {item.production_checklist_item_photos.length > 0 && (
-                  <div className="ml-7 mt-2 flex flex-wrap gap-2">
-                    {item.production_checklist_item_photos.map((photo) => (
-                      <ChecklistItemPhotoThumb key={photo.id} photo={photo} canDelete={isProducer} onDelete={() => removePhoto(photo.id)} />
-                    ))}
-                  </div>
-                )}
+                {item.production_checklist_item_photos.length > 0 && (() => {
+                  const photos = [...item.production_checklist_item_photos].sort((a, b) => a.sort_order - b.sort_order);
+                  return (
+                    <div className="ml-7 mt-2 flex flex-wrap gap-3">
+                      {photos.map((photo, idx) => (
+                        <ChecklistItemPhotoThumb key={photo.id} photo={photo} index={idx} count={photos.length} canEdit={isProducer}
+                          onDelete={() => removePhoto(photo.id)} onMove={(dir) => movePhoto(photos, photo.id, dir)} />
+                      ))}
+                    </div>
+                  );
+                })()}
               </li>
             ))}
           </ul>
@@ -1077,6 +1106,15 @@ export function TasksTab({ p, userId }: Ctx) {
   const members = useSiteMembers(p.id).data ?? [];
   const inv = useInvalidate();
   const [f, setF] = useState({ title: "", crew: "", due: "" });
+  const assigneeLabel = (crewId: string | null) => {
+    const m = members.find((x) => x.crew_id === crewId);
+    return m ? (m.user_id === userId ? "Self" : m.name) : "";
+  };
+  async function togglePublic(id: string, is_public: boolean) {
+    const { error } = await supabase.from("site_tasks").update({ is_public }).eq("id", id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    inv(["tasks", p.id]);
+  }
   async function add() {
     if (!f.title.trim()) return;
     const { error } = await supabase.from("site_tasks").insert({ production_id: p.id, title: f.title.trim(), assigned_crew_id: f.crew || null, due_date: f.due || null, created_by: userId });
@@ -1089,7 +1127,7 @@ export function TasksTab({ p, userId }: Ctx) {
     <Panel title="Tasks">
       <div className="flex flex-wrap gap-2 border-b border-border p-4">
         <input className={`${input} min-w-56 flex-1`} placeholder="New task…" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} onKeyDown={(e) => e.key === "Enter" && add()} />
-        <select className={input} value={f.crew} onChange={(e) => setF({ ...f, crew: e.target.value })}><option value="">Unassigned</option>{members.map((m) => <option key={m.crew_id} value={m.crew_id}>{m.name}</option>)}</select>
+        <select className={input} value={f.crew} onChange={(e) => setF({ ...f, crew: e.target.value })}><option value="">Unassigned</option>{members.map((m) => <option key={m.crew_id} value={m.crew_id}>{m.user_id === userId ? "Self" : m.name}</option>)}</select>
         <input type="date" className={input} value={f.due} onChange={(e) => setF({ ...f, due: e.target.value })} />
         <button onClick={add} className={btn}>Add task</button>
       </div>
@@ -1099,7 +1137,11 @@ export function TasksTab({ p, userId }: Ctx) {
           <li key={t.id} className="flex items-center gap-3 px-4 py-2.5">
             <button aria-label={t.done ? "Mark not done" : "Mark done"} onClick={() => toggle(t.id, !t.done)}>{t.done ? <CheckCircle2 className="h-5 w-5 text-success" /> : <Circle className="h-5 w-5 text-muted-foreground" />}</button>
             <span className={`flex-1 text-sm ${t.done ? "text-muted-foreground line-through" : ""}`}>{t.title}</span>
-            <span className="text-xs text-muted-foreground">{members.find((m) => m.crew_id === t.assigned_crew_id)?.name ?? ""}{t.due_date ? ` · due ${t.due_date}` : ""}</span>
+            <button onClick={() => togglePublic(t.id, !t.is_public)} aria-label={t.is_public ? "Make private" : "Post to the team"}
+              className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${t.is_public ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground"}`}>
+              {t.is_public ? "Public" : "Private"}
+            </button>
+            <span className="text-xs text-muted-foreground">{assigneeLabel(t.assigned_crew_id)}{t.due_date ? ` · due ${t.due_date}` : ""}</span>
             <button aria-label="Delete task" onClick={() => remove(t.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
           </li>
         ))}
