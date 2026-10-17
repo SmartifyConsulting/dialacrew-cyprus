@@ -76,24 +76,23 @@ export function useMyCrewId(enabled: boolean) {
   });
 }
 
-export const AI_LEARNING_PRODUCTIONS = 5;
+export const AI_MIN_REVIEWS = 5;
 
-/* A producer's first productions don't have enough history for the AI memory to make useful suggestions,
-   so the memory summary is withheld until they've run more than AI_LEARNING_PRODUCTIONS productions. */
-export function useAiLearningPhase(productionId: string, userId: string | undefined) {
+/* The AI has nothing to learn from until reviews have been saved to its memory, so its suggestions and the memory
+   summary stay hidden until a producer has saved AI_MIN_REVIEWS reviews across their productions. */
+export function useAiLearningPhase(userId: string | undefined) {
   const q = useQuery({
-    queryKey: ["producer-production-order", userId], enabled: !!userId,
+    queryKey: ["saved-review-count", userId], enabled: !!userId,
     queryFn: async () => {
-      const { data, error } = await supabase.from("productions").select("id").eq("created_by", userId!).order("created_at", { ascending: true });
+      const { data: mine, error } = await supabase.from("productions").select("id").eq("created_by", userId!);
       if (error) throw error;
-      return (data ?? []).map((r) => r.id);
+      const ids = (mine ?? []).map((r) => r.id);
+      if (!ids.length) return 0;
+      const { count, error: countError } = await supabase.from("production_retrospectives").select("production_id", { count: "exact", head: true }).in("production_id", ids);
+      if (countError) throw countError;
+      return count ?? 0;
     },
   });
-  const ids = q.data ?? [];
-  const index = ids.indexOf(productionId);
-  return {
-    learning: index !== -1 && index < AI_LEARNING_PRODUCTIONS,
-    position: index === -1 ? null : index + 1,
-    isReady: q.isSuccess,
-  };
+  const saved = q.data ?? 0;
+  return { saved, learning: saved < AI_MIN_REVIEWS, isReady: q.isSuccess };
 }

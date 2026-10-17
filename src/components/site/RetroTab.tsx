@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { saveRetrospective, type RetroForm } from "@/lib/memory.functions";
 import type { Production } from "@/lib/demo-data";
 import { useSession } from "@/lib/auth";
-import { AI_LEARNING_PRODUCTIONS, useAiLearningPhase } from "@/lib/site";
+import { AI_MIN_REVIEWS, useAiLearningPhase } from "@/lib/site";
 
 const TYPES = ["Feature", "Commercial", "Short", "Music Video", "Doc"];
 const SIZES = ["<20", "20-50", "50+"];
@@ -42,7 +42,7 @@ function Pills({ opts, value, onChange }: { opts: string[]; value: string[]; onC
 
 export function RetroTab({ p }: { p: Production }) {
   const { session } = useSession();
-  const phase = useAiLearningPhase(p.id, session?.user.id);
+  const phase = useAiLearningPhase(session?.user.id);
   const qc = useQueryClient();
   const save = useServerFn(saveRetrospective);
   const existing = useQuery({
@@ -75,6 +75,7 @@ export function RetroTab({ p }: { p: Production }) {
       setOut(await save({ data: { productionId: p.id, form } }));
       await qc.invalidateQueries({ queryKey: ["retro", p.id] });
       await qc.invalidateQueries({ queryKey: ["company_memory"] });
+      await qc.invalidateQueries({ queryKey: ["saved-review-count"] });
       toast.success(`Saved — ${p.client}'s MemoryBank has been updated`);
     } catch (err) { toast.error(err instanceof Error ? err.message : "Could not save."); } finally { setBusy(false); }
   };
@@ -160,7 +161,7 @@ export function RetroTab({ p }: { p: Production }) {
         <div className="rounded-sm border border-primary/50 bg-card p-4">
           {phase.learning ? (
             <p className="text-xs text-muted-foreground">
-              The AI memory summary unlocks after your first {AI_LEARNING_PRODUCTIONS} productions{phase.position ? ` (this is production ${phase.position} of ${AI_LEARNING_PRODUCTIONS})` : ""}. Saving this review still teaches the AI about {p.client}.
+              The AI memory summary unlocks once {AI_MIN_REVIEWS} reviews have been saved to AI memory ({phase.saved} of {AI_MIN_REVIEWS} so far). Saving this review teaches the AI about {p.client}.
             </p>
           ) : (
             <>
