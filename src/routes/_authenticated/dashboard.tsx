@@ -234,7 +234,8 @@ function Dashboard() {
   const prodIdByName = (name: string) => productions.find((p) => p.name === name)?.id;
   const ClientLink = ({ productionId, name }: { productionId: string | undefined; name: string }) =>
     productionId ? <Link to="/productions/$id" params={{ id: productionId }}><ClientBadge name={name} /></Link> : <ClientBadge name={name} />;
-  const count = (s: string) => bookings.filter((b) => b.status === s).length;
+  const kpiProduction = productions.find((p) => p.status === "Active") ?? productions[0];
+  const countFor = (s: string) => bookings.filter((b) => b.status === s && (!kpiProduction || b.productionId === kpiProduction.id)).length;
   const secured = productions.reduce((a, p) => a + p.securedFunds, 0);
   const totalBudget = productions.reduce((a, p) => a + p.budget, 0);
   const budgetPct = totalBudget ? Math.round((secured / totalBudget) * 100) : 0;
@@ -246,7 +247,7 @@ function Dashboard() {
   const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const kpis = [
     { l: "Active productions", v: productions.filter((p) => p.status === "Active").length, s: `${productions.filter((p) => p.status === "Upcoming").length} upcoming` },
-    { l: "Crew confirmed", v: count("confirmed"), s: `${count("pencil")} on pencil` },
+    { l: kpiProduction ? `Crew confirmed · ${kpiProduction.name}` : "Crew confirmed", v: countFor("confirmed"), s: `${countFor("pencil")} on pencil` },
     { l: "Action", v: pendingReqs.length + waitingCrew.length, s: `${pendingReqs.length} approvals` },
     { l: "Budget Spent", v: `${budgetPct}%`, s: `${zar(secured)} of ${zar(totalBudget)}` },
   ];
