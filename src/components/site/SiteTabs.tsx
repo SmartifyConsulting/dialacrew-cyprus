@@ -348,6 +348,22 @@ function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
   const openRoles = CREW_ROLES.filter((role) => !byRole(role).some((b) => CONFIRMED_BOOKING_STATUSES.includes(b.status)));
   const extras = bookings.filter((b) => !CREW_ROLES.some((r) => r.toLowerCase() === b.role.trim().toLowerCase()) && !CONFIRMED_BOOKING_STATUSES.includes(b.status));
   const unassignedRoles = openRoles.filter((role) => byRole(role).length === 0);
+  const crew = useCrew().data ?? [];
+  const qc = useQueryClient();
+  const [pickRole, setPickRole] = useState<string | null>(null);
+  // Pencil a crew member into an unassigned role (same "pencil" status the planner uses on commit).
+  async function pencil(role: string, crewId: string) {
+    const c = crew.find((x) => x.id === crewId);
+    if (!c) return;
+    const { error } = await supabase.from("bookings").insert({
+      production_id: p.id, crew_id: crewId, role, status: "pencil" as const,
+      booking_date: p.date || null, crew_rate: c.dayRate, client_charge: c.dayRate, days: Math.max(1, p.days || 1),
+    });
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success(`${c.name} pencilled in as ${role}`);
+    setPickRole(null);
+    ["production-checklist", "bookings", "production-open-gigs"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+  }
 
   if (openRoles.length === 0 && extras.length === 0) return null;
 
@@ -363,13 +379,33 @@ function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
           const matches = byRole(role);
           const names = matches.map((b) => (b.crew_members as { name: string } | null)?.name).filter(Boolean).join(", ");
           return (
-            <li key={role} className="flex items-center gap-3 px-4 py-2.5">
+            <li key={role} className="flex flex-wrap items-center gap-3 px-4 py-2.5">
               <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />
               <span className="min-w-0 flex-1">
                 <span className="font-medium">{role}</span>
                 {names && <span className="text-muted-foreground"> · {names}</span>}
               </span>
-              <span className="shrink-0 text-xs text-muted-foreground">{matches.length === 0 ? "Unassigned" : "Not yet confirmed"}</span>
+              <span className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
+                {matches.length === 0 ? "Unassigned" : "Not yet confirmed"}
+                {matches.length === 0 && (
+                  <button onClick={() => setPickRole(pickRole === role ? null : role)} className="inline-flex items-center rounded-sm bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground">
+                    Find
+                  </button>
+                )}
+              </span>
+              {pickRole === role && (
+                <div className="w-full space-y-1 pt-1">
+                  {crew.filter((c) => c.role.trim().toLowerCase() === role.toLowerCase()).map((c) => (
+                    <button key={c.id} onClick={() => pencil(role, c.id)} className="flex w-full items-center justify-between gap-3 rounded-sm border border-border px-3 py-2 text-left text-sm hover:border-primary">
+                      <span className="font-medium">{c.name}</span>
+                      <span className="text-xs text-muted-foreground">{fmtMoney(c.dayRate, p.currency)} / day{c.available ? "" : " · unavailable"}</span>
+                    </button>
+                  ))}
+                  {crew.every((c) => c.role.trim().toLowerCase() !== role.toLowerCase()) && (
+                    <p className="text-xs text-muted-foreground">No crew are listed as {role} yet.</p>
+                  )}
+                </div>
+              )}
             </li>
           );
         })}

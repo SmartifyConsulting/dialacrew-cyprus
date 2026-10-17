@@ -34,7 +34,7 @@ export function ProductionCover({ p, isProducer }: { p: { id: string; name: stri
   }
 
   return (
-    <span className="relative inline-flex shrink-0 align-middle">
+    <span className="relative mb-3 inline-flex shrink-0 align-middle">
       <span className="grid h-16 w-16 place-items-center overflow-hidden rounded-2xl border border-border bg-muted md:h-20 md:w-20">
         {url
           ? <img src={url} alt={p.name} className="h-full w-full object-cover" />
