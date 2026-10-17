@@ -305,7 +305,7 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
           <AddressAutocomplete className={`${input} w-full`} placeholder="Address — start typing to search" value={lf.address}
             onChange={(v) => setLf({ ...lf, address: v })}
             onSelect={(s) => setLf({ ...lf, label: s.place, address: s.label, latitude: s.lat, longitude: s.lon })} />
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2">
             <label className="block min-w-0"><span className="text-xs text-muted-foreground">Starts</span>
               <input type="datetime-local" className={`${input} mt-1 w-full min-w-0`} value={lf.startsAt} onChange={(e) => setLf({ ...lf, startsAt: e.target.value })} /></label>
             <label className="block min-w-0"><span className="text-xs text-muted-foreground">Ends</span>
