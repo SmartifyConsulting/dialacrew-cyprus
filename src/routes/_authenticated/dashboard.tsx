@@ -122,7 +122,6 @@ function CrewDashboard() {
           </Panel></div>
         );
       })()}
-      <SpotlightCard />
       <Panel title={`My jobs (${live.length})`}>
         <ul className="divide-y divide-border text-sm">
           {live.length === 0 && <li className="p-4 text-muted-foreground">No jobs yet. Open Find Gigs to grab one.</li>}
@@ -403,30 +402,3 @@ function PendingGate({ children }: { children: React.ReactNode }) {
 }
 
 const COUNTRY_OPTIONS = ["South Africa", "Namibia", "Botswana", "Kenya", "Nigeria", "Cyprus", "United Kingdom"];
-function SpotlightCard() {
-  const { session } = useSession();
-  const uid = session?.user.id;
-  const qc = useQueryClient();
-  const me = useQuery({
-    queryKey: ["my-spotlight", uid], enabled: !!uid,
-    queryFn: async () => { const { data } = await supabase.from("profiles").select("social_opt_in, country").eq("id", uid!).maybeSingle(); return data; },
-  });
-  async function save(patch: { social_opt_in?: boolean; country?: string }) {
-    const { error } = await supabase.from("profiles").update(patch).eq("id", uid!);
-    if (error) return void toast.error(friendlyError(error));
-    toast.success("Saved"); qc.invalidateQueries({ queryKey: ["my-spotlight", uid] });
-  }
-  if (!me.data) return null;
-  return (
-    <div className="mb-5 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-4 text-sm">
-      <label className="flex flex-1 items-center gap-2">
-        <input type="checkbox" checked={me.data.social_opt_in} onChange={(e) => save({ social_opt_in: e.target.checked })} />
-        Feature me on Book a Crew social media
-      </label>
-      <select className="rounded-sm border border-input bg-background px-2 py-1" value={me.data.country ?? ""} onChange={(e) => save({ country: e.target.value })}>
-        <option value="">Country…</option>
-        {COUNTRY_OPTIONS.map((c) => <option key={c}>{c}</option>)}
-      </select>
-    </div>
-  );
-}
