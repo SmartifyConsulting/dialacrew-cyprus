@@ -280,35 +280,7 @@ function Dashboard() {
 
       <div className="mt-5 grid gap-5 lg:grid-cols-3">
         <div className="space-y-5 lg:col-span-2">
-          <Panel title="Needs your attention" right={<span className="text-xs text-muted-foreground">{pendingReqs.length + waitingCrew.length} open</span>}>
-            <ul className="divide-y divide-border">
-              {pendingReqs.length + waitingCrew.length === 0 && <li className="p-4 text-sm text-muted-foreground">All caught up.</li>}
-              {pendingReqs.map((r) => (
-                <li key={r.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm"><span className="font-semibold text-primary">{r.kind}</span> · {r.detail}</div>
-                    <div className="flex flex-wrap items-center gap-1 truncate text-xs text-muted-foreground"><NameLink id={crewIdByName(r.who)} name={r.who} /> · {clientByProdName(r.production) && <ClientLink productionId={prodIdByName(r.production)} name={clientByProdName(r.production)!} />} {r.production} · {zar(r.amount)}</div>
-                  </div>
-                  <div className="flex shrink-0 gap-2">
-                    <button onClick={() => setState.mutate({ id: r.id, state: "Approved" })} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Approve</button>
-                    <button onClick={() => setState.mutate({ id: r.id, state: "Declined" })} className="rounded-md bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground hover:bg-destructive/90">Decline</button>
-                  </div>
-                </li>
-              ))}
-              {waitingCrew.map((b) => (
-                <li key={b.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-success/20 text-success"><Check className="h-3.5 w-3.5" /></span>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium"><CrewLink id={b.crewId} /> accepted your {b.pencilPriority === 2 ? "2nd" : "1st"} pencil</div>
-                    <div className="flex flex-wrap items-center gap-1 truncate text-xs text-muted-foreground">
-                      {clientByProdId(b.productionId) && <ClientLink productionId={b.productionId} name={clientByProdId(b.productionId)!} />} {prodName(b.productionId)} · {b.role}{b.bookingDate ? ` · ${b.bookingDate}` : ""} · {zar(b.crewRate)} a day
-                    </div>
-                  </div>
-                  <button onClick={() => respondToBooking.mutate({ id: b.id, status: "confirmed" })} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Confirm booking</button>
-                </li>
-              ))}
-            </ul>
-          </Panel>
+          <MiniCalendar productions={productions} bookings={bookings} />
 
           <Panel title="Productions" right={
             <div className="flex gap-1">
@@ -356,7 +328,35 @@ function Dashboard() {
         </div>
 
         <div className="space-y-5">
-          <MiniCalendar productions={productions} bookings={bookings} />
+          <Panel title="Needs your attention" right={<span className="text-xs text-muted-foreground">{pendingReqs.length + waitingCrew.length} open</span>}>
+            <ul className="divide-y divide-border">
+              {pendingReqs.length + waitingCrew.length === 0 && <li className="p-4 text-sm text-muted-foreground">All caught up.</li>}
+              {pendingReqs.map((r) => (
+                <li key={r.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm"><span className="font-semibold text-primary">{r.kind}</span> · {r.detail}</div>
+                    <div className="flex flex-wrap items-center gap-1 truncate text-xs text-muted-foreground"><NameLink id={crewIdByName(r.who)} name={r.who} /> · {clientByProdName(r.production) && <ClientLink productionId={prodIdByName(r.production)} name={clientByProdName(r.production)!} />} {r.production} · {zar(r.amount)}</div>
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    <button onClick={() => setState.mutate({ id: r.id, state: "Approved" })} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Approve</button>
+                    <button onClick={() => setState.mutate({ id: r.id, state: "Declined" })} className="rounded-md bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground hover:bg-destructive/90">Decline</button>
+                  </div>
+                </li>
+              ))}
+              {waitingCrew.map((b) => (
+                <li key={b.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-success/20 text-success"><Check className="h-3.5 w-3.5" /></span>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium"><CrewLink id={b.crewId} /> accepted your {b.pencilPriority === 2 ? "2nd" : "1st"} pencil</div>
+                    <div className="flex flex-wrap items-center gap-1 truncate text-xs text-muted-foreground">
+                      {clientByProdId(b.productionId) && <ClientLink productionId={b.productionId} name={clientByProdId(b.productionId)!} />} {prodName(b.productionId)} · {b.role}{b.bookingDate ? ` · ${b.bookingDate}` : ""} · {zar(b.crewRate)} a day
+                    </div>
+                  </div>
+                  <button onClick={() => respondToBooking.mutate({ id: b.id, status: "confirmed" })} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Confirm booking</button>
+                </li>
+              ))}
+            </ul>
+          </Panel>
           <Panel title="Live activity" right={<span className="text-xs text-muted-foreground">Across web and mobile</span>}>
             <ul className="divide-y divide-border text-sm">
               {activity.length === 0 && <li className="p-4 text-muted-foreground">No activity yet.</li>}
