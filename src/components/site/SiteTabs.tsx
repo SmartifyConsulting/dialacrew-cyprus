@@ -963,12 +963,23 @@ export function PostsTab({ p, userId, myName, isProducer }: Ctx) {
     try {
       const audio_path = audio ? await uploadFile(`${p.id}/audio`, audio.blob, "voice-note.webm") : null;
       const attachments = [];
-      for (const f of files) attachments.push({ name: f.name, path: await uploadFile(`${p.id}/posts`, f, f.name), size: f.size, type: f.type });
+      const imagePaths: string[] = [];
+      for (const f of files) {
+        const path = await uploadFile(`${p.id}/posts`, f, f.name);
+        attachments.push({ name: f.name, path, size: f.size, type: f.type });
+        if (f.type.startsWith("image/")) imagePaths.push(path);
+      }
       const { error } = await supabase.from("site_posts").insert({
         production_id: p.id, author_id: userId, author_name: myName, body: body.trim(),
         audio_path, transcript: audio?.transcript || null, attachments,
       });
       if (error) throw error;
+      // Pictures shared in a post are kept in the Photos tab too (same stored file, no second upload).
+      if (imagePaths.length) {
+        const { error: photoErr } = await supabase.from("site_photos").insert(imagePaths.map((path) => ({ production_id: p.id, path })));
+        if (photoErr) toast.error(`Posted, but the picture wasn't added to Photos: ${friendlyError(photoErr)}`);
+        else inv(["site-photos", p.id]);
+      }
       setBody(""); setFiles([]); setAudio(null);
       inv(["posts", p.id]);
       toast.success("Posted — everyone on the job has been notified");
@@ -991,6 +1002,10 @@ export function PostsTab({ p, userId, myName, isProducer }: Ctx) {
         {files.length > 0 && <div className="mt-2 flex flex-wrap gap-2">{files.map((f, i) => <span key={i} className="rounded-sm bg-muted px-2 py-1 text-xs">{f.name} <button onClick={() => setFiles(files.filter((_, j) => j !== i))}>×</button></span>)}</div>}
         <div className="mt-3 flex items-center gap-2">
           <button onClick={() => setRecording(true)} disabled={recording} className="inline-flex items-center gap-1 rounded-sm border border-border px-3 py-2 text-xs hover:border-primary"><Mic className="h-4 w-4" /> Audio</button>
+          <label className="inline-flex cursor-pointer items-center gap-1 rounded-sm border border-border px-3 py-2 text-xs hover:border-primary">
+            <Camera className="h-4 w-4" /> Camera
+            <input type="file" accept="image/*" capture="environment" hidden onChange={(e) => { setFiles([...files, ...Array.from(e.target.files ?? [])]); e.target.value = ""; }} />
+          </label>
           <button onClick={() => fileRef.current?.click()} className="inline-flex items-center gap-1 rounded-sm border border-border px-3 py-2 text-xs hover:border-primary"><Paperclip className="h-4 w-4" /> Attach</button>
           <input ref={fileRef} type="file" multiple hidden onChange={(e) => { setFiles([...files, ...Array.from(e.target.files ?? [])]); e.target.value = ""; }} />
           <button onClick={submit} disabled={busy || recording} className={`${btn} ml-auto`}>{busy ? "Posting…" : "Post"}</button>
@@ -1008,12 +1023,19 @@ export function PostsTab({ p, userId, myName, isProducer }: Ctx) {
           {post.audio_path && <AudioPlayer path={post.audio_path} />}
           {post.transcript && post.transcript !== post.body && <p className="mt-2 rounded-sm bg-muted p-2 text-xs italic text-muted-foreground">Transcript: {post.transcript}</p>}
           {Array.isArray(post.attachments) && post.attachments.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2">{(post.attachments as { name: string; path: string }[]).map((a) => <FileLink key={a.path} {...a} />)}</div>
+            <div className="mt-2 flex flex-wrap gap-2">{(post.attachments as { name: string; path: string; type?: string }[]).map((a) => a.type?.startsWith("image/") ? <PostImage key={a.path} path={a.path} name={a.name} /> : <FileLink key={a.path} name={a.name} path={a.path} />)}</div>
           )}
         </article>
       ))}
     </div>
   );
+}
+
+function PostImage({ path, name }: { path: string; name: string }) {
+  const url = useSignedUrl(path).data;
+  return url
+    ? <a href={url} target="_blank" rel="noreferrer"><img src={url} alt={name} className="max-h-64 rounded-sm object-cover" /></a>
+    : <div className="h-32 w-48 animate-pulse rounded-sm bg-muted" />;
 }
 
 function AudioPlayer({ path }: { path: string }) {
