@@ -14,6 +14,12 @@ export type Database = {
   }
   public: {
     Tables: {
+      overtime_requests: {
+        Row: { accepted_at: string | null; crew_id: string; decline_reason: string | null; ended_at: string | null; id: string; production_id: string; requested_at: string; requested_by: string; responded_at: string | null; shift: string; status: string }
+        Insert: { accepted_at?: string | null; crew_id: string; decline_reason?: string | null; ended_at?: string | null; id?: string; production_id: string; requested_at?: string; requested_by?: string; responded_at?: string | null; shift?: string; status?: string }
+        Update: { accepted_at?: string | null; crew_id?: string; decline_reason?: string | null; ended_at?: string | null; id?: string; production_id?: string; requested_at?: string; requested_by?: string; responded_at?: string | null; shift?: string; status?: string }
+        Relationships: []
+      }
       site_wraps: {
         Row: { created_at: string; crew_id: string; id: string; left_at: string | null; production_id: string; wrapped_at: string; wrapped_by: string }
         Insert: { created_at?: string; crew_id: string; id?: string; left_at?: string | null; production_id: string; wrapped_at?: string; wrapped_by?: string }

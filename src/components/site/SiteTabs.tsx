@@ -17,6 +17,7 @@ import {
 } from "@/lib/site";
 import { useCancelBooking, useCreateOpenGig, useCrew, useRequests, useSetRequestState } from "@/lib/db";
 import { LocationRisks, ProjectWideRisks } from "@/components/site/ProjectInsights";
+import { OvertimeStatus, RequestOvertimeButton, liveRequest, useBookingRates, useNow, useOvertimeRequests } from "@/components/site/Overtime";
 
 function OvertimeApprovals({ production }: { production: string }) {
   const reqs = (useRequests().data ?? []).filter((r) => r.kind === "Overtime" && r.production === production && r.state === "Pending");
@@ -677,6 +678,26 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
     },
   }).data) ?? [];
   const wrapFor = (crewId: string) => wraps.find((w) => w.crew_id === crewId);
+  const overtime = useOvertimeRequests(p.id);
+  const rates = useBookingRates(p.id);
+  const now = useNow();
+  const [otSelected, setOtSelected] = useState<Record<string, boolean>>({});
+  const [otBulkShift, setOtBulkShift] = useState<"day" | "night">("day");
+  const [otBusy, setOtBusy] = useState(false);
+  const eligible = members.filter((m) => !liveRequest(overtime, m.crew_id));
+  const selectedIds = eligible.filter((m) => otSelected[m.crew_id]).map((m) => m.crew_id);
+  const allSelected = eligible.length > 0 && selectedIds.length === eligible.length;
+
+  async function requestOvertimeFor(crewIds: string[]) {
+    if (crewIds.length === 0) return;
+    setOtBusy(true);
+    const { error } = await supabase.from("overtime_requests").insert(crewIds.map((crew_id) => ({ production_id: p.id, crew_id, shift: otBulkShift })));
+    setOtBusy(false);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success(`Overtime requested from ${crewIds.length} crew member${crewIds.length === 1 ? "" : "s"}`);
+    setOtSelected({});
+    inv(["overtime", p.id]);
+  }
   const clock = (iso: string) => new Date(iso).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" });
   const packdown = (from: string, to: string) => {
     const mins = Math.max(0, Math.round((new Date(to).getTime() - new Date(from).getTime()) / 60000));
@@ -738,6 +759,21 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
         <FitCrewPanel role={fitRole} crew={crewDirectory} confirmedIds={new Set(members.map((m) => m.crew_id))} onClear={() => setFitRole(null)} />
       ) : (
       <Panel title={`${isActive ? "Crew on Set" : "Confirmed Crew"} (${members.length})`}>
+        {isProducer && eligible.length > 0 && (
+          <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-2.5 text-xs">
+            <label className="flex items-center gap-2 font-semibold">
+              <input type="checkbox" className="h-4 w-4 accent-primary" checked={allSelected} aria-label="Select all crew for overtime"
+                onChange={(e) => setOtSelected(e.target.checked ? Object.fromEntries(eligible.map((m) => [m.crew_id, true])) : {})} />
+              Select all
+            </label>
+            <span className="text-muted-foreground">{selectedIds.length} selected</span>
+            <select value={otBulkShift} onChange={(e) => setOtBulkShift(e.target.value as "day" | "night")} className={input} aria-label="Overtime shift for selected crew">
+              <option value="day">Day (1.5×)</option>
+              <option value="night">Night (2×)</option>
+            </select>
+            <button disabled={otBusy || selectedIds.length === 0} onClick={() => requestOvertimeFor(selectedIds)} className={btn}>Request overtime for selected</button>
+          </div>
+        )}
         <table className="w-full text-sm">
           <thead className="text-left text-[11px] text-muted-foreground">
             <tr>
@@ -757,6 +793,11 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
                 <tr key={m.crew_id} className="border-t border-border">
                   <td className="px-4 py-2">
                     <div className="flex items-center gap-3">
+                      {isProducer && (
+                        <input type="checkbox" className="h-4 w-4 shrink-0 accent-primary" aria-label={`Select ${m.name} for overtime`}
+                          disabled={!!liveRequest(overtime, m.crew_id)} checked={!!otSelected[m.crew_id]}
+                          onChange={(e) => setOtSelected({ ...otSelected, [m.crew_id]: e.target.checked })} />
+                      )}
                       <Avatar name={m.name} path={m.photo_url} />
                       <div className="min-w-0">
                         <Link to="/crew/$id" params={{ id: m.crew_id }} className="block truncate text-sm font-semibold hover:text-primary">{m.name}</Link>
@@ -766,6 +807,9 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
                   </td>
                   <td className="px-4">
                     <Badge>{status}</Badge>
+                    {overtime.filter((r) => r.crew_id === m.crew_id)[0] && (
+                      <div className="mt-1"><OvertimeStatus request={overtime.filter((r) => r.crew_id === m.crew_id)[0]!} rate={rates[m.crew_id] ?? 0} date={p.date || null} now={now} /></div>
+                    )}
                     {wrapFor(m.crew_id) && (() => {
                       const w = wrapFor(m.crew_id)!;
                       return (
@@ -788,6 +832,7 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
                   {isProducer && (
                     <td className="px-4">
                       <div className="flex gap-2">
+                        {isProducer && <RequestOvertimeButton productionId={p.id} crewId={m.crew_id} live={liveRequest(overtime, m.crew_id)} />}
                         <button onClick={() => wrapCrew(m)} disabled={!!wrapFor(m.crew_id)} className="rounded-sm border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40">Wrap</button>
                         <button onClick={() => removeMember(m)} aria-label={`Remove ${m.name}`} title="Remove from production" className="grid h-6 w-6 place-items-center rounded-sm border border-destructive text-destructive hover:bg-destructive/10"><Minus className="h-3.5 w-3.5" /></button>
                         {m.user_id !== userId && <button onClick={() => setRating({ crewId: m.crew_id, name: m.name })} className="rounded-sm border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10">Rate me</button>}

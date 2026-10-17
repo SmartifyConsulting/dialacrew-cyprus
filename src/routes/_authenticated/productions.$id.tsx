@@ -8,6 +8,7 @@ import { useMyCrewId, useMyName } from "@/lib/site";
 import { RetroTab } from "@/components/site/RetroTab";
 import { ScenarioPlanner } from "@/components/site/ScenarioPlanner";
 import { PhotosTab } from "@/components/site/PhotosTab";
+import { CrewOvertimePanel, useBookingRates } from "@/components/site/Overtime";
 import { AssetsTab, ChecklistsPanel, CommercialsTab, DocumentsTab, MembersList, OverviewTab, PostsTab, RegisterTab, TasksTab } from "@/components/site/SiteTabs";
 
 export const Route = createFileRoute("/_authenticated/productions/$id")({
@@ -47,6 +48,7 @@ function ProductionSite() {
   const [tab, setTab] = useState<Tab>(tabParam === "find-crew" ? "Find Crew" : "Posts");
   const [asideOpen, setAsideOpen] = useState(true);
   const p = prods.data?.find((x) => x.id === id);
+  const rates = useBookingRates(p?.id ?? "");
   if (!p) return <Page open title={prods.isLoading ? "Loading…" : "Production not found"}>{null}</Page>;
   const crewNames = Object.fromEntries(crew.map((c) => [c.id, c.name]));
   const ctx = { p, isProducer, userId, myName, myCrewId };
@@ -76,6 +78,7 @@ function ProductionSite() {
           <button onClick={() => setAsideOpen(false)} className="hidden items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-primary lg:flex">
             <ChevronLeft className="h-4 w-4" /> Collapse
           </button>
+          {myCrewId && <CrewOvertimePanel productionId={p.id} crewId={myCrewId} rate={rates[myCrewId] ?? 0} date={p.date || null} />}
           <OverviewTab {...ctx} />
         </aside>
         <section className="flex min-w-0 flex-col">
