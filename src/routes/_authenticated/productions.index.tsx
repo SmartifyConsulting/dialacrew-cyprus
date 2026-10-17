@@ -11,6 +11,7 @@ import { useProductions } from "@/lib/db";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRole, useSession } from "@/lib/auth";
 import { PolishDescription } from "@/components/site/PolishDescription";
+import { uploadFile } from "@/lib/site";
 
 export const Route = createFileRoute("/_authenticated/productions/")({
   validateSearch: (s: Record<string, unknown>): { new?: boolean } => (s["new"] ? { new: true } : {}),
@@ -156,6 +157,8 @@ function Productions() {
   const [f, setF] = useState(blankForm);
   const [editingId, setEditingId] = useState<string | null>(null); // editing an existing production
   const [draftId, setDraftId] = useState<string | null>(null); // autosaved draft while creating a new one
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [search, setSearch] = useState("");
 
@@ -166,7 +169,12 @@ function Productions() {
   // Ignore the production being edited and the draft this form autosaved itself.
   const jobIdTaken = (id: string) => list.some((p) => p.id !== editingId && p.id !== draftId && (p.jobId ?? "").trim().toLowerCase() === id.trim().toLowerCase());
 
-  const resetForm = () => { setF(blankForm); setEditingId(null); setDraftId(null); setSaveState("idle"); setDuplicating(false); };
+  const resetForm = () => { setF(blankForm); setEditingId(null); setDraftId(null); setSaveState("idle"); setDuplicating(false); setCoverFile(null); setCoverPreview(null); };
+  const pickCover = (file: File | undefined) => {
+    if (!file) return;
+    setCoverFile(file);
+    setCoverPreview(URL.createObjectURL(file));
+  };
   const closeModal = () => { setOpen(false); resetForm(); if (openOnLoad) navigate({ to: "/productions", search: {}, replace: true }); };
   const openNew = () => { resetForm(); setOpen(true); };
   const openEdit = (p: (typeof list)[number]) => {
@@ -237,6 +245,13 @@ function Productions() {
       ? await supabase.from("productions").update(payload).eq("id", targetId).select("id").single()
       : await supabase.from("productions").insert({ ...payload, status: "Draft" }).select("id").single();
     if (error) { toast.error(friendlyError(error)); return; }
+    if (coverFile) {
+      try {
+        const path = await uploadFile(`${data.id}/cover`, coverFile, coverFile.name);
+        const { error: coverErr } = await supabase.from("productions").update({ image_path: path }).eq("id", data.id);
+        if (coverErr) throw coverErr;
+      } catch (err) { toast.error(friendlyError(err)); }
+    }
     qc.invalidateQueries({ queryKey: ["productions"] });
     const wasEditing = !!editingId;
     setOpen(false);
@@ -262,6 +277,13 @@ function Productions() {
             </div>
             <div className="rounded-sm border border-border p-4">
               <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Production info</h3>
+              <div className="mb-4 flex items-center gap-4">
+                <label className="group relative grid h-24 w-24 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-2xl border border-dashed border-border bg-muted hover:border-primary" aria-label="Add a cover picture">
+                  {coverPreview ? <img src={coverPreview} alt="Cover preview" className="h-full w-full object-cover" /> : <span className="px-2 text-center text-[11px] font-semibold text-muted-foreground">Add cover picture</span>}
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => { pickCover(e.target.files?.[0]); e.target.value = ""; }} />
+                </label>
+                <p className="text-xs text-muted-foreground">Square picture shown beside the production name. You can change it later from the production site.</p>
+              </div>
               <div className="grid gap-3 md:grid-cols-2">
                 <div>
                   <input className={field} placeholder="Job ID *" value={f.jobId} onChange={(e) => setF({ ...f, jobId: e.target.value })} />

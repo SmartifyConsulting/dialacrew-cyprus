@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,20 +34,17 @@ export function ProductionCover({ p, isProducer }: { p: { id: string; name: stri
   }
 
   return (
-    <span className="inline-flex shrink-0 flex-col items-center gap-1 align-middle">
+    <span className="relative inline-flex shrink-0 align-middle">
       <span className="grid h-16 w-16 place-items-center overflow-hidden rounded-2xl border border-border bg-muted md:h-20 md:w-20">
         {url
           ? <img src={url} alt={p.name} className="h-full w-full object-cover" />
           : <span className="font-display text-lg font-bold text-primary">{initials}</span>}
       </span>
       {isProducer && (
-        <span className="flex items-center gap-2 text-[11px] font-semibold">
-          <label className={`cursor-pointer text-primary hover:underline ${busy ? "opacity-60" : ""}`}>
-            {busy ? "Uploading…" : url ? "Change" : "Add picture"}
-            <input type="file" accept="image/*" hidden disabled={busy} onChange={(e) => { change(e.target.files); e.target.value = ""; }} />
-          </label>
-          {url && <button onClick={remove} className="text-muted-foreground hover:text-destructive">Remove</button>}
-        </span>
+        <label className={`absolute -bottom-1.5 -right-1.5 grid h-7 w-7 cursor-pointer place-items-center rounded-full bg-primary text-primary-foreground shadow ${busy ? "opacity-60" : ""}`} aria-label="Edit picture">
+          <Pencil className="h-3.5 w-3.5" />
+          <input type="file" accept="image/*" hidden disabled={busy} onChange={(e) => { change(e.target.files); e.target.value = ""; }} />
+        </label>
       )}
     </span>
   );
