@@ -12,7 +12,7 @@ import { AuditTab } from "@/components/site/AuditTab";
 import { ProductionCover } from "@/components/site/ProductionCover";
 import { DocumentsTab } from "@/components/site/DocumentsTab";
 import { CrewOvertimePanel, useBookingRates } from "@/components/site/Overtime";
-import { AssetsTab, ChecklistsPanel, CommercialsTab, MembersList, OverviewTab, PostsTab, RegisterTab, TasksTab } from "@/components/site/SiteTabs";
+import { ChecklistsPanel, CommercialsTab, MembersList, OverviewTab, PostsTab, RegisterTab, TasksTab } from "@/components/site/SiteTabs";
 
 export const Route = createFileRoute("/_authenticated/productions/$id")({
   validateSearch: (s: Record<string, unknown>): { tab?: string } => (typeof s["tab"] === "string" ? { tab: s["tab"] } : {}),
@@ -29,10 +29,10 @@ export const Route = createFileRoute("/_authenticated/productions/$id")({
   component: ProductionSite,
 });
 
-// Crew see only Posts, Members, Tasks, Equipment (Overview is the fixed left widget).
+// Crew see only Posts, Tasks and the BTS Gallery (Overview is the fixed left widget).
 // Find Crew (scenario planner) opens from the header button beside the status badge.
 const CREW_TABS = ["Posts", "Tasks", "BTS Gallery"] as const;
-const MANAGER_TABS = ["Posts", "Crew", "Checklists", "Tasks", "BTS Gallery", "Equipment", "Documents", "Budget", "Review", "Audit"] as const;
+const MANAGER_TABS = ["Posts", "Crew", "Checklists", "Tasks", "BTS Gallery", "Documents", "Budget", "Review", "Audit"] as const;
 type Tab = (typeof MANAGER_TABS)[number] | "Find Crew";
 
 function ProductionSite() {
@@ -93,7 +93,6 @@ function ProductionSite() {
           {tab === "Tasks" && <TasksTab {...ctx} />}
           {tab === "Audit" && isProducer && <AuditTab p={p} />}
           {tab === "BTS Gallery" && <PhotosTab p={p} userId={userId} isProducer={isProducer} />}
-          {tab === "Equipment" && <AssetsTab {...ctx} bookings={bookings} crewNames={crewNames} />}
           {tab === "Documents" && isProducer && <DocumentsTab p={p} userId={userId} myName={myName} isProducer={isProducer} />}
           {tab === "Budget" && isProducer && <CommercialsTab {...ctx} bookings={bookings} crewNames={crewNames} requests={requests} />}
           {tab === "Find Crew" && isProducer && <ScenarioPlanner p={p} />}
