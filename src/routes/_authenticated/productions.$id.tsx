@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { ChevronLeft, ChevronRight, MapPin, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight, MapPin } from "lucide-react";
 import { Badge, ClientBadge, Page } from "@/components/AppShell";
 import { useRole, useSession } from "@/lib/auth";
 import { useBookings, useCrew, useProductions, useRequests } from "@/lib/db";
@@ -49,6 +49,7 @@ function ProductionSite() {
   const myName = useMyName(userId || undefined).data ?? "";
   const { tab: tabParam } = Route.useSearch();
   const [tab, setTab] = useState<Tab>(tabParam === "find-crew" ? "Find Crew" : "Posts");
+  useEffect(() => { if (tabParam === "find-crew") setTab("Find Crew"); }, [tabParam]);
   const [asideOpen, setAsideOpen] = useState(true);
   const p = prods.data?.find((x) => x.id === id);
   const rates = useBookingRates(p?.id ?? "");
@@ -59,12 +60,6 @@ function ProductionSite() {
 
   const actions = (
     <div className="flex items-center gap-2">
-      {isProducer && (
-        <button onClick={() => setTab("Find Crew")}
-          className={`inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs font-semibold ${tab === "Find Crew" ? "bg-primary text-primary-foreground" : "border border-primary text-primary hover:bg-primary/10"}`}>
-          <Sparkles className="h-4 w-4" /> Find Crew
-        </button>
-      )}
       <Badge>{p.status}</Badge>
     </div>
   );

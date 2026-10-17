@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
-import { Camera, CheckCircle2, Circle, Download, FileText, GripVertical, ImageUp, LogIn, LogOut, MapPin, Mic, Minus, Paperclip, Pencil, Plus, Star, Trash2, Users } from "lucide-react";
+import { Camera, CheckCircle2, Circle, Download, FileText, GripVertical, ImageUp, LogIn, LogOut, MapPin, Mic, Minus, Paperclip, Pencil, Plus, Sparkles, Star, Trash2, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge, Panel } from "@/components/AppShell";
 import { AudioRecorder } from "@/components/AudioRecorder";
@@ -329,7 +329,8 @@ export const CREW_ROLES = [
 export const CONFIRMED_BOOKING_STATUSES = ["confirmed", "in_progress", "completed", "payment_released"];
 
 /* ---------------- Crew role required (standard roles still needing a confirmed booking) — shown on Members tab ---------------- */
-function CrewRoleStatus({ p, onFind }: Pick<Ctx, "p"> & { onFind: (role: string) => void }) {
+function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
+  const navigate = useNavigate();
   const bookings = useQuery({
     queryKey: ["production-checklist", p.id],
     queryFn: async () => {
@@ -351,12 +352,10 @@ function CrewRoleStatus({ p, onFind }: Pick<Ctx, "p"> & { onFind: (role: string)
 
   return (
     <Panel title="Crew Role Required" right={
-      <select aria-label="Find a crew member for an unassigned role" value="" disabled={unassignedRoles.length === 0}
-        onChange={(e) => { if (e.target.value) onFind(e.target.value); }}
-        className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40">
-        <option value="">Find a Crew</option>
-        {unassignedRoles.map((r) => <option key={r} value={r}>{r}</option>)}
-      </select>
+      <button onClick={() => navigate({ to: "/productions/$id", params: { id: p.id }, search: { tab: "find-crew" } })}
+        disabled={unassignedRoles.length === 0} className="inline-flex items-center gap-1.5 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40">
+        <Sparkles className="h-3.5 w-3.5" /> Find Crew
+      </button>
     }>
       <ul className="divide-y divide-border text-sm">
         {openRoles.map((role) => {
@@ -667,8 +666,6 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
   const rows = useRegister(p.id).data ?? [];
   const inv = useInvalidate();
   const [rating, setRating] = useState<{ crewId: string; name: string } | null>(null);
-  const [fitRole, setFitRole] = useState<string | null>(null);
-  const crewDirectory = useCrew().data ?? [];
   const cancelBooking = useCancelBooking();
   const wraps = (useQuery({
     queryKey: ["site-wraps", p.id],
@@ -755,10 +752,7 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
           </div>
         );
       })()}
-      <CrewRoleStatus p={p} onFind={setFitRole} />
-      {fitRole ? (
-        <FitCrewPanel role={fitRole} crew={crewDirectory} confirmedIds={new Set(members.map((m) => m.crew_id))} onClear={() => setFitRole(null)} />
-      ) : (
+      <CrewRoleStatus p={p} />
       <Panel title={`${isActive ? "Crew on Set" : "Confirmed Crew"} (${members.length})`}>
         {isProducer && eligible.length > 0 && (
           <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-2.5 text-xs">
@@ -846,38 +840,11 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
           </tbody>
         </table>
       </Panel>
-      )}
       {rating && <RateDialog {...rating} productionId={p.id} onClose={() => setRating(null)} />}
     </div>
   );
 }
 
-function FitCrewPanel({ role, crew, confirmedIds, onClear }: { role: string; crew: Crew[]; confirmedIds: Set<string>; onClear: () => void }) {
-  const key = role.trim().toLowerCase();
-  const fits = crew.filter((c) => c.role.trim().toLowerCase() === key);
-  return (
-    <Panel title={`Crew who fit ${role} (${fits.length})`} right={<button onClick={onClear} className="text-xs font-semibold text-primary hover:underline">Back to crew list</button>}>
-      {fits.length === 0 ? (
-        <p className="p-4 text-sm text-muted-foreground">No crew on the register are listed as {role}.</p>
-      ) : (
-        <ul className="divide-y divide-border text-sm">
-          {fits.map((c) => (
-            <li key={c.id} className="flex items-center justify-between gap-3 px-4 py-3">
-              <div className="min-w-0">
-                <Link to="/crew/$id" params={{ id: c.id }} className="block truncate font-semibold hover:text-primary">{c.name}</Link>
-                <div className="truncate text-xs text-muted-foreground">{c.role} · {c.department} · {zar(c.dayRate)}/day</div>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                {confirmedIds.has(c.id) && <Badge>Confirmed</Badge>}
-                <Badge>{c.available ? "Available" : "Unavailable"}</Badge>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Panel>
-  );
-}
 
 export function Avatar({ name, path, size = 36 }: { name: string; path?: string | null; size?: number }) {
   const url = useSignedUrl(path).data;
