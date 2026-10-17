@@ -338,7 +338,28 @@ export const CREW_ROLES = [
   "Catering", "Production Assistant",
 ] as const;
 
-export const CONFIRMED_BOOKING_STATUSES = ["confirmed", "in_progress", "completed", "payment_released"];
+// How a crew member is matched to a standard role: any of `include` (whole words, plural allowed) in their role,
+// department or skills, unless one of `exclude` is also there (an "Assistant Director" is not a "Director").
+const ROLE_MATCH: Record<string, { include: string[]; exclude?: string[] }> = {
+  "Director": { include: ["director"], exclude: ["director of photography", "assistant director", "art director", "casting director"] },
+  "Director of Photography": { include: ["director of photography", "dop", "dp", "cinematographer"] },
+  "Focus Puller": { include: ["focus puller", "focus pulling", "1st ac", "first ac", "1st assistant camera", "first assistant camera"] },
+  "Gaffer": { include: ["gaffer", "spark", "lighting"] },
+  "Art Department": { include: ["art", "designer", "set dresser", "prop"] },
+  "Wardrobe": { include: ["wardrobe", "costume", "stylist"] },
+  "Make-Up": { include: ["make up", "makeup", "hair", "mua"] },
+  "Catering": { include: ["catering", "caterer", "chef", "cook"] },
+  "Production Assistant": { include: ["production assistant", "runner", "pa"] },
+};
+const words = (s: string) => ` ${s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()} `;
+const hasPhrase = (text: string, phrase: string) => new RegExp(` ${words(phrase).trim()}s? `).test(text);
+export function crewFitsRole(c: { role: string; department?: string; skills?: string[] }, role: string) {
+  const rule = ROLE_MATCH[role] ?? { include: [words(role).trim()] };
+  return [c.role, c.department ?? "", ...(c.skills ?? [])].map(words).some((f) =>
+    rule.include.some((ph) => hasPhrase(f, ph)) && !(rule.exclude ?? []).some((ph) => hasPhrase(f, ph)));
+}
+
+export const CONFIRMED_BOOKING_STATUSES =["confirmed", "in_progress", "completed", "payment_released"];
 
 /* ---------------- Crew role required (standard roles still needing a confirmed booking) — shown on Members tab ---------------- */
 function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
@@ -406,13 +427,13 @@ function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
               </span>
               {pickRole === role && (
                 <div className="w-full space-y-1 pt-1">
-                  {crew.filter((c) => c.role.trim().toLowerCase() === role.toLowerCase()).map((c) => (
+                  {crew.filter((c) => crewFitsRole(c, role)).map((c) => (
                     <button key={c.id} onClick={() => pencil(role, c.id)} className="flex w-full items-center justify-between gap-3 rounded-sm border border-border px-3 py-2 text-left text-sm hover:border-primary">
-                      <span className="font-medium">{c.name}</span>
+                      <span className="min-w-0"><span className="font-medium">{c.name}</span>{c.role && <span className="text-xs text-muted-foreground"> · {c.role}</span>}</span>
                       <span className="text-xs text-muted-foreground">{fmtMoney(c.dayRate, p.currency)} / day{c.available ? "" : " · unavailable"}</span>
                     </button>
                   ))}
-                  {crew.every((c) => c.role.trim().toLowerCase() !== role.toLowerCase()) && (
+                  {!crew.some((c) => crewFitsRole(c, role)) && (
                     <p className="text-xs text-muted-foreground">No crew are listed as {role} yet.</p>
                   )}
                 </div>

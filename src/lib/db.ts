@@ -13,7 +13,7 @@ const toProduction = (r: any): Production => ({
 const toCrew = (r: any): Crew & { pencilled: boolean } => ({
   id: r.id, name: r.name, role: r.role, department: r.department, location: r.location,
   rating: Number(r.rating), dayRate: Number(r.day_rate), available: r.available,
-  experience: r.experience, kit: r.kit ?? undefined, pencilled: r.pencilled,
+  experience: r.experience, kit: r.kit ?? undefined, skills: r.skills ?? [], pencilled: r.pencilled,
 });
 const toBooking = (r: any): Booking => ({
   id: r.id, productionId: r.production_id, crewId: r.crew_id, role: r.role, status: r.status,
