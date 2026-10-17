@@ -508,8 +508,7 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
   return (
     <div className="space-y-5">
       {checklists.map((c) => (
-        <div key={c.id} className="rounded-lg border-2 border-primary/40 bg-background p-3">
-        <Panel title={c.title} right={isProducer && (
+        <Panel key={c.id} title={c.title} right={isProducer && (
           <button onClick={() => removeChecklist(c.id)} className="text-muted-foreground hover:text-destructive" aria-label={`Remove ${c.title}`}><Trash2 className="h-3.5 w-3.5" /></button>
         )}>
           <ul className="grid gap-3 p-4 text-sm md:grid-cols-2">
@@ -557,7 +556,6 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
             </form>
           )}
         </Panel>
-        </div>
       ))}
 
       {isProducer && (
