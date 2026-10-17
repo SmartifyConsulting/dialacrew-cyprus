@@ -1,13 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQueries, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { CheckSquare, ChevronLeft, ChevronRight, Square } from "lucide-react";
 import { Page, clientColor } from "@/components/AppShell";
-import { supabase } from "@/integrations/supabase/client";
 import { useRole, useSession } from "@/lib/auth";
 import { useBookings, useProductions } from "@/lib/db";
 import { useMyCrewId } from "@/lib/site";
-import { WEATHER_CODES, WEATHER_ICONS, fetchDailyForecast } from "@/lib/weather";
+import { WEATHER_ICONS } from "@/lib/weather";
+import { forecastSummary, isoDay, useCalendarExtras } from "@/lib/calendar-extras";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
   head: () => ({
@@ -23,8 +22,7 @@ export const Route = createFileRoute("/_authenticated/calendar")({
   component: CalendarPage,
 });
 
-const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-const coordKey = (lat: number, lon: number) => `${lat.toFixed(3)},${lon.toFixed(3)}`;
+const iso = isoDay;
 
 type DayItem = { id: string; name: string; client: string; crew: number; lat: number | null; lon: number | null };
 
@@ -65,56 +63,10 @@ function CalendarPage() {
   const today = iso(new Date());
   const shift = (m: number) => setMonth(new Date(month.getFullYear(), month.getMonth() + m, 1));
 
-  // Each day's forecast point: a location scheduled that day, else the production's own coordinates.
-  const locationsQ = useQuery({
-    queryKey: ["calendar-locations"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("production_locations").select("production_id, latitude, longitude, starts_at").not("latitude", "is", null);
-      if (error) throw error;
-      return data ?? [];
-    },
-  }).data ?? [];
-  const dayPoint = (day: string) => {
-    const items = byDay.get(day) ?? [];
-    for (const it of items) {
-      const loc = locationsQ.find((l) => l.production_id === it.id && l.starts_at && iso(new Date(l.starts_at)) === day && l.latitude != null && l.longitude != null);
-      if (loc) return { lat: loc.latitude as number, lon: loc.longitude as number };
-    }
-    const withCoords = items.find((it) => it.lat != null && it.lon != null);
-    return withCoords ? { lat: withCoords.lat as number, lon: withCoords.lon as number } : null;
-  };
-  const dayPoints = new Map<string, { key: string; lat: number; lon: number }>();
-  for (const day of byDay.keys()) {
-    const pt = dayPoint(day);
-    if (pt) dayPoints.set(day, { key: coordKey(pt.lat, pt.lon), ...pt });
-  }
-  const uniqueCoords = [...new Map([...dayPoints.values()].map((c) => [c.key, c])).values()];
-  const forecasts = useQueries({
-    queries: uniqueCoords.map((c) => ({
-      queryKey: ["forecast", c.key], queryFn: () => fetchDailyForecast(c.lat, c.lon), staleTime: 3 * 60 * 60 * 1000, retry: false,
-    })),
-  });
-  const forecastFor = (day: string) => {
-    const pt = dayPoints.get(day);
-    if (!pt) return null;
-    const idx = uniqueCoords.findIndex((c) => c.key === pt.key);
-    return forecasts[idx]?.data?.[day] ?? null;
-  };
-
-  // Tasks due this month that the signed-in user can see (RLS decides which).
+  // Weather per day (from that day's location) and the tasks due this month.
   const monthStart = iso(new Date(month.getFullYear(), month.getMonth(), 1));
   const monthEnd = iso(new Date(month.getFullYear(), month.getMonth() + 1, 0));
-  const tasks = useQuery({
-    queryKey: ["calendar-tasks", monthStart],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("site_tasks").select("id, title, done, due_date, production_id")
-        .gte("due_date", monthStart).lte("due_date", monthEnd).order("created_at", { ascending: true });
-      if (error) throw error;
-      return data ?? [];
-    },
-  }).data ?? [];
-  const tasksByDay = new Map<string, typeof tasks>();
-  for (const t of tasks) if (t.due_date) tasksByDay.set(t.due_date, [...(tasksByDay.get(t.due_date) ?? []), t]);
+  const { forecastFor, tasksByDay } = useCalendarExtras(byDay, monthStart, monthEnd);
 
   return (
     <Page title="Calendar" subtitle="Shoot days, weather and tasks, month by month." open>
@@ -136,7 +88,7 @@ function CalendarPage() {
             <div key={i} className="min-h-28 min-w-0 bg-card p-1.5">
               {d && <p className={`mb-1 text-xs font-semibold ${key === today ? "text-primary" : "text-muted-foreground"}`}>{d.getDate()}</p>}
               {weather && (
-                <p className="mb-1 flex items-center gap-1 text-[10px] text-muted-foreground" title={`${WEATHER_CODES[weather.code] ?? "Mixed"}${weather.max != null && weather.min != null ? ` · ${Math.round(weather.min)}–${Math.round(weather.max)}°C` : ""}${weather.rain != null ? ` · ${Math.round(weather.rain)}% rain` : ""}`}>
+                <p className="mb-1 flex items-center gap-1 text-[10px] text-muted-foreground" title={forecastSummary(weather)}>
                   <span className="text-sm leading-none" aria-hidden="true">{WEATHER_ICONS[weather.code] ?? "🌡️"}</span>
                   {weather.max != null && weather.min != null ? `${Math.round(weather.min)}–${Math.round(weather.max)}°` : ""}
                 </p>

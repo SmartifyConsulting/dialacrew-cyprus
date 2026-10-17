@@ -1,7 +1,7 @@
 import type React from "react";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Check } from "lucide-react";
+import { Check, CheckSquare, Square } from "lucide-react";
 import { Badge, ClientBadge, Page, Panel, clientColor } from "@/components/AppShell";
 import { fmtMoney, zar, type Booking, type Production } from "@/lib/demo-data";
 import { useBookings, useCrew, useProductions, useRequests, useRespondToBooking, useSetRequestState } from "@/lib/db";
@@ -13,6 +13,8 @@ import { useMyCrewId, useMyName } from "@/lib/site";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
+import { WEATHER_ICONS } from "@/lib/weather";
+import { forecastSummary, useCalendarExtras, type DayShoot } from "@/lib/calendar-extras";
 
 function DashboardRouter() {
   const { session } = useSession();
@@ -160,11 +162,24 @@ const isoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padS
 
 type MiniCalDot = { id: string; bg: string; name: string; location: string; time: string };
 
-// Compact current-month grid with a colored dot per client shooting that day — a quick-glance version
-// of the full /calendar page, not a replacement for it. Each dot's tooltip shows client, location and time.
+// Popup for the calendar's weather, dots and task icon: shows on hover, and on tap/keyboard focus for touch screens.
+// `align` keeps it on screen for the grid's left and right columns.
+function CalPop({ label, align, trigger, children }: { label: string; align: "left" | "center" | "right"; trigger: React.ReactNode; children: React.ReactNode }) {
+  const pos = align === "left" ? "left-0" : align === "right" ? "right-0" : "left-1/2 -translate-x-1/2";
+  return (
+    <span className="group relative inline-flex">
+      <button type="button" aria-label={label} className="inline-flex cursor-pointer items-center rounded-sm outline-none focus-visible:ring-1 focus-visible:ring-ring">{trigger}</button>
+      <span className={`pointer-events-none absolute top-full z-20 mt-1 hidden w-max max-w-56 rounded-xl border border-border bg-card px-3 py-1.5 text-left text-xs font-medium text-foreground shadow-lg group-focus-within:block group-hover:block ${pos}`}>{children}</span>
+    </span>
+  );
+}
+
+// Compact current-month grid: each day shows its weather, a coloured dot per production shooting that day and a
+// task icon when tasks are due — a quick-glance version of the full /calendar page, not a replacement for it.
 function MiniCalendar({ productions, bookings }: { productions: Production[]; bookings: Booking[] }) {
   const today = new Date();
   const byDay = new Map<string, MiniCalDot[]>();
+  const shoots = new Map<string, DayShoot[]>();
   for (const p of productions) {
     if (!p.date) continue;
     const start = new Date(p.date + "T00:00:00");
@@ -177,6 +192,7 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
         location: p.location || p.address || "Location TBC", time: callTimes[0] ? callTimes[0].slice(0, 5) : "Time TBC",
       };
       byDay.set(k, [...(byDay.get(k) ?? []), dot]);
+      shoots.set(k, [...(shoots.get(k) ?? []), { id: p.id, lat: p.latitude ?? null, lon: p.longitude ?? null }]);
     }
   }
   const first = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -187,6 +203,7 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
     return n >= 1 && n <= daysIn ? new Date(today.getFullYear(), today.getMonth(), n) : null;
   });
   const todayIso = isoDate(today);
+  const { forecastFor, tasksByDay } = useCalendarExtras(shoots, isoDate(first), isoDate(new Date(today.getFullYear(), today.getMonth() + 1, 0)));
 
   return (
     <Panel title="Calendar" right={<Link to="/calendar" className="text-xs font-semibold text-primary hover:underline">Open</Link>}>
@@ -196,19 +213,40 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
         </div>
         <div className="grid grid-cols-7 gap-1">
           {cells.map((d, i) => {
-            const dots = d ? byDay.get(isoDate(d)) ?? [] : [];
+            const key = d ? isoDate(d) : "";
+            const dots = d ? byDay.get(key) ?? [] : [];
+            const weather = d ? forecastFor(key) : null;
+            const dayTasks = d ? tasksByDay.get(key) ?? [] : [];
+            const align = i % 7 < 2 ? "left" : i % 7 > 4 ? "right" : "center";
             return (
-              <div key={i} className={`flex h-11 flex-col items-center justify-center rounded-md text-[11px] ${d && isoDate(d) === todayIso ? "bg-primary/10 font-semibold text-primary" : "text-muted-foreground"}`}>
+              <div key={i} className={`flex h-16 flex-col items-center justify-center gap-0.5 rounded-md text-[11px] ${d && key === todayIso ? "bg-primary/10 font-semibold text-primary" : "text-muted-foreground"}`}>
                 {d && <span>{d.getDate()}</span>}
-                <span className="mt-0.5 flex h-2.5 gap-1">
+                {weather && (
+                  <CalPop label={forecastSummary(weather)} align={align}
+                    trigger={<span className="flex items-center gap-0.5 text-[11px] leading-none"><span aria-hidden="true">{WEATHER_ICONS[weather.code] ?? "🌡️"}</span>{weather.max != null ? `${Math.round(weather.max)}°` : ""}</span>}>
+                    {forecastSummary(weather)}
+                  </CalPop>
+                )}
+                <span className="flex h-3.5 items-center gap-1">
                   {dots.slice(0, 3).map((dot) => (
-                    <span key={dot.id} className="group relative" aria-label={`${dot.name} · ${dot.location} · ${dot.time}`}>
-                      <span className={`block h-2.5 w-2.5 cursor-pointer rounded-full ${dot.bg}`} />
-                      <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 hidden w-max max-w-56 -translate-x-1/2 rounded-xl border border-border bg-card px-3 py-1.5 text-center text-xs font-medium text-foreground shadow-lg group-hover:block">
-                        {dot.name} · {dot.location} · {dot.time}
-                      </span>
-                    </span>
+                    <CalPop key={dot.id} label={`${dot.name} · ${dot.location} · ${dot.time}`} align={align}
+                      trigger={<span className={`block h-2.5 w-2.5 rounded-full ${dot.bg}`} />}>
+                      {dot.name} · {dot.location} · {dot.time}
+                    </CalPop>
                   ))}
+                  {dayTasks.length > 0 && (
+                    <CalPop label={`${dayTasks.length} task${dayTasks.length === 1 ? "" : "s"} due`} align={align}
+                      trigger={<CheckSquare className={`h-3.5 w-3.5 ${dayTasks.every((t) => t.done) ? "text-success" : "text-primary"}`} />}>
+                      <ul className="space-y-1">
+                        {dayTasks.map((t) => (
+                          <li key={t.id} className="flex items-start gap-1.5">
+                            {t.done ? <CheckSquare className="mt-0.5 h-3 w-3 shrink-0 text-success" /> : <Square className="mt-0.5 h-3 w-3 shrink-0 text-primary" />}
+                            <span className={t.done ? "line-through opacity-70" : ""}>{t.title}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CalPop>
+                  )}
                 </span>
               </div>
             );
