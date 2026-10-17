@@ -1,13 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { CheckSquare, ChevronLeft, ChevronRight, Square } from "lucide-react";
 import { Page, clientColor } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useRole, useSession } from "@/lib/auth";
 import { useBookings, useProductions } from "@/lib/db";
 import { useMyCrewId } from "@/lib/site";
-import { WEATHER_CODES, fetchDailyForecast } from "@/lib/weather";
+import { WEATHER_CODES, WEATHER_ICONS, fetchDailyForecast } from "@/lib/weather";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
   head: () => ({
@@ -64,19 +64,39 @@ function CalendarPage() {
   const today = iso(new Date());
   const shift = (m: number) => setMonth(new Date(month.getFullYear(), month.getMonth() + m, 1));
 
-  // One weather line per day: the first production on site that day with map coordinates.
-  const uniqueCoords = [...new Map(
-    [...byDay.values()].flat().filter((it) => it.lat != null && it.lon != null).map((it) => [coordKey(it.lat!, it.lon!), { lat: it.lat!, lon: it.lon! }]),
-  ).entries()].map(([key, c]) => ({ key, ...c }));
+  // Each day's forecast point: a location scheduled that day, else the production's own coordinates.
+  const locationsQ = useQuery({
+    queryKey: ["calendar-locations"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("production_locations").select("production_id, latitude, longitude, starts_at").not("latitude", "is", null);
+      if (error) throw error;
+      return data ?? [];
+    },
+  }).data ?? [];
+  const dayPoint = (day: string) => {
+    const items = byDay.get(day) ?? [];
+    for (const it of items) {
+      const loc = locationsQ.find((l) => l.production_id === it.id && l.starts_at && iso(new Date(l.starts_at)) === day && l.latitude != null && l.longitude != null);
+      if (loc) return { lat: loc.latitude as number, lon: loc.longitude as number };
+    }
+    const withCoords = items.find((it) => it.lat != null && it.lon != null);
+    return withCoords ? { lat: withCoords.lat as number, lon: withCoords.lon as number } : null;
+  };
+  const dayPoints = new Map<string, { key: string; lat: number; lon: number }>();
+  for (const day of byDay.keys()) {
+    const pt = dayPoint(day);
+    if (pt) dayPoints.set(day, { key: coordKey(pt.lat, pt.lon), ...pt });
+  }
+  const uniqueCoords = [...new Map([...dayPoints.values()].map((c) => [c.key, c])).values()];
   const forecasts = useQueries({
     queries: uniqueCoords.map((c) => ({
       queryKey: ["forecast", c.key], queryFn: () => fetchDailyForecast(c.lat, c.lon), staleTime: 3 * 60 * 60 * 1000, retry: false,
     })),
   });
   const forecastFor = (day: string) => {
-    const item = (byDay.get(day) ?? []).find((it) => it.lat != null && it.lon != null);
-    if (!item) return null;
-    const idx = uniqueCoords.findIndex((c) => c.key === coordKey(item.lat!, item.lon!));
+    const pt = dayPoints.get(day);
+    if (!pt) return null;
+    const idx = uniqueCoords.findIndex((c) => c.key === pt.key);
     return forecasts[idx]?.data?.[day] ?? null;
   };
 
@@ -115,8 +135,9 @@ function CalendarPage() {
             <div key={i} className="min-h-28 min-w-0 bg-card p-1.5">
               {d && <p className={`mb-1 text-xs font-semibold ${key === today ? "text-primary" : "text-muted-foreground"}`}>{d.getDate()}</p>}
               {weather && (
-                <p className="mb-1 truncate text-[10px] text-muted-foreground" title={WEATHER_CODES[weather.code] ?? ""}>
-                  {WEATHER_CODES[weather.code] ?? "Mixed"}{weather.max != null && weather.min != null ? ` · ${Math.round(weather.min)}–${Math.round(weather.max)}°` : ""}
+                <p className="mb-1 flex items-center gap-1 text-[10px] text-muted-foreground" title={`${WEATHER_CODES[weather.code] ?? "Mixed"}${weather.max != null && weather.min != null ? ` · ${Math.round(weather.min)}–${Math.round(weather.max)}°C` : ""}${weather.rain != null ? ` · ${Math.round(weather.rain)}% rain` : ""}`}>
+                  <span className="text-sm leading-none" aria-hidden="true">{WEATHER_ICONS[weather.code] ?? "🌡️"}</span>
+                  {weather.max != null && weather.min != null ? `${Math.round(weather.min)}–${Math.round(weather.max)}°` : ""}
                 </p>
               )}
               {items.map((it) => (
@@ -124,11 +145,16 @@ function CalendarPage() {
                   {it.name}{it.crew ? ` · ${it.crew} crew` : ""}
                 </Link>
               ))}
-              {dayTasks.map((t) => (
-                <div key={t.id} className={`mb-0.5 truncate text-[11px] ${t.done ? "text-muted-foreground line-through" : "text-foreground"}`} title={t.title}>
-                  ☐ {t.title}
+              {dayTasks.length > 0 && (
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {dayTasks.map((t) => (
+                    <span key={t.id} title={`${t.done ? "Done" : "To do"}: ${t.title}`} aria-label={`${t.done ? "Done" : "To do"}: ${t.title}`}
+                      className={`inline-flex h-5 w-5 cursor-default items-center justify-center rounded-sm ${t.done ? "bg-success/20 text-success" : "bg-primary/20 text-primary"}`}>
+                      {t.done ? <CheckSquare className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
+                    </span>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
           );
         })}
