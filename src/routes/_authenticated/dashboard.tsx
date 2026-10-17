@@ -247,7 +247,7 @@ function Dashboard() {
   const kpis = [
     { l: "Active productions", v: productions.filter((p) => p.status === "Active").length, s: `${productions.filter((p) => p.status === "Upcoming").length} upcoming` },
     { l: "Crew confirmed", v: count("confirmed"), s: `${count("pencil")} on pencil` },
-    { l: "Needs your attention", v: pendingReqs.length + waitingCrew.length, s: `${pendingReqs.length} approvals` },
+    { l: "Action", v: pendingReqs.length + waitingCrew.length, s: `${pendingReqs.length} approvals` },
     { l: "Budget Spent", v: `${budgetPct}%`, s: `${zar(secured)} of ${zar(totalBudget)}` },
   ];
   const onSet = productions.find((p) => p.status === "Active");
@@ -328,7 +328,7 @@ function Dashboard() {
         </div>
 
         <div className="space-y-5">
-          <Panel title="Needs your attention" right={<span className="text-xs text-muted-foreground">{pendingReqs.length + waitingCrew.length} open</span>}>
+          <Panel title="Action" right={<span className="text-xs text-muted-foreground">{pendingReqs.length + waitingCrew.length} open</span>}>
             <ul className="divide-y divide-border">
               {pendingReqs.length + waitingCrew.length === 0 && <li className="p-4 text-sm text-muted-foreground">All caught up.</li>}
               {pendingReqs.map((r) => (
