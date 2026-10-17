@@ -656,6 +656,7 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
   for (const r of rows) if (r.crew_id && !lastByCrew.has(r.crew_id)) lastByCrew.set(r.crew_id, r);
   const todayStr = new Date().toISOString().slice(0, 10);
   const isShootDay = !!p.date && todayStr >= p.date && todayStr <= (p.endDate ?? p.date);
+  const shootStarted = !!p.date && todayStr >= p.date;
   const isActive = p.status === "Active";
 
   async function mark(kind: "in" | "out", crewId: string, name: string) {
@@ -700,7 +701,7 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
             {members.length === 0 && <tr><td colSpan={isProducer ? 5 : 2} className="px-4 py-3 text-sm text-muted-foreground">No crew confirmed yet.</td></tr>}
             {members.map((m) => {
               const l = lastByCrew.get(m.crew_id);
-              const status = !l ? "Not arrived" : l.kind === "in" ? "On set" : "Wrapped";
+              const status = !l ? (shootStarted ? "Not arrived" : "Not started") : l.kind === "in" ? "On set" : "Wrapped";
               return (
                 <tr key={m.crew_id} className="border-t border-border">
                   <td className="px-4 py-2">
