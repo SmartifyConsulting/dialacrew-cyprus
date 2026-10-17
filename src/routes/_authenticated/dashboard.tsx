@@ -158,7 +158,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 const isoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-type MiniCalDot = { id: string; bg: string; client: string; location: string; time: string };
+type MiniCalDot = { id: string; bg: string; name: string; location: string; time: string };
 
 // Compact current-month grid with a colored dot per client shooting that day — a quick-glance version
 // of the full /calendar page, not a replacement for it. Each dot's tooltip shows client, location and time.
@@ -173,7 +173,7 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
       const k = isoDate(d);
       const callTimes = bookings.filter((b) => b.productionId === p.id && b.bookingDate === k && b.callTime).map((b) => b.callTime!).sort();
       const dot: MiniCalDot = {
-        id: `${p.id}-${k}`, bg: clientColor(p.client).split(" ")[0]!, client: p.client,
+        id: `${p.id}-${k}`, bg: clientColor(p.client).split(" ")[0]!, name: p.name,
         location: p.location || p.address || "Location TBC", time: callTimes[0] ? callTimes[0].slice(0, 5) : "Time TBC",
       };
       byDay.set(k, [...(byDay.get(k) ?? []), dot]);
@@ -198,11 +198,16 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
           {cells.map((d, i) => {
             const dots = d ? byDay.get(isoDate(d)) ?? [] : [];
             return (
-              <div key={i} className={`flex h-9 flex-col items-center justify-center rounded-md text-[11px] ${d && isoDate(d) === todayIso ? "bg-primary/10 font-semibold text-primary" : "text-muted-foreground"}`}>
+              <div key={i} className={`flex h-11 flex-col items-center justify-center rounded-md text-[11px] ${d && isoDate(d) === todayIso ? "bg-primary/10 font-semibold text-primary" : "text-muted-foreground"}`}>
                 {d && <span>{d.getDate()}</span>}
-                <span className="mt-0.5 flex h-1.5 gap-0.5">
+                <span className="mt-0.5 flex h-2.5 gap-1">
                   {dots.slice(0, 3).map((dot) => (
-                    <span key={dot.id} title={`${dot.client} · ${dot.location} · ${dot.time}`} className={`h-1.5 w-1.5 rounded-full ${dot.bg}`} />
+                    <span key={dot.id} className="group relative" aria-label={`${dot.name} · ${dot.location} · ${dot.time}`}>
+                      <span className={`block h-2.5 w-2.5 cursor-pointer rounded-full ${dot.bg}`} />
+                      <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 hidden w-max max-w-56 -translate-x-1/2 rounded-xl border border-border bg-card px-3 py-1.5 text-center text-xs font-medium text-foreground shadow-lg group-hover:block">
+                        {dot.name} · {dot.location} · {dot.time}
+                      </span>
+                    </span>
                   ))}
                 </span>
               </div>
