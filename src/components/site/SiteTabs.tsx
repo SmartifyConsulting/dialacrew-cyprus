@@ -7,7 +7,7 @@ import { Camera, CheckCircle2, Circle, Download, FileText, GripVertical, ImageUp
 import { supabase } from "@/integrations/supabase/client";
 import { Badge, Panel } from "@/components/AppShell";
 import { AudioRecorder } from "@/components/AudioRecorder";
-import { zar, type Booking, type Production } from "@/lib/demo-data";
+import { zar, type Booking, type Crew, type Production } from "@/lib/demo-data";
 import { assetsTotal, providerTotal } from "@/lib/costing";
 import { distanceMeters, getPosition, isOnSite } from "@/lib/geo";
 import { isOnline, pendingCount, queueCheckin, syncQueue } from "@/lib/offline-checkin";
@@ -15,7 +15,8 @@ import {
   signedUrl, uploadFile, useBookingAssets, useChecklists, useCrewAssets, useDocs, useInvalidate, useLocationPoints, useMessages, usePosts, useRegister,
   useReviews, useSignedUrl, useSiteMembers, useTasks,
 } from "@/lib/site";
-import { useCreateOpenGig, useRequests, useSetRequestState } from "@/lib/db";
+import { useCreateOpenGig, useCrew, useRequests, useSetRequestState } from "@/lib/db";
+import { LocationRisks, ProjectWideRisks } from "@/components/site/ProjectInsights";
 
 function OvertimeApprovals({ production }: { production: string }) {
   const reqs = (useRequests().data ?? []).filter((r) => r.kind === "Overtime" && r.production === production && r.state === "Pending");
@@ -227,12 +228,13 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
 
   return (
     <div>
+      {isProducer && <div className="p-3"><ProjectWideRisks p={p} /></div>}
       {isProducer && !adding && (
         <div className="flex justify-end px-4 pt-4">
           <button onClick={startAdd} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> Add Location</button>
         </div>
       )}
-      <ul className="divide-y divide-border text-sm">
+      <ul className="space-y-3 p-3 text-sm">
         {points.length === 0 && <li className="p-4 text-muted-foreground">No locations yet.</li>}
         {points.map((pt, i) => (
           <li key={pt.id}
@@ -241,7 +243,7 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
             onDragOver={(e) => { if (isProducer) { e.preventDefault(); setDragOverId(pt.id); } }}
             onDrop={(e) => { e.preventDefault(); if (dragId) reorder(dragId, pt.id); setDragId(null); setDragOverId(null); }}
             onDragEnd={() => { setDragId(null); setDragOverId(null); }}
-            className={`flex items-start justify-between gap-3 px-4 py-3 ${dragOverId === pt.id && dragId && dragId !== pt.id ? "bg-muted" : ""}`}>
+            className={`flex items-start justify-between gap-3 rounded-sm border border-border bg-card p-4 ${dragOverId === pt.id && dragId && dragId !== pt.id ? "bg-muted" : ""}`}>
             {isProducer && points.length > 1 && <GripVertical className="mt-0.5 h-4 w-4 shrink-0 cursor-grab text-muted-foreground" />}
             <div className="min-w-0 flex-1 space-y-2">
               <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Location {i + 1}</div>
@@ -259,6 +261,7 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
               {pt.starts_at && (pt.latitude != null && pt.longitude != null
                 ? <DayWeather lat={pt.latitude} lon={pt.longitude} date={localYmd(pt.starts_at)} />
                 : <p className="text-xs text-muted-foreground">Add a map location to see the forecast for this day.</p>)}
+              {isProducer && <LocationRisks p={p} locationId={pt.id} hasCoords={pt.latitude != null && pt.longitude != null} />}
             </div>
             {isProducer && (
               <div className="flex shrink-0 items-center gap-2">
@@ -603,6 +606,8 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
   const rows = useRegister(p.id).data ?? [];
   const inv = useInvalidate();
   const [rating, setRating] = useState<{ crewId: string; name: string } | null>(null);
+  const [fitRole, setFitRole] = useState<string | null>(null);
+  const crewDirectory = useCrew().data ?? [];
   const lastByCrew = new Map<string, (typeof rows)[number]>();
   for (const r of rows) if (r.crew_id && !lastByCrew.has(r.crew_id)) lastByCrew.set(r.crew_id, r);
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -633,7 +638,10 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
         );
       })()}
       <CrewRoleStatus p={p} />
-      <Panel title={`${isActive ? "Members on Set" : "Confirmed Members"} (${members.length})`}>
+      {fitRole ? (
+        <FitCrewPanel role={fitRole} crew={crewDirectory} confirmedIds={new Set(members.map((m) => m.crew_id))} onClear={() => setFitRole(null)} />
+      ) : (
+      <Panel title={`${isActive ? "Crew on Set" : "Confirmed Crew"} (${members.length})`}>
         <table className="w-full text-sm">
           <thead className="text-left text-[11px] text-muted-foreground">
             <tr>
@@ -673,7 +681,10 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
                   {/* Only the production team rates crew — crew never rate anyone, including each other. */}
                   {isProducer && (
                     <td className="px-4">
-                      {m.user_id !== userId && <button onClick={() => setRating({ crewId: m.crew_id, name: m.name })} className="rounded-sm border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10">Rate me</button>}
+                      <div className="flex gap-2">
+                        <button onClick={() => setFitRole(m.role)} className="rounded-sm border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10">Find</button>
+                        {m.user_id !== userId && <button onClick={() => setRating({ crewId: m.crew_id, name: m.name })} className="rounded-sm border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10">Rate me</button>}
+                      </div>
                     </td>
                   )}
                 </tr>
@@ -682,8 +693,36 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
           </tbody>
         </table>
       </Panel>
+      )}
       {rating && <RateDialog {...rating} productionId={p.id} onClose={() => setRating(null)} />}
     </div>
+  );
+}
+
+function FitCrewPanel({ role, crew, confirmedIds, onClear }: { role: string; crew: Crew[]; confirmedIds: Set<string>; onClear: () => void }) {
+  const key = role.trim().toLowerCase();
+  const fits = crew.filter((c) => c.role.trim().toLowerCase() === key);
+  return (
+    <Panel title={`Crew who fit ${role} (${fits.length})`} right={<button onClick={onClear} className="text-xs font-semibold text-primary hover:underline">Back to crew list</button>}>
+      {fits.length === 0 ? (
+        <p className="p-4 text-sm text-muted-foreground">No crew on the register are listed as {role}.</p>
+      ) : (
+        <ul className="divide-y divide-border text-sm">
+          {fits.map((c) => (
+            <li key={c.id} className="flex items-center justify-between gap-3 px-4 py-3">
+              <div className="min-w-0">
+                <Link to="/crew/$id" params={{ id: c.id }} className="block truncate font-semibold hover:text-primary">{c.name}</Link>
+                <div className="truncate text-xs text-muted-foreground">{c.role} · {c.department} · {zar(c.dayRate)}/day</div>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                {confirmedIds.has(c.id) && <Badge>Confirmed</Badge>}
+                <Badge>{c.available ? "Available" : "Unavailable"}</Badge>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Panel>
   );
 }
 

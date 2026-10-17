@@ -1602,6 +1602,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          location_id: string | null
           production_id: string
           text: string
         }
@@ -1609,6 +1610,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          location_id?: string | null
           production_id: string
           text: string
         }
@@ -1616,10 +1618,18 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          location_id?: string | null
           production_id?: string
           text?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "production_risks_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "production_locations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "production_risks_production_id_fkey"
             columns: ["production_id"]
