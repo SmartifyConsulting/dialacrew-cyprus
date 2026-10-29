@@ -204,6 +204,7 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
 
   return (
     <Panel title="Calendar" right={<Link to="/calendar" className="text-xs font-semibold text-primary hover:underline">Open</Link>}>
+      <div className="flex flex-wrap items-center gap-2 px-3 pt-2 text-[10px] text-muted-foreground"><span className="rounded-sm bg-black px-1 py-0.5 font-semibold text-white">Recce</span>Recce day<span className="rounded-sm bg-purple-700 px-1 py-0.5 font-semibold text-white">Gear</span>Gear check</div>
       <div className="p-3">
         <div className="mb-1 grid grid-cols-7 text-center text-[10px] text-muted-foreground">
           {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <div key={i}>{d}</div>)}
