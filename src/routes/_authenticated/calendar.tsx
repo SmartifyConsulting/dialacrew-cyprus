@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { CheckSquare, ChevronLeft, ChevronRight, Square } from "lucide-react";
 import { Page, clientColor } from "@/components/AppShell";
 import { useRole, useSession } from "@/lib/auth";
 import { useBookings, useProductions } from "@/lib/db";
+import { supabase } from "@/integrations/supabase/client";
 import { useMyCrewId } from "@/lib/site";
 import { WEATHER_ICONS } from "@/lib/weather";
 import { forecastSummary, isoDay, useCalendarExtras } from "@/lib/calendar-extras";
@@ -33,6 +35,14 @@ function CalendarPage() {
   const myCrewId = useMyCrewId(isCrewOnly).data ?? null;
   const prods = useProductions().data ?? [];
   const bookings = useBookings().data ?? [];
+  const locationRecces = useQuery({
+    queryKey: ["calendar-location-recces"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("production_locations").select("id, production_id, recce_date, latitude, longitude").not("recce_date", "is", null);
+      if (error) throw error;
+      return data ?? [];
+    },
+  }).data ?? [];
   const [month, setMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [openTask, setOpenTask] = useState<string | null>(null);
 
@@ -41,6 +51,13 @@ function CalendarPage() {
   for (const p of prods) {
     const myBooking = isCrewOnly ? bookings.find((b) => b.productionId === p.id && b.crewId === myCrewId && b.status !== "cancelled") : undefined;
     if (isCrewOnly && !myBooking) continue;
+    for (const recce of locationRecces.filter((location) => location.production_id === p.id && location.recce_date)) {
+      const crew = bookings.filter((b) => b.productionId === p.id && b.status !== "cancelled").length;
+      byDay.set(recce.recce_date!, [...(byDay.get(recce.recce_date!) ?? []), {
+        id: `${p.id}-${recce.id}-recce`, productionId: p.id, name: `Recce · ${p.name}`, client: p.client, crew: isCrewOnly ? 0 : crew,
+        lat: recce.latitude ?? p.latitude ?? null, lon: recce.longitude ?? p.longitude ?? null,
+      }]);
+    }
     if (p.recceDate) {
       const k = p.recceDate;
       const crew = bookings.filter((b) => b.productionId === p.id && b.status !== "cancelled").length;
