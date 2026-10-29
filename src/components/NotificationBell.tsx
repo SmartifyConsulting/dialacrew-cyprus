@@ -47,6 +47,17 @@ export function NotificationBell({ userId, requireAcknowledgement = false }: { u
 
   return (
     <div className="relative">
+      {current && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
+        <section role="alertdialog" aria-modal="true" aria-labelledby="notification-title" className="w-full max-w-md rounded-lg border border-border bg-card p-6 text-card-foreground shadow-2xl">
+          <p className="mb-2 text-xs font-semibold uppercase text-primary">Crew notification — acknowledgement required</p>
+          <h2 id="notification-title" className="mb-3 text-xl font-bold">{current.title}</h2>
+          <p className="mb-4 whitespace-pre-wrap text-sm">{current.body}</p>
+          <p className="mb-4 text-xs text-muted-foreground">Sent {new Date(current.created_at).toLocaleString("en-ZA")}. Your acknowledgement is recorded in the audit trail.</p>
+          {ackError && <p role="alert" className="mb-3 text-sm text-destructive">{ackError}</p>}
+          <button disabled={ackBusy} onClick={acknowledge} className="w-full rounded-md bg-primary px-4 py-3 font-semibold text-primary-foreground disabled:opacity-50">{ackBusy ? "Recording..." : "OK, Acknowledge"}</button>
+          {pending.length > 1 && <p className="mt-3 text-center text-xs text-muted-foreground">{pending.length - 1} more awaiting acknowledgement</p>}
+        </section>
+      </div>}
       <button aria-label="Notifications" onClick={() => setOpen(!open)} className="relative grid h-9 w-9 place-items-center rounded-full hover:bg-primary-foreground/10">
         <Bell className="h-5 w-5" />
         {unread > 0 && <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">{unread}</span>}
