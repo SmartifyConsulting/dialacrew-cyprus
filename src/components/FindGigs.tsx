@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
-import { useClaimGig, useOpenGigs } from "@/lib/db";
+import { useOpenGigs } from "@/lib/db";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { JobTermsDialog } from "@/components/JobTermsDialog";
 import { zar } from "@/lib/demo-data";
 
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
@@ -12,7 +15,9 @@ export const gigCountry = (g: { address: string; location: string }) => ((g.addr
 
 export function FindGigsTab({ canClaim }: { canClaim: boolean }) {
   const gigs = useOpenGigs();
-  const claim = useClaimGig();
+  const qc = useQueryClient();
+  const [pendingGig, setPendingGig] = useState<{ id: string; role: string; name: string } | null>(null);
+  const [claimBusy, setClaimBusy] = useState(false);
   const [q, setQ] = useState("");
   const [near, setNear] = useState<{ lat: number; lng: number } | null>(null);
   const [radiusKm, setRadiusKm] = useState("100");
@@ -46,13 +51,21 @@ export function FindGigsTab({ canClaim }: { canClaim: boolean }) {
     return true;
   });
 
-  async function grab(id: string, role: string) {
-    try { await claim.mutateAsync(id); toast.success(`Grabbed — you're confirmed for ${role}`); }
-    catch (e) { toast.error(friendlyError(e)); }
+  async function grab() {
+    if (!pendingGig || claimBusy) return;
+    setClaimBusy(true);
+    const { error } = await supabase.rpc("claim_gig_with_terms", { p_booking_id: pendingGig.id, p_terms_version: "dialacrew-terms-2026-10" });
+    setClaimBusy(false);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success(`Terms accepted — you're confirmed for ${pendingGig.role}`);
+    setPendingGig(null);
+    void qc.invalidateQueries({ queryKey: ["open-gigs"] });
+    void qc.invalidateQueries({ queryKey: ["bookings"] });
   }
 
   return (
     <div className="space-y-4">
+      {pendingGig && <JobTermsDialog jobName={pendingGig.name} role={pendingGig.role} busy={claimBusy} onClose={() => setPendingGig(null)} onAccept={grab} />}
       <p className="text-sm text-muted-foreground">Open gigs aren't assigned to anyone specific yet — first to grab it gets it. Available anywhere in the world; filter by location below.</p>
       <div className="flex flex-wrap gap-2">
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search role, production, city, country…" className={`${input} min-w-56 flex-1`} />
@@ -78,7 +91,7 @@ export function FindGigsTab({ canClaim }: { canClaim: boolean }) {
                 {g.booking_date ? ` · ${g.booking_date}` : ""}{g.call_time ? ` · call ${g.call_time}` : ""} · {zar(g.crew_rate)}/day
               </div>
             </div>
-            {canClaim && <button onClick={() => grab(g.id, g.role)} disabled={claim.isPending} className={`${btn} disabled:opacity-60`}>Grab it</button>}
+            {canClaim && <button onClick={() => setPendingGig({ id: g.id, role: g.role, name: g.production_name })} disabled={claimBusy} className={`${btn} disabled:opacity-60`}>Grab it</button>}
           </li>
         ))}
       </ul>
