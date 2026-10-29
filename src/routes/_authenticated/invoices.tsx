@@ -25,7 +25,7 @@ function InvoicesPage() {
           <div className="min-w-0 flex-1"><div className="font-semibold">{i.invoice_number} · {i.productions?.name ?? "Production"}</div><div className="text-xs text-muted-foreground">{i.service_description} · {new Date(i.created_at).toLocaleDateString("en-ZA")}</div></div>
           <strong>{new Intl.NumberFormat("en-ZA", { style: "currency", currency: i.productions?.currency || "ZAR" }).format(i.total)}</strong>
           <Badge>{i.status || "unpaid"}</Badge>
-          <Link to="/productions/$id" params={{ id: i.production_id }} className="text-xs font-semibold text-primary underline">Production</Link>
+          <Link to="/invoices/$id" params={{ id: i.id }} className="text-xs font-semibold text-primary underline">View / Print</Link>
         </li>)}</ul>
       </section>
     </div>
