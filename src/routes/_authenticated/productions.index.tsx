@@ -155,7 +155,7 @@ function Productions() {
   const clients = clientsQuery.data ?? [];
   const [open, setOpen] = useState(!!openOnLoad);
   const [duplicating, setDuplicating] = useState(false);
-  const blankForm = { name: "", client: "", jobId: "", type: "Commercial", location: "", recceDate: "", startDate: "", endDate: "", budget: 0, description: "" };
+  const blankForm = { name: "", client: "", jobId: "", externalRef: "", type: "Commercial", location: "", recceDate: "", startDate: "", endDate: "", budget: 0, description: "" };
   const [f, setF] = useState(blankForm);
   const [editingId, setEditingId] = useState<string | null>(null); // editing an existing production
   const [draftId, setDraftId] = useState<string | null>(null); // autosaved draft while creating a new one
@@ -165,12 +165,11 @@ function Productions() {
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [search, setSearch] = useState("");
 
-  const filteredList = list.filter((p) => !search.trim() || (p.jobId ?? "").toLowerCase().includes(search.trim().toLowerCase()) || p.name.toLowerCase().includes(search.trim().toLowerCase()));
+  const filteredList = list.filter((p) => !search.trim() || (p.jobId ?? "").toLowerCase().includes(search.trim().toLowerCase()) || (p.externalRef ?? "").toLowerCase().includes(search.trim().toLowerCase()) || p.name.toLowerCase().includes(search.trim().toLowerCase()));
 
   // Shoot days is inclusive of both the start and end date.
   const days = f.startDate && f.endDate ? Math.max(1, Math.round((+new Date(f.endDate) - +new Date(f.startDate)) / 86400000) + 1) : 1;
   // Ignore the production being edited and the draft this form autosaved itself.
-  const jobIdTaken = (id: string) => list.some((p) => p.id !== editingId && p.id !== draftId && (p.jobId ?? "").trim().toLowerCase() === id.trim().toLowerCase());
 
   const resetForm = () => { setF(blankForm); setEditingId(null); setDraftId(null); setSaveState("idle"); setDuplicating(false); setCoverFile(null); setCoverPreview(null); setCropSource(null); };
   // A chosen picture is cropped first; the cropped square is what gets saved as the cover.
@@ -184,7 +183,7 @@ function Productions() {
   const closeModal = () => { setOpen(false); resetForm(); if (openOnLoad) navigate({ to: "/productions", search: {}, replace: true }); };
   const openNew = () => { resetForm(); setOpen(true); };
   const openEdit = (p: (typeof list)[number]) => {
-    setF({ name: p.name, client: p.client, jobId: p.jobId ?? "", type: p.type, location: p.location, recceDate: p.recceDate ?? "", startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget, description: p.summary ?? "" });
+    setF({ name: p.name, client: p.client, jobId: p.jobId ?? "", externalRef: p.externalRef ?? "", type: p.type, location: p.location, recceDate: p.recceDate ?? "", startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget, description: p.summary ?? "" });
     setEditingId(p.id);
     setDraftId(null);
     setSaveState("idle");
@@ -205,10 +204,10 @@ function Productions() {
   // unique Job ID before it will persist anything.
   useEffect(() => {
     if (!open || editingId) return;
-    if (!f.name.trim() || !f.client.trim() || !f.jobId.trim() || jobIdTaken(f.jobId)) return;
+    if (!f.name.trim() || !f.client.trim()) return;
     const t = setTimeout(async () => {
       setSaveState("saving");
-      const payload = { name: f.name, client: f.client, job_id: f.jobId.trim(), type: f.type, location: f.location, budget: f.budget, recce_date: f.recceDate || null, date: f.startDate || null, end_date: f.endDate || null, days, summary: f.description };
+      const payload = { name: f.name, client: f.client, external_ref: f.externalRef.trim() || null, type: f.type, location: f.location, budget: f.budget, recce_date: f.recceDate || null, date: f.startDate || null, end_date: f.endDate || null, days, summary: f.description };
       if (draftId) {
         const { error } = await supabase.from("productions").update(payload).eq("id", draftId);
         if (error) { toast.error(friendlyError(error)); return; }
@@ -239,12 +238,10 @@ function Productions() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!f.client.trim()) { toast.error("Client is required"); return; }
-    if (!f.jobId.trim()) { toast.error("Job ID is required"); return; }
     if (!f.name.trim()) { toast.error("Production name is required"); return; }
     if (!f.startDate || !f.endDate) { toast.error("Start and end date are required"); return; }
     if (f.endDate < f.startDate) { toast.error("End date can't be before the start date"); return; }
     if (!f.budget) { toast.error("Budget is required"); return; }
-    if (jobIdTaken(f.jobId)) { toast.error(`Job ID "${f.jobId}" is already in use — pick a different one.`); return; }
     const payload = { name: f.name, client: f.client, job_id: f.jobId.trim(), type: f.type, location: f.location, budget: f.budget, date: f.startDate || null, end_date: f.endDate || null, days, summary: f.description };
     const targetId = editingId ?? draftId;
     const { data, error } = targetId
@@ -292,9 +289,13 @@ function Productions() {
                 <p className="text-xs text-muted-foreground">Square picture shown beside the production name. You can change it later from the production site.</p>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
-                <div>
-                  <input className={field} placeholder="Job ID *" value={f.jobId} onChange={(e) => setF({ ...f, jobId: e.target.value })} />
-                  {f.jobId.trim() && jobIdTaken(f.jobId) && <p className="mt-1 text-xs text-destructive">That Job ID is already in use.</p>}
+                <div className="space-y-2">
+                  <label className="block text-xs text-muted-foreground">Job ID (automatically generated)
+                    <input className={`${field} mt-1 bg-muted`} readOnly value={editingId ? f.jobId : draftId ? list.find((p) => p.id === draftId)?.jobId ?? "Generated on save" : "Generated on save"} />
+                  </label>
+                  <label className="block text-xs text-muted-foreground">Ref Number (optional — e.g. Farmer's Wife)
+                    <input className={`${field} mt-1`} placeholder="External system reference" value={f.externalRef} onChange={(e) => setF({ ...f, externalRef: e.target.value })} />
+                  </label>
                 </div>
                 <ClientPicker clients={clients} value={f.client} onChange={(company) => setF({ ...f, client: company })} onClientsChanged={() => qc.invalidateQueries({ queryKey: ["clients"] })} />
                 <input className={field} placeholder="Production name *" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
