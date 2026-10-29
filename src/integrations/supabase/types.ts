@@ -684,6 +684,12 @@ export type Database = {
         }
         Relationships: []
       }
+      crew_invoice_settings: {
+        Row: { crew_id: string; business_name: string; business_address: string; tax_number: string; bank_details: string; logo_url: string; accent_color: string; footer_text: string; invoice_prefix: string; updated_at: string }
+        Insert: { crew_id: string; business_name?: string; business_address?: string; tax_number?: string; bank_details?: string; logo_url?: string; accent_color?: string; footer_text?: string; invoice_prefix?: string; updated_at?: string }
+        Update: { crew_id?: string; business_name?: string; business_address?: string; tax_number?: string; bank_details?: string; logo_url?: string; accent_color?: string; footer_text?: string; invoice_prefix?: string; updated_at?: string }
+        Relationships: []
+      }
       crew_members: {
         Row: {
           available: boolean
@@ -1102,6 +1108,8 @@ export type Database = {
       }
       invoices: {
         Row: {
+          issuer_snapshot: Json
+          service_description: string
           booking_id: string
           created_at: string
           crew_id: string
@@ -1136,6 +1144,8 @@ export type Database = {
           vat_rate?: number
         }
         Update: {
+          issuer_snapshot?: Json
+          service_description?: string
           booking_id?: string
           created_at?: string
           crew_id?: string
@@ -1965,6 +1975,8 @@ export type Database = {
       productions: {
         Row: {
           address: string
+          completed_at: string | null
+          completed_by: string | null
           budget: number
           client: string
           company_id: string | null
@@ -2001,6 +2013,8 @@ export type Database = {
         }
         Insert: {
           address?: string
+          completed_at?: string | null
+          completed_by?: string | null
           budget?: number
           client: string
           company_id?: string | null
@@ -2646,6 +2660,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      complete_production: { Args: { p_production_id: string }; Returns: undefined }
+
       acknowledge_notification: {
         Args: { p_notification_id: string }
         Returns: undefined
