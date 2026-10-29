@@ -34,7 +34,7 @@ type NavItem = { to: string; label: string; icon: LucideIcon };
 // One menu definition per role, used by both the top bar and the phone bottom bar.
 export const navByRole: Record<string, NavItem[]> = {
   producer: [
-    { to: "/dashboard", label: "Dashboard TEST", icon: Home },
+    { to: "/dashboard", label: "Dashboard", icon: Home },
     { to: "/calendar", label: "Calendar", icon: CalendarDays },
     { to: "/productions", label: "Productions", icon: Briefcase },
     { to: "/crew", label: "Crew", icon: Search },
@@ -49,7 +49,7 @@ export const navByRole: Record<string, NavItem[]> = {
   ],
   client: [{ to: "/profile", label: "My Profile", icon: User }],
   admin: [
-    { to: "/dashboard", label: "Dashboard TEST", icon: Home },
+    { to: "/dashboard", label: "Dashboard", icon: Home },
     { to: "/calendar", label: "Calendar", icon: CalendarDays },
     { to: "/productions", label: "Productions", icon: Briefcase },
     { to: "/crew", label: "Crew", icon: Search },
@@ -65,7 +65,7 @@ function BottomNav({ items }: { items: NavItem[] }) {
       <ul className="flex">
         {items.map((n) => (
           <li key={n.label} className="flex-1">
-            <Link to={n.to} className={`flex flex-col items-center gap-1 py-5 font-sans text-sm ${n.to === "/dashboard" ? "font-extrabold" : "font-medium"} text-nav-foreground/80`} activeProps={{ className: "!text-nav-foreground font-semibold" }}>
+            <Link to={n.to} className={`flex flex-col items-center gap-1 py-5 font-sans text-sm font-medium text-nav-foreground/80`} activeProps={{ className: "!text-nav-foreground font-semibold" }}>
               <n.icon className="h-8 w-8" />{n.label}
             </Link>
           </li>
@@ -102,7 +102,7 @@ export function TopNav() {
           <Link to="/dashboard" className="flex justify-center px-5 py-5"><img src={logo.url} alt="Book a Crew" className="h-[173px] w-auto" /></Link>
           <nav className="flex flex-1 flex-col gap-1 px-3">
             {items.map((n) => (
-              <Link key={n.label} to={n.to} className={`flex items-center gap-3 rounded-xl px-4 py-3 font-sans text-[15px] ${n.to === "/dashboard" ? "font-extrabold" : "font-medium"} text-nav-foreground/85 transition-colors hover:bg-nav-foreground/10 hover:text-nav-foreground`} activeProps={{ className: "bg-nav-foreground/15 !text-nav-foreground font-semibold" }}>
+              <Link key={n.label} to={n.to} className={`flex items-center gap-3 rounded-xl px-4 py-3 font-sans text-[15px] font-medium text-nav-foreground/85 transition-colors hover:bg-nav-foreground/10 hover:text-nav-foreground`} activeProps={{ className: "bg-nav-foreground/15 !text-nav-foreground font-semibold" }}>
                 <n.icon className="h-4 w-4" />{n.label}
               </Link>
             ))}
