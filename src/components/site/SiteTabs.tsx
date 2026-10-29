@@ -670,6 +670,8 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
 export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
   const inv = useInvalidate();
   const locationPoints = useLocationPoints(p.id).data ?? [];
+  const overviewBookings = useBookings().data ?? [];
+  const canSeeRecceAddress = isProducer || overviewBookings.some((booking) => booking.productionId === p.id && booking.crewId === myCrewId && ["confirmed", "in_progress", "awaiting_review", "payment_released", "completed"].includes(booking.status));
   const [f, setF] = useState({ address: p.address ?? "", summary: p.summary ?? "", latitude: p.latitude?.toString() ?? "", longitude: p.longitude?.toString() ?? "", geofence: String(p.geofenceM ?? 10) });
   const [posting, setPosting] = useState(false);
   const [editing, setEditing] = useState(() => !(p.address || p.latitude));
@@ -751,7 +753,14 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
 
       <Panel title="Recce Date">
         <div className="space-y-1 p-4">
-          <p className="font-semibold text-foreground">{p.recceDate ? new Date(`${p.recceDate}T00:00:00`).toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : "Not scheduled"}</p>
+          {p.recceDate && <p className="font-semibold text-foreground">Production recce · {dayLabel(`${p.recceDate}T00:00:00`)}</p>}
+          {locationPoints.filter((pt) => pt.recce_date).map((pt) => (
+            <div key={pt.id} className="py-1 text-sm">
+              <p className="font-semibold text-foreground">Shoot Day {locationPoints.findIndex((point) => point.id === pt.id) + 1} · {dayLabel(`${pt.recce_date}T00:00:00`)}</p>
+              <p className="text-xs text-muted-foreground">{canSeeRecceAddress ? pt.address || pt.label : pt.label || p.location}</p>
+            </div>
+          ))}
+          {!p.recceDate && !locationPoints.some((pt) => pt.recce_date) && <p className="font-semibold text-foreground">Not scheduled</p>
           {p.recceDate && (() => {
             const firstLocation = locationPoints[0];
             const lat = p.latitude ?? firstLocation?.latitude ?? null;
