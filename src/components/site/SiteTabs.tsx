@@ -829,6 +829,7 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
           })()}
         </div>
       </Panel>
+      <ProductionSchedule p={p} isProducer={isProducer} />
       <Panel title="Locations">
         <LocationPoints p={p} isProducer={isProducer} myCrewId={myCrewId} />
       </Panel>
@@ -1446,3 +1447,67 @@ export function CommercialsTab({ p, bookings, crewNames, requests }: Ctx & { boo
 }
 
 export const SiteIcons = { Users };
+
+
+/* ---------------- Production recce times + Gear Check (producer edits; site members see) ---------------- */
+type SchedField = "recce_start_time" | "recce_end_time" | "gear_pickup_date" | "gear_pickup_time" | "gear_dropoff_date" | "gear_dropoff_time";
+export function gearValid(pd: string | null, pt: string | null, dd: string | null, dt: string | null) {
+  if (!pd || !dd) return true;
+  if (dd < pd) return false;
+  return !(dd === pd && pt && dt && dt.slice(0, 5) <= pt.slice(0, 5));
+}
+function ProductionSchedule({ p, isProducer }: { p: Ctx["p"]; isProducer: boolean }) {
+  const inv = useInvalidate();
+  const cur = {
+    recce_start_time: p.recceStart ?? null, recce_end_time: p.recceEnd ?? null,
+    gear_pickup_date: p.gearPickupDate ?? null, gear_pickup_time: p.gearPickupTime ?? null,
+    gear_dropoff_date: p.gearDropoffDate ?? null, gear_dropoff_time: p.gearDropoffTime ?? null,
+  };
+  async function save(field: SchedField, value: string) {
+    const next = { ...cur, [field]: value || null };
+    if (!validRecceTimes(next.recce_start_time, next.recce_end_time)) { toast.error("Recce end time must be after the start time"); return; }
+    if (!gearValid(next.gear_pickup_date, next.gear_pickup_time, next.gear_dropoff_date, next.gear_dropoff_time)) { toast.error("Drop-off must be after pickup"); return; }
+    const { error } = await supabase.from("productions").update({ [field]: value || null }).eq("id", p.id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    inv(["productions"], ["production", p.id]);
+    toast.success("Saved");
+  }
+  const t = (v: string | null) => hhmm(v) ?? "";
+  const show = (d: string | null, tm: string | null) => d ? `${dayLabel(`${d}T00:00:00`)} · ${hhmm(tm) ?? "time TBC"}` : "Date TBC";
+  return (
+    <>
+      {isProducer && p.recceDate && (
+        <Panel title="Production Recce Times">
+          <div className="flex flex-wrap items-center gap-2 p-4 text-xs text-muted-foreground">
+            <input type="time" aria-label="Production recce start time" className={`${input} py-1 text-xs`} value={t(cur.recce_start_time)} onChange={(e) => save("recce_start_time", e.target.value)} />
+            <span>–</span>
+            <input type="time" aria-label="Production recce end time" className={`${input} py-1 text-xs`} value={t(cur.recce_end_time)} onChange={(e) => save("recce_end_time", e.target.value)} />
+            <span>{recceRange(cur.recce_start_time, cur.recce_end_time)}</span>
+          </div>
+        </Panel>
+      )}
+      <Panel title="Gear Check Date">
+        <div className="space-y-2 p-4 text-sm">
+          {isProducer ? (
+            <div className="grid gap-2 sm:grid-cols-2">
+              <fieldset className="space-y-1"><legend className="text-xs font-semibold text-foreground">Pickup</legend>
+                <input type="date" aria-label="Gear pickup date" className={`${input} w-full py-1 text-xs`} value={cur.gear_pickup_date ?? ""} onChange={(e) => save("gear_pickup_date", e.target.value)} />
+                <input type="time" aria-label="Gear pickup time" className={`${input} w-full py-1 text-xs`} value={t(cur.gear_pickup_time)} onChange={(e) => save("gear_pickup_time", e.target.value)} />
+              </fieldset>
+              <fieldset className="space-y-1"><legend className="text-xs font-semibold text-foreground">Drop-off</legend>
+                <input type="date" aria-label="Gear drop-off date" className={`${input} w-full py-1 text-xs`} value={cur.gear_dropoff_date ?? ""} onChange={(e) => save("gear_dropoff_date", e.target.value)} />
+                <input type="time" aria-label="Gear drop-off time" className={`${input} w-full py-1 text-xs`} value={t(cur.gear_dropoff_time)} onChange={(e) => save("gear_dropoff_time", e.target.value)} />
+              </fieldset>
+            </div>
+          ) : null}
+          {cur.gear_pickup_date ? (
+            <div className="text-xs">
+              <p className="font-semibold text-foreground">Pickup · {show(cur.gear_pickup_date, cur.gear_pickup_time)}</p>
+              <p className="font-semibold text-foreground">Drop-off · {cur.gear_dropoff_date ? show(cur.gear_dropoff_date, cur.gear_dropoff_time) : "Date TBC"}</p>
+            </div>
+          ) : <p className="font-semibold text-foreground">Not scheduled</p>}
+        </div>
+      </Panel>
+    </>
+  );
+}
