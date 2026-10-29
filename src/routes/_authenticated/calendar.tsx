@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/calendar")({
 
 const iso = isoDay;
 
-type DayItem = { id: string; productionId: string; name: string; client: string; location: string; crew: number; lat: number | null; lon: number | null };
+type DayItem = { id: string; productionId: string; name: string; client: string; location: string; crew: number; lat: number | null; lon: number | null; isRecce?: boolean };
 
 function CalendarPage() {
   const { session } = useSession();
@@ -82,19 +82,22 @@ function CalendarPage() {
       const exact = isCrewOnly ? confirmedAddressByLocationId.get(location.id) : producerAddressByLocationId.get(location.id);
       return canSeeExactAddress ? exact || p.address || location.label || p.location || "Location TBC" : location.label || p.location || "Location TBC";
     };
+    const recceDates = new Set<string>();
     for (const recce of locations.filter((location) => location.production_id === p.id && location.recce_date)) {
+      if (recceDates.has(recce.recce_date!)) continue;
+      recceDates.add(recce.recce_date!);
       const crew = bookings.filter((b) => b.productionId === p.id && b.status !== "cancelled").length;
       byDay.set(recce.recce_date!, [...(byDay.get(recce.recce_date!) ?? []), {
-        id: `${p.id}-${recce.id}-recce`, productionId: p.id, name: `Recce · ${p.name} · ${recce.label || "Location"}`, client: p.client, location: locationAddress(recce), crew: isCrewOnly ? 0 : crew,
-        lat: recce.latitude ?? p.latitude ?? null, lon: recce.longitude ?? p.longitude ?? null,
+        id: `${p.id}-${recce.id}-recce`, productionId: p.id, name: `Recce · ${p.name}`, client: p.client, location: locationAddress(recce), crew: isCrewOnly ? 0 : crew,
+        lat: recce.latitude ?? p.latitude ?? null, lon: recce.longitude ?? p.longitude ?? null, isRecce: true,
       }]);
     }
-    if (p.recceDate) {
+    if (p.recceDate && !recceDates.has(p.recceDate)) {
       const k = p.recceDate;
       const crew = bookings.filter((b) => b.productionId === p.id && b.status !== "cancelled").length;
       byDay.set(k, [...(byDay.get(k) ?? []), {
         id: `${p.id}-recce`, productionId: p.id, name: `Recce · ${p.name}`, client: p.client, location: canSeeExactAddress ? p.address || p.location || "Location TBC" : p.location || "Location TBC", crew: isCrewOnly ? 0 : crew,
-        lat: p.latitude ?? null, lon: p.longitude ?? null,
+        lat: p.latitude ?? null, lon: p.longitude ?? null, isRecce: true,
       }]);
     }
     if (!p.date) continue;
@@ -132,6 +135,7 @@ function CalendarPage() {
         <h2 className="min-w-48 text-center text-xl">{month.toLocaleDateString("en-ZA", { month: "long", year: "numeric" })}</h2>
         <button aria-label="Next month" onClick={() => shift(1)} className="rounded-xl border border-border bg-card p-2"><ChevronRight className="h-4 w-4" /></button>
       </div>
+      <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground"><span className="inline-block rounded-md bg-black px-2 py-1 font-semibold text-white">Recce</span><span>Recce day</span></div>
       <div className="grid grid-cols-7 gap-px overflow-hidden rounded-xl border border-border bg-border">
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
           <div key={d} className="bg-muted px-2 py-2 text-center text-xs font-medium text-muted-foreground">{d}</div>
@@ -151,7 +155,7 @@ function CalendarPage() {
                 </p>
               )}
               {items.map((it) => (
-                <Link key={it.id} to="/productions/$id" params={{ id: it.productionId }} title={`${it.name} · ${it.location}`} className={`mb-1 block rounded-xl px-1.5 py-0.5 text-xs font-medium hover:opacity-90 ${clientColor(it.client)}`}>
+                <Link key={it.id} to="/productions/$id" params={{ id: it.productionId }} title={`${it.name} · ${it.location}`} className={`mb-1 block rounded-xl px-1.5 py-0.5 text-xs font-medium hover:opacity-90 ${it.isRecce ? "bg-black text-white" : clientColor(it.client)}`}>
                   <span className="block truncate">{it.name}{it.crew ? ` · ${it.crew} crew` : ""}</span>
                   {it.location && <span className="block truncate text-[10px] font-normal opacity-90">{it.location}</span>}
                 </Link>
