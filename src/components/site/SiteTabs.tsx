@@ -297,7 +297,26 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
                   <div className="text-base font-bold text-foreground">Shoot Day {i + 1}</div>
                   <div className="text-sm font-semibold text-foreground">{pt.starts_at ? dayLabel(pt.starts_at) : "Date TBC"}</div>
                   <div className="text-sm text-foreground">{pt.starts_at ? timeRange(pt.starts_at, pt.ends_at) : "Time TBC"}</div>
-                  {pt.recce_date && <div className="mt-1 text-xs font-semibold text-foreground">Recce · {dayLabel(`${pt.recce_date}T00:00:00`)}</div>}
+                  {isProducer && (
+                    <label className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <span className="font-semibold text-foreground">Recce date</span>
+                      <input
+                        type="date"
+                        aria-label={`Recce date for Shoot Day ${i + 1}`}
+                        className={`${input} w-auto min-w-0 py-1`}
+                        value={pt.recce_date ?? ""}
+                        onChange={async (e) => {
+                          const recceDate = e.target.value || null;
+                          const { error } = await supabase.from("production_locations").update({ recce_date: recceDate }).eq("id", pt.id);
+                          if (error) { toast.error(friendlyError(error)); return; }
+                          inv(["location-points", p.id]);
+                          inv(["calendar-locations"]);
+                          inv(["dashboard-location-recces"]);
+                          toast.success(recceDate ? "Recce date saved" : "Recce date cleared");
+                        }}
+                      />
+                    </label>
+                  )}
                 </div>
               </div>
               {canSeeExactAddress ? (
