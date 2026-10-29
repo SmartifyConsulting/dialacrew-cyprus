@@ -65,6 +65,9 @@ export function AuditTab({ p }: { p: { id: string } }) {
       for (const t of tasks.data ?? []) out.push({ id: `task-${t.id}`, at: t.created_at, text: `Task added: ${t.title}` });
       const completion = await supabase.from("productions").select("completed_at, completed_by").eq("id", p.id).maybeSingle();
       if (completion.data?.completed_at) out.push({ id: `completion-${p.id}`, at: completion.data.completed_at, actor: completion.data.completed_by ?? "Producer", type: "Production completion", text: `${completion.data.profiles?.full_name ?? "Producer"} completed and locked the production` });
+      const termsAccepted = await supabase.from("booking_terms_acceptances").select("id, booking_id, accepted_by, terms_version, accepted_at").eq("production_id", p.id);
+      if (termsAccepted.error) throw termsAccepted.error;
+      for (const a of termsAccepted.data ?? []) out.push({ id: `terms-${a.id}`, at: a.accepted_at, actor: a.accepted_by, type: "Terms accepted", text: `Crew member accepted job terms`, detail: `Booking ${a.booking_id} · Version ${a.terms_version} · User ${a.accepted_by}` });
       const acknowledgements = await supabase.from("notification_acknowledgement_audit").select("id, actor_name, activity_type, notification_title, occurred_at").eq("production_id", p.id);
       if (acknowledgements.error) throw acknowledgements.error;
       for (const a of acknowledgements.data ?? []) out.push({ id: `ack-${a.id}`, at: a.occurred_at, actor: a.actor_name, type: a.activity_type, text: `${a.actor_name} acknowledged notification`, detail: a.notification_title });
