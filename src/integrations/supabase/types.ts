@@ -1760,6 +1760,7 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           production_id: string
+          recce_date: string | null
           sort_order: number
           starts_at: string | null
         }
@@ -1772,6 +1773,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           production_id: string
+          recce_date?: string | null
           sort_order?: number
           starts_at?: string | null
         }
@@ -1784,6 +1786,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           production_id?: string
+          recce_date?: string | null
           sort_order?: number
           starts_at?: string | null
         }
@@ -1907,6 +1910,7 @@ export type Database = {
           name: string
           post_rules: string
           post_rules_hidden: boolean
+          recce_date: string | null
           secured_funds: number
           status: string
           summary: string
@@ -1935,6 +1939,7 @@ export type Database = {
           name: string
           post_rules?: string
           post_rules_hidden?: boolean
+          recce_date?: string | null
           secured_funds?: number
           status?: string
           summary?: string
@@ -1963,6 +1968,7 @@ export type Database = {
           name?: string
           post_rules?: string
           post_rules_hidden?: boolean
+          recce_date?: string | null
           secured_funds?: number
           status?: string
           summary?: string
