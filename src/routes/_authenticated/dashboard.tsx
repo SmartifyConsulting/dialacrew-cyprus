@@ -160,7 +160,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 const isoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-type MiniCalDot = { id: string; bg: string; name: string; location: string; time: string };
+type MiniCalItem = { id: string; color: string; client: string; name: string; location: string; time: string };
 
 // Popup for the calendar's weather, dots and task icon: shows on hover, and on tap/keyboard focus for touch screens.
 // `align` keeps it on screen for the grid's left and right columns.
@@ -178,7 +178,7 @@ function CalPop({ label, align, trigger, children }: { label: string; align: "le
 // task icon when tasks are due — a quick-glance version of the full /calendar page, not a replacement for it.
 function MiniCalendar({ productions, bookings }: { productions: Production[]; bookings: Booking[] }) {
   const today = new Date();
-  const byDay = new Map<string, MiniCalDot[]>();
+  const byDay = new Map<string, MiniCalItem[]>();
   const shoots = new Map<string, DayShoot[]>();
   for (const p of productions) {
     if (!p.date) continue;
@@ -187,11 +187,11 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
       const d = new Date(start); d.setDate(d.getDate() + i);
       const k = isoDate(d);
       const callTimes = bookings.filter((b) => b.productionId === p.id && b.bookingDate === k && b.callTime).map((b) => b.callTime!).sort();
-      const dot: MiniCalDot = {
-        id: `${p.id}-${k}`, bg: clientColor(p.client).split(" ")[0]!, name: p.name,
+      const item: MiniCalItem = {
+        id: `${p.id}-${k}`, color: clientColor(p.client), client: p.client, name: p.name,
         location: p.location || p.address || "Location TBC", time: callTimes[0] ? callTimes[0].slice(0, 5) : "Time TBC",
       };
-      byDay.set(k, [...(byDay.get(k) ?? []), dot]);
+      byDay.set(k, [...(byDay.get(k) ?? []), item]);
       shoots.set(k, [...(shoots.get(k) ?? []), { id: p.id, lat: p.latitude ?? null, lon: p.longitude ?? null }]);
     }
   }
@@ -214,7 +214,7 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
         <div className="grid grid-cols-7 gap-1">
           {cells.map((d, i) => {
             const key = d ? isoDate(d) : "";
-            const dots = d ? byDay.get(key) ?? [] : [];
+            const items = d ? byDay.get(key) ?? [] : [];
             const weather = d ? forecastFor(key) : null;
             const dayTasks = d ? tasksByDay.get(key) ?? [] : [];
             const align = i % 7 < 2 ? "left" : i % 7 > 4 ? "right" : "center";
@@ -227,11 +227,11 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
                     {forecastSummary(weather)}
                   </CalPop>
                 )}
-                <span className="flex h-3.5 items-center gap-1">
-                  {dots.slice(0, 3).map((dot) => (
-                    <CalPop key={dot.id} label={`${dot.name} · ${dot.location} · ${dot.time}`} align={align}
-                      trigger={<span className={`block h-2.5 w-2.5 rounded-full ${dot.bg}`} />}>
-                      {dot.name} · {dot.location} · {dot.time}
+                <span className="flex min-h-3.5 max-w-full flex-wrap items-center justify-center gap-0.5">
+                  {items.slice(0, 3).map((item) => (
+                    <CalPop key={item.id} label={`${item.client} · ${item.name} · ${item.location} · ${item.time}`} align={align}
+                      trigger={<span className={`max-w-full truncate rounded-sm px-1 py-0.5 text-[9px] font-semibold leading-none ${item.color}`}>{item.client}</span>}>
+                      {item.client} · {item.name} · {item.location} · {item.time}
                     </CalPop>
                   ))}
                   {dayTasks.length > 0 && (
