@@ -178,9 +178,26 @@ function CalPop({ label, align, trigger, children }: { label: string; align: "le
 // task icon when tasks are due — a quick-glance version of the full /calendar page, not a replacement for it.
 function MiniCalendar({ productions, bookings }: { productions: Production[]; bookings: Booking[] }) {
   const today = new Date();
+  const locationRecces = useQuery({
+    queryKey: ["dashboard-location-recces"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("production_locations").select("id, production_id, recce_date, latitude, longitude").not("recce_date", "is", null);
+      if (error) throw error;
+      return data ?? [];
+    },
+  }).data ?? [];
   const byDay = new Map<string, MiniCalItem[]>();
   const shoots = new Map<string, DayShoot[]>();
   for (const p of productions) {
+    for (const recce of locationRecces.filter((location) => location.production_id === p.id && location.recce_date)) {
+      const k = recce.recce_date!;
+      const item: MiniCalItem = {
+        id: `${p.id}-${recce.id}-recce`, color: clientColor(p.client), client: p.client, name: `Recce · ${p.name}`,
+        location: p.location || p.address || "Location TBC", time: "Recce",
+      };
+      byDay.set(k, [...(byDay.get(k) ?? []), item]);
+      shoots.set(k, [...(shoots.get(k) ?? []), { id: p.id, lat: recce.latitude ?? p.latitude ?? null, lon: recce.longitude ?? p.longitude ?? null }]);
+    }
     if (p.recceDate) {
       const k = p.recceDate;
       const item: MiniCalItem = {
