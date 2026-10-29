@@ -26,7 +26,21 @@ export function NotificationBell({ userId, requireAcknowledgement = false }: { u
   const pending = list.filter((n) => !n.acknowledged_at);
   const unread = requireAcknowledgement ? pending.length : list.filter((n) => !n.read).length;
 
+  const [ackBusy, setAckBusy] = useState(false);
+  const [ackError, setAckError] = useState("");
+  const current = requireAcknowledgement ? pending[0] : undefined;
+  async function acknowledge() {
+    if (!current || ackBusy) return;
+    setAckBusy(true);
+    setAckError("");
+    const { error } = await supabase.rpc("acknowledge_notification", { p_notification_id: current.id });
+    if (error) setAckError(error.message);
+    else await qc.invalidateQueries({ queryKey: ["notifications", userId] });
+    setAckBusy(false);
+  }
+
   async function markAll() {
+    if (requireAcknowledgement) return;
     await supabase.from("notifications").update({ read: true }).eq("user_id", userId).eq("read", false);
     qc.invalidateQueries({ queryKey: ["notifications", userId] });
   }
@@ -41,7 +55,7 @@ export function NotificationBell({ userId, requireAcknowledgement = false }: { u
         <div className="absolute right-0 top-11 z-40 w-80 rounded-sm border border-border bg-card text-card-foreground shadow-lg">
           <div className="flex items-center justify-between border-b border-border px-3 py-2 text-xs">
             <span className="text-sm font-bold text-primary">Notifications</span>
-            {unread > 0 && <button onClick={markAll} className="text-muted-foreground hover:text-foreground">Mark all read</button>}
+            {unread > 0 && !requireAcknowledgement && <button onClick={markAll} className="text-muted-foreground hover:text-foreground">Mark all read</button>}
           </div>
           <div className="max-h-96 overflow-auto">
             {list.length === 0 && <p className="p-4 text-sm text-muted-foreground">Nothing yet.</p>}
