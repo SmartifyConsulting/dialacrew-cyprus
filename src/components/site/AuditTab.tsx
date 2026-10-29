@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Panel } from "@/components/AppShell";
 import { useLocationPoints, useSiteMembers } from "@/lib/site";
 
-type Event = { id: string; at: string; text: string; detail?: string | undefined };
+type Event = { id: string; at: string; text: string; detail?: string | undefined; actor?: string; type?: string };
 
 const dayKey = (iso: string) => {
   const d = new Date(iso);
@@ -25,6 +26,9 @@ function locationFor(at: number, locations: { label: string; starts_at: string |
 }
 
 export function AuditTab({ p }: { p: { id: string } }) {
+  const [search, setSearch] = useState("");
+  const [filterDate, setFilterDate] = useState("");
+  const [filterType, setFilterType] = useState("");
   const members = useSiteMembers(p.id).data ?? [];
   const locations = useLocationPoints(p.id).data ?? [];
   const nameOf = (crewId: string | null) => members.find((m) => m.crew_id === crewId)?.name ?? "Crew member";
@@ -59,7 +63,10 @@ export function AuditTab({ p }: { p: { id: string } }) {
       for (const ph of photos.data ?? []) out.push({ id: `photo-${ph.id}`, at: ph.created_at, text: "Photo uploaded" });
       const tasks = await supabase.from("site_tasks").select("id, title, created_at").eq("production_id", p.id);
       for (const t of tasks.data ?? []) out.push({ id: `task-${t.id}`, at: t.created_at, text: `Task added: ${t.title}` });
-      return out.sort((a, b) => a.at.localeCompare(b.at));
+      const acknowledgements = await supabase.from("notification_acknowledgement_audit").select("id, actor_name, activity_type, notification_title, occurred_at").eq("production_id", p.id);
+      if (acknowledgements.error) throw acknowledgements.error;
+      for (const a of acknowledgements.data ?? []) out.push({ id: `ack-${a.id}`, at: a.occurred_at, actor: a.actor_name, type: a.activity_type, text: `${a.actor_name} acknowledged notification`, detail: a.notification_title });
+      return out.sort((a, b) => b.at.localeCompare(a.at));
     },
   }).data ?? [];
 
