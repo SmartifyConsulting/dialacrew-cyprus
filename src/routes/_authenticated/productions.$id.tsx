@@ -95,7 +95,7 @@ function ProductionSite() {
             <ChevronLeft className="h-4 w-4" /> Collapse
           </button>
           {myCrewId && <CrewOvertimePanel productionId={p.id} crewId={myCrewId} rate={rates[myCrewId] ?? 0} date={p.date || null} />}
-          <OverviewTab {...ctx} />
+          <fieldset disabled={closed} className="min-w-0"><OverviewTab {...ctx} /></fieldset>
           {isProducer && tab === "Find Crew" && <EquipmentAvailability p={p} />}
         </aside>
         <section className="flex min-w-0 flex-col">
@@ -105,7 +105,7 @@ function ProductionSite() {
                 className={`whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-semibold ${tab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>{t}</button>
             ))}
           </nav>
-          <div className="w-full [&>*]:w-full">
+          <fieldset disabled={closed} className="min-w-0 w-full [&>*]:w-full">
           {tab === "Posts" && <PostsTab {...ctx} />}
           {tab === "Crew" && <div className="space-y-5"><MembersList {...ctx} /><RegisterTab {...ctx} /></div>}
           {tab === "Checklists" && <ChecklistsPanel p={p} isProducer={isProducer} />}
@@ -116,7 +116,7 @@ function ProductionSite() {
           {tab === "Budget" && isProducer && <CommercialsTab {...ctx} bookings={bookings} crewNames={crewNames} requests={requests} />}
           {tab === "Find Crew" && isProducer && <ScenarioPlanner p={p} />}
           {tab === "Review" && isProducer && <RetroTab p={p} />}
-          </div>
+          </fieldset>
         </section>
       </div>
     </Page>
