@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-export function NotificationBell({ userId }: { userId: string }) {
+export function NotificationBell({ userId, requireAcknowledgement = false }: { userId: string; requireAcknowledgement?: boolean }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const q = useQuery({
@@ -23,7 +23,8 @@ export function NotificationBell({ userId }: { userId: string }) {
     return () => { supabase.removeChannel(ch); };
   }, [userId, qc]);
   const list = q.data ?? [];
-  const unread = list.filter((n) => !n.read).length;
+  const pending = list.filter((n) => !n.acknowledged_at);
+  const unread = requireAcknowledgement ? pending.length : list.filter((n) => !n.read).length;
 
   async function markAll() {
     await supabase.from("notifications").update({ read: true }).eq("user_id", userId).eq("read", false);
