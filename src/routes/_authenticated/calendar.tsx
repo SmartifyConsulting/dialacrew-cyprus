@@ -1,3 +1,4 @@
+import { groupRecces, recceOverlaps, recceRange, recceTooltip } from "@/lib/recce";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -26,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/calendar")({
 
 const iso = isoDay;
 
-type DayItem = { id: string; productionId: string; name: string; client: string; location: string; crew: number; lat: number | null; lon: number | null; isRecce?: boolean };
+type DayItem = { id: string; productionId: string; name: string; client: string; location: string; crew: number; lat: number | null; lon: number | null; isRecce?: boolean; start?: string | null; end?: string | null; time?: string; details?: string };
 
 function CalendarPage() {
   const { session } = useSession();
@@ -38,11 +39,11 @@ function CalendarPage() {
   const confirmedProductionIds = new Set(bookings
     .filter((booking) => booking.crewId === myCrewId && ["confirmed", "in_progress", "awaiting_review", "payment_released", "completed"].includes(booking.status))
     .map((booking) => booking.productionId));
-  const locationFields = "id, production_id, label, recce_date, starts_at, latitude, longitude" as const;
+  const locationFields = "id, production_id, label, recce_date, recce_start_time, recce_end_time, starts_at, latitude, longitude, sort_order" as const;
   const locations = useQuery({
     queryKey: ["calendar-locations", isCrewOnly],
     queryFn: async () => {
-      const { data, error } = await supabase.from("production_locations").select(locationFields);
+      const { data, error } = await supabase.from("production_locations").select(locationFields).order("sort_order");
       if (error) throw error;
       return data ?? [];
     },
@@ -83,13 +84,17 @@ function CalendarPage() {
       return canSeeExactAddress ? exact || p.address || location.label || p.location || "Location TBC" : location.label || p.location || "Location TBC";
     };
     const recceDates = new Set<string>();
-    for (const recce of locations.filter((location) => location.production_id === p.id && location.recce_date)) {
-      if (recceDates.has(recce.recce_date!)) continue;
-      recceDates.add(recce.recce_date!);
+    // One recce item per production per date, spanning earliest start to latest end across its locations.
+    for (const g of groupRecces(locations.filter((location) => location.production_id === p.id))) {
+      recceDates.add(g.date);
+      const first = g.locations[0]!.loc;
       const crew = bookings.filter((b) => b.productionId === p.id && b.status !== "cancelled").length;
-      byDay.set(recce.recce_date!, [...(byDay.get(recce.recce_date!) ?? []), {
-        id: `${p.id}-${recce.id}-recce`, productionId: p.id, name: `Recce · ${p.name}`, client: p.client, location: locationAddress(recce), crew: isCrewOnly ? 0 : crew,
-        lat: recce.latitude ?? p.latitude ?? null, lon: recce.longitude ?? p.longitude ?? null, isRecce: true,
+      byDay.set(g.date, [...(byDay.get(g.date) ?? []), {
+        id: `${p.id}-${g.date}-recce`, productionId: p.id, name: `Recce · ${p.name}`, client: p.client,
+        location: g.locations.length > 1 ? `${g.locations.length} locations` : locationAddress(first as (typeof locations)[number]), crew: isCrewOnly ? 0 : crew,
+        lat: first.latitude ?? p.latitude ?? null, lon: first.longitude ?? p.longitude ?? null, isRecce: true,
+        start: g.start, end: g.end, time: recceRange(g.start, g.end),
+        details: recceTooltip(g, (l) => locationAddress(l as (typeof locations)[number])),
       }]);
     }
     if (p.recceDate && !recceDates.has(p.recceDate)) {
@@ -154,12 +159,16 @@ function CalendarPage() {
                   {weather.max != null && weather.min != null ? `${Math.round(weather.min)}–${Math.round(weather.max)}°` : ""}
                 </p>
               )}
-              {items.map((it) => (
-                <Link key={it.id} to="/productions/$id" params={{ id: it.productionId }} title={`${it.name} · ${it.location}`} className={`mb-1 block rounded-xl px-1.5 py-0.5 text-xs font-medium hover:opacity-90 ${it.isRecce ? "bg-black text-white" : clientColor(it.client)}`}>
+              {items.map((it) => {
+                const clash = it.isRecce && items.some((o) => o !== it && o.isRecce && o.productionId !== it.productionId && recceOverlaps({ date: key, start: it.start ?? null, end: it.end ?? null }, { date: key, start: o.start ?? null, end: o.end ?? null }));
+                return (
+                <Link key={it.id} to="/productions/$id" params={{ id: it.productionId }} title={`${it.name} · ${it.time ? `${it.time} · ` : ""}${it.location}${it.details ? `\n${it.details}` : ""}${clash ? "\nOverlaps another recce" : ""}`} className={`mb-1 block rounded-xl px-1.5 py-0.5 text-xs font-medium hover:opacity-90 ${it.isRecce ? "bg-black text-white" : clientColor(it.client)}`}>
                   <span className="block truncate">{it.name}{it.crew ? ` · ${it.crew} crew` : ""}</span>
+                  {it.isRecce && it.time && <span className="block truncate text-[10px] font-semibold">{it.time}{clash ? " · overlap" : ""}</span>}
                   {it.location && <span className="block truncate text-[10px] font-normal opacity-90">{it.location}</span>}
                 </Link>
-              ))}
+                );
+              })}
               {dayTasks.length > 0 && (
                 <div className="mt-1 flex flex-wrap gap-1">
                   {dayTasks.map((t) => (

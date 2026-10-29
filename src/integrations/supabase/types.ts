@@ -1761,6 +1761,8 @@ export type Database = {
           longitude: number | null
           production_id: string
           recce_date: string | null
+          recce_end_time: string | null
+          recce_start_time: string | null
           sort_order: number
           starts_at: string | null
         }
@@ -1774,6 +1776,8 @@ export type Database = {
           longitude?: number | null
           production_id: string
           recce_date?: string | null
+          recce_end_time?: string | null
+          recce_start_time?: string | null
           sort_order?: number
           starts_at?: string | null
         }
@@ -1787,6 +1791,8 @@ export type Database = {
           longitude?: number | null
           production_id?: string
           recce_date?: string | null
+          recce_end_time?: string | null
+          recce_start_time?: string | null
           sort_order?: number
           starts_at?: string | null
         }

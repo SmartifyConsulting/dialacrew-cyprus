@@ -1,3 +1,4 @@
+import { hhmm, recceRange, validRecceTimes } from "@/lib/recce";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -133,7 +134,7 @@ function FileLink({ path, name }: { path: string; name: string }) {
 }
 
 /* ---------------- Location points (multi-stop schedule) — lives inside Site information ---------------- */
-const blankLocationForm = { label: "", address: "", latitude: "", longitude: "", recceDate: "", startsAt: "", endsAt: "" };
+const blankLocationForm = { label: "", address: "", latitude: "", longitude: "", recceDate: "", recceStart: "", recceEnd: "", startsAt: "", endsAt: "" };
 const toLocalInput = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(0, 16) : "");
 const dayLabel = (iso: string) => new Date(iso).toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
 const clockLabel = (iso: string) => new Date(iso).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" });
@@ -215,23 +216,36 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
     setEditingId(null);
     setAdding(true);
   }
-  function startEdit(pt: { id: string; label: string; address: string; latitude: number | null; longitude: number | null; recce_date: string | null; starts_at: string | null; ends_at: string | null }) {
+  function startEdit(pt: { id: string; label: string; address: string; latitude: number | null; longitude: number | null; recce_date: string | null; recce_start_time: string | null; recce_end_time: string | null; starts_at: string | null; ends_at: string | null }) {
     setLf({
       label: pt.label, address: pt.address ?? "", latitude: pt.latitude?.toString() ?? "", longitude: pt.longitude?.toString() ?? "",
-      recceDate: pt.recce_date ?? "", startsAt: toLocalInput(pt.starts_at), endsAt: toLocalInput(pt.ends_at),
+      recceDate: pt.recce_date ?? "", recceStart: hhmm(pt.recce_start_time) ?? "", recceEnd: hhmm(pt.recce_end_time) ?? "",
+      startsAt: toLocalInput(pt.starts_at), endsAt: toLocalInput(pt.ends_at),
     });
     setEditingId(pt.id);
     setAdding(true);
   }
   function cancelForm() { setAdding(false); setEditingId(null); setLf(blankLocationForm); }
 
+  async function saveRecce(id: string, patch: { recce_date?: string | null; recce_start_time?: string | null; recce_end_time?: string | null }, msg: string, start?: string | null, end?: string | null) {
+    if (!validRecceTimes(start, end)) { toast.error("Recce end time must be after the start time"); return; }
+    const { error } = await supabase.from("production_locations").update(patch).eq("id", id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    inv(["location-points", p.id]);
+    inv(["calendar-locations"]);
+    inv(["dashboard-location-recces"]);
+    toast.success(msg);
+  }
+
   async function savePoint() {
     if (!lf.address.trim()) { toast.error("Pick the address from the list so the location gets its suburb and city"); return; }
+    if (!validRecceTimes(lf.recceStart, lf.recceEnd)) { toast.error("Recce end time must be after the start time"); return; }
     setBusy(true);
     const payload = {
       label: lf.label.trim() || lf.address.split(",").slice(0, 2).join(",").trim(), address: lf.address.trim(),
       latitude: lf.latitude ? Number(lf.latitude) : null, longitude: lf.longitude ? Number(lf.longitude) : null,
-      recce_date: lf.recceDate || null, starts_at: lf.startsAt ? new Date(lf.startsAt).toISOString() : null,
+      recce_date: lf.recceDate || null, recce_start_time: lf.recceStart || null, recce_end_time: lf.recceEnd || null,
+      starts_at: lf.startsAt ? new Date(lf.startsAt).toISOString() : null,
       ends_at: lf.endsAt ? new Date(lf.endsAt).toISOString() : null,
     };
     const { error } = editingId
@@ -298,24 +312,23 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
                   <div className="text-sm font-semibold text-foreground">{pt.starts_at ? dayLabel(pt.starts_at) : "Date TBC"}</div>
                   <div className="text-xs text-muted-foreground">{pt.starts_at ? timeRange(pt.starts_at, pt.ends_at) : "Time TBC"}</div>
                   {isProducer && (
-                    <label className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                       <span className="font-semibold text-foreground">Recce date</span>
                       <input
                         type="date"
                         aria-label={`Recce date for Shoot Day ${i + 1}`}
                         className={`${input} max-w-full min-w-0 py-1 text-xs`}
                         value={pt.recce_date ?? ""}
-                        onChange={async (e) => {
-                          const recceDate = e.target.value || null;
-                          const { error } = await supabase.from("production_locations").update({ recce_date: recceDate }).eq("id", pt.id);
-                          if (error) { toast.error(friendlyError(error)); return; }
-                          inv(["location-points", p.id]);
-                          inv(["calendar-locations"]);
-                          inv(["dashboard-location-recces"]);
-                          toast.success(recceDate ? "Recce date saved" : "Recce date cleared");
-                        }}
+                        onChange={(e) => saveRecce(pt.id, { recce_date: e.target.value || null }, e.target.value ? "Recce date saved" : "Recce date cleared")}
                       />
-                    </label>
+                      <input type="time" aria-label={`Recce start time for Shoot Day ${i + 1}`} className={`${input} min-w-0 py-1 text-xs`}
+                        value={hhmm(pt.recce_start_time) ?? ""}
+                        onChange={(e) => saveRecce(pt.id, { recce_start_time: e.target.value || null }, "Recce time saved", e.target.value || null, pt.recce_end_time)} />
+                      <span>–</span>
+                      <input type="time" aria-label={`Recce end time for Shoot Day ${i + 1}`} className={`${input} min-w-0 py-1 text-xs`}
+                        value={hhmm(pt.recce_end_time) ?? ""}
+                        onChange={(e) => saveRecce(pt.id, { recce_end_time: e.target.value || null }, "Recce time saved", pt.recce_start_time, e.target.value || null)} />
+                    </div>
                   )}
                 </div>
               </div>
@@ -371,6 +384,12 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
           <div className="grid gap-2">
             <label className="block min-w-0"><span className="text-xs text-muted-foreground">Recce date</span>
               <input type="date" className={`${input} mt-1 w-full min-w-0`} value={lf.recceDate} onChange={(e) => setLf({ ...lf, recceDate: e.target.value })} /></label>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="block min-w-0"><span className="text-xs text-muted-foreground">Recce start</span>
+                <input type="time" className={`${input} mt-1 w-full min-w-0`} value={lf.recceStart} onChange={(e) => setLf({ ...lf, recceStart: e.target.value })} /></label>
+              <label className="block min-w-0"><span className="text-xs text-muted-foreground">Recce end</span>
+                <input type="time" className={`${input} mt-1 w-full min-w-0`} value={lf.recceEnd} onChange={(e) => setLf({ ...lf, recceEnd: e.target.value })} /></label>
+            </div>
             <label className="block min-w-0"><span className="text-xs text-muted-foreground">Starts</span>
               <input type="datetime-local" className={`${input} mt-1 w-full min-w-0`} value={lf.startsAt} onChange={(e) => setLf({ ...lf, startsAt: e.target.value })} /></label>
             <label className="block min-w-0"><span className="text-xs text-muted-foreground">Ends</span>
@@ -795,11 +814,11 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
           {p.recceDate && <p className="font-semibold text-foreground">Production recce · {dayLabel(`${p.recceDate}T00:00:00`)}</p>}
           {locationPoints.filter((pt) => pt.recce_date).map((pt) => (
             <div key={pt.id} className="py-1 text-sm">
-              <p className="font-semibold text-foreground">Location {locationPoints.findIndex((point) => point.id === pt.id) + 1} · {dayLabel(`${pt.recce_date}T00:00:00`)}</p>
+              <p className="font-semibold text-foreground">Location {locationPoints.findIndex((point) => point.id === pt.id) + 1} · {dayLabel(`${pt.recce_date}T00:00:00`)} · {recceRange(pt.recce_start_time, pt.recce_end_time)}</p>
               <p className="text-xs text-muted-foreground">{canSeeRecceAddress ? pt.address || pt.label : pt.label || p.location}</p>
             </div>
           ))}
-          {!p.recceDate && !locationPoints.some((pt) => pt.recce_date) && <p className="font-semibold text-foreground">Not scheduled</p>
+          {!p.recceDate && !locationPoints.some((pt) => pt.recce_date) && <p className="font-semibold text-foreground">Not scheduled</p>}
           {p.recceDate && (() => {
             const firstLocation = locationPoints[0];
             const lat = p.latitude ?? firstLocation?.latitude ?? null;
