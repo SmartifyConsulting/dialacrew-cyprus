@@ -85,7 +85,7 @@ function CalendarPage() {
     for (const recce of locations.filter((location) => location.production_id === p.id && location.recce_date)) {
       const crew = bookings.filter((b) => b.productionId === p.id && b.status !== "cancelled").length;
       byDay.set(recce.recce_date!, [...(byDay.get(recce.recce_date!) ?? []), {
-        id: `${p.id}-${recce.id}-recce`, productionId: p.id, name: `Recce · ${p.name}`, client: p.client, location: locationAddress(recce), crew: isCrewOnly ? 0 : crew,
+        id: `${p.id}-${recce.id}-recce`, productionId: p.id, name: `Recce · ${p.name} · ${recce.label || "Location"}`, client: p.client, location: locationAddress(recce), crew: isCrewOnly ? 0 : crew,
         lat: recce.latitude ?? p.latitude ?? null, lon: recce.longitude ?? p.longitude ?? null,
       }]);
     }
