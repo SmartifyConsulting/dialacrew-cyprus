@@ -51,19 +51,21 @@ const initials = (n: string) => n.split(" ").map((x) => x[0]).join("").slice(0, 
 type AddressSuggestion = { label: string; place: string; lat: string; lon: string };
 
 type NominatimAddress = { house_number?: string; road?: string; pedestrian?: string; footway?: string; path?: string; suburb?: string; neighbourhood?: string; quarter?: string; village?: string; hamlet?: string; city?: string; town?: string; municipality?: string; county?: string };
+const isWardDetail = (value: string | undefined) => !!value && /\bward\s*\d*\b/i.test(value);
+const displayAddress = (value: string) => value.split(",").map((part) => part.trim()).filter((part) => part && !isWardDetail(part)).join(", ");
 // "12 Main Street, Sea Point, Cape Town": the street through to the city, without province, postcode or country.
 function shortAddress(a: NominatimAddress | undefined, name: string | undefined, displayName: string) {
   const street = [a?.house_number, a?.road ?? a?.pedestrian ?? a?.footway ?? a?.path].filter(Boolean).join(" ");
-  const area = [a?.suburb, a?.neighbourhood, a?.quarter, a?.village, a?.hamlet].find((v) => v && !/\bward\b/i.test(v));
-  const city = a?.city ?? a?.town ?? a?.municipality ?? a?.county;
-  const parts = [street || name, area, city].filter((v): v is string => !!v);
-  return [...new Set(parts)].join(", ") || displayName.split(", ").slice(0, 3).join(", ");
+  const area = [a?.suburb, a?.neighbourhood, a?.quarter, a?.village, a?.hamlet].find((value) => value && !isWardDetail(value));
+  const city = [a?.city, a?.town, a?.municipality, a?.county].find((value) => value && !isWardDetail(value));
+  const parts = [street || name, area, city].filter((value): value is string => !!value && !isWardDetail(value));
+  return [...new Set(parts)].join(", ") || displayAddress(displayName).split(",").slice(0, 3).join(", ");
 }
 function placeFromAddress(a: NominatimAddress | undefined, fallback: string) {
-  const area = a?.suburb ?? a?.neighbourhood ?? a?.quarter ?? a?.village ?? a?.hamlet;
-  const city = a?.city ?? a?.town ?? a?.municipality ?? a?.county;
-  const parts = [area, city].filter((v): v is string => !!v);
-  return [...new Set(parts)].join(", ") || fallback;
+  const area = [a?.suburb, a?.neighbourhood, a?.quarter, a?.village, a?.hamlet].find((value) => value && !isWardDetail(value));
+  const city = [a?.city, a?.town, a?.municipality, a?.county].find((value) => value && !isWardDetail(value));
+  const parts = [area, city].filter((value): value is string => !!value && !isWardDetail(value));
+  return [...new Set(parts)].join(", ") || displayAddress(fallback);
 }
 
 // Debounced address lookup against OpenStreetMap's free Nominatim search — no API key needed.
@@ -199,7 +201,18 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
 
-  function startAdd() { setLf(blankLocationForm); setEditingId(null); setAdding(true); }
+  function startAdd() {
+    const scheduledDays = points.map((pt) => pt.starts_at ? localYmd(pt.starts_at) : null).filter((date): date is string => !!date).sort();
+    const baseDate = scheduledDays.at(-1) ?? p.date;
+    const nextDate = baseDate ? new Date(`${baseDate}T00:00:00`) : null;
+    if (nextDate && scheduledDays.length > 0) nextDate.setDate(nextDate.getDate() + 1);
+    const startsAt = nextDate
+      ? `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, "0")}-${String(nextDate.getDate()).padStart(2, "0")}T00:00`
+      : "";
+    setLf({ ...blankLocationForm, startsAt });
+    setEditingId(null);
+    setAdding(true);
+  }
   function startEdit(pt: { id: string; label: string; address: string; latitude: number | null; longitude: number | null; starts_at: string | null; ends_at: string | null }) {
     setLf({
       label: pt.label, address: pt.address ?? "", latitude: pt.latitude?.toString() ?? "", longitude: pt.longitude?.toString() ?? "",
@@ -285,7 +298,7 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
                 </div>
               </div>
               <a href={mapHref(pt)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary hover:underline">
-                <MapPin className="h-3.5 w-3.5 text-primary" /> {pt.label}{pt.address ? ` · ${pt.address}` : ""}
+                <MapPin className="h-3.5 w-3.5 text-primary" /> {displayAddress(pt.address || pt.label)}
               </a>
               {pt.starts_at && (pt.latitude != null && pt.longitude != null
                 ? <DayWeather lat={pt.latitude} lon={pt.longitude} date={localYmd(pt.starts_at)} />
