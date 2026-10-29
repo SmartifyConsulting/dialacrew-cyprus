@@ -48,7 +48,7 @@ const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-
 const when = (s: string) => new Date(s).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" });
 const initials = (n: string) => n.split(" ").map((x) => x[0]).join("").slice(0, 2).toUpperCase();
 
-type AddressSuggestion = { label: string; place: string; lat: string; lon: string };
+type AddressSuggestion = { label: string; exactAddress: string; place: string; lat: string; lon: string };
 
 type NominatimAddress = { house_number?: string; road?: string; pedestrian?: string; footway?: string; path?: string; suburb?: string; neighbourhood?: string; quarter?: string; village?: string; hamlet?: string; city?: string; town?: string; municipality?: string; county?: string };
 const isWardDetail = (value: string | undefined) => !!value && /\bward\s*\d*\b/i.test(value);
@@ -85,7 +85,7 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder, cl
       try {
         const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${encodeURIComponent(value)}`);
         const data = (await res.json()) as { display_name: string; name?: string; lat: string; lon: string; address?: NominatimAddress }[];
-        setSuggestions(data.map((d) => ({ label: shortAddress(d.address, d.name, d.display_name), place: placeFromAddress(d.address, d.display_name.split(",")[0] ?? d.display_name), lat: d.lat, lon: d.lon })));
+        setSuggestions(data.map((d) => ({ label: shortAddress(d.address, d.name, d.display_name), exactAddress: d.display_name, place: placeFromAddress(d.address, d.display_name.split(",")[0] ?? d.display_name), lat: d.lat, lon: d.lon })));
       } catch { setSuggestions([]); }
       setLoading(false);
     }, 400);
@@ -328,7 +328,7 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
         <div className="m-3 space-y-2 rounded-sm border border-primary/40 bg-primary/5 p-4">
           <AddressAutocomplete className={`${input} w-full`} placeholder="Address — start typing to search" value={lf.address}
             onChange={(v) => setLf({ ...lf, address: v })}
-            onSelect={(s) => setLf({ ...lf, label: s.place, address: s.label, latitude: s.lat, longitude: s.lon })} />
+            onSelect={(s) => setLf({ ...lf, label: s.place, address: s.exactAddress, latitude: s.lat, longitude: s.lon })} />
           <div className="grid gap-2">
             <label className="block min-w-0"><span className="text-xs text-muted-foreground">Recce date</span>
               <input type="date" className={`${input} mt-1 w-full min-w-0`} value={lf.recceDate} onChange={(e) => setLf({ ...lf, recceDate: e.target.value })} /></label>
