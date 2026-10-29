@@ -3,6 +3,8 @@ export type Production = {
   date: string; endDate?: string | null; recceDate?: string | null; days: number; status: "Draft" | "Active" | "Upcoming" | "Wrapped";
   budget: number; crewBooked: number; crewNeeded: number; securedFunds: number;
   address?: string; summary?: string; latitude?: number | null; longitude?: number | null; geofenceM?: number; currency?: string; postRules?: string; postRulesHidden?: boolean; imagePath?: string | null;
+  timezone?: string | null; recceStart?: string | null; recceEnd?: string | null;
+  gearPickupDate?: string | null; gearPickupTime?: string | null; gearDropoffDate?: string | null; gearDropoffTime?: string | null;
 };
 
 export type Crew = {
