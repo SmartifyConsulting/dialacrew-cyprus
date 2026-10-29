@@ -39,7 +39,7 @@ export const Route = createFileRoute("/api/public/calendar/$token")({
               const can = (pid: string) => confirmed.has(pid);
               events = buildCalendarEvents(
                 (prods ?? []).map(prodInFromRow).map((p) => ({ ...p, address: can(p.id) ? p.address : null })),
-                ((locs ?? []) as LocIn[]).map((l) => ({ ...l, address: can(l.production_id) ? l.address : null })),
+                ((locs ?? []) as LocIn[]).map((l) => ({ ...l, address: can(l.production_id) ? (l.address ?? null) : null })) as LocIn[],
                 mine, { canSeeAddress: can, crewBooking: (pid) => mine.find((b) => b.productionId === pid) ?? null },
               );
             }

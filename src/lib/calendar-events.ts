@@ -16,13 +16,14 @@ export type BookingIn = { productionId: string; crewId: string | null; status: s
 
 export type EventKind = "shoot" | "recce" | "gear";
 export type CalEvent = {
+  // details is optional text
   uid: string; kind: EventKind; productionId: string; productionName: string; client: string; title: string;
   timezone: string;
   /** Local (production timezone) first and last calendar day the event touches. */
   day: string; endDay: string;
   /** Exact UTC instants; null means the time is not scheduled — never treated as midnight. */
   start: string | null; end: string | null;
-  timeLabel: string; location: string; details?: string;
+  timeLabel: string; location: string; details?: string | undefined;
   lat: number | null; lon: number | null;
 };
 
@@ -30,7 +31,7 @@ export type BuildOptions = {
   /** Whether the viewer may see exact street addresses for this production. */
   canSeeAddress: (productionId: string) => boolean;
   /** Crew view: restrict shoot days to the viewer's own booking span and times. */
-  crewBooking?: (productionId: string) => BookingIn | null;
+  crewBooking?: ((productionId: string) => BookingIn | null) | undefined;
 };
 
 const hm = (t: string | null | undefined) => (t ? t.slice(0, 5) : null);

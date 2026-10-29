@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/calendar")({
 
 const iso = isoDay;
 
-type DayItem = { id: string; key: string; productionId: string; name: string; client: string; location: string; crew: number; lat: number | null; lon: number | null; kind: "shoot" | "recce" | "gear"; time: string; details?: string; clash: boolean };
+type DayItem = { id: string; key: string; productionId: string; name: string; client: string; location: string; crew: number; lat: number | null; lon: number | null; kind: "shoot" | "recce" | "gear"; time: string; details?: string | undefined; clash: boolean };
 
 function CalendarPage() {
   const { session } = useSession();
