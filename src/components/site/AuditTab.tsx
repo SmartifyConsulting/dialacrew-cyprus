@@ -88,24 +88,41 @@ export function AuditTab({ p }: { p: { id: string } }) {
   }
   const days = [...groups.keys()].sort().reverse();
 
-  if (days.length === 0) {
-    return <Panel title="Audit trail"><p className="p-4 text-sm text-muted-foreground">Nothing recorded yet. Check-ins, wraps, overtime, posts, photos and tasks will appear here as they happen.</p></Panel>;
-  }
-
   return (
-    <div className="space-y-5">
-      {days.map((day) => (
-        <Panel key={day} title={dayLabel(day)}>
+    <div className="space-y-4">
+      <Panel title="Audit trail — activity history">
+        <div className="grid gap-3 p-4 sm:grid-cols-3">
+          <label className="text-xs font-semibold">Search name or activity
+            <input aria-label="Search audit trail" className="mt-1 w-full rounded border border-border bg-background px-3 py-2 text-sm" placeholder="Person, action, detail..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          </label>
+          <label className="text-xs font-semibold">Date
+            <input type="date" aria-label="Filter audit by date" className="mt-1 w-full rounded border border-border bg-background px-3 py-2 text-sm" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
+          </label>
+          <label className="text-xs font-semibold">Activity type
+            <select aria-label="Filter audit by activity" className="mt-1 w-full rounded border border-border bg-background px-3 py-2 text-sm" value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+              <option value="">All activities</option>
+              {types.map((type) => <option key={type} value={type}>{type.replaceAll("_", " ")}</option>)}
+            </select>
+          </label>
+        </div>
+        <p className="px-4 pb-3 text-xs text-muted-foreground">{filtered.length} of {events.length} recorded activities</p>
+      </Panel>
+      {days.length === 0 && <Panel title="No matching activity"><p className="p-4 text-sm text-muted-foreground">No audit records match these filters.</p></Panel>}
+      {days.map((day, index) => (
+        <details key={day} open={index === 0} className="overflow-hidden rounded-md border border-border bg-card">
+          <summary className="cursor-pointer px-4 py-3 font-semibold">{dayLabel(day)} <span className="ml-2 text-xs font-normal text-muted-foreground">({[...groups.get(day)!.values()].reduce((n, a) => n + a.length, 0)} activities)</span></summary>
           <div className="divide-y divide-border">
             {[...groups.get(day)!.entries()].map(([loc, items]) => (
               <div key={loc} className="p-4">
                 <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">{loc}</div>
-                <ul className="space-y-2 text-sm">
+                <ul className="space-y-3 text-sm">
                   {items.map((e) => (
-                    <li key={e.id} className="flex gap-3">
-                      <span className="w-12 shrink-0 font-mono text-xs text-muted-foreground">{timeLabel(e.at)}</span>
+                    <li key={e.id} className="flex gap-3 border-b border-border/40 pb-2">
+                      <time dateTime={e.at} className="w-32 shrink-0 font-mono text-xs text-muted-foreground">{new Date(e.at).toLocaleString("en-ZA", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" })}</time>
                       <span className="min-w-0 flex-1">
-                        {e.text}
+                        <span className="mb-1 block text-xs font-semibold text-primary">{activityOf(e).replaceAll("_", " ")}</span>
+                        <span className="block">{e.text}</span>
+                        {e.actor && <span className="block text-xs text-muted-foreground">By {e.actor}</span>}
                         {e.detail && <span className="block text-xs text-muted-foreground">{e.detail}</span>}
                       </span>
                     </li>
@@ -114,7 +131,7 @@ export function AuditTab({ p }: { p: { id: string } }) {
               </div>
             ))}
           </div>
-        </Panel>
+        </details>
       ))}
     </div>
   );
