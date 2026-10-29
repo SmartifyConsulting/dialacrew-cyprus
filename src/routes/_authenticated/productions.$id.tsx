@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { ChevronLeft, ChevronRight, MapPin } from "lucide-react";
 import { Badge, ClientBadge, Page } from "@/components/AppShell";
 import { useRole, useSession } from "@/lib/auth";
@@ -54,6 +56,18 @@ function ProductionSite() {
   const [asideOpen, setAsideOpen] = useState(true);
   const p = prods.data?.find((x) => x.id === id);
   const rates = useBookingRates(p?.id ?? "");
+  const qc = useQueryClient();
+  const [closing, setClosing] = useState(false);
+  const [closeError, setCloseError] = useState("");
+  const closed = p?.status === "Completed";
+  async function completeJob() {
+    if (!p || !window.confirm("Complete this production permanently? All activity and invoice changes will be locked.")) return;
+    setClosing(true); setCloseError("");
+    const { error } = await supabase.rpc("complete_production", { p_production_id: p.id });
+    if (error) setCloseError(error.message);
+    else { await qc.invalidateQueries({ queryKey: ["productions"] }); await qc.invalidateQueries({ queryKey: ["notifications"] }); }
+    setClosing(false);
+  }
   if (!p) return <Page open title={prods.isLoading ? "Loading…" : "Production not found"}>{null}</Page>;
   const crewNames = Object.fromEntries(crew.map((c) => [c.id, c.name]));
   const ctx = { p, isProducer, userId, myName, myCrewId };
@@ -62,11 +76,14 @@ function ProductionSite() {
   const actions = (
     <div className="flex items-center gap-2">
       <Badge>{p.status}</Badge>
+      {isProducer && !closed && <button type="button" disabled={closing} onClick={completeJob} className="rounded border border-primary px-3 py-1.5 text-xs font-semibold text-primary disabled:opacity-50">{closing ? "Closing…" : "Mark Completed"}</button>}
     </div>
   );
 
   return (
     <Page open title={<span className="inline-flex items-center gap-4"><ProductionCover p={p} isProducer={isProducer} />{p.name}</span>} subtitle={<span className="inline-flex items-center gap-2"><ClientBadge name={p.client} /> {p.type} · {p.date} · {p.days} day(s)</span>} actions={actions}>
+      {closeError && <p role="alert" className="mb-3 text-sm text-destructive">{closeError}</p>}
+      {closed && <div className="mb-4 rounded border border-border bg-muted p-3 text-sm font-semibold">Completed — read-only archive. No new activity or invoices can be added.</div>}
       <div className="-mt-3 mb-4 flex items-center gap-1 text-sm text-muted-foreground"><MapPin className="h-4 w-4 text-primary" /> {p.address || p.location}</div>
       <div className={`grid gap-5 ${asideOpen ? "lg:grid-cols-[380px_minmax(0,1fr)]" : "lg:grid-cols-[auto_minmax(0,1fr)]"}`}>
         <button onClick={() => setAsideOpen(true)} aria-label="Expand overview panel"
