@@ -667,7 +667,7 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
 }
 
 /* ---------------- Overview ---------------- */
-export function OverviewTab({ p, isProducer }: Ctx) {
+export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
   const inv = useInvalidate();
   const locationPoints = useLocationPoints(p.id).data ?? [];
   const [f, setF] = useState({ address: p.address ?? "", summary: p.summary ?? "", latitude: p.latitude?.toString() ?? "", longitude: p.longitude?.toString() ?? "", geofence: String(p.geofenceM ?? 10) });
