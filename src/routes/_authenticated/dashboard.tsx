@@ -1,4 +1,4 @@
-import { groupRecces, recceRange, recceTooltip } from "@/lib/recce";
+import { EVENT_CHIP, useCalendarEvents } from "@/lib/use-calendar-events";
 import type React from "react";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -161,7 +161,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 const isoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-type MiniCalItem = { id: string; color: string; client: string; name: string; location: string; time: string; isRecce?: boolean; details?: string };
+type MiniCalItem = { id: string; color: string; client: string; name: string; location: string; time: string; isRecce?: boolean; kind: "shoot" | "recce" | "gear"; details?: string | undefined };
 
 // Popup for the calendar's weather, client chips and task icon: shows on hover, and on tap/keyboard focus for touch screens.
 // `align` keeps it on screen for the grid's left and right columns.
@@ -179,54 +179,18 @@ function CalPop({ label, align, trigger, children }: { label: string; align: "le
 // task icon when tasks are due — a quick-glance version of the full /calendar page, not a replacement for it.
 function MiniCalendar({ productions, bookings }: { productions: Production[]; bookings: Booking[] }) {
   const today = new Date();
-  const locationRecces = useQuery({
-    queryKey: ["dashboard-location-recces"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("production_locations").select("id, production_id, label, address, starts_at, recce_date, recce_start_time, recce_end_time, latitude, longitude, sort_order").order("sort_order");
-      if (error) throw error;
-      return data ?? [];
-    },
-  }).data ?? [];
+  void productions; void bookings;
+  // Same normalized events as the full calendar and .ics export.
+  const { events, conflicts } = useCalendarEvents();
   const byDay = new Map<string, MiniCalItem[]>();
   const shoots = new Map<string, DayShoot[]>();
-  for (const p of productions) {
-    const recceDates = new Set<string>();
-    // One recce item per production per date: earliest start to latest end across its locations.
-    for (const g of groupRecces(locationRecces.filter((location) => location.production_id === p.id))) {
-      recceDates.add(g.date);
-      const k = g.date;
-      const first = g.locations[0]!.loc;
-      const item: MiniCalItem = {
-        id: `${p.id}-${k}-recce`, color: clientColor(p.client), client: p.client, name: `Recce · ${p.name}`, isRecce: true,
-        location: g.locations.length > 1 ? `${g.locations.length} locations` : first.address || first.label || p.address || p.location || "Location TBC",
-        time: recceRange(g.start, g.end), details: recceTooltip(g, (l) => l.address || l.label || "Location TBC"),
-      };
-      byDay.set(k, [...(byDay.get(k) ?? []), item]);
-      shoots.set(k, [...(shoots.get(k) ?? []), { id: p.id, lat: first.latitude ?? p.latitude ?? null, lon: first.longitude ?? p.longitude ?? null }]);
-    }
-    if (p.recceDate && !recceDates.has(p.recceDate)) {
-      const k = p.recceDate;
-      const item: MiniCalItem = {
-        id: `${p.id}-recce`, color: clientColor(p.client), client: p.client, name: `Recce · ${p.name}`,
-        location: p.location || p.address || "Location TBC", time: "Recce",
-      };
-      byDay.set(k, [...(byDay.get(k) ?? []), item]);
-      shoots.set(k, [...(shoots.get(k) ?? []), { id: p.id, lat: p.latitude ?? null, lon: p.longitude ?? null }]);
-    }
-    if (!p.date) continue;
-    const start = new Date(p.date + "T00:00:00");
-    for (let i = 0; i < Math.max(1, p.days); i++) {
-      const d = new Date(start); d.setDate(d.getDate() + i);
-      const k = isoDate(d);
-      const callTimes = bookings.filter((b) => b.productionId === p.id && b.bookingDate === k && b.callTime).map((b) => b.callTime!).sort();
-      const location = locationRecces.find((point) => point.production_id === p.id && point.starts_at && isoDate(new Date(point.starts_at)) === k);
-      const item: MiniCalItem = {
-        id: `${p.id}-${k}`, color: clientColor(p.client), client: p.client, name: p.name,
-        location: location?.address || location?.label || p.address || p.location || "Location TBC", time: callTimes[0] ? callTimes[0].slice(0, 5) : "Time TBC",
-      };
-      byDay.set(k, [...(byDay.get(k) ?? []), item]);
-      shoots.set(k, [...(shoots.get(k) ?? []), { id: p.id, lat: location?.latitude ?? p.latitude ?? null, lon: location?.longitude ?? p.longitude ?? null }]);
-    }
+  for (const e of events) {
+    const item: MiniCalItem = {
+      id: e.uid, color: clientColor(e.client), client: e.client, name: e.title, kind: e.kind, isRecce: e.kind === "recce",
+      location: e.location, time: e.timeLabel + (conflicts.has(e.uid) ? " · overlaps another production" : ""), details: e.details,
+    };
+    byDay.set(e.day, [...(byDay.get(e.day) ?? []), item]);
+    shoots.set(e.day, [...(shoots.get(e.day) ?? []), { id: e.productionId, lat: e.lat ?? null, lon: e.lon ?? null }]);
   }
   const first = new Date(today.getFullYear(), today.getMonth(), 1);
   const offset = (first.getDay() + 6) % 7;
@@ -263,7 +227,7 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
                 <span className="flex min-h-3.5 max-w-full flex-wrap items-center justify-center gap-0.5">
                   {items.map((item) => (
                     <CalPop key={item.id} label={`${item.client} · ${item.name} · ${item.location} · ${item.time}`} align={align}
-                      trigger={<span className={`max-w-full truncate rounded-sm px-1 py-0.5 text-[9px] font-semibold leading-none ${item.isRecce ? "bg-black text-white" : item.color}`}>{item.isRecce ? `Recce${item.time !== "Time TBC" ? ` ${item.time}` : ""}` : item.client}</span>}>
+                      trigger={<span className={`max-w-full truncate rounded-sm px-1 py-0.5 text-[9px] font-semibold leading-none ${item.kind === "shoot" ? item.color : EVENT_CHIP[item.kind]}`}>{item.kind === "recce" ? `Recce${item.time.startsWith("Time TBC") ? "" : ` ${item.time.split(" · ")[0]}`}` : item.kind === "gear" ? "Gear" : item.client}</span>}>
                       {item.client} · {item.name} · {item.location} · {item.time}
                       {item.details && <span className="mt-1 block whitespace-pre-line font-normal text-muted-foreground">{item.details}</span>}
                     </CalPop>
