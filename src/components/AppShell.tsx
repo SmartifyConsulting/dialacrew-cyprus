@@ -133,7 +133,7 @@ export function TopNav() {
       {/* A single bell, pinned to the grey canvas (not a white header bar) at every breakpoint. */}
       {signedIn && (
         <div className="fixed right-4 top-4 z-30 md:right-6">
-          <NotificationBell userId={session.user.id} />
+          <NotificationBell userId={session.user.id} requireAcknowledgement={role.data === "crew"} />
         </div>
       )}
     </>
