@@ -155,7 +155,7 @@ function Productions() {
   const clients = clientsQuery.data ?? [];
   const [open, setOpen] = useState(!!openOnLoad);
   const [duplicating, setDuplicating] = useState(false);
-  const blankForm = { name: "", client: "", jobId: "", type: "Commercial", location: "", startDate: "", endDate: "", budget: 0, description: "" };
+  const blankForm = { name: "", client: "", jobId: "", type: "Commercial", location: "", recceDate: "", startDate: "", endDate: "", budget: 0, description: "" };
   const [f, setF] = useState(blankForm);
   const [editingId, setEditingId] = useState<string | null>(null); // editing an existing production
   const [draftId, setDraftId] = useState<string | null>(null); // autosaved draft while creating a new one
@@ -184,7 +184,7 @@ function Productions() {
   const closeModal = () => { setOpen(false); resetForm(); if (openOnLoad) navigate({ to: "/productions", search: {}, replace: true }); };
   const openNew = () => { resetForm(); setOpen(true); };
   const openEdit = (p: (typeof list)[number]) => {
-    setF({ name: p.name, client: p.client, jobId: p.jobId ?? "", type: p.type, location: p.location, startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget, description: p.summary ?? "" });
+    setF({ name: p.name, client: p.client, jobId: p.jobId ?? "", type: p.type, location: p.location, recceDate: p.recceDate ?? "", startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget, description: p.summary ?? "" });
     setEditingId(p.id);
     setDraftId(null);
     setSaveState("idle");
@@ -192,7 +192,7 @@ function Productions() {
     setOpen(true);
   };
   const openDuplicate = (p: (typeof list)[number]) => {
-    setF({ name: `${p.name} (copy)`, client: p.client, jobId: "", type: p.type, location: p.location, startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget, description: p.summary ?? "" });
+    setF({ name: `${p.name} (copy)`, client: p.client, jobId: "", type: p.type, location: p.location, recceDate: p.recceDate ?? "", startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget, description: p.summary ?? "" });
     setEditingId(null);
     setDraftId(null);
     setSaveState("idle");
@@ -208,7 +208,7 @@ function Productions() {
     if (!f.name.trim() || !f.client.trim() || !f.jobId.trim() || jobIdTaken(f.jobId)) return;
     const t = setTimeout(async () => {
       setSaveState("saving");
-      const payload = { name: f.name, client: f.client, job_id: f.jobId.trim(), type: f.type, location: f.location, budget: f.budget, date: f.startDate || null, end_date: f.endDate || null, days, summary: f.description };
+      const payload = { name: f.name, client: f.client, job_id: f.jobId.trim(), type: f.type, location: f.location, budget: f.budget, recce_date: f.recceDate || null, date: f.startDate || null, end_date: f.endDate || null, days, summary: f.description };
       if (draftId) {
         const { error } = await supabase.from("productions").update(payload).eq("id", draftId);
         if (error) { toast.error(friendlyError(error)); return; }
@@ -223,7 +223,7 @@ function Productions() {
     }, 800);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [f.name, f.client, f.jobId, f.type, f.location, f.startDate, f.endDate, f.budget, f.description, open, editingId]);
+  }, [f.name, f.client, f.jobId, f.type, f.location, f.recceDate, f.startDate, f.endDate, f.budget, f.description, open, editingId]);
 
   async function deleteProduction(p: (typeof list)[number]) {
     if (!window.confirm(`Delete "${p.name}"? This can't be undone.`)) return;
@@ -301,6 +301,8 @@ function Productions() {
                 <select className={field} value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>
                   {["Commercial", "Film", "Television", "Photography", "Other"].map((t) => <option key={t}>{t}</option>)}
                 </select>
+                <label className="block"><span className="text-xs text-muted-foreground">Recce date</span>
+                  <input className={`${field} mt-1`} type="date" value={f.recceDate} onChange={(e) => setF({ ...f, recceDate: e.target.value })} /></label>
                 <label className="block"><span className="text-xs text-muted-foreground">Start date *</span>
                   <input className={`${field} mt-1`} type="date" value={f.startDate} onChange={(e) => setF({ ...f, startDate: e.target.value })} /></label>
                 <label className="block"><span className="text-xs text-muted-foreground">End date *</span>
