@@ -1383,6 +1383,8 @@ export type Database = {
       }
       notifications: {
         Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
           body: string
           created_at: string
           id: string
@@ -1392,6 +1394,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
           body?: string
           created_at?: string
           id?: string
@@ -2609,6 +2613,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      acknowledge_notification: {
+        Args: { p_notification_id: string }
+        Returns: undefined
+      }
+
       approve_job: { Args: { _booking: string }; Returns: undefined }
       auto_approve_reviews: { Args: never; Returns: undefined }
       cancel_booking: {
