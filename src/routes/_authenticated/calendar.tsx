@@ -1,4 +1,4 @@
-import { groupRecces, recceRange, recceTooltip } from "@/lib/recce";
+import { groupRecces, recceOverlaps, recceRange, recceTooltip } from "@/lib/recce";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -43,7 +43,7 @@ function CalendarPage() {
   const locations = useQuery({
     queryKey: ["calendar-locations", isCrewOnly],
     queryFn: async () => {
-      const { data, error } = await supabase.from("production_locations").select(locationFields);
+      const { data, error } = await supabase.from("production_locations").select(locationFields).order("sort_order");
       if (error) throw error;
       return data ?? [];
     },
@@ -167,7 +167,8 @@ function CalendarPage() {
                   {it.isRecce && it.time && <span className="block truncate text-[10px] font-semibold">{it.time}{clash ? " · overlap" : ""}</span>}
                   {it.location && <span className="block truncate text-[10px] font-normal opacity-90">{it.location}</span>}
                 </Link>
-              ))}
+                );
+              })}
               {dayTasks.length > 0 && (
                 <div className="mt-1 flex flex-wrap gap-1">
                   {dayTasks.map((t) => (
