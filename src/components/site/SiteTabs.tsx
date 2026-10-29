@@ -15,7 +15,7 @@ import {
   signedUrl, uploadFile, useBookingAssets, useChecklists, useCrewAssets, useDocs, useInvalidate, useLocationPoints, useMessages, usePosts, useRegister,
   useReviews, useSignedUrl, useSiteMembers, useTasks,
 } from "@/lib/site";
-import { useCancelBooking, useCreateOpenGig, useCrew, useRequests, useSetRequestState } from "@/lib/db";
+import { useBookings, useCancelBooking, useCreateOpenGig, useCrew, useRequests, useSetRequestState } from "@/lib/db";
 import { LocationRisks, ProjectWideRisks } from "@/components/site/ProjectInsights";
 import { Guidelines } from "@/components/site/Guidelines";
 import { LocationFee, LocationPhotos } from "@/components/site/LocationExtras";
@@ -191,8 +191,10 @@ function DayWeather({ lat, lon, date }: { lat: number; lon: number; date: string
   );
 }
 
-function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
+function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer" | "myCrewId">) {
   const inv = useInvalidate();
+  const bookings = useBookings().data ?? [];
+  const canSeeExactAddress = isProducer || bookings.some((booking) => booking.productionId === p.id && booking.crewId === myCrewId && ["confirmed", "in_progress", "awaiting_review", "payment_released", "completed"].includes(booking.status));
   const points = useLocationPoints(p.id).data ?? [];
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -298,9 +300,11 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
                   {pt.recce_date && <div className="mt-1 text-xs font-semibold text-foreground">Recce · {dayLabel(`${pt.recce_date}T00:00:00`)}</div>}
                 </div>
               </div>
-              <a href={mapHref(pt)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary hover:underline">
-                <MapPin className="h-3.5 w-3.5 text-primary" /> {displayAddress(pt.address || pt.label)}
-              </a>
+              {canSeeExactAddress ? (
+                <a href={mapHref(pt)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary hover:underline">
+                  <MapPin className="h-3.5 w-3.5 text-primary" /> {displayAddress(pt.address || pt.label)}
+                </a>
+              ) : <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><MapPin className="h-3.5 w-3.5 text-primary" /> {pt.label || p.location} · Exact address shared after booking confirmation.</p>}
               {pt.recce_date && (pt.latitude != null && pt.longitude != null
                 ? <DayWeather lat={pt.latitude} lon={pt.longitude} date={pt.recce_date} />
                 : <p className="text-xs text-muted-foreground">Add a map location to see the recce forecast.</p>)}
@@ -759,7 +763,7 @@ export function OverviewTab({ p, isProducer }: Ctx) {
         </div>
       </Panel>
       <Panel title="Locations">
-        <LocationPoints p={p} isProducer={isProducer} />
+        <LocationPoints p={p} isProducer={isProducer} myCrewId={myCrewId} />
       </Panel>
     </div>
   );
