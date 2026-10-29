@@ -5,6 +5,7 @@ import { Briefcase, Building2, Home, Search, Shield, Star, User, type LucideIcon
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany, useRole, useSession } from "@/lib/auth";
 import { NotificationBell } from "@/components/NotificationBell";
+import { PaymentCelebration } from "@/components/PaymentCelebration";
 import { useSignedUrl } from "@/lib/site";
 import logo from "@/assets/bookacrew-sa-logo.png.asset.json";
 
@@ -135,6 +136,7 @@ export function TopNav() {
       {signedIn && (
         <div className="fixed right-4 top-4 z-30 md:right-6">
           <NotificationBell userId={session.user.id} requireAcknowledgement={role.data === "crew"} />
+          {role.data === "crew" && <PaymentCelebration />}
         </div>
       )}
     </>
