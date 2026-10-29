@@ -14,60 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      overtime_requests: {
-        Row: { accepted_at: string | null; crew_id: string; decline_reason: string | null; ended_at: string | null; id: string; production_id: string; requested_at: string; requested_by: string; responded_at: string | null; shift: string; status: string }
-        Insert: { accepted_at?: string | null; crew_id: string; decline_reason?: string | null; ended_at?: string | null; id?: string; production_id: string; requested_at?: string; requested_by?: string; responded_at?: string | null; shift?: string; status?: string }
-        Update: { accepted_at?: string | null; crew_id?: string; decline_reason?: string | null; ended_at?: string | null; id?: string; production_id?: string; requested_at?: string; requested_by?: string; responded_at?: string | null; shift?: string; status?: string }
-        Relationships: []
-      }
-      document_checklist_templates: {
-        Row: { created_at: string; created_by: string | null; id: string; is_default: boolean; kind: string; name: string }
-        Insert: { created_at?: string; created_by?: string | null; id?: string; is_default?: boolean; kind?: string; name: string }
-        Update: { created_at?: string; created_by?: string | null; id?: string; is_default?: boolean; kind?: string; name?: string }
-        Relationships: []
-      }
-      document_checklist_template_items: {
-        Row: { amount: number | null; id: string; label: string; sort_order: number; template_id: string }
-        Insert: { amount?: number | null; id?: string; label: string; sort_order?: number; template_id: string }
-        Update: { amount?: number | null; id?: string; label?: string; sort_order?: number; template_id?: string }
-        Relationships: []
-      }
-      production_document_items: {
-        Row: { created_at: string; id: string; label: string; production_id: string; sort_order: number }
-        Insert: { created_at?: string; id?: string; label: string; production_id: string; sort_order?: number }
-        Update: { created_at?: string; id?: string; label?: string; production_id?: string; sort_order?: number }
-        Relationships: []
-      }
-      site_wraps: {
-        Row: { created_at: string; crew_id: string; id: string; left_at: string | null; production_id: string; wrapped_at: string; wrapped_by: string }
-        Insert: { created_at?: string; crew_id: string; id?: string; left_at?: string | null; production_id: string; wrapped_at?: string; wrapped_by?: string }
-        Update: { created_at?: string; crew_id?: string; id?: string; left_at?: string | null; production_id?: string; wrapped_at?: string; wrapped_by?: string }
-        Relationships: []
-      }
-      site_photo_groups: {
-        Row: { created_at: string; created_by: string; group_date: string | null; id: string; name: string; production_id: string }
-        Insert: { created_at?: string; created_by?: string; group_date?: string | null; id?: string; name: string; production_id: string }
-        Update: { created_at?: string; created_by?: string; group_date?: string | null; id?: string; name?: string; production_id?: string }
-        Relationships: []
-      }
-      site_photos: {
-        Row: { created_at: string; group_id: string | null; id: string; location_id: string | null; path: string; production_id: string; uploaded_by: string }
-        Insert: { created_at?: string; group_id?: string | null; id?: string; location_id?: string | null; path: string; production_id: string; uploaded_by?: string }
-        Update: { created_at?: string; group_id?: string | null; id?: string; location_id?: string | null; path?: string; production_id?: string; uploaded_by?: string }
-        Relationships: []
-      }
-      production_location_fees: {
-        Row: { fee: number; location_id: string; production_id: string; updated_at: string }
-        Insert: { fee?: number; location_id: string; production_id: string; updated_at?: string }
-        Update: { fee?: number; location_id?: string; production_id?: string; updated_at?: string }
-        Relationships: []
-      }
-      production_location_photos: {
-        Row: { created_at: string; id: string; location_id: string; path: string; production_id: string; sort_order: number; uploaded_by: string }
-        Insert: { created_at?: string; id?: string; location_id: string; path: string; production_id: string; sort_order?: number; uploaded_by?: string }
-        Update: { created_at?: string; id?: string; location_id?: string; path?: string; production_id?: string; sort_order?: number; uploaded_by?: string }
-        Relationships: []
-      }
       audit_logs: {
         Row: {
           action: string
@@ -908,6 +854,65 @@ export type Database = {
           },
         ]
       }
+      document_checklist_template_items: {
+        Row: {
+          amount: number | null
+          id: string
+          label: string
+          sort_order: number
+          template_id: string
+        }
+        Insert: {
+          amount?: number | null
+          id?: string
+          label: string
+          sort_order?: number
+          template_id: string
+        }
+        Update: {
+          amount?: number | null
+          id?: string
+          label?: string
+          sort_order?: number
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_checklist_template_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "document_checklist_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_checklist_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_default: boolean
+          kind: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_default?: boolean
+          kind?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_default?: boolean
+          kind?: string
+          name?: string
+        }
+        Relationships: []
+      }
       favourites: {
         Row: {
           created_at: string
@@ -1381,6 +1386,63 @@ export type Database = {
           },
         ]
       }
+      overtime_requests: {
+        Row: {
+          accepted_at: string | null
+          crew_id: string
+          decline_reason: string | null
+          ended_at: string | null
+          id: string
+          production_id: string
+          requested_at: string
+          requested_by: string
+          responded_at: string | null
+          shift: string
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          crew_id: string
+          decline_reason?: string | null
+          ended_at?: string | null
+          id?: string
+          production_id: string
+          requested_at?: string
+          requested_by?: string
+          responded_at?: string | null
+          shift?: string
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          crew_id?: string
+          decline_reason?: string | null
+          ended_at?: string | null
+          id?: string
+          production_id?: string
+          requested_at?: string
+          requested_by?: string
+          responded_at?: string | null
+          shift?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "overtime_requests_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "overtime_requests_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_cards: {
         Row: {
           authorization_code: string
@@ -1537,6 +1599,38 @@ export type Database = {
           },
         ]
       }
+      production_document_items: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          production_id: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          production_id: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          production_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_document_items_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_escrow: {
         Row: {
           amount: number
@@ -1575,6 +1669,87 @@ export type Database = {
           },
         ]
       }
+      production_location_fees: {
+        Row: {
+          fee: number
+          location_id: string
+          production_id: string
+          updated_at: string
+        }
+        Insert: {
+          fee?: number
+          location_id: string
+          production_id: string
+          updated_at?: string
+        }
+        Update: {
+          fee?: number
+          location_id?: string
+          production_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_location_fees_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: true
+            referencedRelation: "production_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_location_fees_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_location_photos: {
+        Row: {
+          created_at: string
+          id: string
+          location_id: string
+          path: string
+          production_id: string
+          sort_order: number
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          location_id: string
+          path: string
+          production_id: string
+          sort_order?: number
+          uploaded_by?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          location_id?: string
+          path?: string
+          production_id?: string
+          sort_order?: number
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_location_photos_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "production_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_location_photos_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_locations: {
         Row: {
           address: string
@@ -1585,6 +1760,7 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           production_id: string
+          recce_date: string | null
           sort_order: number
           starts_at: string | null
         }
@@ -1597,6 +1773,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           production_id: string
+          recce_date?: string | null
           sort_order?: number
           starts_at?: string | null
         }
@@ -1609,6 +1786,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           production_id?: string
+          recce_date?: string | null
           sort_order?: number
           starts_at?: string | null
         }
@@ -1717,21 +1895,22 @@ export type Database = {
           created_at: string
           created_by: string | null
           crew_booked: number
-          currency: string
-          post_rules: string
-          post_rules_hidden: boolean
-          image_path: string | null
           crew_needed: number
+          currency: string
           date: string | null
           days: number
           end_date: string | null
           geofence_m: number
           id: string
+          image_path: string | null
           job_id: string | null
           latitude: number | null
           location: string
           longitude: number | null
           name: string
+          post_rules: string
+          post_rules_hidden: boolean
+          recce_date: string | null
           secured_funds: number
           status: string
           summary: string
@@ -1745,21 +1924,22 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           crew_booked?: number
-          currency?: string
-          post_rules?: string
-          post_rules_hidden?: boolean
-          image_path?: string | null
           crew_needed?: number
+          currency?: string
           date?: string | null
           days?: number
           end_date?: string | null
           geofence_m?: number
           id?: string
+          image_path?: string | null
           job_id?: string | null
           latitude?: number | null
           location?: string
           longitude?: number | null
           name: string
+          post_rules?: string
+          post_rules_hidden?: boolean
+          recce_date?: string | null
           secured_funds?: number
           status?: string
           summary?: string
@@ -1773,21 +1953,22 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           crew_booked?: number
-          currency?: string
-          post_rules?: string
-          post_rules_hidden?: boolean
-          image_path?: string | null
           crew_needed?: number
+          currency?: string
           date?: string | null
           days?: number
           end_date?: string | null
           geofence_m?: number
           id?: string
+          image_path?: string | null
           job_id?: string | null
           latitude?: number | null
           location?: string
           longitude?: number | null
           name?: string
+          post_rules?: string
+          post_rules_hidden?: boolean
+          recce_date?: string | null
           secured_funds?: number
           status?: string
           summary?: string
@@ -2027,7 +2208,147 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "site_documents_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "production_document_items"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "site_documents_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_photo_groups: {
+        Row: {
+          created_at: string
+          created_by: string
+          group_date: string | null
+          id: string
+          name: string
+          production_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          group_date?: string | null
+          id?: string
+          name: string
+          production_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          group_date?: string | null
+          id?: string
+          name?: string
+          production_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_photo_groups_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_photo_tags: {
+        Row: {
+          created_at: string
+          crew_id: string
+          photo_id: string
+          production_id: string
+          tagged_by: string
+        }
+        Insert: {
+          created_at?: string
+          crew_id: string
+          photo_id: string
+          production_id: string
+          tagged_by?: string
+        }
+        Update: {
+          created_at?: string
+          crew_id?: string
+          photo_id?: string
+          production_id?: string
+          tagged_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_photo_tags_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_photo_tags_photo_id_fkey"
+            columns: ["photo_id"]
+            isOneToOne: false
+            referencedRelation: "site_photos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_photo_tags_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_photos: {
+        Row: {
+          created_at: string
+          group_id: string | null
+          id: string
+          location_id: string | null
+          path: string
+          production_id: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          location_id?: string | null
+          path: string
+          production_id: string
+          uploaded_by?: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          location_id?: string | null
+          path?: string
+          production_id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_photos_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "site_photo_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_photos_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "production_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_photos_production_id_fkey"
             columns: ["production_id"]
             isOneToOne: false
             referencedRelation: "productions"
@@ -2123,6 +2444,51 @@ export type Database = {
           },
           {
             foreignKeyName: "site_tasks_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_wraps: {
+        Row: {
+          created_at: string
+          crew_id: string
+          id: string
+          left_at: string | null
+          production_id: string
+          wrapped_at: string
+          wrapped_by: string
+        }
+        Insert: {
+          created_at?: string
+          crew_id: string
+          id?: string
+          left_at?: string | null
+          production_id: string
+          wrapped_at?: string
+          wrapped_by?: string
+        }
+        Update: {
+          created_at?: string
+          crew_id?: string
+          id?: string
+          left_at?: string | null
+          production_id?: string
+          wrapped_at?: string
+          wrapped_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_wraps_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_wraps_production_id_fkey"
             columns: ["production_id"]
             isOneToOne: false
             referencedRelation: "productions"
