@@ -24,7 +24,7 @@ export const Route = createFileRoute("/_authenticated/calendar")({
 
 const iso = isoDay;
 
-type DayItem = { id: string; name: string; client: string; crew: number; lat: number | null; lon: number | null };
+type DayItem = { id: string; productionId: string; name: string; client: string; crew: number; lat: number | null; lon: number | null };
 
 function CalendarPage() {
   const { session } = useSession();
@@ -36,9 +36,17 @@ function CalendarPage() {
   const [month, setMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [openTask, setOpenTask] = useState<string | null>(null);
 
-  // map each day to the productions shooting on it (start date + days)
+  // Map every shoot and recce date to its production so each calendar day can show the matching forecast.
   const byDay = new Map<string, DayItem[]>();
   for (const p of prods) {
+    if (p.recceDate) {
+      const k = p.recceDate;
+      const crew = bookings.filter((b) => b.productionId === p.id && b.status !== "cancelled").length;
+      byDay.set(k, [...(byDay.get(k) ?? []), {
+        id: `${p.id}-recce`, productionId: p.id, name: `Recce · ${p.name}`, client: p.client, crew: isCrewOnly ? 0 : crew,
+        lat: p.latitude ?? null, lon: p.longitude ?? null,
+      }]);
+    }
     if (!p.date) continue;
     const myBooking = isCrewOnly ? bookings.find((b) => b.productionId === p.id && b.crewId === myCrewId && b.status !== "cancelled") : undefined;
     if (isCrewOnly && !myBooking) continue;
@@ -49,7 +57,7 @@ function CalendarPage() {
       const d = new Date(start); d.setDate(d.getDate() + i);
       const k = iso(d);
       const crew = bookings.filter((b) => b.productionId === p.id && b.status !== "cancelled").length;
-      byDay.set(k, [...(byDay.get(k) ?? []), { id: p.id, name: p.name, client: p.client, crew: isCrewOnly ? 0 : crew, lat: p.latitude ?? null, lon: p.longitude ?? null }]);
+      byDay.set(k, [...(byDay.get(k) ?? []), { id: p.id, productionId: p.id, name: p.name, client: p.client, crew: isCrewOnly ? 0 : crew, lat: p.latitude ?? null, lon: p.longitude ?? null }]);
     }
   }
 
@@ -94,7 +102,7 @@ function CalendarPage() {
                 </p>
               )}
               {items.map((it) => (
-                <Link key={it.id} to="/productions/$id" params={{ id: it.id }} title={it.name} className={`mb-1 block truncate rounded-xl px-1.5 py-0.5 text-xs font-medium hover:opacity-90 ${clientColor(it.client)}`}>
+                <Link key={it.id} to="/productions/$id" params={{ id: it.productionId }} title={it.name} className={`mb-1 block truncate rounded-xl px-1.5 py-0.5 text-xs font-medium hover:opacity-90 ${clientColor(it.client)}`}>
                   {it.name}{it.crew ? ` · ${it.crew} crew` : ""}
                 </Link>
               ))}
