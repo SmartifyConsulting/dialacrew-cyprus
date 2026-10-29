@@ -181,7 +181,7 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
   const locationRecces = useQuery({
     queryKey: ["dashboard-location-recces"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("production_locations").select("id, production_id, recce_date, latitude, longitude").not("recce_date", "is", null);
+      const { data, error } = await supabase.from("production_locations").select("id, production_id, label, address, starts_at, recce_date, latitude, longitude");
       if (error) throw error;
       return data ?? [];
     },
@@ -193,7 +193,7 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
       const k = recce.recce_date!;
       const item: MiniCalItem = {
         id: `${p.id}-${recce.id}-recce`, color: clientColor(p.client), client: p.client, name: `Recce · ${p.name}`,
-        location: p.location || p.address || "Location TBC", time: "Recce",
+        location: recce.address || recce.label || p.address || p.location || "Location TBC", time: "Recce",
       };
       byDay.set(k, [...(byDay.get(k) ?? []), item]);
       shoots.set(k, [...(shoots.get(k) ?? []), { id: p.id, lat: recce.latitude ?? p.latitude ?? null, lon: recce.longitude ?? p.longitude ?? null }]);
@@ -213,12 +213,13 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
       const d = new Date(start); d.setDate(d.getDate() + i);
       const k = isoDate(d);
       const callTimes = bookings.filter((b) => b.productionId === p.id && b.bookingDate === k && b.callTime).map((b) => b.callTime!).sort();
+      const location = locationRecces.find((point) => point.production_id === p.id && point.starts_at && isoDate(new Date(point.starts_at)) === k);
       const item: MiniCalItem = {
         id: `${p.id}-${k}`, color: clientColor(p.client), client: p.client, name: p.name,
-        location: p.location || p.address || "Location TBC", time: callTimes[0] ? callTimes[0].slice(0, 5) : "Time TBC",
+        location: location?.address || location?.label || p.address || p.location || "Location TBC", time: callTimes[0] ? callTimes[0].slice(0, 5) : "Time TBC",
       };
       byDay.set(k, [...(byDay.get(k) ?? []), item]);
-      shoots.set(k, [...(shoots.get(k) ?? []), { id: p.id, lat: p.latitude ?? null, lon: p.longitude ?? null }]);
+      shoots.set(k, [...(shoots.get(k) ?? []), { id: p.id, lat: location?.latitude ?? p.latitude ?? null, lon: location?.longitude ?? p.longitude ?? null }]);
     }
   }
   const first = new Date(today.getFullYear(), today.getMonth(), 1);
