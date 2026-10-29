@@ -160,7 +160,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 const isoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-type MiniCalItem = { id: string; color: string; client: string; name: string; location: string; time: string };
+type MiniCalItem = { id: string; color: string; client: string; name: string; location: string; time: string; isRecce?: boolean };
 
 // Popup for the calendar's weather, client chips and task icon: shows on hover, and on tap/keyboard focus for touch screens.
 // `align` keeps it on screen for the grid's left and right columns.
@@ -189,16 +189,19 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
   const byDay = new Map<string, MiniCalItem[]>();
   const shoots = new Map<string, DayShoot[]>();
   for (const p of productions) {
+    const recceDates = new Set<string>();
     for (const recce of locationRecces.filter((location) => location.production_id === p.id && location.recce_date)) {
+      if (recceDates.has(recce.recce_date!)) continue;
+      recceDates.add(recce.recce_date!);
       const k = recce.recce_date!;
       const item: MiniCalItem = {
-        id: `${p.id}-${recce.id}-recce`, color: clientColor(p.client), client: p.client, name: `Recce · ${p.name} · ${recce.label || "Location"}`,
+        id: `${p.id}-${recce.id}-recce`, color: clientColor(p.client), client: p.client, name: `Recce · ${p.name}`, isRecce: true,
         location: recce.address || recce.label || p.address || p.location || "Location TBC", time: "Recce",
       };
       byDay.set(k, [...(byDay.get(k) ?? []), item]);
       shoots.set(k, [...(shoots.get(k) ?? []), { id: p.id, lat: recce.latitude ?? p.latitude ?? null, lon: recce.longitude ?? p.longitude ?? null }]);
     }
-    if (p.recceDate) {
+    if (p.recceDate && !recceDates.has(p.recceDate)) {
       const k = p.recceDate;
       const item: MiniCalItem = {
         id: `${p.id}-recce`, color: clientColor(p.client), client: p.client, name: `Recce · ${p.name}`,
@@ -257,7 +260,7 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
                 <span className="flex min-h-3.5 max-w-full flex-wrap items-center justify-center gap-0.5">
                   {items.map((item) => (
                     <CalPop key={item.id} label={`${item.client} · ${item.name} · ${item.location} · ${item.time}`} align={align}
-                      trigger={<span className={`max-w-full truncate rounded-sm px-1 py-0.5 text-[9px] font-semibold leading-none ${item.color}`}>{item.client}</span>}>
+                      trigger={<span className={`max-w-full truncate rounded-sm px-1 py-0.5 text-[9px] font-semibold leading-none ${item.isRecce ? "bg-black text-white" : item.color}`}>{item.isRecce ? "Recce" : item.client}</span>}>
                       {item.client} · {item.name} · {item.location} · {item.time}
                     </CalPop>
                   ))}
