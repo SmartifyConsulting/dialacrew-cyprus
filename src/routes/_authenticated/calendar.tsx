@@ -1,13 +1,11 @@
-import { groupRecces, recceOverlaps, recceRange, recceTooltip } from "@/lib/recce";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { CheckSquare, ChevronLeft, ChevronRight, Square } from "lucide-react";
 import { Page, clientColor } from "@/components/AppShell";
-import { useRole, useSession } from "@/lib/auth";
-import { useBookings, useProductions } from "@/lib/db";
-import { supabase } from "@/integrations/supabase/client";
-import { useMyCrewId } from "@/lib/site";
+import { useSession } from "@/lib/auth";
+import { eventsByDay } from "@/lib/calendar-events";
+import { EVENT_CHIP, useCalendarEvents } from "@/lib/use-calendar-events";
+import { CalendarExport } from "@/components/CalendarExport";
 import { WEATHER_ICONS } from "@/lib/weather";
 import { forecastSummary, isoDay, useCalendarExtras } from "@/lib/calendar-extras";
 
@@ -27,95 +25,23 @@ export const Route = createFileRoute("/_authenticated/calendar")({
 
 const iso = isoDay;
 
-type DayItem = { id: string; productionId: string; name: string; client: string; location: string; crew: number; lat: number | null; lon: number | null; isRecce?: boolean; start?: string | null; end?: string | null; time?: string; details?: string };
+type DayItem = { id: string; key: string; productionId: string; name: string; client: string; location: string; crew: number; lat: number | null; lon: number | null; kind: "shoot" | "recce" | "gear"; time: string; details?: string | undefined; clash: boolean };
 
 function CalendarPage() {
   const { session } = useSession();
-  const role = useRole(session?.user.id);
-  const isCrewOnly = role.data === "crew";
-  const myCrewId = useMyCrewId(isCrewOnly).data ?? null;
-  const prods = useProductions().data ?? [];
-  const bookings = useBookings().data ?? [];
-  const confirmedProductionIds = new Set(bookings
-    .filter((booking) => booking.crewId === myCrewId && ["confirmed", "in_progress", "awaiting_review", "payment_released", "completed"].includes(booking.status))
-    .map((booking) => booking.productionId));
-  const locationFields = "id, production_id, label, recce_date, recce_start_time, recce_end_time, starts_at, latitude, longitude, sort_order" as const;
-  const locations = useQuery({
-    queryKey: ["calendar-locations", isCrewOnly],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("production_locations").select(locationFields).order("sort_order");
-      if (error) throw error;
-      return data ?? [];
-    },
-  }).data ?? [];
-  const confirmedLocations = useQuery({
-    queryKey: ["calendar-confirmed-location-addresses", [...confirmedProductionIds].sort().join(",")],
-    enabled: isCrewOnly && confirmedProductionIds.size > 0,
-    queryFn: async () => {
-      const { data, error } = await supabase.from("production_locations").select("id, production_id, address")
-        .in("production_id", [...confirmedProductionIds]);
-      if (error) throw error;
-      return data ?? [];
-    },
-  }).data ?? [];
-  const confirmedAddressByLocationId = new Map(confirmedLocations.map((location) => [location.id, location.address]));
-  const producerLocations = useQuery({
-    queryKey: ["calendar-producer-location-addresses", isCrewOnly],
-    enabled: !isCrewOnly,
-    queryFn: async () => {
-      const { data, error } = await supabase.from("production_locations").select("id, production_id, address");
-      if (error) throw error;
-      return data ?? [];
-    },
-  }).data ?? [];
-  const producerAddressByLocationId = new Map(producerLocations.map((location) => [location.id, location.address]));
+  const { events, conflicts, isCrewOnly, crewCount } = useCalendarEvents();
   const [month, setMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [openTask, setOpenTask] = useState<string | null>(null);
 
-  // Map every shoot and recce date to its production so each calendar day can show the matching forecast.
+  // Every chip comes from the shared event model (same data as the dashboard calendar and .ics export).
+  const evByDay = eventsByDay(events);
   const byDay = new Map<string, DayItem[]>();
-  for (const p of prods) {
-    const myBooking = isCrewOnly ? bookings.find((b) => b.productionId === p.id && b.crewId === myCrewId && b.status !== "cancelled") : undefined;
-    if (isCrewOnly && !myBooking) continue;
-    const canSeeExactAddress = !isCrewOnly || confirmedProductionIds.has(p.id);
-    const locationAddress = (location: (typeof locations)[number] | undefined) => {
-      if (!location) return canSeeExactAddress ? p.address || p.location || "Location TBC" : p.location || "Location TBC";
-      const exact = isCrewOnly ? confirmedAddressByLocationId.get(location.id) : producerAddressByLocationId.get(location.id);
-      return canSeeExactAddress ? exact || p.address || location.label || p.location || "Location TBC" : location.label || p.location || "Location TBC";
-    };
-    const recceDates = new Set<string>();
-    // One recce item per production per date, spanning earliest start to latest end across its locations.
-    for (const g of groupRecces(locations.filter((location) => location.production_id === p.id))) {
-      recceDates.add(g.date);
-      const first = g.locations[0]!.loc;
-      const crew = bookings.filter((b) => b.productionId === p.id && b.status !== "cancelled").length;
-      byDay.set(g.date, [...(byDay.get(g.date) ?? []), {
-        id: `${p.id}-${g.date}-recce`, productionId: p.id, name: `Recce · ${p.name}`, client: p.client,
-        location: g.locations.length > 1 ? `${g.locations.length} locations` : locationAddress(first as (typeof locations)[number]), crew: isCrewOnly ? 0 : crew,
-        lat: first.latitude ?? p.latitude ?? null, lon: first.longitude ?? p.longitude ?? null, isRecce: true,
-        start: g.start, end: g.end, time: recceRange(g.start, g.end),
-        details: recceTooltip(g, (l) => locationAddress(l as (typeof locations)[number])),
-      }]);
-    }
-    if (p.recceDate && !recceDates.has(p.recceDate)) {
-      const k = p.recceDate;
-      const crew = bookings.filter((b) => b.productionId === p.id && b.status !== "cancelled").length;
-      byDay.set(k, [...(byDay.get(k) ?? []), {
-        id: `${p.id}-recce`, productionId: p.id, name: `Recce · ${p.name}`, client: p.client, location: canSeeExactAddress ? p.address || p.location || "Location TBC" : p.location || "Location TBC", crew: isCrewOnly ? 0 : crew,
-        lat: p.latitude ?? null, lon: p.longitude ?? null, isRecce: true,
-      }]);
-    }
-    if (!p.date) continue;
-    const spanStart = isCrewOnly && myBooking?.bookingDate ? myBooking.bookingDate : p.date;
-    const spanDays = isCrewOnly && myBooking ? Math.max(1, myBooking.days || 1) : Math.max(1, p.days);
-    const start = new Date(`${spanStart}T00:00:00`);
-    for (let i = 0; i < spanDays; i++) {
-      const d = new Date(start); d.setDate(d.getDate() + i);
-      const k = iso(d);
-      const crew = bookings.filter((b) => b.productionId === p.id && b.status !== "cancelled").length;
-      const location = locations.find((point) => point.production_id === p.id && point.starts_at && iso(new Date(point.starts_at)) === k);
-      byDay.set(k, [...(byDay.get(k) ?? []), { id: p.id, productionId: p.id, name: p.name, client: p.client, location: locationAddress(location), crew: isCrewOnly ? 0 : crew, lat: location?.latitude ?? p.latitude ?? null, lon: location?.longitude ?? p.longitude ?? null }]);
-    }
+  for (const [k, list] of evByDay) {
+    byDay.set(k, list.map((e) => ({
+      id: e.productionId, key: e.uid, productionId: e.productionId, name: e.title, client: e.client, location: e.location,
+      crew: isCrewOnly ? 0 : crewCount(e.productionId), lat: e.lat ?? null, lon: e.lon ?? null, kind: e.kind,
+      time: e.timeLabel, details: e.details, clash: conflicts.has(e.uid),
+    })));
   }
 
   const first = new Date(month);
@@ -140,7 +66,8 @@ function CalendarPage() {
         <h2 className="min-w-48 text-center text-xl">{month.toLocaleDateString("en-ZA", { month: "long", year: "numeric" })}</h2>
         <button aria-label="Next month" onClick={() => shift(1)} className="rounded-xl border border-border bg-card p-2"><ChevronRight className="h-4 w-4" /></button>
       </div>
-      <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground"><span className="inline-block rounded-md bg-black px-2 py-1 font-semibold text-white">Recce</span><span>Recce day</span></div>
+      <CalendarExport events={events} userId={session?.user.id} />
+      <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><span className="inline-block rounded-md bg-black px-2 py-1 font-semibold text-white">Recce</span><span>Recce day</span><span className="ml-2 inline-block rounded-md bg-purple-700 px-2 py-1 font-semibold text-white">Gear check</span><span>Pickup → drop-off</span><span className="ml-2 font-semibold text-destructive">overlap</span><span>clashes with another production</span></div>
       <div className="grid grid-cols-7 gap-px overflow-hidden rounded-xl border border-border bg-border">
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
           <div key={d} className="bg-muted px-2 py-2 text-center text-xs font-medium text-muted-foreground">{d}</div>
@@ -159,16 +86,14 @@ function CalendarPage() {
                   {weather.max != null && weather.min != null ? `${Math.round(weather.min)}–${Math.round(weather.max)}°` : ""}
                 </p>
               )}
-              {items.map((it) => {
-                const clash = it.isRecce && items.some((o) => o !== it && o.isRecce && o.productionId !== it.productionId && recceOverlaps({ date: key, start: it.start ?? null, end: it.end ?? null }, { date: key, start: o.start ?? null, end: o.end ?? null }));
-                return (
-                <Link key={it.id} to="/productions/$id" params={{ id: it.productionId }} title={`${it.name} · ${it.time ? `${it.time} · ` : ""}${it.location}${it.details ? `\n${it.details}` : ""}${clash ? "\nOverlaps another recce" : ""}`} className={`mb-1 block rounded-xl px-1.5 py-0.5 text-xs font-medium hover:opacity-90 ${it.isRecce ? "bg-black text-white" : clientColor(it.client)}`}>
-                  <span className="block truncate">{it.name}{it.crew ? ` · ${it.crew} crew` : ""}</span>
-                  {it.isRecce && it.time && <span className="block truncate text-[10px] font-semibold">{it.time}{clash ? " · overlap" : ""}</span>}
+              {items.map((it) => (
+                <Link key={it.key} to="/productions/$id" params={{ id: it.productionId }} title={`${it.name} · ${it.time} · ${it.location}${it.details ? `\n${it.details}` : ""}${it.clash ? "\nOverlaps another production" : ""}`}
+                  className={`mb-1 block rounded-xl px-1.5 py-0.5 text-xs font-medium hover:opacity-90 ${it.kind === "shoot" ? clientColor(it.client) : EVENT_CHIP[it.kind]} ${it.clash ? "ring-2 ring-destructive" : ""}`}>
+                  <span className="block truncate">{it.name}{it.crew && it.kind === "shoot" ? ` · ${it.crew} crew` : ""}</span>
+                  <span className="block truncate text-[10px] font-semibold">{it.time}{it.clash ? " · overlap" : ""}</span>
                   {it.location && <span className="block truncate text-[10px] font-normal opacity-90">{it.location}</span>}
                 </Link>
-                );
-              })}
+              ))}
               {dayTasks.length > 0 && (
                 <div className="mt-1 flex flex-wrap gap-1">
                   {dayTasks.map((t) => (

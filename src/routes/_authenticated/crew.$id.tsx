@@ -9,6 +9,7 @@ import { Page, Panel } from "@/components/AppShell";
 import { Avatar } from "@/components/site/SiteTabs";
 import { useRole, useSession } from "@/lib/auth";
 import { zar } from "@/lib/demo-data";
+import { FRAMEWORKS, summarize, type FrameworkId, type Scores } from "@/lib/rating-frameworks";
 import { uploadFile, useInvalidate, useOnTimePct, useReviews } from "@/lib/site";
 import {
   useApproveJob, useCancelBooking, useClaimGig, useMarkJobCompleted, useMarkPaymentReceived, useNegotiations,
@@ -513,6 +514,17 @@ function ReviewsTab({ crewId }: { crewId: string }) {
                 {[1, 2, 3, 4, 5].map((n) => <Star key={n} className={`h-4 w-4 ${n <= r.rating ? "fill-primary text-primary" : "text-muted-foreground"}`} />)}
                 <span className="ml-2 text-sm font-medium">{prodName(r.production_id)}</span>
               </div>
+              {r.framework && FRAMEWORKS[r.framework as FrameworkId] && (() => {
+                const sm = summarize(r.framework as FrameworkId, (r.scores ?? {}) as Scores);
+                return (
+                  <div className="mt-2 space-y-1 text-xs">
+                    <p className="font-semibold text-foreground">{FRAMEWORKS[r.framework as FrameworkId].name} · Overall {sm.overall != null ? `${sm.overall}/5` : "Not rated"}{r.work_again ? ` · Would work again: ${r.work_again[0]!.toUpperCase()}${r.work_again.slice(1)}` : ""}</p>
+                    <div className="grid gap-x-3 sm:grid-cols-2">
+                      {sm.categories.map((c) => <span key={c.name} className="text-muted-foreground">{c.name}: <span className="text-foreground">{c.score != null ? `${c.score}/5` : "Not rated"}</span></span>)}
+                    </div>
+                  </div>
+                );
+              })()}
               <div className="mt-0.5 text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" })}</div>
             </li>
           ))}

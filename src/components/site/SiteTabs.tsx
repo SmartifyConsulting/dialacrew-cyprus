@@ -1,4 +1,6 @@
 import { hhmm, recceRange, validRecceTimes } from "@/lib/recce";
+import { RateDialog } from "@/components/site/RateDialog";
+import { gearValid } from "@/lib/calendar-events";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -829,6 +831,7 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
           })()}
         </div>
       </Panel>
+      <ProductionSchedule p={p} isProducer={isProducer} />
       <Panel title="Locations">
         <LocationPoints p={p} isProducer={isProducer} myCrewId={myCrewId} />
       </Panel>
@@ -841,7 +844,7 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
   const members = (useSiteMembers(p.id).data ?? []).filter((m) => CONFIRMED_BOOKING_STATUSES.includes(m.booking_status));
   const rows = useRegister(p.id).data ?? [];
   const inv = useInvalidate();
-  const [rating, setRating] = useState<{ crewId: string; name: string } | null>(null);
+  const [rating, setRating] = useState<{ crewId: string; name: string; role: string | null; department: string | null } | null>(null);
   const cancelBooking = useCancelBooking();
   const wraps = (useQuery({
     queryKey: ["site-wraps", p.id],
@@ -1006,7 +1009,10 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
                         {isProducer && <RequestOvertimeButton productionId={p.id} crewId={m.crew_id} live={liveRequest(overtime, m.crew_id)} />}
                         <button onClick={() => wrapCrew(m)} disabled={!!wrapFor(m.crew_id)} className="rounded-sm border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40">Wrap</button>
                         <button onClick={() => removeMember(m)} aria-label={`Remove ${m.name}`} title="Remove from production" className="grid h-6 w-6 place-items-center rounded-sm border border-destructive text-destructive hover:bg-destructive/10"><Minus className="h-3.5 w-3.5" /></button>
-                        {m.user_id !== userId && <button onClick={() => setRating({ crewId: m.crew_id, name: m.name })} className="rounded-sm border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10">Rate me</button>}
+                        {m.user_id !== userId && (() => {
+                          const eligible = !!wrapFor(m.crew_id) || ["awaiting_review", "payment_released", "completed"].includes(m.booking_status) || p.status === "Wrapped";
+                          return <button disabled={!eligible} title={eligible ? "Rate this person" : "Available once they've wrapped or completed the job"} onClick={() => setRating({ crewId: m.crew_id, name: m.name, role: m.role, department: m.department })} className="rounded-sm border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40">Rate me</button>;
+                        })()}
                       </div>
                     </td>
                   )}
@@ -1016,7 +1022,7 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
           </tbody>
         </table>
       </Panel>
-      {rating && <RateDialog {...rating} productionId={p.id} onClose={() => setRating(null)} />}
+      {rating && <RateDialog {...rating} productionId={p.id} onClose={() => setRating(null)} onSaved={() => inv(["reviews"], ["crew"])} />}
     </div>
   );
 }
@@ -1027,40 +1033,6 @@ export function Avatar({ name, path, size = 36 }: { name: string; path?: string 
   return url
     ? <img src={url} alt={name} style={{ width: size, height: size }} className="shrink-0 rounded-full object-cover" />
     : <span style={{ width: size, height: size }} className="grid shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{initials(name)}</span>;
-}
-
-function RateDialog({ crewId, name, productionId, onClose }: { crewId: string; name: string; productionId: string; onClose: () => void }) {
-  const [stars, setStars] = useState(5);
-  const [comment, setComment] = useState("");
-  const inv = useInvalidate();
-  async function submit() {
-    const { data: u } = await supabase.auth.getUser();
-    const { data: prof } = await supabase.from("profiles").select("full_name").eq("id", u.user!.id).maybeSingle();
-    const { error } = await supabase.from("crew_reviews").upsert(
-      { crew_id: crewId, production_id: productionId, rating: stars, comment, reviewer_id: u.user!.id, reviewer_name: prof?.full_name ?? "" },
-      { onConflict: "crew_id,production_id,reviewer_id" });
-    if (error) { toast.error(friendlyError(error)); return; }
-    toast.success(`Rating saved for ${name}`);
-    inv(["reviews"], ["crew"]);
-    onClose();
-  }
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-4" onClick={onClose}>
-      <div className="w-full max-w-md rounded-sm border border-border bg-card p-5" onClick={(e) => e.stopPropagation()}>
-        <h3 className="font-script text-3xl text-primary">Rate {name}</h3>
-        <div className="my-3 flex gap-1">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <button key={n} aria-label={`${n} stars`} onClick={() => setStars(n)}><Star className={`h-7 w-7 ${n <= stars ? "fill-primary text-primary" : "text-muted-foreground"}`} /></button>
-          ))}
-        </div>
-        <textarea rows={3} className={`${input} w-full`} placeholder="How did they do on this job?" value={comment} onChange={(e) => setComment(e.target.value)} />
-        <div className="mt-3 flex justify-end gap-2">
-          <button onClick={onClose} className="px-3 py-2 text-xs text-muted-foreground">Cancel</button>
-          <button onClick={submit} className={btn}>Save rating</button>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 /* ---------------- Posts ---------------- */
@@ -1446,3 +1418,62 @@ export function CommercialsTab({ p, bookings, crewNames, requests }: Ctx & { boo
 }
 
 export const SiteIcons = { Users };
+
+
+/* ---------------- Production recce times + Gear Check (producer edits; site members see) ---------------- */
+type SchedField = "recce_start_time" | "recce_end_time" | "gear_pickup_date" | "gear_pickup_time" | "gear_dropoff_date" | "gear_dropoff_time";
+function ProductionSchedule({ p, isProducer }: { p: Ctx["p"]; isProducer: boolean }) {
+  const inv = useInvalidate();
+  const cur = {
+    recce_start_time: p.recceStart ?? null, recce_end_time: p.recceEnd ?? null,
+    gear_pickup_date: p.gearPickupDate ?? null, gear_pickup_time: p.gearPickupTime ?? null,
+    gear_dropoff_date: p.gearDropoffDate ?? null, gear_dropoff_time: p.gearDropoffTime ?? null,
+  };
+  async function save(field: SchedField, value: string) {
+    const next = { ...cur, [field]: value || null };
+    if (!validRecceTimes(next.recce_start_time, next.recce_end_time)) { toast.error("Recce end time must be after the start time"); return; }
+    if (!gearValid(next.gear_pickup_date, next.gear_pickup_time, next.gear_dropoff_date, next.gear_dropoff_time)) { toast.error("Drop-off must be after pickup"); return; }
+    const { error } = await supabase.from("productions").update({ [field]: value || null } as Partial<Record<SchedField, string | null>>).eq("id", p.id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    inv(["productions"], ["production", p.id]);
+    toast.success("Saved");
+  }
+  const t = (v: string | null) => hhmm(v) ?? "";
+  const show = (d: string | null, tm: string | null) => d ? `${dayLabel(`${d}T00:00:00`)} · ${hhmm(tm) ?? "time TBC"}` : "Date TBC";
+  return (
+    <>
+      {isProducer && p.recceDate && (
+        <Panel title="Production Recce Times">
+          <div className="flex flex-wrap items-center gap-2 p-4 text-xs text-muted-foreground">
+            <input type="time" aria-label="Production recce start time" className={`${input} py-1 text-xs`} value={t(cur.recce_start_time)} onChange={(e) => save("recce_start_time", e.target.value)} />
+            <span>–</span>
+            <input type="time" aria-label="Production recce end time" className={`${input} py-1 text-xs`} value={t(cur.recce_end_time)} onChange={(e) => save("recce_end_time", e.target.value)} />
+            <span>{recceRange(cur.recce_start_time, cur.recce_end_time)}</span>
+          </div>
+        </Panel>
+      )}
+      <Panel title="Gear Check Date">
+        <div className="space-y-2 p-4 text-sm">
+          {isProducer ? (
+            <div className="grid gap-2 sm:grid-cols-2">
+              <fieldset className="space-y-1"><legend className="text-xs font-semibold text-foreground">Pickup</legend>
+                <input type="date" aria-label="Gear pickup date" className={`${input} w-full py-1 text-xs`} value={cur.gear_pickup_date ?? ""} onChange={(e) => save("gear_pickup_date", e.target.value)} />
+                <input type="time" aria-label="Gear pickup time" className={`${input} w-full py-1 text-xs`} value={t(cur.gear_pickup_time)} onChange={(e) => save("gear_pickup_time", e.target.value)} />
+              </fieldset>
+              <fieldset className="space-y-1"><legend className="text-xs font-semibold text-foreground">Drop-off</legend>
+                <input type="date" aria-label="Gear drop-off date" className={`${input} w-full py-1 text-xs`} value={cur.gear_dropoff_date ?? ""} onChange={(e) => save("gear_dropoff_date", e.target.value)} />
+                <input type="time" aria-label="Gear drop-off time" className={`${input} w-full py-1 text-xs`} value={t(cur.gear_dropoff_time)} onChange={(e) => save("gear_dropoff_time", e.target.value)} />
+              </fieldset>
+            </div>
+          ) : null}
+          {cur.gear_pickup_date ? (
+            <div className="text-xs">
+              <p className="font-semibold text-foreground">Pickup · {show(cur.gear_pickup_date, cur.gear_pickup_time)}</p>
+              <p className="font-semibold text-foreground">Drop-off · {cur.gear_dropoff_date ? show(cur.gear_dropoff_date, cur.gear_dropoff_time) : "Date TBC"}</p>
+            </div>
+          ) : <p className="font-semibold text-foreground">Not scheduled</p>}
+        </div>
+      </Panel>
+    </>
+  );
+}
