@@ -1381,6 +1381,39 @@ export type Database = {
           },
         ]
       }
+      notification_acknowledgement_audit: {
+        Row: {
+          id: string
+          notification_id: string
+          production_id: string | null
+          actor_id: string
+          actor_name: string
+          activity_type: string
+          notification_title: string
+          occurred_at: string
+        }
+        Insert: {
+          id?: string
+          notification_id: string
+          production_id?: string | null
+          actor_id: string
+          actor_name: string
+          activity_type?: string
+          notification_title: string
+          occurred_at?: string
+        }
+        Update: {
+          id?: string
+          notification_id?: string
+          production_id?: string | null
+          actor_id?: string
+          actor_name?: string
+          activity_type?: string
+          notification_title?: string
+          occurred_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           acknowledged_at: string | null
