@@ -78,9 +78,9 @@ function CalendarPage() {
     if (isCrewOnly && !myBooking) continue;
     const canSeeExactAddress = !isCrewOnly || confirmedProductionIds.has(p.id);
     const locationAddress = (location: (typeof locations)[number] | undefined) => {
-      if (!location) return isCrewOnly ? p.location : p.address || p.location;
+      if (!location) return canSeeExactAddress ? p.address || p.location || "Location TBC" : p.location || "Location TBC";
       const exact = isCrewOnly ? confirmedAddressByLocationId.get(location.id) : producerAddressByLocationId.get(location.id);
-      return canSeeExactAddress ? exact || location.label : location.label || p.location;
+      return canSeeExactAddress ? exact || p.address || location.label || p.location || "Location TBC" : location.label || p.location || "Location TBC";
     };
     for (const recce of locations.filter((location) => location.production_id === p.id && location.recce_date)) {
       const crew = bookings.filter((b) => b.productionId === p.id && b.status !== "cancelled").length;
@@ -93,7 +93,7 @@ function CalendarPage() {
       const k = p.recceDate;
       const crew = bookings.filter((b) => b.productionId === p.id && b.status !== "cancelled").length;
       byDay.set(k, [...(byDay.get(k) ?? []), {
-        id: `${p.id}-recce`, productionId: p.id, name: `Recce · ${p.name}`, client: p.client, location: isCrewOnly ? p.location : p.address || p.location, crew: isCrewOnly ? 0 : crew,
+        id: `${p.id}-recce`, productionId: p.id, name: `Recce · ${p.name}`, client: p.client, location: canSeeExactAddress ? p.address || p.location || "Location TBC" : p.location || "Location TBC", crew: isCrewOnly ? 0 : crew,
         lat: p.latitude ?? null, lon: p.longitude ?? null,
       }]);
     }
