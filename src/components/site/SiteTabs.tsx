@@ -1467,7 +1467,7 @@ function ProductionSchedule({ p, isProducer }: { p: Ctx["p"]; isProducer: boolea
     const next = { ...cur, [field]: value || null };
     if (!validRecceTimes(next.recce_start_time, next.recce_end_time)) { toast.error("Recce end time must be after the start time"); return; }
     if (!gearValid(next.gear_pickup_date, next.gear_pickup_time, next.gear_dropoff_date, next.gear_dropoff_time)) { toast.error("Drop-off must be after pickup"); return; }
-    const { error } = await supabase.from("productions").update({ [field]: value || null }).eq("id", p.id);
+    const { error } = await supabase.from("productions").update({ [field]: value || null } as Partial<Record<SchedField, string | null>>).eq("id", p.id);
     if (error) { toast.error(friendlyError(error)); return; }
     inv(["productions"], ["production", p.id]);
     toast.success("Saved");
