@@ -89,6 +89,12 @@ export type Database = {
           },
         ]
       }
+      booking_terms_acceptances: {
+        Row: { id: string; booking_id: string; production_id: string; crew_id: string; accepted_by: string; terms_version: string; accepted_at: string }
+        Insert: { id?: string; booking_id: string; production_id: string; crew_id: string; accepted_by: string; terms_version: string; accepted_at?: string }
+        Update: { id?: string; booking_id?: string; production_id?: string; crew_id?: string; accepted_by?: string; terms_version?: string; accepted_at?: string }
+        Relationships: []
+      }
       bookings: {
         Row: {
           attendance: string | null
@@ -2662,6 +2668,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_booking_with_terms: { Args: { p_booking_id: string; p_terms_version: string }; Returns: undefined }
+      claim_gig_with_terms: { Args: { p_booking_id: string; p_terms_version: string }; Returns: undefined }
+
       complete_production: { Args: { p_production_id: string }; Returns: undefined }
 
       acknowledge_notification: {
