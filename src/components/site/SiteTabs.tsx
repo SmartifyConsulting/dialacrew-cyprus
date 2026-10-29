@@ -288,22 +288,22 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
             onDragOver={(e) => { if (isProducer) { e.preventDefault(); setDragOverId(pt.id); } }}
             onDrop={(e) => { e.preventDefault(); if (dragId) reorder(dragId, pt.id); setDragId(null); setDragOverId(null); }}
             onDragEnd={() => { setDragId(null); setDragOverId(null); }}
-            className={`flex items-start justify-between gap-3 rounded-sm border border-border bg-card p-4 ${dragOverId === pt.id && dragId && dragId !== pt.id ? "bg-muted" : ""}`}>
-            {isProducer && points.length > 1 && <div className="flex h-10 shrink-0 items-center"><GripVertical className="h-4 w-4 cursor-grab text-muted-foreground" /></div>}
-            <div className="min-w-0 flex-1 space-y-2">
+            className={`flex items-start justify-between gap-2 rounded-xl border border-border bg-card p-3 shadow-sm ${dragOverId === pt.id && dragId && dragId !== pt.id ? "bg-muted" : ""}`}>
+            {isProducer && points.length > 1 && <div className="flex h-8 shrink-0 items-center"><GripVertical className="h-4 w-4 cursor-grab text-muted-foreground" /></div>}
+            <div className="min-w-0 flex-1 space-y-3">
               <div className="flex items-start gap-2">
                 <NumberedPin n={i + 1} />
-                <div>
-                  <div className="text-base font-bold text-foreground">Shoot Day {i + 1}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-bold text-foreground">Shoot Day {i + 1}</div>
                   <div className="text-sm font-semibold text-foreground">{pt.starts_at ? dayLabel(pt.starts_at) : "Date TBC"}</div>
-                  <div className="text-sm text-foreground">{pt.starts_at ? timeRange(pt.starts_at, pt.ends_at) : "Time TBC"}</div>
+                  <div className="text-xs text-muted-foreground">{pt.starts_at ? timeRange(pt.starts_at, pt.ends_at) : "Time TBC"}</div>
                   {isProducer && (
                     <label className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                       <span className="font-semibold text-foreground">Recce date</span>
                       <input
                         type="date"
                         aria-label={`Recce date for Shoot Day ${i + 1}`}
-                        className={`${input} w-auto min-w-0 py-1`}
+                        className={`${input} max-w-full min-w-0 py-1 text-xs`}
                         value={pt.recce_date ?? ""}
                         onChange={async (e) => {
                           const recceDate = e.target.value || null;
@@ -325,7 +325,7 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
                 </a>
               ) : <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><MapPin className="h-3.5 w-3.5 text-primary" /> {pt.label || p.location} · Exact address shared after booking confirmation.</p>}
               {(pt.recce_date || pt.starts_at) && (
-                <div className="space-y-1 rounded-md bg-muted/40 px-3 py-2">
+                <div className="space-y-1 rounded-md bg-muted/30 px-2.5 py-2">
                   <p className="text-xs font-semibold text-foreground">Weather forecast</p>
                   {pt.recce_date && (
                     <div>
@@ -345,12 +345,17 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
                   )}
                 </div>
               )}
-              <LocationPhotos p={p} locationId={pt.id} isProducer={isProducer} />
-              {isProducer && <LocationFee p={p} locationId={pt.id} />}
-              {isProducer && <LocationRisks p={p} locationId={pt.id} hasCoords={pt.latitude != null && pt.longitude != null} />}
+              <details className="group rounded-lg border border-border/70">
+                <summary className="cursor-pointer select-none px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/40">Photos · Fees · Risks <span className="font-normal text-muted-foreground">(expand)</span></summary>
+                <div className="space-y-3 border-t border-border px-3 py-3">
+                  <LocationPhotos p={p} locationId={pt.id} isProducer={isProducer} />
+                  {isProducer && <LocationFee p={p} locationId={pt.id} />}
+                  {isProducer && <LocationRisks p={p} locationId={pt.id} hasCoords={pt.latitude != null && pt.longitude != null} />}
+                </div>
+              </details>
             </div>
             {isProducer && (
-              <div className="flex h-10 shrink-0 items-center gap-2">
+              <div className="flex h-8 shrink-0 items-center gap-2">
                 <button onClick={() => startEdit(pt)} className="text-muted-foreground hover:text-primary" aria-label={`Edit ${pt.label}`}><Pencil className="h-3.5 w-3.5" /></button>
                 <button onClick={() => removePoint(pt.id)} className="text-muted-foreground hover:text-destructive" aria-label={`Remove ${pt.label}`}><Trash2 className="h-4 w-4" /></button>
               </div>
