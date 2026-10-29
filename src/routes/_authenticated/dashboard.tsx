@@ -181,6 +181,15 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
   const byDay = new Map<string, MiniCalItem[]>();
   const shoots = new Map<string, DayShoot[]>();
   for (const p of productions) {
+    if (p.recceDate) {
+      const k = p.recceDate;
+      const item: MiniCalItem = {
+        id: `${p.id}-recce`, color: clientColor(p.client), client: p.client, name: `Recce · ${p.name}`,
+        location: p.location || p.address || "Location TBC", time: "Recce",
+      };
+      byDay.set(k, [...(byDay.get(k) ?? []), item]);
+      shoots.set(k, [...(shoots.get(k) ?? []), { id: p.id, lat: p.latitude ?? null, lon: p.longitude ?? null }]);
+    }
     if (!p.date) continue;
     const start = new Date(p.date + "T00:00:00");
     for (let i = 0; i < Math.max(1, p.days); i++) {
