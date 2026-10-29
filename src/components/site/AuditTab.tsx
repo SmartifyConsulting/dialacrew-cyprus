@@ -70,9 +70,15 @@ export function AuditTab({ p }: { p: { id: string } }) {
     },
   }).data ?? [];
 
-  // day -> location -> events, both in order
+  // Search across actor, activity and detail, with optional exact date and activity type.
+  const activityOf = (e: Event) => e.type ?? ({ att: "Attendance", wrap: "Wrap", left: "Departure", otreq: "Overtime", otacc: "Overtime", otdec: "Overtime", otend: "Overtime", post: "Post", photo: "Photo", task: "Task" } as Record<string, string>)[e.id.split("-")[0]] ?? "Other";
+  const types = [...new Set(events.map(activityOf))].sort();
+  const filtered = events.filter((e) => {
+    const needle = search.trim().toLowerCase();
+    return (!filterDate || dayKey(e.at) === filterDate) && (!filterType || activityOf(e) === filterType) && (!needle || [e.text, e.detail, e.actor, activityOf(e), new Date(e.at).toLocaleString("en-ZA")].join(" ").toLowerCase().includes(needle));
+  });
   const groups = new Map<string, Map<string, Event[]>>();
-  for (const e of events) {
+  for (const e of filtered) {
     const day = dayKey(e.at);
     const loc = locationFor(new Date(e.at).getTime(), locations);
     if (!groups.has(day)) groups.set(day, new Map());
@@ -80,7 +86,7 @@ export function AuditTab({ p }: { p: { id: string } }) {
     if (!byLoc.has(loc)) byLoc.set(loc, []);
     byLoc.get(loc)!.push(e);
   }
-  const days = [...groups.keys()].sort();
+  const days = [...groups.keys()].sort().reverse();
 
   if (days.length === 0) {
     return <Panel title="Audit trail"><p className="p-4 text-sm text-muted-foreground">Nothing recorded yet. Check-ins, wraps, overtime, posts, photos and tasks will appear here as they happen.</p></Panel>;
