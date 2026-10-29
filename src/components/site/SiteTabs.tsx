@@ -279,7 +279,7 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
               <div className="flex items-start gap-2">
                 <NumberedPin n={i + 1} />
                 <div>
-                  <div className="text-base font-bold text-foreground">{pt.label}</div>
+                  <div className="text-base font-bold text-foreground">Shoot Day {i + 1}</div>
                   <div className="text-sm font-semibold text-foreground">{pt.starts_at ? dayLabel(pt.starts_at) : "Date TBC"}</div>
                   <div className="text-sm text-foreground">{pt.starts_at ? timeRange(pt.starts_at, pt.ends_at) : "Time TBC"}</div>
                 </div>
@@ -646,6 +646,7 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
 /* ---------------- Overview ---------------- */
 export function OverviewTab({ p, isProducer }: Ctx) {
   const inv = useInvalidate();
+  const locationPoints = useLocationPoints(p.id).data ?? [];
   const [f, setF] = useState({ address: p.address ?? "", summary: p.summary ?? "", latitude: p.latitude?.toString() ?? "", longitude: p.longitude?.toString() ?? "", geofence: String(p.geofenceM ?? 10) });
   const [posting, setPosting] = useState(false);
   const [editing, setEditing] = useState(() => !(p.address || p.latitude));
@@ -725,6 +726,19 @@ export function OverviewTab({ p, isProducer }: Ctx) {
         </div>
       </Panel>
 
+      <Panel title="Recce Date">
+        <div className="space-y-1 p-4">
+          <p className="font-semibold text-foreground">{p.recceDate ? new Date(`${p.recceDate}T00:00:00`).toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : "Not scheduled"}</p>
+          {p.recceDate && (() => {
+            const firstLocation = locationPoints[0];
+            const lat = p.latitude ?? firstLocation?.latitude ?? null;
+            const lon = p.longitude ?? firstLocation?.longitude ?? null;
+            return lat != null && lon != null
+              ? <DayWeather lat={lat} lon={lon} date={p.recceDate} />
+              : <p className="text-xs text-muted-foreground">Add a map location to see the recce forecast.</p>;
+          })()}
+        </div>
+      </Panel>
       <Panel title="Locations">
         <LocationPoints p={p} isProducer={isProducer} />
       </Panel>
