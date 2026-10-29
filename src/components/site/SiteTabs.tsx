@@ -305,12 +305,27 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
                   <MapPin className="h-3.5 w-3.5 text-primary" /> {displayAddress(pt.address || pt.label)}
                 </a>
               ) : <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><MapPin className="h-3.5 w-3.5 text-primary" /> {pt.label || p.location} · Exact address shared after booking confirmation.</p>}
-              {pt.recce_date && (pt.latitude != null && pt.longitude != null
-                ? <DayWeather lat={pt.latitude} lon={pt.longitude} date={pt.recce_date} />
-                : <p className="text-xs text-muted-foreground">Add a map location to see the recce forecast.</p>)}
-              {pt.starts_at && (pt.latitude != null && pt.longitude != null
-                ? <DayWeather lat={pt.latitude} lon={pt.longitude} date={localYmd(pt.starts_at)} />
-                : <p className="text-xs text-muted-foreground">Add a map location to see the shoot-day forecast.</p>)}
+              {(pt.recce_date || pt.starts_at) && (
+                <div className="space-y-1 rounded-md bg-muted/40 px-3 py-2">
+                  <p className="text-xs font-semibold text-foreground">Weather forecast</p>
+                  {pt.recce_date && (
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">Recce · {dayLabel(`${pt.recce_date}T00:00:00`)}</p>
+                      {pt.latitude != null && pt.longitude != null
+                        ? <DayWeather lat={pt.latitude} lon={pt.longitude} date={pt.recce_date} />
+                        : <p className="text-xs text-muted-foreground">Add a map location to see the recce forecast.</p>}
+                    </div>
+                  )}
+                  {pt.starts_at && (
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">Shoot · {dayLabel(pt.starts_at)}</p>
+                      {pt.latitude != null && pt.longitude != null
+                        ? <DayWeather lat={pt.latitude} lon={pt.longitude} date={localYmd(pt.starts_at)} />
+                        : <p className="text-xs text-muted-foreground">Add a map location to see the shoot-day forecast.</p>}
+                    </div>
+                  )}
+                </div>
+              )}
               <LocationPhotos p={p} locationId={pt.id} isProducer={isProducer} />
               {isProducer && <LocationFee p={p} locationId={pt.id} />}
               {isProducer && <LocationRisks p={p} locationId={pt.id} hasCoords={pt.latitude != null && pt.longitude != null} />}
