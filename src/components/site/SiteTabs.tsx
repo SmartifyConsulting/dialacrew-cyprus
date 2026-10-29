@@ -1,4 +1,5 @@
 import { hhmm, recceRange, validRecceTimes } from "@/lib/recce";
+import { RateDialog } from "@/components/site/RateDialog";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -842,7 +843,7 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
   const members = (useSiteMembers(p.id).data ?? []).filter((m) => CONFIRMED_BOOKING_STATUSES.includes(m.booking_status));
   const rows = useRegister(p.id).data ?? [];
   const inv = useInvalidate();
-  const [rating, setRating] = useState<{ crewId: string; name: string } | null>(null);
+  const [rating, setRating] = useState<{ crewId: string; name: string; role: string | null; department: string | null } | null>(null);
   const cancelBooking = useCancelBooking();
   const wraps = (useQuery({
     queryKey: ["site-wraps", p.id],
@@ -1007,7 +1008,10 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
                         {isProducer && <RequestOvertimeButton productionId={p.id} crewId={m.crew_id} live={liveRequest(overtime, m.crew_id)} />}
                         <button onClick={() => wrapCrew(m)} disabled={!!wrapFor(m.crew_id)} className="rounded-sm border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40">Wrap</button>
                         <button onClick={() => removeMember(m)} aria-label={`Remove ${m.name}`} title="Remove from production" className="grid h-6 w-6 place-items-center rounded-sm border border-destructive text-destructive hover:bg-destructive/10"><Minus className="h-3.5 w-3.5" /></button>
-                        {m.user_id !== userId && <button onClick={() => setRating({ crewId: m.crew_id, name: m.name })} className="rounded-sm border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10">Rate me</button>}
+                        {m.user_id !== userId && (() => {
+                          const eligible = !!wrapFor(m.crew_id) || ["awaiting_review", "payment_released", "completed"].includes(m.booking_status) || p.status === "Wrapped";
+                          return <button disabled={!eligible} title={eligible ? "Rate this person" : "Available once they've wrapped or completed the job"} onClick={() => setRating({ crewId: m.crew_id, name: m.name, role: m.role, department: m.department })} className="rounded-sm border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40">Rate me</button>;
+                        })()}
                       </div>
                     </td>
                   )}
@@ -1017,7 +1021,7 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
           </tbody>
         </table>
       </Panel>
-      {rating && <RateDialog {...rating} productionId={p.id} onClose={() => setRating(null)} />}
+      {rating && <RateDialog {...rating} productionId={p.id} onClose={() => setRating(null)} onSaved={() => inv(["reviews"], ["crew"])} />}
     </div>
   );
 }
@@ -1028,40 +1032,6 @@ export function Avatar({ name, path, size = 36 }: { name: string; path?: string 
   return url
     ? <img src={url} alt={name} style={{ width: size, height: size }} className="shrink-0 rounded-full object-cover" />
     : <span style={{ width: size, height: size }} className="grid shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{initials(name)}</span>;
-}
-
-function RateDialog({ crewId, name, productionId, onClose }: { crewId: string; name: string; productionId: string; onClose: () => void }) {
-  const [stars, setStars] = useState(5);
-  const [comment, setComment] = useState("");
-  const inv = useInvalidate();
-  async function submit() {
-    const { data: u } = await supabase.auth.getUser();
-    const { data: prof } = await supabase.from("profiles").select("full_name").eq("id", u.user!.id).maybeSingle();
-    const { error } = await supabase.from("crew_reviews").upsert(
-      { crew_id: crewId, production_id: productionId, rating: stars, comment, reviewer_id: u.user!.id, reviewer_name: prof?.full_name ?? "" },
-      { onConflict: "crew_id,production_id,reviewer_id" });
-    if (error) { toast.error(friendlyError(error)); return; }
-    toast.success(`Rating saved for ${name}`);
-    inv(["reviews"], ["crew"]);
-    onClose();
-  }
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-4" onClick={onClose}>
-      <div className="w-full max-w-md rounded-sm border border-border bg-card p-5" onClick={(e) => e.stopPropagation()}>
-        <h3 className="font-script text-3xl text-primary">Rate {name}</h3>
-        <div className="my-3 flex gap-1">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <button key={n} aria-label={`${n} stars`} onClick={() => setStars(n)}><Star className={`h-7 w-7 ${n <= stars ? "fill-primary text-primary" : "text-muted-foreground"}`} /></button>
-          ))}
-        </div>
-        <textarea rows={3} className={`${input} w-full`} placeholder="How did they do on this job?" value={comment} onChange={(e) => setComment(e.target.value)} />
-        <div className="mt-3 flex justify-end gap-2">
-          <button onClick={onClose} className="px-3 py-2 text-xs text-muted-foreground">Cancel</button>
-          <button onClick={submit} className={btn}>Save rating</button>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 /* ---------------- Posts ---------------- */
