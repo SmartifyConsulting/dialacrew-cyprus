@@ -795,7 +795,7 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
           {p.recceDate && <p className="font-semibold text-foreground">Production recce · {dayLabel(`${p.recceDate}T00:00:00`)}</p>}
           {locationPoints.filter((pt) => pt.recce_date).map((pt) => (
             <div key={pt.id} className="py-1 text-sm">
-              <p className="font-semibold text-foreground">Shoot Day {locationPoints.findIndex((point) => point.id === pt.id) + 1} · {dayLabel(`${pt.recce_date}T00:00:00`)}</p>
+              <p className="font-semibold text-foreground">Location {locationPoints.findIndex((point) => point.id === pt.id) + 1} · {dayLabel(`${pt.recce_date}T00:00:00`)}</p>
               <p className="text-xs text-muted-foreground">{canSeeRecceAddress ? pt.address || pt.label : pt.label || p.location}</p>
             </div>
           ))}
