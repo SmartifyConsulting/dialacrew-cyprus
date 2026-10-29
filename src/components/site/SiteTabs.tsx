@@ -579,6 +579,7 @@ function ChecklistItemPhotoThumb({ photo, index, count, canEdit, onDelete, onMov
 export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
   const inv = useInvalidate();
   const checklists = (useChecklists(p.id).data ?? []) as Array<{ id: string; title: string; production_checklist_items: ChecklistItem[] }>;
+  const [view, setView] = useState<"Checklist" | "Done">("Checklist");
   const [addingList, setAddingList] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newItem, setNewItem] = useState<Record<string, string>>({});
@@ -656,15 +657,21 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
 
   if (!isProducer && checklists.length === 0) return null;
 
+  const pendingCount = checklists.reduce((n, c) => n + c.production_checklist_items.filter((i) => !i.done).length, 0);
+  const doneCount = checklists.reduce((n, c) => n + c.production_checklist_items.filter((i) => i.done).length, 0);
   return (
-    <div className="grid items-start gap-5 md:grid-cols-2">
+    <div className="space-y-4">
+      <div role="tablist" aria-label="Checklist progress" className="flex gap-2 border-b border-border">
+        {(["Checklist", "Done"] as const).map((tab) => <button key={tab} role="tab" aria-selected={view === tab} onClick={() => setView(tab)} className={`border-b-2 px-4 py-2 text-sm font-semibold ${view === tab ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}>{tab} ({tab === "Checklist" ? pendingCount : doneCount})</button>)}
+      </div>
+      <div className="grid items-start gap-5 md:grid-cols-2">
       {checklists.map((c) => (
         <Panel key={c.id} title={c.title} right={isProducer && (
           <button onClick={() => removeChecklist(c.id)} className="text-muted-foreground hover:text-destructive" aria-label={`Remove ${c.title}`}><Trash2 className="h-3.5 w-3.5" /></button>
         )}>
           <ul className="divide-y divide-border text-sm">
-            {c.production_checklist_items.length === 0 && <li className="p-4 text-muted-foreground">No items yet.</li>}
-            {c.production_checklist_items.map((item) => (
+            {c.production_checklist_items.filter((i) => i.done === (view === "Done")).length === 0 && <li className="p-4 text-muted-foreground">{view === "Done" ? "Nothing completed yet." : "All items completed."}</li>}
+            {c.production_checklist_items.filter((item) => item.done === (view === "Done")).map((item) => (
               <li key={item.id} className="px-4 py-2.5">
                 <div className="flex items-center gap-3">
                   <button onClick={() => isProducer && toggleItem(item.id, item.done)} disabled={!isProducer} aria-label={item.done ? `Mark ${item.label} not done` : `Mark ${item.label} done`}>
@@ -700,7 +707,7 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
               </li>
             ))}
           </ul>
-          {isProducer && (
+          {isProducer && view === "Checklist" && (
             <form onSubmit={(e) => { e.preventDefault(); addItem(c.id, c.production_checklist_items.length); }} className="flex gap-2 border-t border-border p-3">
               <input className={`${input} flex-1`} placeholder="Add item…" value={newItem[c.id] ?? ""} onChange={(e) => setNewItem((prev) => ({ ...prev, [c.id]: e.target.value }))} />
               <button type="submit" className={btn}>Add</button>
@@ -709,7 +716,7 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
         </Panel>
       ))}
 
-      {isProducer && (
+      {isProducer && view === "Checklist" && (
         addingList ? (
           <div className="flex gap-2 rounded-sm border border-border bg-card p-3">
             <input autoFocus className={`${input} flex-1`} placeholder="Checklist name, e.g. Wardrobe checklist"
@@ -1417,6 +1424,7 @@ export function CommercialsTab({ p, bookings, crewNames, requests }: Ctx & { boo
           </tbody>
         </table>
       </Panel>
+      </div>
     </div>
   );
 }
