@@ -162,7 +162,7 @@ const isoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padS
 
 type MiniCalItem = { id: string; color: string; client: string; name: string; location: string; time: string };
 
-// Popup for the calendar's weather, dots and task icon: shows on hover, and on tap/keyboard focus for touch screens.
+// Popup for the calendar's weather, client chips and task icon: shows on hover, and on tap/keyboard focus for touch screens.
 // `align` keeps it on screen for the grid's left and right columns.
 function CalPop({ label, align, trigger, children }: { label: string; align: "left" | "center" | "right"; trigger: React.ReactNode; children: React.ReactNode }) {
   const pos = align === "left" ? "left-0" : align === "right" ? "right-0" : "left-1/2 -translate-x-1/2";
@@ -174,7 +174,7 @@ function CalPop({ label, align, trigger, children }: { label: string; align: "le
   );
 }
 
-// Compact current-month grid: each day shows its weather, a coloured dot per production shooting that day and a
+// Compact current-month grid: each day shows its weather, a coloured client chip per production shooting that day and a
 // task icon when tasks are due — a quick-glance version of the full /calendar page, not a replacement for it.
 function MiniCalendar({ productions, bookings }: { productions: Production[]; bookings: Booking[] }) {
   const today = new Date();
