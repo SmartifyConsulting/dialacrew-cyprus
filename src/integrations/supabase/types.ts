@@ -1995,7 +1995,8 @@ export type Database = {
           geofence_m: number
           id: string
           image_path: string | null
-          job_id: string | null
+          job_id: string
+          external_ref: string | null
           latitude: number | null
           location: string
           longitude: number | null
@@ -2034,6 +2035,7 @@ export type Database = {
           id?: string
           image_path?: string | null
           job_id?: string | null
+          external_ref?: string | null
           latitude?: number | null
           location?: string
           longitude?: number | null
