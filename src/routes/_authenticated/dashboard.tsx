@@ -14,6 +14,7 @@ import { useMyCrewId, useMyName } from "@/lib/site";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
+import { JobTermsDialog } from "@/components/JobTermsDialog";
 import { WEATHER_ICONS } from "@/lib/weather";
 import { forecastSummary, useCalendarExtras, type DayShoot } from "@/lib/calendar-extras";
 
@@ -37,6 +38,8 @@ function CrewDashboard() {
   }).data ?? [];
   const live = jobs.filter((j) => !["cancelled", "completed", "payment_released"].includes(j.status));
   const qc = useQueryClient();
+  const [pendingTermsJob, setPendingTermsJob] = useState<(typeof jobs)[number] | null>(null);
+  const [acceptingTerms, setAcceptingTerms] = useState(false);
   const todayIso = new Date().toISOString().slice(0, 10);
   const todayJob = live.find((j) => j.booking_date === todayIso) ?? live.find((j) => (j.booking_date ?? "") >= todayIso);
   const pencils = live.filter((j) => j.status === "pencil" || j.status === "awaiting_crew_confirmation");
@@ -56,13 +59,26 @@ function CrewDashboard() {
     },
   }).data ?? { count: 0, connections: 0, earned: 0 };
   async function respond(id: string, accept: boolean) {
-    const { error } = await supabase.from("bookings").update({ status: accept ? "confirmed" : "cancelled" }).eq("id", id);
+    if (accept) { const job = jobs.find((j) => j.id === id); if (job) setPendingTermsJob(job); return; }
+    const { error } = await supabase.from("bookings").update({ status: "cancelled" }).eq("id", id);
     if (error) { toast.error(friendlyError(error)); return; }
-    toast.success(accept ? "Job accepted" : "Job declined");
+    toast.success("Job declined");
     qc.invalidateQueries({ queryKey: ["crew-jobs"] });
+  }
+  async function acceptWithTerms() {
+    if (!pendingTermsJob || acceptingTerms) return;
+    setAcceptingTerms(true);
+    const { error } = await supabase.rpc("accept_booking_with_terms", { p_booking_id: pendingTermsJob.id, p_terms_version: "dialacrew-terms-2026-10" });
+    setAcceptingTerms(false);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success("Terms accepted and job confirmed");
+    setPendingTermsJob(null);
+    void qc.invalidateQueries({ queryKey: ["crew-jobs"] });
+    void qc.invalidateQueries({ queryKey: ["bookings"] });
   }
   return (
     <Page open title="Home" subtitle="Your jobs and call times">
+      {pendingTermsJob && <JobTermsDialog jobName={pendingTermsJob.productions?.name ?? "Production"} role={pendingTermsJob.role} busy={acceptingTerms} onAccept={acceptWithTerms} onClose={() => setPendingTermsJob(null)} />}
       {pencils.map((j) => {
         const pr = j.productions as { name?: string; client?: string; address?: string; location?: string } | null;
         const days = Number(j.days ?? 1);
