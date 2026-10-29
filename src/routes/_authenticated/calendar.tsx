@@ -39,6 +39,8 @@ function CalendarPage() {
   // Map every shoot and recce date to its production so each calendar day can show the matching forecast.
   const byDay = new Map<string, DayItem[]>();
   for (const p of prods) {
+    const myBooking = isCrewOnly ? bookings.find((b) => b.productionId === p.id && b.crewId === myCrewId && b.status !== "cancelled") : undefined;
+    if (isCrewOnly && !myBooking) continue;
     if (p.recceDate) {
       const k = p.recceDate;
       const crew = bookings.filter((b) => b.productionId === p.id && b.status !== "cancelled").length;
@@ -48,8 +50,6 @@ function CalendarPage() {
       }]);
     }
     if (!p.date) continue;
-    const myBooking = isCrewOnly ? bookings.find((b) => b.productionId === p.id && b.crewId === myCrewId && b.status !== "cancelled") : undefined;
-    if (isCrewOnly && !myBooking) continue;
     const spanStart = isCrewOnly && myBooking?.bookingDate ? myBooking.bookingDate : p.date;
     const spanDays = isCrewOnly && myBooking ? Math.max(1, myBooking.days || 1) : Math.max(1, p.days);
     const start = new Date(`${spanStart}T00:00:00`);
