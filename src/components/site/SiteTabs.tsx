@@ -1420,6 +1420,28 @@ export function CommercialsTab({ p, bookings, crewNames, requests }: Ctx & { boo
 export const SiteIcons = { Users };
 
 
+/* Selectable 12-hour time slots; database values remain 24-hour HH:mm. */
+function AmPmTimePicker({ value, onChange, label }: { value: string; onChange: (value: string) => void; label: string }) {
+  const options = Array.from({ length: 48 }, (_, i) => {
+    const h = Math.floor(i / 2), m = i % 2 ? "30" : "00";
+    return { value: `${String(h).padStart(2, "0")}:${m}`, label: `${h % 12 || 12}:${m} ${h < 12 ? "AM" : "PM"}` };
+  });
+  const normalized = value.slice(0, 5);
+  if (normalized && !options.some((option) => option.value === normalized)) {
+    const [hour, minute] = normalized.split(":").map(Number);
+    if (Number.isFinite(hour) && Number.isFinite(minute)) {
+      options.push({ value: normalized, label: `${hour % 12 || 12}:${String(minute).padStart(2, "0")} ${hour < 12 ? "AM" : "PM"}` });
+      options.sort((a, b) => a.value.localeCompare(b.value));
+    }
+  }
+  return (
+    <select aria-label={label} className={`${input} min-w-0 flex-1 py-1 text-xs`} value={normalized} onChange={(e) => onChange(e.target.value)}>
+      <option value="">Select time</option>
+      {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+    </select>
+  );
+}
+
 /* ---------------- Production recce times + Gear Check (producer edits; site members see) ---------------- */
 type SchedField = "recce_start_time" | "recce_end_time" | "gear_pickup_date" | "gear_pickup_time" | "gear_dropoff_date" | "gear_dropoff_time";
 function ProductionSchedule({ p, isProducer }: { p: Ctx["p"]; isProducer: boolean }) {
@@ -1457,12 +1479,16 @@ function ProductionSchedule({ p, isProducer }: { p: Ctx["p"]; isProducer: boolea
           {isProducer ? (
             <div className="grid gap-2 sm:grid-cols-2">
               <fieldset className="space-y-1"><legend className="text-xs font-semibold text-foreground">Pickup</legend>
-                <input type="date" aria-label="Gear pickup date" className={`${input} w-full py-1 text-xs`} value={cur.gear_pickup_date ?? ""} onChange={(e) => save("gear_pickup_date", e.target.value)} />
-                <input type="time" aria-label="Gear pickup time" className={`${input} w-full py-1 text-xs`} value={t(cur.gear_pickup_time)} onChange={(e) => save("gear_pickup_time", e.target.value)} />
+                <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
+                  <input type="date" aria-label="Gear pickup date" className={`${input} min-w-0 flex-[2] py-1 text-xs`} value={cur.gear_pickup_date ?? ""} onChange={(e) => save("gear_pickup_date", e.target.value)} />
+                  <AmPmTimePicker label="Gear pickup time" value={t(cur.gear_pickup_time)} onChange={(value) => save("gear_pickup_time", value)} />
+                </div>
               </fieldset>
               <fieldset className="space-y-1"><legend className="text-xs font-semibold text-foreground">Drop-off</legend>
-                <input type="date" aria-label="Gear drop-off date" className={`${input} w-full py-1 text-xs`} value={cur.gear_dropoff_date ?? ""} onChange={(e) => save("gear_dropoff_date", e.target.value)} />
-                <input type="time" aria-label="Gear drop-off time" className={`${input} w-full py-1 text-xs`} value={t(cur.gear_dropoff_time)} onChange={(e) => save("gear_dropoff_time", e.target.value)} />
+                <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
+                  <input type="date" aria-label="Gear drop-off date" className={`${input} min-w-0 flex-[2] py-1 text-xs`} value={cur.gear_dropoff_date ?? ""} onChange={(e) => save("gear_dropoff_date", e.target.value)} />
+                  <AmPmTimePicker label="Gear drop-off time" value={t(cur.gear_dropoff_time)} onChange={(value) => save("gear_dropoff_time", value)} />
+                </div>
               </fieldset>
             </div>
           ) : null}
