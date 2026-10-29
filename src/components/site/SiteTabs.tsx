@@ -133,7 +133,7 @@ function FileLink({ path, name }: { path: string; name: string }) {
 }
 
 /* ---------------- Location points (multi-stop schedule) — lives inside Site information ---------------- */
-const blankLocationForm = { label: "", address: "", latitude: "", longitude: "", startsAt: "", endsAt: "" };
+const blankLocationForm = { label: "", address: "", latitude: "", longitude: "", recceDate: "", startsAt: "", endsAt: "" };
 const toLocalInput = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(0, 16) : "");
 const dayLabel = (iso: string) => new Date(iso).toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
 const clockLabel = (iso: string) => new Date(iso).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" });
@@ -213,10 +213,10 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
     setEditingId(null);
     setAdding(true);
   }
-  function startEdit(pt: { id: string; label: string; address: string; latitude: number | null; longitude: number | null; starts_at: string | null; ends_at: string | null }) {
+  function startEdit(pt: { id: string; label: string; address: string; latitude: number | null; longitude: number | null; recce_date: string | null; starts_at: string | null; ends_at: string | null }) {
     setLf({
       label: pt.label, address: pt.address ?? "", latitude: pt.latitude?.toString() ?? "", longitude: pt.longitude?.toString() ?? "",
-      startsAt: toLocalInput(pt.starts_at), endsAt: toLocalInput(pt.ends_at),
+      recceDate: pt.recce_date ?? "", startsAt: toLocalInput(pt.starts_at), endsAt: toLocalInput(pt.ends_at),
     });
     setEditingId(pt.id);
     setAdding(true);
@@ -229,7 +229,7 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
     const payload = {
       label: lf.label.trim() || lf.address.split(",").slice(0, 2).join(",").trim(), address: lf.address.trim(),
       latitude: lf.latitude ? Number(lf.latitude) : null, longitude: lf.longitude ? Number(lf.longitude) : null,
-      starts_at: lf.startsAt ? new Date(lf.startsAt).toISOString() : null,
+      recce_date: lf.recceDate || null, starts_at: lf.startsAt ? new Date(lf.startsAt).toISOString() : null,
       ends_at: lf.endsAt ? new Date(lf.endsAt).toISOString() : null,
     };
     const { error } = editingId
@@ -295,14 +295,18 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
                   <div className="text-base font-bold text-foreground">Shoot Day {i + 1}</div>
                   <div className="text-sm font-semibold text-foreground">{pt.starts_at ? dayLabel(pt.starts_at) : "Date TBC"}</div>
                   <div className="text-sm text-foreground">{pt.starts_at ? timeRange(pt.starts_at, pt.ends_at) : "Time TBC"}</div>
+                  {pt.recce_date && <div className="mt-1 text-xs font-semibold text-foreground">Recce · {dayLabel(`${pt.recce_date}T00:00:00`)}</div>}
                 </div>
               </div>
               <a href={mapHref(pt)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary hover:underline">
                 <MapPin className="h-3.5 w-3.5 text-primary" /> {displayAddress(pt.address || pt.label)}
               </a>
+              {pt.recce_date && (pt.latitude != null && pt.longitude != null
+                ? <DayWeather lat={pt.latitude} lon={pt.longitude} date={pt.recce_date} />
+                : <p className="text-xs text-muted-foreground">Add a map location to see the recce forecast.</p>)}
               {pt.starts_at && (pt.latitude != null && pt.longitude != null
                 ? <DayWeather lat={pt.latitude} lon={pt.longitude} date={localYmd(pt.starts_at)} />
-                : <p className="text-xs text-muted-foreground">Add a map location to see the forecast for this day.</p>)}
+                : <p className="text-xs text-muted-foreground">Add a map location to see the shoot-day forecast.</p>)}
               <LocationPhotos p={p} locationId={pt.id} isProducer={isProducer} />
               {isProducer && <LocationFee p={p} locationId={pt.id} />}
               {isProducer && <LocationRisks p={p} locationId={pt.id} hasCoords={pt.latitude != null && pt.longitude != null} />}
@@ -322,6 +326,8 @@ function LocationPoints({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
             onChange={(v) => setLf({ ...lf, address: v })}
             onSelect={(s) => setLf({ ...lf, label: s.place, address: s.label, latitude: s.lat, longitude: s.lon })} />
           <div className="grid gap-2">
+            <label className="block min-w-0"><span className="text-xs text-muted-foreground">Recce date</span>
+              <input type="date" className={`${input} mt-1 w-full min-w-0`} value={lf.recceDate} onChange={(e) => setLf({ ...lf, recceDate: e.target.value })} /></label>
             <label className="block min-w-0"><span className="text-xs text-muted-foreground">Starts</span>
               <input type="datetime-local" className={`${input} mt-1 w-full min-w-0`} value={lf.startsAt} onChange={(e) => setLf({ ...lf, startsAt: e.target.value })} /></label>
             <label className="block min-w-0"><span className="text-xs text-muted-foreground">Ends</span>
