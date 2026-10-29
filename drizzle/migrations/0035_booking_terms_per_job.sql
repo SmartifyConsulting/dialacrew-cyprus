@@ -59,10 +59,12 @@ BEGIN
  IF EXISTS(SELECT 1 FROM public.productions WHERE id=v_booking.production_id AND completed_at IS NOT NULL) THEN
   RAISE EXCEPTION 'This production is completed and read-only';
  END IF;
- -- Existing claim_gig retains its own eligibility and booking checks.
- PERFORM public.claim_gig(p_booking_id);
+ -- Record consent first in the same transaction, so the confirmation guard can verify it.
+ -- Any failure in claim_gig rolls back this acceptance automatically.
  INSERT INTO public.booking_terms_acceptances(booking_id,production_id,crew_id,accepted_by,terms_version)
  VALUES (v_booking.id,v_booking.production_id,v_crew,auth.uid(),p_terms_version);
+ -- Existing claim_gig retains its own eligibility and booking checks.
+ PERFORM public.claim_gig(p_booking_id);
 END $$;
 REVOKE ALL ON FUNCTION public.claim_gig_with_terms(text,text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.claim_gig_with_terms(text,text) TO authenticated;
