@@ -160,7 +160,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 const isoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-type MiniCalItem = { id: string; color: string; client: string; name: string; location: string; time: string; isRecce?: boolean };
+type MiniCalItem = { id: string; color: string; client: string; name: string; location: string; time: string; isRecce?: boolean; details?: string };
 
 // Popup for the calendar's weather, client chips and task icon: shows on hover, and on tap/keyboard focus for touch screens.
 // `align` keeps it on screen for the grid's left and right columns.
@@ -181,7 +181,7 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
   const locationRecces = useQuery({
     queryKey: ["dashboard-location-recces"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("production_locations").select("id, production_id, label, address, starts_at, recce_date, latitude, longitude");
+      const { data, error } = await supabase.from("production_locations").select("id, production_id, label, address, starts_at, recce_date, recce_start_time, recce_end_time, latitude, longitude, sort_order").order("sort_order");
       if (error) throw error;
       return data ?? [];
     },
@@ -190,16 +190,18 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
   const shoots = new Map<string, DayShoot[]>();
   for (const p of productions) {
     const recceDates = new Set<string>();
-    for (const recce of locationRecces.filter((location) => location.production_id === p.id && location.recce_date)) {
-      if (recceDates.has(recce.recce_date!)) continue;
-      recceDates.add(recce.recce_date!);
-      const k = recce.recce_date!;
+    // One recce item per production per date: earliest start to latest end across its locations.
+    for (const g of groupRecces(locationRecces.filter((location) => location.production_id === p.id))) {
+      recceDates.add(g.date);
+      const k = g.date;
+      const first = g.locations[0]!.loc;
       const item: MiniCalItem = {
-        id: `${p.id}-${recce.id}-recce`, color: clientColor(p.client), client: p.client, name: `Recce · ${p.name}`, isRecce: true,
-        location: recce.address || recce.label || p.address || p.location || "Location TBC", time: "Recce",
+        id: `${p.id}-${k}-recce`, color: clientColor(p.client), client: p.client, name: `Recce · ${p.name}`, isRecce: true,
+        location: g.locations.length > 1 ? `${g.locations.length} locations` : first.address || first.label || p.address || p.location || "Location TBC",
+        time: recceRange(g.start, g.end), details: recceTooltip(g, (l) => l.address || l.label || "Location TBC"),
       };
       byDay.set(k, [...(byDay.get(k) ?? []), item]);
-      shoots.set(k, [...(shoots.get(k) ?? []), { id: p.id, lat: recce.latitude ?? p.latitude ?? null, lon: recce.longitude ?? p.longitude ?? null }]);
+      shoots.set(k, [...(shoots.get(k) ?? []), { id: p.id, lat: first.latitude ?? p.latitude ?? null, lon: first.longitude ?? p.longitude ?? null }]);
     }
     if (p.recceDate && !recceDates.has(p.recceDate)) {
       const k = p.recceDate;
@@ -260,8 +262,9 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
                 <span className="flex min-h-3.5 max-w-full flex-wrap items-center justify-center gap-0.5">
                   {items.map((item) => (
                     <CalPop key={item.id} label={`${item.client} · ${item.name} · ${item.location} · ${item.time}`} align={align}
-                      trigger={<span className={`max-w-full truncate rounded-sm px-1 py-0.5 text-[9px] font-semibold leading-none ${item.isRecce ? "bg-black text-white" : item.color}`}>{item.isRecce ? "Recce" : item.client}</span>}>
+                      trigger={<span className={`max-w-full truncate rounded-sm px-1 py-0.5 text-[9px] font-semibold leading-none ${item.isRecce ? "bg-black text-white" : item.color}`}>{item.isRecce ? `Recce${item.time !== "Time TBC" ? ` ${item.time}` : ""}` : item.client}</span>}>
                       {item.client} · {item.name} · {item.location} · {item.time}
+                      {item.details && <span className="mt-1 block whitespace-pre-line font-normal text-muted-foreground">{item.details}</span>}
                     </CalPop>
                   ))}
                   {dayTasks.length > 0 && (
