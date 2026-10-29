@@ -63,8 +63,8 @@ export function AuditTab({ p }: { p: { id: string } }) {
       for (const ph of photos.data ?? []) out.push({ id: `photo-${ph.id}`, at: ph.created_at, text: "Photo uploaded" });
       const tasks = await supabase.from("site_tasks").select("id, title, created_at").eq("production_id", p.id);
       for (const t of tasks.data ?? []) out.push({ id: `task-${t.id}`, at: t.created_at, text: `Task added: ${t.title}` });
-      const completion = await supabase.from("productions").select("completed_at, completed_by, profiles:completed_by(full_name)").eq("id", p.id).maybeSingle();
-      if (completion.data?.completed_at) out.push({ id: `completion-${p.id}`, at: completion.data.completed_at, actor: completion.data.profiles?.full_name ?? "Producer", type: "Production completion", text: `${completion.data.profiles?.full_name ?? "Producer"} completed and locked the production` });
+      const completion = await supabase.from("productions").select("completed_at, completed_by").eq("id", p.id).maybeSingle();
+      if (completion.data?.completed_at) out.push({ id: `completion-${p.id}`, at: completion.data.completed_at, actor: completion.data.completed_by ?? "Producer", type: "Production completion", text: `${completion.data.profiles?.full_name ?? "Producer"} completed and locked the production` });
       const acknowledgements = await supabase.from("notification_acknowledgement_audit").select("id, actor_name, activity_type, notification_title, occurred_at").eq("production_id", p.id);
       if (acknowledgements.error) throw acknowledgements.error;
       for (const a of acknowledgements.data ?? []) out.push({ id: `ack-${a.id}`, at: a.occurred_at, actor: a.actor_name, type: a.activity_type, text: `${a.actor_name} acknowledged notification`, detail: a.notification_title });
