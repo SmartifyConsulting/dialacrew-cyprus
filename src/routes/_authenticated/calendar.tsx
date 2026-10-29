@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/calendar")({
 
 const iso = isoDay;
 
-type DayItem = { id: string; productionId: string; name: string; client: string; crew: number; lat: number | null; lon: number | null };
+type DayItem = { id: string; productionId: string; name: string; client: string; location: string; crew: number; lat: number | null; lon: number | null };
 
 function CalendarPage() {
   const { session } = useSession();
@@ -35,14 +35,39 @@ function CalendarPage() {
   const myCrewId = useMyCrewId(isCrewOnly).data ?? null;
   const prods = useProductions().data ?? [];
   const bookings = useBookings().data ?? [];
-  const locationRecces = useQuery({
-    queryKey: ["calendar-location-recces"],
+  const confirmedProductionIds = new Set(bookings
+    .filter((booking) => booking.crewId === myCrewId && ["confirmed", "in_progress", "awaiting_review", "payment_released", "completed"].includes(booking.status))
+    .map((booking) => booking.productionId));
+  const locationFields = "id, production_id, label, recce_date, starts_at, latitude, longitude" as const;
+  const locations = useQuery({
+    queryKey: ["calendar-locations", isCrewOnly],
     queryFn: async () => {
-      const { data, error } = await supabase.from("production_locations").select("id, production_id, recce_date, latitude, longitude").not("recce_date", "is", null);
+      const { data, error } = await supabase.from("production_locations").select(locationFields);
       if (error) throw error;
       return data ?? [];
     },
   }).data ?? [];
+  const confirmedLocations = useQuery({
+    queryKey: ["calendar-confirmed-location-addresses", [...confirmedProductionIds].sort().join(",")],
+    enabled: isCrewOnly && confirmedProductionIds.size > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("production_locations").select("id, production_id, address")
+        .in("production_id", [...confirmedProductionIds]);
+      if (error) throw error;
+      return data ?? [];
+    },
+  }).data ?? [];
+  const confirmedAddressByLocationId = new Map(confirmedLocations.map((location) => [location.id, location.address]));
+  const producerLocations = useQuery({
+    queryKey: ["calendar-producer-location-addresses", isCrewOnly],
+    enabled: !isCrewOnly,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("production_locations").select("id, production_id, address");
+      if (error) throw error;
+      return data ?? [];
+    },
+  }).data ?? [];
+  const producerAddressByLocationId = new Map(producerLocations.map((location) => [location.id, location.address]));
   const [month, setMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [openTask, setOpenTask] = useState<string | null>(null);
 
@@ -51,10 +76,16 @@ function CalendarPage() {
   for (const p of prods) {
     const myBooking = isCrewOnly ? bookings.find((b) => b.productionId === p.id && b.crewId === myCrewId && b.status !== "cancelled") : undefined;
     if (isCrewOnly && !myBooking) continue;
-    for (const recce of locationRecces.filter((location) => location.production_id === p.id && location.recce_date)) {
+    const canSeeExactAddress = !isCrewOnly || confirmedProductionIds.has(p.id);
+    const locationAddress = (location: (typeof locations)[number] | undefined) => {
+      if (!location) return isCrewOnly ? p.location : p.address || p.location;
+      const exact = isCrewOnly ? confirmedAddressByLocationId.get(location.id) : producerAddressByLocationId.get(location.id);
+      return canSeeExactAddress ? exact || location.label : location.label || p.location;
+    };
+    for (const recce of locations.filter((location) => location.production_id === p.id && location.recce_date)) {
       const crew = bookings.filter((b) => b.productionId === p.id && b.status !== "cancelled").length;
       byDay.set(recce.recce_date!, [...(byDay.get(recce.recce_date!) ?? []), {
-        id: `${p.id}-${recce.id}-recce`, productionId: p.id, name: `Recce · ${p.name}`, client: p.client, crew: isCrewOnly ? 0 : crew,
+        id: `${p.id}-${recce.id}-recce`, productionId: p.id, name: `Recce · ${p.name}`, client: p.client, location: locationAddress(recce), crew: isCrewOnly ? 0 : crew,
         lat: recce.latitude ?? p.latitude ?? null, lon: recce.longitude ?? p.longitude ?? null,
       }]);
     }
@@ -62,7 +93,7 @@ function CalendarPage() {
       const k = p.recceDate;
       const crew = bookings.filter((b) => b.productionId === p.id && b.status !== "cancelled").length;
       byDay.set(k, [...(byDay.get(k) ?? []), {
-        id: `${p.id}-recce`, productionId: p.id, name: `Recce · ${p.name}`, client: p.client, crew: isCrewOnly ? 0 : crew,
+        id: `${p.id}-recce`, productionId: p.id, name: `Recce · ${p.name}`, client: p.client, location: isCrewOnly ? p.location : p.address || p.location, crew: isCrewOnly ? 0 : crew,
         lat: p.latitude ?? null, lon: p.longitude ?? null,
       }]);
     }
@@ -74,7 +105,8 @@ function CalendarPage() {
       const d = new Date(start); d.setDate(d.getDate() + i);
       const k = iso(d);
       const crew = bookings.filter((b) => b.productionId === p.id && b.status !== "cancelled").length;
-      byDay.set(k, [...(byDay.get(k) ?? []), { id: p.id, productionId: p.id, name: p.name, client: p.client, crew: isCrewOnly ? 0 : crew, lat: p.latitude ?? null, lon: p.longitude ?? null }]);
+      const location = locations.find((point) => point.production_id === p.id && point.starts_at && iso(new Date(point.starts_at)) === k);
+      byDay.set(k, [...(byDay.get(k) ?? []), { id: p.id, productionId: p.id, name: p.name, client: p.client, location: locationAddress(location), crew: isCrewOnly ? 0 : crew, lat: location?.latitude ?? p.latitude ?? null, lon: location?.longitude ?? p.longitude ?? null }]);
     }
   }
 
@@ -119,8 +151,9 @@ function CalendarPage() {
                 </p>
               )}
               {items.map((it) => (
-                <Link key={it.id} to="/productions/$id" params={{ id: it.productionId }} title={it.name} className={`mb-1 block truncate rounded-xl px-1.5 py-0.5 text-xs font-medium hover:opacity-90 ${clientColor(it.client)}`}>
-                  {it.name}{it.crew ? ` · ${it.crew} crew` : ""}
+                <Link key={it.id} to="/productions/$id" params={{ id: it.productionId }} title={`${it.name} · ${it.location}`} className={`mb-1 block rounded-xl px-1.5 py-0.5 text-xs font-medium hover:opacity-90 ${clientColor(it.client)}`}>
+                  <span className="block truncate">{it.name}{it.crew ? ` · ${it.crew} crew` : ""}</span>
+                  {it.location && <span className="block truncate text-[10px] font-normal opacity-90">{it.location}</span>}
                 </Link>
               ))}
               {dayTasks.length > 0 && (
