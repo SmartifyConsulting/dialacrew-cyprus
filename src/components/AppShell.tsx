@@ -34,7 +34,7 @@ type NavItem = { to: string; label: string; icon: LucideIcon };
 // One menu definition per role, used by both the top bar and the phone bottom bar.
 export const navByRole: Record<string, NavItem[]> = {
   producer: [
-    { to: "/dashboard", label: "Dashboard", icon: Home },
+    { to: "/dashboard", label: "Dashboard TEST", icon: Home },
     { to: "/calendar", label: "Calendar", icon: CalendarDays },
     { to: "/productions", label: "Productions", icon: Briefcase },
     { to: "/crew", label: "Crew", icon: Search },
@@ -49,7 +49,7 @@ export const navByRole: Record<string, NavItem[]> = {
   ],
   client: [{ to: "/profile", label: "My Profile", icon: User }],
   admin: [
-    { to: "/dashboard", label: "Dashboard", icon: Home },
+    { to: "/dashboard", label: "Dashboard TEST", icon: Home },
     { to: "/calendar", label: "Calendar", icon: CalendarDays },
     { to: "/productions", label: "Productions", icon: Briefcase },
     { to: "/crew", label: "Crew", icon: Search },
