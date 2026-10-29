@@ -224,6 +224,24 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_feed_tokens: {
+        Row: {
+          created_at: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          token?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          token?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       change_requests: {
         Row: {
           amount: number
@@ -758,31 +776,46 @@ export type Database = {
           comment: string
           created_at: string
           crew_id: string
+          criterion_comments: Json
+          framework: string | null
           id: string
+          overall_score: number | null
           production_id: string | null
           rating: number
           reviewer_id: string
           reviewer_name: string
+          scores: Json
+          work_again: string | null
         }
         Insert: {
           comment?: string
           created_at?: string
           crew_id: string
+          criterion_comments?: Json
+          framework?: string | null
           id?: string
+          overall_score?: number | null
           production_id?: string | null
           rating: number
           reviewer_id?: string
           reviewer_name?: string
+          scores?: Json
+          work_again?: string | null
         }
         Update: {
           comment?: string
           created_at?: string
           crew_id?: string
+          criterion_comments?: Json
+          framework?: string | null
           id?: string
+          overall_score?: number | null
           production_id?: string | null
           rating?: number
           reviewer_id?: string
           reviewer_name?: string
+          scores?: Json
+          work_again?: string | null
         }
         Relationships: [
           {
@@ -1906,6 +1939,10 @@ export type Database = {
           date: string | null
           days: number
           end_date: string | null
+          gear_dropoff_date: string | null
+          gear_dropoff_time: string | null
+          gear_pickup_date: string | null
+          gear_pickup_time: string | null
           geofence_m: number
           id: string
           image_path: string | null
@@ -1917,9 +1954,12 @@ export type Database = {
           post_rules: string
           post_rules_hidden: boolean
           recce_date: string | null
+          recce_end_time: string | null
+          recce_start_time: string | null
           secured_funds: number
           status: string
           summary: string
+          timezone: string
           type: string
         }
         Insert: {
@@ -1935,6 +1975,10 @@ export type Database = {
           date?: string | null
           days?: number
           end_date?: string | null
+          gear_dropoff_date?: string | null
+          gear_dropoff_time?: string | null
+          gear_pickup_date?: string | null
+          gear_pickup_time?: string | null
           geofence_m?: number
           id?: string
           image_path?: string | null
@@ -1946,9 +1990,12 @@ export type Database = {
           post_rules?: string
           post_rules_hidden?: boolean
           recce_date?: string | null
+          recce_end_time?: string | null
+          recce_start_time?: string | null
           secured_funds?: number
           status?: string
           summary?: string
+          timezone?: string
           type?: string
         }
         Update: {
@@ -1964,6 +2011,10 @@ export type Database = {
           date?: string | null
           days?: number
           end_date?: string | null
+          gear_dropoff_date?: string | null
+          gear_dropoff_time?: string | null
+          gear_pickup_date?: string | null
+          gear_pickup_time?: string | null
           geofence_m?: number
           id?: string
           image_path?: string | null
@@ -1975,9 +2026,12 @@ export type Database = {
           post_rules?: string
           post_rules_hidden?: boolean
           recce_date?: string | null
+          recce_end_time?: string | null
+          recce_start_time?: string | null
           secured_funds?: number
           status?: string
           summary?: string
+          timezone?: string
           type?: string
         }
         Relationships: [
