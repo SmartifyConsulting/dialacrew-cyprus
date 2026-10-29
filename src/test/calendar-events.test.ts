@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildCalendarEvents, findConflicts, toICS, zonedToUtc, type ProdIn } from "@/lib/calendar-events";
-import { gearValid } from "@/components/site/SiteTabs";
+import { buildCalendarEvents, findConflicts, gearValid, toICS, zonedToUtc, type ProdIn } from "@/lib/calendar-events";
 
 const prod = (over: Partial<ProdIn> = {}): ProdIn => ({
   id: "p1", name: "Ad", client: "Nike", location: "Cape Town", address: "1 Long St", date: null, days: 1, timezone: "Africa/Johannesburg",

@@ -1,5 +1,6 @@
 import { hhmm, recceRange, validRecceTimes } from "@/lib/recce";
 import { RateDialog } from "@/components/site/RateDialog";
+import { gearValid } from "@/lib/calendar-events";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -1421,11 +1422,6 @@ export const SiteIcons = { Users };
 
 /* ---------------- Production recce times + Gear Check (producer edits; site members see) ---------------- */
 type SchedField = "recce_start_time" | "recce_end_time" | "gear_pickup_date" | "gear_pickup_time" | "gear_dropoff_date" | "gear_dropoff_time";
-export function gearValid(pd: string | null, pt: string | null, dd: string | null, dt: string | null) {
-  if (!pd || !dd) return true;
-  if (dd < pd) return false;
-  return !(dd === pd && pt && dt && dt.slice(0, 5) <= pt.slice(0, 5));
-}
 function ProductionSchedule({ p, isProducer }: { p: Ctx["p"]; isProducer: boolean }) {
   const inv = useInvalidate();
   const cur = {

@@ -211,3 +211,10 @@ export const bookingInFromRow = (r: any): BookingIn => ({
   productionId: r.production_id, crewId: r.crew_id, status: r.status, bookingDate: r.booking_date ?? null, callTime: r.call_time ?? null, wrapTime: r.wrap_time ?? null, days: r.days ?? 1,
 });
 export const CONFIRMED = ["confirmed", "in_progress", "awaiting_review", "payment_released", "completed"];
+
+/** Gear drop-off must come after pickup; unset dates/times are allowed. */
+export function gearValid(pd: string | null, pt: string | null, dd: string | null, dt: string | null) {
+  if (!pd || !dd) return true;
+  if (dd < pd) return false;
+  return !(dd === pd && pt && dt && dt.slice(0, 5) <= pt.slice(0, 5));
+}
