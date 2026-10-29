@@ -192,7 +192,7 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
     for (const recce of locationRecces.filter((location) => location.production_id === p.id && location.recce_date)) {
       const k = recce.recce_date!;
       const item: MiniCalItem = {
-        id: `${p.id}-${recce.id}-recce`, color: clientColor(p.client), client: p.client, name: `Recce · ${p.name}`,
+        id: `${p.id}-${recce.id}-recce`, color: clientColor(p.client), client: p.client, name: `Recce · ${p.name} · ${recce.label || "Location"}`,
         location: recce.address || recce.label || p.address || p.location || "Location TBC", time: "Recce",
       };
       byDay.set(k, [...(byDay.get(k) ?? []), item]);
@@ -255,7 +255,7 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
                   </CalPop>
                 )}
                 <span className="flex min-h-3.5 max-w-full flex-wrap items-center justify-center gap-0.5">
-                  {items.slice(0, 3).map((item) => (
+                  {items.map((item) => (
                     <CalPop key={item.id} label={`${item.client} · ${item.name} · ${item.location} · ${item.time}`} align={align}
                       trigger={<span className={`max-w-full truncate rounded-sm px-1 py-0.5 text-[9px] font-semibold leading-none ${item.color}`}>{item.client}</span>}>
                       {item.client} · {item.name} · {item.location} · {item.time}
