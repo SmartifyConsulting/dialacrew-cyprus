@@ -1408,7 +1408,7 @@ export function CommercialsTab({ p, bookings, crewNames, requests }: Ctx & { boo
                 <td className="px-4">{b.crewId ? <Link to="/crew/$id" params={{ id: b.crewId }} className="hover:text-primary">{crewNames[b.crewId] ?? "Open"}</Link> : "Open"}</td>
                 <td className="px-4">{b.days}</td>
                 <td className="px-4 text-muted-foreground">{zar(b.crewRate)}</td><td className="px-4">{zar(assets)}</td><td className="px-4 font-semibold">{zar(cost)}</td>
-                <td className="px-4">{zar(charge)}</td><td className="px-4">{invoices.filter((i) => i.booking_id === b.id).map((i) => <div key={i.id} className="text-xs"><span className="font-semibold">{i.invoice_number}</span> <Badge>{i.status}</Badge></div>)}</td><td className="px-4"><Badge>{b.status}</Badge></td>
+                <td className="px-4">{zar(charge)}</td><td className="px-4">{invoices.filter((i) => i.booking_id === b.id).map((i) => <div key={i.id} className="text-xs"><Link to="/invoices/$id" params={{ id: i.id }} className="font-semibold text-primary underline">{i.invoice_number}</Link> <Badge>{i.status}</Badge></div>)}</td><td className="px-4"><Badge>{b.status}</Badge></td>
               </tr>
             ))}
             {extras.map((r, i) => (
