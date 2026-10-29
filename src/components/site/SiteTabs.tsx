@@ -1373,6 +1373,10 @@ export function TasksTab({ p, userId }: Ctx) {
 /* ---------------- Commercials (producer only) ---------------- */
 export function CommercialsTab({ p, bookings, crewNames, requests }: Ctx & { bookings: Booking[]; crewNames: Record<string, string>; requests: { production: string; amount: number; state: string; kind: string; detail: string }[] }) {
   const selected = useBookingAssets(true).data ?? [];
+  const invoices = useQuery({ queryKey: ["production-invoices", p.id], queryFn: async () => {
+    const { data, error } = await supabase.from("invoices").select("id, booking_id, invoice_number, status, total").eq("production_id", p.id);
+    if (error) throw error; return data ?? [];
+  } }).data ?? [];
   const rows = bookings.filter((b) => b.productionId === p.id).map((b) => {
     const lines = selected.filter((s) => s.booking_id === b.id).map((s) => ({ dailyFee: Number(s.daily_fee), days: s.days }));
     return { b, assets: assetsTotal(lines), cost: providerTotal(b.crewRate, b.days, lines), charge: b.clientCharge * b.days + assetsTotal(lines) };
@@ -1396,7 +1400,7 @@ export function CommercialsTab({ p, bookings, crewNames, requests }: Ctx & { boo
           <thead className="text-left text-[11px] text-muted-foreground"><tr>
             <th className="px-4 py-2">Role</th><th className="px-4">Provider</th><th className="px-4">Days</th>
             <th className="px-4">Crew rate</th><th className="px-4">Assets</th><th className="px-4">Provider total</th>
-            <th className="px-4">Client charge</th><th className="px-4">Status</th></tr></thead>
+            <th className="px-4">Client charge</th><th className="px-4">Invoice attachment</th><th className="px-4">Status</th></tr></thead>
           <tbody>
             {rows.map(({ b, assets, cost, charge }) => (
               <tr key={b.id} className="border-t border-border">
@@ -1404,7 +1408,7 @@ export function CommercialsTab({ p, bookings, crewNames, requests }: Ctx & { boo
                 <td className="px-4">{b.crewId ? <Link to="/crew/$id" params={{ id: b.crewId }} className="hover:text-primary">{crewNames[b.crewId] ?? "Open"}</Link> : "Open"}</td>
                 <td className="px-4">{b.days}</td>
                 <td className="px-4 text-muted-foreground">{zar(b.crewRate)}</td><td className="px-4">{zar(assets)}</td><td className="px-4 font-semibold">{zar(cost)}</td>
-                <td className="px-4">{zar(charge)}</td><td className="px-4"><Badge>{b.status}</Badge></td>
+                <td className="px-4">{zar(charge)}</td><td className="px-4">{invoices.filter((i) => i.booking_id === b.id).map((i) => <div key={i.id} className="text-xs"><span className="font-semibold">{i.invoice_number}</span> <Badge>{i.status}</Badge></div>)}</td><td className="px-4"><Badge>{b.status}</Badge></td>
               </tr>
             ))}
             {extras.map((r, i) => (
