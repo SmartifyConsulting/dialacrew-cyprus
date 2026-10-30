@@ -57,12 +57,14 @@ BEGIN
  v_usual := COALESCE(c.day_rate,0);
  IF p_action='counter' THEN
    IF p_rate IS NULL OR p_rate<=0 THEN RAISE EXCEPTION 'Enter a valid rate'; END IF;
+   IF v_role='crew' AND v_usual>0 AND p_rate<v_usual AND NOT p_ack_below_usual THEN RAISE EXCEPTION 'Acknowledge the below-usual rate before offering it'; END IF;
    UPDATE public.gig_negotiations SET latest_rate=p_rate,latest_by=v_role,status=CASE WHEN v_role='crew' THEN 'pending_producer' ELSE 'pending_crew' END,updated_at=now() WHERE id=n.id;
    v_rate:=p_rate;
  ELSIF p_action='accept' THEN
    IF n.latest_by=v_role THEN RAISE EXCEPTION 'Cannot accept your own offer'; END IF;
    v_rate:=n.latest_rate;
    IF v_role='crew' AND v_usual>0 AND v_rate<v_usual AND NOT p_ack_below_usual THEN RAISE EXCEPTION 'You must acknowledge the rate is below your usual rate'; END IF;
+   IF v_role='producer' AND v_usual>0 AND v_rate<v_usual AND NOT EXISTS(SELECT 1 FROM public.gig_negotiation_events WHERE negotiation_id=n.id AND action='below_usual_acknowledged' AND offered_rate=v_rate) THEN RAISE EXCEPTION 'Crew must acknowledge their below-usual rate before acceptance'; END IF;
    IF EXISTS(SELECT 1 FROM public.gig_negotiations WHERE booking_id=p_booking_id AND status='accepted') THEN RAISE EXCEPTION 'Gig already accepted'; END IF;
    -- Reserve at the negotiated rate; crew must still accept the per-job terms before confirmation.
    UPDATE public.bookings SET crew_id=p_crew_id,crew_rate=v_rate,status='pencil' WHERE id=p_booking_id;
@@ -74,7 +76,7 @@ BEGIN
  ELSE RAISE EXCEPTION 'Unknown negotiation action'; END IF;
  INSERT INTO public.gig_negotiation_events(negotiation_id,production_id,actor_id,actor_role,action,offered_rate,usual_rate)
  VALUES(n.id,b.production_id,auth.uid(),v_role,p_action,v_rate,v_usual);
- IF p_action='accept' AND v_role='crew' AND v_usual>0 AND v_rate<v_usual THEN
+ IF ((p_action='accept' OR p_action='counter') AND v_role='crew' AND v_usual>0 AND v_rate<v_usual) THEN
   INSERT INTO public.gig_negotiation_events(negotiation_id,production_id,actor_id,actor_role,action,offered_rate,usual_rate)
   VALUES(n.id,b.production_id,auth.uid(),'crew','below_usual_acknowledged',v_rate,v_usual);
  END IF;
