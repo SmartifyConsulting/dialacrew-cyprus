@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { Award, Briefcase, Camera, Eye, EyeOff, Lock, Mail, MapPin, Package, Phone, Plus, Star, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { CrewPersonalChecklists } from "@/components/CrewPersonalChecklists";
 import { Page, Panel } from "@/components/AppShell";
 import { Avatar } from "@/components/site/SiteTabs";
 import { useRole, useSession } from "@/lib/auth";
@@ -34,7 +35,7 @@ export const Route = createFileRoute("/_authenticated/crew/$id")({
 
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
 const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground";
-const TABS = ["About", "Projects", "Portfolio", "Equipment", "Reviews", "Banking"] as const;
+const TABS = ["About", "Projects", "Portfolio", "Equipment", "Checklists", "Reviews", "Banking"] as const;
 
 function CrewProfile() {
   const { id } = Route.useParams();
@@ -110,7 +111,7 @@ function CrewProfile() {
         </div>
 
         <nav className="flex gap-1 overflow-x-auto border-y border-border px-4">
-          {TABS.filter((t) => t !== "Banking" || isOwnProfile).map((t) => <button key={t} onClick={() => setTab(t)} className={`whitespace-nowrap border-b-2 px-3 py-3 text-sm font-semibold ${tab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}>{t}</button>)}
+          {TABS.filter((t) => (t !== "Banking" && t !== "Checklists") || isOwnProfile).map((t) => <button key={t} onClick={() => setTab(t)} className={`whitespace-nowrap border-b-2 px-3 py-3 text-sm font-semibold ${tab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}>{t}</button>)}
         </nav>
 
         <div className="p-6">
@@ -148,6 +149,7 @@ function CrewProfile() {
             ) : <p className="text-sm text-muted-foreground">No portfolio links added yet.</p>
           )}
           {tab === "Equipment" && <Kit crewId={id} items={assets.data ?? []} canEdit={canEdit} onChange={refresh} />}
+          {tab === "Checklists" && isOwnProfile && <CrewPersonalChecklists crewId={id} />}
           {tab === "Reviews" && <ReviewsTab crewId={id} />}
           {tab === "Banking" && isOwnProfile && <BankingTab crewId={id} />}
         </div>
