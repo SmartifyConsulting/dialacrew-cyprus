@@ -42,7 +42,7 @@ export function ChecklistTemplateManager({ audience, targetId }: { audience: Che
   async function apply() {
     if (!targetId || !selected) return;
     setBusy(true);
-    const { error } = await supabase.rpc("apply_checklist_template", { p_template_id: selected, p_production_id: audience === "producer" ? targetId : undefined, p_crew_id: audience === "crew" ? targetId : undefined });
+    const { error } = await supabase.rpc("apply_checklist_template", { p_template_id: selected, ...(audience === "producer" ? { p_production_id: targetId } : {}), ...(audience === "crew" ? { p_crew_id: targetId } : {}) });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Checklist added from template");
