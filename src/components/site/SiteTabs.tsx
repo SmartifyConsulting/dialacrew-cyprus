@@ -730,6 +730,7 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
           )}
         </Panel>
       ))}
+      </div>
 
       {isProducer && view === "Checklist" && (
         addingList ? (
