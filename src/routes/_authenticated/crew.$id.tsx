@@ -66,6 +66,7 @@ function CrewProfile() {
     queryFn: async () => { const { data, error } = await supabase.from("crew_assets").select("*").eq("crew_id", id).order("name"); if (error) throw error; return data ?? []; },
   });
   const noShows = useQuery({ queryKey: ["crew-no-shows", id], queryFn: async () => { const { data, error } = await supabase.from("crew_no_shows" as any).select("occurred_on,expires_at").eq("crew_id",id).gt("expires_at",new Date().toISOString()).order("occurred_on",{ascending:false}); if(error) throw error; return (data ?? []) as {occurred_on:string;expires_at:string}[]; } });
+  const composite = useQuery({queryKey:["crew-recommendation-score",id],queryFn:async()=>{const {data,error}=await supabase.from("crew_recommendation_scores" as any).select("*").eq("crew_id",id).maybeSingle();if(error)throw error;return data as {overall_score:number;review_rating:number;discounted_daily_rate:boolean;verified_wrap_count:number;avg_wrap_minutes:number|null}|null;}});
   const reviews = useReviews(id).data ?? [];
   const onTimePct = useOnTimePct(id);
 
@@ -101,6 +102,7 @@ function CrewProfile() {
               <h2 className="font-display text-2xl font-bold">{m.name}</h2>
               <div className="text-muted-foreground">{m.role} · {m.department}</div>
               <div className="mt-1 flex items-center gap-1 text-sm"><Star className="h-4 w-4 fill-primary text-primary" /> <strong>{Number(m.rating).toFixed(1)}</strong> <span className="text-muted-foreground">({reviews.length} reviews)</span><span className="ml-3 text-destructive font-semibold">No-shows: {noShows.data?.length ?? 0}</span></div>
+              {composite.data && <div className="mt-2 rounded-md border border-border bg-muted/30 p-2 text-xs"><strong>Overall recommendation score: {Number(composite.data.overall_score).toFixed(2)} / 5</strong><div className="mt-1 text-muted-foreground">Reviews: {Number(composite.data.review_rating).toFixed(1)} / 5 · {composite.data.discounted_daily_rate?"★ Discounted daily rate":"Standard daily rate"} · Average verified wrap: {composite.data.avg_wrap_minutes==null?"Not yet available":Math.round(composite.data.avg_wrap_minutes)+" min"} ({composite.data.verified_wrap_count} recorded)</div><div className="text-muted-foreground">80% review rating · up to 10% daily-rate discount · up to 10% wrap efficiency. Wrap history below 3 records receives a neutral score.</div></div>}
                {!!noShows.data?.length && <div className="mt-1 text-xs text-destructive">No-show date{noShows.data.length > 1 ? "s" : ""}: {noShows.data.map((n) => new Date(`${n.occurred_on}T12:00:00`).toLocaleDateString("en-ZA",{day:"numeric",month:"short",year:"numeric"})).join(", ")} · visible for six months</div>}
             </div>
             {canEdit && <button onClick={() => setEditing(!editing)} className="ml-auto text-xs text-primary hover:underline">{editing ? "Close" : "Edit profile"}</button>}
