@@ -988,80 +988,48 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
             <button disabled={otBusy || selectedIds.length === 0} onClick={() => requestOvertimeFor(selectedIds)} className={btn}>Request overtime for selected</button>
           </div>
         )}
-        <table className="w-full text-sm">
-          <thead className="text-left text-[11px] text-muted-foreground">
-            <tr>
-              <th className="px-4 py-2">Member</th>
-              <th className="px-4">Status</th>
-              <th className="px-4">Last movement</th>
-              {isProducer && <th className="px-4">Mark</th>}
-              {isProducer && <th className="px-4" />}
-            </tr>
-          </thead>
-          <tbody>
-            {members.length === 0 && <tr><td colSpan={isProducer ? 5 : 2} className="px-4 py-3 text-sm text-muted-foreground">No crew confirmed yet.</td></tr>}
-            {members.map((m) => {
-              const l = lastByCrew.get(m.crew_id);
-              const status = !l ? (shootStarted ? "Not arrived" : "Not started") : l.kind === "in" ? "On set" : "Wrapped";
-              return (
-                <tr key={m.crew_id} className="border-t border-border">
-                  <td className="px-4 py-2">
-                    <div className="flex items-center gap-3">
-                      {isProducer && (
-                        <input type="checkbox" className="h-4 w-4 shrink-0 accent-primary" aria-label={`Select ${m.name} for overtime`}
-                          disabled={!!liveRequest(overtime, m.crew_id)} checked={!!otSelected[m.crew_id]}
-                          onChange={(e) => setOtSelected({ ...otSelected, [m.crew_id]: e.target.checked })} />
-                      )}
-                      <Avatar name={m.name} path={m.photo_url} />
-                      <div className="min-w-0">
-                        <Link to="/crew/$id" params={{ id: m.crew_id }} className="block truncate text-sm font-semibold hover:text-primary">{m.name}</Link>
-                        <div className="truncate text-xs text-muted-foreground">{m.role} · {m.department}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4">
-                    <Badge>{status}</Badge>
-                    {overtime.filter((r) => r.crew_id === m.crew_id)[0] && (
-                      <div className="mt-1"><OvertimeStatus request={overtime.filter((r) => r.crew_id === m.crew_id)[0]!} rate={rates[m.crew_id] ?? 0} date={p.date || null} now={now} /></div>
-                    )}
-                    {wrapFor(m.crew_id) && (() => {
-                      const w = wrapFor(m.crew_id)!;
-                      return (
-                        <div className="mt-1 text-[11px] text-muted-foreground">
-                          Wrapped {clock(w.wrapped_at)}{w.left_at ? ` · left ${clock(w.left_at)} · pack-down ${packdown(w.wrapped_at, w.left_at)}` : " · packing down"}
-                        </div>
-                      );
-                    })()}
-                  </td>
-                  <td className="px-4 text-xs text-muted-foreground">{l ? `${l.kind === "in" ? "In" : "Out"} · ${when(l.created_at)}${l.distance_m != null ? ` · ${l.distance_m}m` : ""}` : "—"}</td>
-                  {isProducer && (
-                    <td className="px-4">
-                      <div className="flex gap-2">
-                        <button className="text-xs text-primary hover:underline" onClick={() => mark("in", m.crew_id, m.name)}>In</button>
-                        <button className="text-xs text-primary hover:underline" onClick={() => mark("out", m.crew_id, m.name)}>Out</button>
-                      </div>
-                    </td>
-                  )}
-                  {/* Only the production team rates crew — crew never rate anyone, including each other. */}
-                  {isProducer && (
-                    <td className="px-4">
-                      <div className="flex gap-2">
-                        {isProducer && <RequestOvertimeButton productionId={p.id} crewId={m.crew_id} live={liveRequest(overtime, m.crew_id)} />}
-                        <ProducerCrewEmergency crewId={m.crew_id} productionId={p.id} />
-                        <button onClick={() => wrapCrew(m)} disabled={!!wrapFor(m.crew_id)} className="rounded-sm border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40">Wrap</button>
-                        <button onClick={() => removeMember(m)} aria-label={`Remove ${m.name}`} title="Remove from production" className="grid h-6 w-6 place-items-center rounded-sm border border-destructive text-destructive hover:bg-destructive/10"><Minus className="h-3.5 w-3.5" /></button>
-                        {m.user_id !== userId && (() => {
-                          const eligible = !!wrapFor(m.crew_id) || ["awaiting_review", "payment_released", "completed"].includes(m.booking_status) || p.status === "Wrapped";
-                          return <button disabled={!eligible} title={eligible ? "Rate this person" : "Available once they've wrapped or completed the job"} onClick={() => setRating({ crewId: m.crew_id, name: m.name, role: m.role, department: m.department })} className="rounded-sm border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40">Rate me</button>;
-                        })()}
-                      </div>
-                    </td>
-                  )}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div className="divide-y divide-border">
+          {members.length === 0 && <p className="px-5 py-8 text-center text-sm text-muted-foreground">No crew confirmed yet.</p>}
+          {members.map((m) => {
+            const l = lastByCrew.get(m.crew_id);
+            const status = !l ? (shootStarted ? "Not arrived" : "Not started") : l.kind === "in" ? "On set" : "Wrapped";
+            const w = wrapFor(m.crew_id);
+            const request = overtime.find((r) => r.crew_id === m.crew_id);
+            const canRate = m.user_id !== userId && (!!w || ["awaiting_review", "payment_released", "completed"].includes(m.booking_status) || p.status === "Wrapped");
+            return (
+              <div key={m.crew_id} className="space-y-3 px-4 py-4 sm:px-5">
+                <div className="flex flex-wrap items-start gap-3">
+                  {isProducer && <input type="checkbox" className="mt-3 h-4 w-4 shrink-0 accent-primary" aria-label={`Select ${m.name} for overtime`}
+                    disabled={!!liveRequest(overtime, m.crew_id)} checked={!!otSelected[m.crew_id]}
+                    onChange={(e) => setOtSelected({ ...otSelected, [m.crew_id]: e.target.checked })} />}
+                  <Avatar name={m.name} path={m.photo_url} size={44} />
+                  <div className="min-w-0 flex-1">
+                    <Link to="/crew/$id" params={{ id: m.crew_id }} className="font-semibold text-foreground hover:text-primary">{m.name}</Link>
+                    <div className="mt-0.5 text-xs text-muted-foreground">{m.role} · {m.department}</div>
+                  </div>
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${status === "On set" ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : status === "Wrapped" ? "bg-muted text-muted-foreground" : "bg-amber-500/10 text-amber-700 dark:text-amber-400"}`}>{status}</span>
+                </div>
+                <div className="grid gap-3 rounded-lg bg-muted/30 p-3 text-xs sm:grid-cols-2">
+                  <div><span className="font-semibold text-foreground">Last movement</span><div className="mt-1 text-muted-foreground">{l ? `${l.kind === "in" ? "Checked in" : "Checked out"} · ${when(l.created_at)}${l.distance_m != null ? ` · ${l.distance_m}m` : ""}` : "No movement recorded"}</div></div>
+                  <div><span className="font-semibold text-foreground">Wrap-up</span><div className="mt-1 text-muted-foreground">{w ? `Wrapped ${clock(w.wrapped_at)}${w.left_at ? ` · Left ${clock(w.left_at)} · ${packdown(w.wrapped_at, w.left_at)}` : " · Packing down"}` : "Not wrapped yet"}</div></div>
+                </div>
+                {request && <div className="rounded-lg border border-border px-3 py-2 text-xs"><OvertimeStatus request={request} rate={rates[m.crew_id] ?? 0} date={p.date || null} now={now} /></div>}
+                {isProducer && <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
+                  <div className="mr-auto flex items-center gap-1">
+                    <span className="mr-1 text-xs font-medium text-muted-foreground">Attendance</span>
+                    <button className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted" onClick={() => mark("in", m.crew_id, m.name)}>In</button>
+                    <button className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted" onClick={() => mark("out", m.crew_id, m.name)}>Out</button>
+                  </div>
+                  <RequestOvertimeButton productionId={p.id} crewId={m.crew_id} live={liveRequest(overtime, m.crew_id)} />
+                  <ProducerCrewEmergency crewId={m.crew_id} productionId={p.id} />
+                  <button onClick={() => wrapCrew(m)} disabled={!!w} className="rounded-md border border-primary px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40">Wrap</button>
+                  {m.user_id !== userId && <button disabled={!canRate} title={canRate ? "Rate crew member" : "Available after wrap or job completion"} onClick={() => setRating({ crewId: m.crew_id, name: m.name, role: m.role, department: m.department })} className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted disabled:opacity-40">Rate crew</button>}
+                  <button onClick={() => removeMember(m)} aria-label={`Remove ${m.name}`} title="Remove from production" className="grid h-8 w-8 place-items-center rounded-md border border-destructive/50 text-destructive hover:bg-destructive/10"><Minus className="h-4 w-4" /></button>
+                </div>}
+              </div>
+            );
+          })}
+        </div>
       </Panel>
       {rating && <RateDialog {...rating} productionId={p.id} onClose={() => setRating(null)} onSaved={() => inv(["reviews"], ["crew"])} />}
     </div>
