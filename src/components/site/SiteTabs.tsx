@@ -1456,7 +1456,7 @@ function AmPmTimePicker({ value, onChange, label }: { value: string; onChange: (
   const normalized = value.slice(0, 5);
   if (normalized && !options.some((option) => option.value === normalized)) {
     const [hour, minute] = normalized.split(":").map(Number);
-    if (Number.isFinite(hour) && Number.isFinite(minute)) {
+    if (hour !== undefined && minute !== undefined && Number.isFinite(hour) && Number.isFinite(minute)) {
       options.push({ value: normalized, label: `${hour % 12 || 12}:${String(minute).padStart(2, "0")} ${hour < 12 ? "AM" : "PM"}` });
       options.sort((a, b) => a.value.localeCompare(b.value));
     }

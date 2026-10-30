@@ -191,7 +191,7 @@ function Productions() {
     setOpen(true);
   };
   const openDuplicate = (p: (typeof list)[number]) => {
-    setF({ name: `${p.name} (copy)`, client: p.client, jobId: "", type: p.type, location: p.location, recceDate: p.recceDate ?? "", startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget, description: p.summary ?? "" });
+    setF({ name: `${p.name} (copy)`, client: p.client, jobId: "", externalRef: "", type: p.type, location: p.location, recceDate: p.recceDate ?? "", startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget, description: p.summary ?? "" });
     setEditingId(null);
     setDraftId(null);
     setSaveState("idle");
