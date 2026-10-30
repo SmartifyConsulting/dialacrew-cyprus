@@ -315,12 +315,12 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
                   <div className="text-sm font-semibold text-foreground">{pt.starts_at ? dayLabel(pt.starts_at) : "Date TBC"}</div>
                   <div className="text-xs text-muted-foreground">{pt.starts_at ? timeRange(pt.starts_at, pt.ends_at) : "Time TBC"}</div>
                   {isProducer && (
-                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <div className="mt-2 grid grid-cols-1 items-center gap-2 text-xs text-muted-foreground sm:grid-cols-[auto_minmax(0,1.3fr)_minmax(0,1fr)_auto_minmax(0,1fr)]">
                       <span className="font-semibold text-foreground">Recce date</span>
                       <input
                         type="date"
                         aria-label={`Recce date for Shoot Day ${i + 1}`}
-                        className={`${input} max-w-full min-w-0 py-1 text-xs`}
+                        className={`${input} w-full min-w-0 py-1 text-xs`}
                         value={pt.recce_date ?? ""}
                         onChange={(e) => saveRecce(pt.id, { recce_date: e.target.value || null }, e.target.value ? "Recce date saved" : "Recce date cleared")}
                       />
@@ -384,19 +384,21 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
           <AddressAutocomplete className={`${input} w-full`} placeholder="Address — start typing to search" value={lf.address}
             onChange={(v) => setLf({ ...lf, address: v })}
             onSelect={(s) => setLf({ ...lf, label: s.place, address: s.exactAddress, latitude: s.lat, longitude: s.lon })} />
-          <div className="grid gap-2">
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)]">
             <label className="block min-w-0"><span className="text-xs text-muted-foreground">Recce date</span>
               <input type="date" className={`${input} mt-1 w-full min-w-0`} value={lf.recceDate} onChange={(e) => setLf({ ...lf, recceDate: e.target.value })} /></label>
-            <div className="grid grid-cols-2 gap-2">
               <label className="block min-w-0"><span className="text-xs text-muted-foreground">Recce start</span>
                 <input type="time" className={`${input} mt-1 w-full min-w-0`} value={lf.recceStart} onChange={(e) => setLf({ ...lf, recceStart: e.target.value })} /></label>
               <label className="block min-w-0"><span className="text-xs text-muted-foreground">Recce end</span>
                 <input type="time" className={`${input} mt-1 w-full min-w-0`} value={lf.recceEnd} onChange={(e) => setLf({ ...lf, recceEnd: e.target.value })} /></label>
             </div>
-            <label className="block min-w-0"><span className="text-xs text-muted-foreground">Starts</span>
-              <input type="datetime-local" className={`${input} mt-1 w-full min-w-0`} value={lf.startsAt} onChange={(e) => setLf({ ...lf, startsAt: e.target.value })} /></label>
-            <label className="block min-w-0"><span className="text-xs text-muted-foreground">Ends</span>
-              <input type="datetime-local" className={`${input} mt-1 w-full min-w-0`} value={lf.endsAt} onChange={(e) => setLf({ ...lf, endsAt: e.target.value })} /></label>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <label className="block min-w-0"><span className="text-xs text-muted-foreground">Shoot starts · Date & time</span>
+                <input type="datetime-local" className={`${input} mt-1 w-full min-w-0`} value={lf.startsAt} onChange={(e) => setLf({ ...lf, startsAt: e.target.value })} /></label>
+              <label className="block min-w-0"><span className="text-xs text-muted-foreground">Shoot ends · Date & time</span>
+                <input type="datetime-local" className={`${input} mt-1 w-full min-w-0`} value={lf.endsAt} onChange={(e) => setLf({ ...lf, endsAt: e.target.value })} /></label>
+            </div>
           </div>
           <div className="flex gap-2">
             <button disabled={busy} onClick={savePoint} className={btn}>{busy ? "Saving…" : editingId ? "Update location" : "Save location"}</button>
@@ -1502,9 +1504,9 @@ function ProductionSchedule({ p, isProducer }: { p: Ctx["p"]; isProducer: boolea
       <Panel title="Gear Check Date">
         <div className="space-y-2 p-4 text-sm">
           {isProducer ? (
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-3">
               <fieldset className="space-y-1"><legend className="text-xs font-semibold text-foreground">Pickup</legend>
-                <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
                   <input type="date" aria-label="Gear pickup date" className={`${input} min-w-0 flex-[2] py-1 text-xs`} value={cur.gear_pickup_date ?? ""} onChange={(e) => save("gear_pickup_date", e.target.value)} />
                   <AmPmTimePicker label="Gear pickup time" value={t(cur.gear_pickup_time)} onChange={(value) => save("gear_pickup_time", value)} />
                 </div>
