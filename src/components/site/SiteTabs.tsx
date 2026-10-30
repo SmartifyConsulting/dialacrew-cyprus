@@ -673,7 +673,7 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
   const doneCount = checklists.reduce((n, c) => n + c.production_checklist_items.filter((i) => i.done).length, 0);
   return (
     <div className="space-y-4">
-      {isProducer && <ChecklistTemplateManager audience="producer" targetId={p.id} />}
+      {isProducer && <><div className="text-right"><Link to="/checklist-templates" className="text-sm font-semibold text-primary underline">Manage checklist templates</Link></div><ChecklistTemplateManager audience="producer" targetId={p.id} /></>}
       <div role="tablist" aria-label="Checklist progress" className="flex gap-2 border-b border-border">
         {(["Checklist", "Done"] as const).map((tab) => <button key={tab} role="tab" aria-selected={view === tab} onClick={() => setView(tab)} className={`border-b-2 px-4 py-2 text-sm font-semibold ${view === tab ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}>{tab} ({tab === "Checklist" ? pendingCount : doneCount})</button>)}
       </div>
