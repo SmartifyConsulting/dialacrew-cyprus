@@ -71,6 +71,9 @@ export function AuditTab({ p }: { p: { id: string } }) {
       const acknowledgements = await supabase.from("notification_acknowledgement_audit").select("id, actor_name, activity_type, notification_title, occurred_at").eq("production_id", p.id);
       if (acknowledgements.error) throw acknowledgements.error;
       for (const a of acknowledgements.data ?? []) out.push({ id: `ack-${a.id}`, at: a.occurred_at, actor: a.actor_name, type: a.activity_type, text: `${a.actor_name} acknowledged notification`, detail: a.notification_title });
+      const negotiations = await supabase.from("gig_negotiation_events" as any).select("*").eq("production_id",p.id);
+      if(negotiations.error) throw negotiations.error;
+      for(const ev of (negotiations.data ?? []) as any[]) out.push({id:`neg-${ev.id}`,at:ev.occurred_at,type:ev.action==="below_usual_acknowledged"?"Below-rate acknowledgment":"Rate negotiation",actor:ev.actor_id,text:ev.action==="counter"?`${ev.actor_role} counter-offered ${Number(ev.offered_rate).toFixed(2)}`:ev.action==="accept"?`${ev.actor_role} accepted rate ${Number(ev.offered_rate).toFixed(2)}`:ev.action==="below_usual_acknowledged"?`Crew acknowledged rate below usual ${Number(ev.usual_rate).toFixed(2)}`:`${ev.actor_role} declined rate`,detail:`Negotiation ${ev.negotiation_id}`});
       return out.sort((a, b) => b.at.localeCompare(a.at));
     },
   }).data ?? [];
@@ -78,6 +81,7 @@ export function AuditTab({ p }: { p: { id: string } }) {
   // Search across actor, activity and detail, with optional exact date and activity type.
   const activityOf = (e: Event) => e.type ?? ({ att: "Attendance", wrap: "Wrap", left: "Departure", otreq: "Overtime", otacc: "Overtime", otdec: "Overtime", otend: "Overtime", post: "Post", photo: "Photo", task: "Task" } as Record<string, string>)[e.id.split("-")[0] ?? ""] ?? "Other";
   const types = [...new Set(events.map(activityOf))].sort();
+  const auditColor = (e: Event) => { const t=activityOf(e); if(t==="Rate negotiation")return "text-sky-600 dark:text-sky-400";if(t==="Below-rate acknowledgment")return "text-amber-600 dark:text-amber-400";if(t==="Production completion")return "text-emerald-600 dark:text-emerald-400";if(t==="Terms accepted")return "text-violet-600 dark:text-violet-400";return "text-foreground"; };
   const filtered = events.filter((e) => {
     const needle = search.trim().toLowerCase();
     return (!filterDate || dayKey(e.at) === filterDate) && (!filterType || activityOf(e) === filterType) && (!needle || [e.text, e.detail, e.actor, activityOf(e), new Date(e.at).toLocaleString("en-ZA")].join(" ").toLowerCase().includes(needle));
@@ -125,7 +129,7 @@ export function AuditTab({ p }: { p: { id: string } }) {
                     <li key={e.id} className="flex gap-3 border-b border-border/40 pb-2">
                       <time dateTime={e.at} className="w-32 shrink-0 font-mono text-xs text-muted-foreground">{new Date(e.at).toLocaleString("en-ZA", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" })}</time>
                       <span className="min-w-0 flex-1">
-                        <span className="mb-1 block text-xs font-semibold text-primary">{activityOf(e).replaceAll("_", " ")}</span>
+                        <span className={`mb-1 block text-xs font-semibold ${auditColor(e)}`}>{activityOf(e).replaceAll("_", " ")}</span>
                         <span className="block">{e.text}</span>
                         {e.actor && <span className="block text-xs text-muted-foreground">By {e.actor}</span>}
                         {e.detail && <span className="block text-xs text-muted-foreground">{e.detail}</span>}
