@@ -698,21 +698,21 @@ export type Database = {
       }
       checklist_templates: {
         Row: { id: string; owner_id: string | null; audience: string; title: string; items: Json; created_at: string }
-        Insert: { id: string; owner_id: string | null; audience: string; title: string; items: Json; created_at: string }
-        Update: { id: string; owner_id: string | null; audience: string; title: string; items: Json; created_at: string }
+        Insert: { id?: string; owner_id?: string | null; audience: string; title: string; items?: Json; created_at?: string }
+        Update: { id?: string; owner_id?: string | null; audience?: string; title?: string; items?: Json; created_at?: string }
         Relationships: []
       }
       crew_checklists: {
         Row: { id: string; crew_id: string; title: string; created_at: string }
-        Insert: { id: string; crew_id: string; title: string; created_at: string }
-        Update: { id: string; crew_id: string; title: string; created_at: string }
+        Insert: { id?: string; crew_id: string; title: string; created_at?: string }
+        Update: { id?: string; crew_id?: string; title?: string; created_at?: string }
         Relationships: []
       }
       crew_checklist_items: {
         Row: { id: string; checklist_id: string; label: string; done: boolean; sort_order: number }
-        Insert: { id: string; checklist_id: string; label: string; done: boolean; sort_order: number }
-        Update: { id: string; checklist_id: string; label: string; done: boolean; sort_order: number }
-        Relationships: []
+        Insert: { id?: string; checklist_id: string; label: string; done?: boolean; sort_order?: number }
+        Update: { id?: string; checklist_id?: string; label?: string; done?: boolean; sort_order?: number }
+        Relationships: [{ foreignKeyName: "crew_checklist_items_checklist_id_fkey"; columns: ["checklist_id"]; isOneToOne: false; referencedRelation: "crew_checklists"; referencedColumns: ["id"] }]
       }
       crew_members: {
         Row: {
