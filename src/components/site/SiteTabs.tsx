@@ -906,9 +906,12 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
     return mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`;
   };
 
-  async function wrapCrew(m: { crew_id: string; name: string }) {
+  async function wrapCrew(m: { crew_id: string; name: string; role?: string | null }) {
     if (!window.confirm(`Wrap ${m.name}? They'll be told they're no longer required. Pack-down time is paid until they check out.`)) return;
-    const { error } = await supabase.from("site_wraps").insert({ production_id: p.id, crew_id: m.crew_id });
+    const source = window.prompt("Equipment used for this crew member’s wrap-up? Enter: own, producer, mixed, none, or unknown", "unknown")?.trim().toLowerCase();
+    if (source == null) return;
+    if (!["own","producer","mixed","none","unknown"].includes(source)) { toast.error("Choose own, producer, mixed, none or unknown"); return; }
+    const { error } = await supabase.from("site_wraps").insert({ production_id: p.id, crew_id: m.crew_id, equipment_source: source, wrap_role: m.role || null } as any);
     if (error) { toast.error(friendlyError(error)); return; }
     toast.success(`${m.name} wrapped`);
     inv(["site-wraps", p.id]);
