@@ -696,6 +696,24 @@ export type Database = {
         Update: { crew_id?: string; business_name?: string; business_address?: string; tax_number?: string; bank_details?: string; logo_url?: string; accent_color?: string; footer_text?: string; invoice_prefix?: string; updated_at?: string }
         Relationships: []
       }
+      checklist_templates: {
+        Row: { id: string; owner_id: string | null; audience: string; title: string; items: Json; created_at: string }
+        Insert: { id: string; owner_id: string | null; audience: string; title: string; items: Json; created_at: string }
+        Update: { id: string; owner_id: string | null; audience: string; title: string; items: Json; created_at: string }
+        Relationships: []
+      }
+      crew_checklists: {
+        Row: { id: string; crew_id: string; title: string; created_at: string }
+        Insert: { id: string; crew_id: string; title: string; created_at: string }
+        Update: { id: string; crew_id: string; title: string; created_at: string }
+        Relationships: []
+      }
+      crew_checklist_items: {
+        Row: { id: string; checklist_id: string; label: string; done: boolean; sort_order: number }
+        Insert: { id: string; checklist_id: string; label: string; done: boolean; sort_order: number }
+        Update: { id: string; checklist_id: string; label: string; done: boolean; sort_order: number }
+        Relationships: []
+      }
       crew_members: {
         Row: {
           available: boolean
@@ -2668,6 +2686,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_checklist_template: { Args: { p_template_id: string; p_production_id?: string | null; p_crew_id?: string | null }; Returns: undefined }
+
       accept_booking_with_terms: { Args: { p_booking_id: string; p_terms_version: string }; Returns: undefined }
       claim_gig_with_terms: { Args: { p_booking_id: string; p_terms_version: string }; Returns: undefined }
 
