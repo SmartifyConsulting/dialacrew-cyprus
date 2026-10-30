@@ -315,22 +315,19 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
                   <div className="text-sm font-semibold text-foreground">{pt.starts_at ? dayLabel(pt.starts_at) : "Date TBC"}</div>
                   <div className="text-xs text-muted-foreground">{pt.starts_at ? timeRange(pt.starts_at, pt.ends_at) : "Time TBC"}</div>
                   {isProducer && (
-                    <div className="mt-2 grid grid-cols-1 items-center gap-2 text-xs text-muted-foreground sm:grid-cols-[auto_minmax(0,1.3fr)_minmax(0,1fr)_auto_minmax(0,1fr)]">
-                      <span className="font-semibold text-foreground">Recce date</span>
+                    <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                      <span className="block font-semibold text-foreground">Recce date</span>
+                      <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
                       <input
                         type="date"
                         aria-label={`Recce date for Shoot Day ${i + 1}`}
-                        className={`${input} w-full min-w-0 py-1 text-xs`}
+                        className={`${input} min-w-0 w-full py-1 text-xs`}
                         value={pt.recce_date ?? ""}
                         onChange={(e) => saveRecce(pt.id, { recce_date: e.target.value || null }, e.target.value ? "Recce date saved" : "Recce date cleared")}
                       />
-                      <input type="time" aria-label={`Recce start time for Shoot Day ${i + 1}`} className={`${input} min-w-0 py-1 text-xs`}
-                        value={hhmm(pt.recce_start_time) ?? ""}
-                        onChange={(e) => saveRecce(pt.id, { recce_start_time: e.target.value || null }, "Recce time saved", e.target.value || null, pt.recce_end_time)} />
-                      <span>–</span>
-                      <input type="time" aria-label={`Recce end time for Shoot Day ${i + 1}`} className={`${input} min-w-0 py-1 text-xs`}
-                        value={hhmm(pt.recce_end_time) ?? ""}
-                        onChange={(e) => saveRecce(pt.id, { recce_end_time: e.target.value || null }, "Recce time saved", pt.recce_start_time, e.target.value || null)} />
+                      <AmPmTimePicker label={`Recce start time for Shoot Day ${i + 1}`} value={hhmm(pt.recce_start_time) ?? ""} onChange={(value) => saveRecce(pt.id, { recce_start_time: value || null }, "Recce time saved", value || null, pt.recce_end_time)} />
+                      <AmPmTimePicker label={`Recce end time for Shoot Day ${i + 1}`} value={hhmm(pt.recce_end_time) ?? ""} onChange={(value) => saveRecce(pt.id, { recce_end_time: value || null }, "Recce time saved", pt.recce_start_time, value || null)} />
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1505,13 +1502,15 @@ function ProductionSchedule({ p, isProducer }: { p: Ctx["p"]; isProducer: boolea
   const show = (d: string | null, tm: string | null) => d ? `${dayLabel(`${d}T00:00:00`)} · ${hhmm(tm) ?? "time TBC"}` : "Date TBC";
   return (
     <>
-      {isProducer && p.recceDate && (
-        <Panel title="Production Recce Times">
-          <div className="flex flex-wrap items-center gap-2 p-4 text-xs text-muted-foreground">
-            <input type="time" aria-label="Production recce start time" className={`${input} py-1 text-xs`} value={t(cur.recce_start_time)} onChange={(e) => save("recce_start_time", e.target.value)} />
-            <span>–</span>
-            <input type="time" aria-label="Production recce end time" className={`${input} py-1 text-xs`} value={t(cur.recce_end_time)} onChange={(e) => save("recce_end_time", e.target.value)} />
-            <span>{recceRange(cur.recce_start_time, cur.recce_end_time)}</span>
+      {isProducer && (
+        <Panel title="Production Recce Date">
+          <div className="space-y-1 p-4 text-xs">
+            <span className="font-semibold text-foreground">Recce date and times</span>
+            <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
+              <input type="date" aria-label="Production recce date" className={`${input} min-w-0 w-full py-1 text-xs`} value={p.recceDate ?? ""} onChange={async (e) => { const { error } = await supabase.from("productions").update({recce_date:e.target.value || null}).eq("id",p.id); if(error) toast.error(friendlyError(error)); else inv(["productions"],["production",p.id]); }} />
+              <AmPmTimePicker label="Production recce start time" value={t(cur.recce_start_time)} onChange={(value) => save("recce_start_time",value)} />
+              <AmPmTimePicker label="Production recce end time" value={t(cur.recce_end_time)} onChange={(value) => save("recce_end_time",value)} />
+            </div>
           </div>
         </Panel>
       )}
