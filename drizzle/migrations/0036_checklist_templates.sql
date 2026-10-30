@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS public.checklist_templates (
  created_at timestamptz NOT NULL DEFAULT now(),
  UNIQUE(owner_id,audience,title)
 );
+CREATE UNIQUE INDEX IF NOT EXISTS checklist_default_audience_title_unique ON public.checklist_templates(audience,title) WHERE owner_id IS NULL;
 CREATE TABLE IF NOT EXISTS public.crew_checklists (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  crew_id text NOT NULL REFERENCES public.crew_members(id) ON DELETE CASCADE,
