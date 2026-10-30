@@ -212,7 +212,7 @@ function Productions() {
         const { error } = await supabase.from("productions").update(payload).eq("id", draftId);
         if (error) { toast.error(friendlyError(error)); return; }
       } else {
-        const { data, error } = await supabase.from("productions").insert({ ...payload, status: "Draft" }).select("id").single();
+        const { data, error } = await supabase.from("productions").insert({ ...payload, status: "Draft" } as never).select("id").single();
         if (error) { toast.error(friendlyError(error)); return; }
         setDraftId(data.id);
       }
@@ -246,7 +246,7 @@ function Productions() {
     const targetId = editingId ?? draftId;
     const { data, error } = targetId
       ? await supabase.from("productions").update(payload).eq("id", targetId).select("id").single()
-      : await supabase.from("productions").insert({ ...payload, status: "Draft" }).select("id").single();
+      : await supabase.from("productions").insert({ ...payload, status: "Draft" } as never).select("id").single();
     if (error) { toast.error(friendlyError(error)); return; }
     if (coverFile) {
       try {

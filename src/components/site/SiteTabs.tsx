@@ -599,11 +599,11 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
 
   async function saveChecklistAsTemplate(c: { title: string; production_checklist_items: ChecklistItem[] }) {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return toast.error("Sign in to save templates.");
+    if (!user) { toast.error("Sign in to save templates."); return; }
     const items = c.production_checklist_items.map((item) => item.label);
-    if (!items.length) return toast.error("Add checklist items before saving a template.");
+    if (!items.length) { toast.error("Add checklist items before saving a template."); return; }
     const { error } = await supabase.from("checklist_templates").insert({ audience: "producer", owner_id: user.id, title: c.title, items });
-    if (error) return toast.error(friendlyError(error));
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success("Checklist saved as reusable template");
     inv(["checklist-templates", "producer"]);
   }
