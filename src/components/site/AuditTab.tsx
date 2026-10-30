@@ -64,7 +64,7 @@ export function AuditTab({ p }: { p: { id: string } }) {
       const tasks = await supabase.from("site_tasks").select("id, title, created_at").eq("production_id", p.id);
       for (const t of tasks.data ?? []) out.push({ id: `task-${t.id}`, at: t.created_at, text: `Task added: ${t.title}` });
       const completion = await supabase.from("productions").select("completed_at, completed_by").eq("id", p.id).maybeSingle();
-      if (completion.data?.completed_at) out.push({ id: `completion-${p.id}`, at: completion.data.completed_at, actor: completion.data.completed_by ?? "Producer", type: "Production completion", text: `${completion.data.profiles?.full_name ?? "Producer"} completed and locked the production` });
+      if (completion.data?.completed_at) out.push({ id: `completion-${p.id}`, at: completion.data.completed_at, actor: completion.data.completed_by ?? "Producer", type: "Production completion", text: `${(completion.data as { profiles?: { full_name?: string | null } | null }).profiles?.full_name ?? "Producer"} completed and locked the production` });
       const termsAccepted = await supabase.from("booking_terms_acceptances").select("id, booking_id, accepted_by, terms_version, accepted_at").eq("production_id", p.id);
       if (termsAccepted.error) throw termsAccepted.error;
       for (const a of termsAccepted.data ?? []) out.push({ id: `terms-${a.id}`, at: a.accepted_at, actor: a.accepted_by, type: "Terms accepted", text: `Crew member accepted job terms`, detail: `Booking ${a.booking_id} · Version ${a.terms_version} · User ${a.accepted_by}` });
@@ -76,7 +76,7 @@ export function AuditTab({ p }: { p: { id: string } }) {
   }).data ?? [];
 
   // Search across actor, activity and detail, with optional exact date and activity type.
-  const activityOf = (e: Event) => e.type ?? ({ att: "Attendance", wrap: "Wrap", left: "Departure", otreq: "Overtime", otacc: "Overtime", otdec: "Overtime", otend: "Overtime", post: "Post", photo: "Photo", task: "Task" } as Record<string, string>)[e.id.split("-")[0]] ?? "Other";
+  const activityOf = (e: Event) => e.type ?? ({ att: "Attendance", wrap: "Wrap", left: "Departure", otreq: "Overtime", otacc: "Overtime", otdec: "Overtime", otend: "Overtime", post: "Post", photo: "Photo", task: "Task" } as Record<string, string>)[e.id.split("-")[0] ?? ""] ?? "Other";
   const types = [...new Set(events.map(activityOf))].sort();
   const filtered = events.filter((e) => {
     const needle = search.trim().toLowerCase();

@@ -90,10 +90,56 @@ export type Database = {
         ]
       }
       booking_terms_acceptances: {
-        Row: { id: string; booking_id: string; production_id: string; crew_id: string; accepted_by: string; terms_version: string; accepted_at: string }
-        Insert: { id?: string; booking_id: string; production_id: string; crew_id: string; accepted_by: string; terms_version: string; accepted_at?: string }
-        Update: { id?: string; booking_id?: string; production_id?: string; crew_id?: string; accepted_by?: string; terms_version?: string; accepted_at?: string }
-        Relationships: []
+        Row: {
+          accepted_at: string
+          accepted_by: string
+          booking_id: string
+          crew_id: string
+          id: string
+          production_id: string
+          terms_version: string
+        }
+        Insert: {
+          accepted_at?: string
+          accepted_by: string
+          booking_id: string
+          crew_id: string
+          id?: string
+          production_id: string
+          terms_version: string
+        }
+        Update: {
+          accepted_at?: string
+          accepted_by?: string
+          booking_id?: string
+          crew_id?: string
+          id?: string
+          production_id?: string
+          terms_version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_terms_acceptances_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_terms_acceptances_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_terms_acceptances_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bookings: {
         Row: {
@@ -294,6 +340,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      checklist_templates: {
+        Row: {
+          audience: string
+          created_at: string
+          id: string
+          items: Json
+          owner_id: string | null
+          title: string
+        }
+        Insert: {
+          audience: string
+          created_at?: string
+          id?: string
+          items?: Json
+          owner_id?: string | null
+          title: string
+        }
+        Update: {
+          audience?: string
+          created_at?: string
+          id?: string
+          items?: Json
+          owner_id?: string | null
+          title?: string
+        }
+        Relationships: []
       }
       clients: {
         Row: {
@@ -639,6 +712,67 @@ export type Database = {
           },
         ]
       }
+      crew_checklist_items: {
+        Row: {
+          checklist_id: string
+          done: boolean
+          id: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          checklist_id: string
+          done?: boolean
+          id?: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          checklist_id?: string
+          done?: boolean
+          id?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crew_checklist_items_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "crew_checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crew_checklists: {
+        Row: {
+          created_at: string
+          crew_id: string
+          id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          crew_id: string
+          id?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          crew_id?: string
+          id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crew_checklists_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crew_group_members: {
         Row: {
           crew_id: string
@@ -691,28 +825,51 @@ export type Database = {
         Relationships: []
       }
       crew_invoice_settings: {
-        Row: { crew_id: string; business_name: string; business_address: string; tax_number: string; bank_details: string; logo_url: string; accent_color: string; footer_text: string; invoice_prefix: string; updated_at: string }
-        Insert: { crew_id: string; business_name?: string; business_address?: string; tax_number?: string; bank_details?: string; logo_url?: string; accent_color?: string; footer_text?: string; invoice_prefix?: string; updated_at?: string }
-        Update: { crew_id?: string; business_name?: string; business_address?: string; tax_number?: string; bank_details?: string; logo_url?: string; accent_color?: string; footer_text?: string; invoice_prefix?: string; updated_at?: string }
-        Relationships: []
-      }
-      checklist_templates: {
-        Row: { id: string; owner_id: string | null; audience: string; title: string; items: Json; created_at: string }
-        Insert: { id?: string; owner_id?: string | null; audience: string; title: string; items?: Json; created_at?: string }
-        Update: { id?: string; owner_id?: string | null; audience?: string; title?: string; items?: Json; created_at?: string }
-        Relationships: []
-      }
-      crew_checklists: {
-        Row: { id: string; crew_id: string; title: string; created_at: string }
-        Insert: { id?: string; crew_id: string; title: string; created_at?: string }
-        Update: { id?: string; crew_id?: string; title?: string; created_at?: string }
-        Relationships: []
-      }
-      crew_checklist_items: {
-        Row: { id: string; checklist_id: string; label: string; done: boolean; sort_order: number }
-        Insert: { id?: string; checklist_id: string; label: string; done?: boolean; sort_order?: number }
-        Update: { id?: string; checklist_id?: string; label?: string; done?: boolean; sort_order?: number }
-        Relationships: [{ foreignKeyName: "crew_checklist_items_checklist_id_fkey"; columns: ["checklist_id"]; isOneToOne: false; referencedRelation: "crew_checklists"; referencedColumns: ["id"] }]
+        Row: {
+          accent_color: string
+          bank_details: string
+          business_address: string
+          business_name: string
+          crew_id: string
+          footer_text: string
+          invoice_prefix: string
+          logo_url: string
+          tax_number: string
+          updated_at: string
+        }
+        Insert: {
+          accent_color?: string
+          bank_details?: string
+          business_address?: string
+          business_name?: string
+          crew_id: string
+          footer_text?: string
+          invoice_prefix?: string
+          logo_url?: string
+          tax_number?: string
+          updated_at?: string
+        }
+        Update: {
+          accent_color?: string
+          bank_details?: string
+          business_address?: string
+          business_name?: string
+          crew_id?: string
+          footer_text?: string
+          invoice_prefix?: string
+          logo_url?: string
+          tax_number?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crew_invoice_settings_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: true
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       crew_members: {
         Row: {
@@ -1132,8 +1289,6 @@ export type Database = {
       }
       invoices: {
         Row: {
-          issuer_snapshot: Json
-          service_description: string
           booking_id: string
           created_at: string
           crew_id: string
@@ -1142,8 +1297,10 @@ export type Database = {
           equipment_amount: number
           id: string
           invoice_number: string
+          issuer_snapshot: Json
           overtime_amount: number
           production_id: string
+          service_description: string
           status: string
           subtotal: number
           total: number
@@ -1159,8 +1316,10 @@ export type Database = {
           equipment_amount?: number
           id?: string
           invoice_number?: string
+          issuer_snapshot?: Json
           overtime_amount?: number
           production_id: string
+          service_description?: string
           status?: string
           subtotal?: number
           total?: number
@@ -1168,8 +1327,6 @@ export type Database = {
           vat_rate?: number
         }
         Update: {
-          issuer_snapshot?: Json
-          service_description?: string
           booking_id?: string
           created_at?: string
           crew_id?: string
@@ -1178,8 +1335,10 @@ export type Database = {
           equipment_amount?: number
           id?: string
           invoice_number?: string
+          issuer_snapshot?: Json
           overtime_amount?: number
           production_id?: string
+          service_description?: string
           status?: string
           subtotal?: number
           total?: number
@@ -1417,36 +1576,51 @@ export type Database = {
       }
       notification_acknowledgement_audit: {
         Row: {
+          activity_type: string
+          actor_id: string
+          actor_name: string
           id: string
           notification_id: string
-          production_id: string | null
-          actor_id: string
-          actor_name: string
-          activity_type: string
           notification_title: string
           occurred_at: string
+          production_id: string | null
         }
         Insert: {
-          id?: string
-          notification_id: string
-          production_id?: string | null
+          activity_type?: string
           actor_id: string
           actor_name: string
-          activity_type?: string
+          id?: string
+          notification_id: string
           notification_title: string
           occurred_at?: string
+          production_id?: string | null
         }
         Update: {
-          id?: string
-          notification_id?: string
-          production_id?: string | null
+          activity_type?: string
           actor_id?: string
           actor_name?: string
-          activity_type?: string
+          id?: string
+          notification_id?: string
           notification_title?: string
           occurred_at?: string
+          production_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notification_acknowledgement_audit_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_acknowledgement_audit_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
@@ -1472,6 +1646,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
           body?: string
           created_at?: string
           id?: string
@@ -1999,11 +2175,11 @@ export type Database = {
       productions: {
         Row: {
           address: string
-          completed_at: string | null
-          completed_by: string | null
           budget: number
           client: string
           company_id: string | null
+          completed_at: string | null
+          completed_by: string | null
           created_at: string
           created_by: string | null
           crew_booked: number
@@ -2012,6 +2188,7 @@ export type Database = {
           date: string | null
           days: number
           end_date: string | null
+          external_ref: string | null
           gear_dropoff_date: string | null
           gear_dropoff_time: string | null
           gear_pickup_date: string | null
@@ -2020,7 +2197,6 @@ export type Database = {
           id: string
           image_path: string | null
           job_id: string
-          external_ref: string | null
           latitude: number | null
           location: string
           longitude: number | null
@@ -2038,11 +2214,11 @@ export type Database = {
         }
         Insert: {
           address?: string
-          completed_at?: string | null
-          completed_by?: string | null
           budget?: number
           client: string
           company_id?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
           created_at?: string
           created_by?: string | null
           crew_booked?: number
@@ -2051,6 +2227,7 @@ export type Database = {
           date?: string | null
           days?: number
           end_date?: string | null
+          external_ref?: string | null
           gear_dropoff_date?: string | null
           gear_dropoff_time?: string | null
           gear_pickup_date?: string | null
@@ -2058,8 +2235,7 @@ export type Database = {
           geofence_m?: number
           id?: string
           image_path?: string | null
-          job_id?: string | null
-          external_ref?: string | null
+          job_id: string
           latitude?: number | null
           location?: string
           longitude?: number | null
@@ -2080,6 +2256,8 @@ export type Database = {
           budget?: number
           client?: string
           company_id?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
           created_at?: string
           created_by?: string | null
           crew_booked?: number
@@ -2088,6 +2266,7 @@ export type Database = {
           date?: string | null
           days?: number
           end_date?: string | null
+          external_ref?: string | null
           gear_dropoff_date?: string | null
           gear_dropoff_time?: string | null
           gear_pickup_date?: string | null
@@ -2095,7 +2274,7 @@ export type Database = {
           geofence_m?: number
           id?: string
           image_path?: string | null
-          job_id?: string | null
+          job_id?: string
           latitude?: number | null
           location?: string
           longitude?: number | null
@@ -2686,18 +2865,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      apply_checklist_template: { Args: { p_template_id: string; p_production_id?: string | null; p_crew_id?: string | null }; Returns: undefined }
-
-      accept_booking_with_terms: { Args: { p_booking_id: string; p_terms_version: string }; Returns: undefined }
-      claim_gig_with_terms: { Args: { p_booking_id: string; p_terms_version: string }; Returns: undefined }
-
-      complete_production: { Args: { p_production_id: string }; Returns: undefined }
-
+      accept_booking_with_terms: {
+        Args: { p_booking_id: string; p_terms_version: string }
+        Returns: undefined
+      }
       acknowledge_notification: {
         Args: { p_notification_id: string }
         Returns: undefined
       }
-
+      apply_checklist_template: {
+        Args: {
+          p_crew_id?: string
+          p_production_id?: string
+          p_template_id: string
+        }
+        Returns: undefined
+      }
       approve_job: { Args: { _booking: string }; Returns: undefined }
       auto_approve_reviews: { Args: never; Returns: undefined }
       cancel_booking: {
@@ -2706,6 +2889,10 @@ export type Database = {
       }
       claim_crew_profile: { Args: never; Returns: string }
       claim_gig: { Args: { _booking: string }; Returns: undefined }
+      claim_gig_with_terms: {
+        Args: { p_booking_id: string; p_terms_version: string }
+        Returns: undefined
+      }
       company_should_auto_admin: {
         Args: { _company: string }
         Returns: boolean
@@ -2721,6 +2908,10 @@ export type Database = {
         }[]
       }
       complete_gig: { Args: { _gig: string }; Returns: undefined }
+      complete_production: {
+        Args: { p_production_id: string }
+        Returns: undefined
+      }
       crew_on_time_pct: { Args: { _crew_id: string }; Returns: number }
       decide_join_request: {
         Args: { _approve: boolean; _request: string }

@@ -100,7 +100,7 @@ export const useCreateProduction = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (f: { name: string; client: string; type: string; location: string; date: string; days: number; budget: number }) => {
-      const { error } = await supabase.from("productions").insert({ ...f, date: f.date || null });
+      const { error } = await supabase.from("productions").insert({ ...f, date: f.date || null } as never);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["productions"] }),

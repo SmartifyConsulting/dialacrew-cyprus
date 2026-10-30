@@ -26,7 +26,7 @@ export function CrewPersonalChecklists({ crewId }: { crewId: string }) {
   }
   async function saveTemplate(id: string, name: string, labels: string[]) {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user || !labels.length) return toast.error("Add at least one item first.");
+    if (!user || !labels.length) { toast.error("Add at least one item first."); return; }
     const { error } = await supabase.from("checklist_templates").insert({ audience: "crew", owner_id: user.id, title: name, items: labels });
     if (error) toast.error(error.message); else { toast.success("Saved as reusable template"); void qc.invalidateQueries({ queryKey: ["checklist-templates", "crew"] }); }
   }

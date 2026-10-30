@@ -23,14 +23,17 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
+import { Route as AuthenticatedChecklistTemplatesRouteImport } from './routes/_authenticated/checklist-templates'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedEarningsRouteImport } from './routes/_authenticated/earnings'
 import { Route as AuthenticatedGigsRouteImport } from './routes/_authenticated/gigs'
+import { Route as AuthenticatedInvoicesRouteImport } from './routes/_authenticated/invoices'
 import { Route as AuthenticatedMemoryRouteImport } from './routes/_authenticated/memory'
 import { Route as AuthenticatedPaymentsRouteImport } from './routes/_authenticated/payments'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedCrewIndexRouteImport } from './routes/_authenticated/crew.index'
 import { Route as AuthenticatedCrewIdRouteImport } from './routes/_authenticated/crew.$id'
+import { Route as AuthenticatedInvoicesIdRouteImport } from './routes/_authenticated/invoices.$id'
 import { Route as AuthenticatedProductionsIndexRouteImport } from './routes/_authenticated/productions.index'
 import { Route as AuthenticatedProductionsIdRouteImport } from './routes/_authenticated/productions.$id'
 import { Route as ApiPublicCalendarTokenRouteImport } from './routes/api/public/calendar.$token'
@@ -104,6 +107,12 @@ const AuthenticatedCalendarRoute = AuthenticatedCalendarRouteImport.update({
   path: '/calendar',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedChecklistTemplatesRoute =
+  AuthenticatedChecklistTemplatesRouteImport.update({
+    id: '/checklist-templates',
+    path: '/checklist-templates',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -117,6 +126,11 @@ const AuthenticatedEarningsRoute = AuthenticatedEarningsRouteImport.update({
 const AuthenticatedGigsRoute = AuthenticatedGigsRouteImport.update({
   id: '/gigs',
   path: '/gigs',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedInvoicesRoute = AuthenticatedInvoicesRouteImport.update({
+  id: '/invoices',
+  path: '/invoices',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedMemoryRoute = AuthenticatedMemoryRouteImport.update({
@@ -143,6 +157,11 @@ const AuthenticatedCrewIdRoute = AuthenticatedCrewIdRouteImport.update({
   id: '/crew/$id',
   path: '/crew/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedInvoicesIdRoute = AuthenticatedInvoicesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedInvoicesRoute,
 } as any)
 const AuthenticatedProductionsIndexRoute =
   AuthenticatedProductionsIndexRouteImport.update({
@@ -176,13 +195,16 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/calendar': typeof AuthenticatedCalendarRoute
+  '/checklist-templates': typeof AuthenticatedChecklistTemplatesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/earnings': typeof AuthenticatedEarningsRoute
   '/gigs': typeof AuthenticatedGigsRoute
+  '/invoices': typeof AuthenticatedInvoicesRouteWithChildren
   '/memory': typeof AuthenticatedMemoryRoute
   '/payments': typeof AuthenticatedPaymentsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/crew/$id': typeof AuthenticatedCrewIdRoute
+  '/invoices/$id': typeof AuthenticatedInvoicesIdRoute
   '/productions/$id': typeof AuthenticatedProductionsIdRoute
   '/crew/': typeof AuthenticatedCrewIndexRoute
   '/productions/': typeof AuthenticatedProductionsIndexRoute
@@ -202,13 +224,16 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/calendar': typeof AuthenticatedCalendarRoute
+  '/checklist-templates': typeof AuthenticatedChecklistTemplatesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/earnings': typeof AuthenticatedEarningsRoute
   '/gigs': typeof AuthenticatedGigsRoute
+  '/invoices': typeof AuthenticatedInvoicesRouteWithChildren
   '/memory': typeof AuthenticatedMemoryRoute
   '/payments': typeof AuthenticatedPaymentsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/crew/$id': typeof AuthenticatedCrewIdRoute
+  '/invoices/$id': typeof AuthenticatedInvoicesIdRoute
   '/productions/$id': typeof AuthenticatedProductionsIdRoute
   '/crew': typeof AuthenticatedCrewIndexRoute
   '/productions': typeof AuthenticatedProductionsIndexRoute
@@ -230,13 +255,16 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
+  '/_authenticated/checklist-templates': typeof AuthenticatedChecklistTemplatesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/earnings': typeof AuthenticatedEarningsRoute
   '/_authenticated/gigs': typeof AuthenticatedGigsRoute
+  '/_authenticated/invoices': typeof AuthenticatedInvoicesRouteWithChildren
   '/_authenticated/memory': typeof AuthenticatedMemoryRoute
   '/_authenticated/payments': typeof AuthenticatedPaymentsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/crew/$id': typeof AuthenticatedCrewIdRoute
+  '/_authenticated/invoices/$id': typeof AuthenticatedInvoicesIdRoute
   '/_authenticated/productions/$id': typeof AuthenticatedProductionsIdRoute
   '/_authenticated/crew/': typeof AuthenticatedCrewIndexRoute
   '/_authenticated/productions/': typeof AuthenticatedProductionsIndexRoute
@@ -258,13 +286,16 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin'
     | '/calendar'
+    | '/checklist-templates'
     | '/dashboard'
     | '/earnings'
     | '/gigs'
+    | '/invoices'
     | '/memory'
     | '/payments'
     | '/profile'
     | '/crew/$id'
+    | '/invoices/$id'
     | '/productions/$id'
     | '/crew/'
     | '/productions/'
@@ -284,13 +315,16 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin'
     | '/calendar'
+    | '/checklist-templates'
     | '/dashboard'
     | '/earnings'
     | '/gigs'
+    | '/invoices'
     | '/memory'
     | '/payments'
     | '/profile'
     | '/crew/$id'
+    | '/invoices/$id'
     | '/productions/$id'
     | '/crew'
     | '/productions'
@@ -311,13 +345,16 @@ export interface FileRouteTypes {
     | '/terms'
     | '/_authenticated/admin'
     | '/_authenticated/calendar'
+    | '/_authenticated/checklist-templates'
     | '/_authenticated/dashboard'
     | '/_authenticated/earnings'
     | '/_authenticated/gigs'
+    | '/_authenticated/invoices'
     | '/_authenticated/memory'
     | '/_authenticated/payments'
     | '/_authenticated/profile'
     | '/_authenticated/crew/$id'
+    | '/_authenticated/invoices/$id'
     | '/_authenticated/productions/$id'
     | '/_authenticated/crew/'
     | '/_authenticated/productions/'
@@ -440,6 +477,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCalendarRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/checklist-templates': {
+      id: '/_authenticated/checklist-templates'
+      path: '/checklist-templates'
+      fullPath: '/checklist-templates'
+      preLoaderRoute: typeof AuthenticatedChecklistTemplatesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -459,6 +503,13 @@ declare module '@tanstack/react-router' {
       path: '/gigs'
       fullPath: '/gigs'
       preLoaderRoute: typeof AuthenticatedGigsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/invoices': {
+      id: '/_authenticated/invoices'
+      path: '/invoices'
+      fullPath: '/invoices'
+      preLoaderRoute: typeof AuthenticatedInvoicesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/memory': {
@@ -496,6 +547,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCrewIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/invoices/$id': {
+      id: '/_authenticated/invoices/$id'
+      path: '/$id'
+      fullPath: '/invoices/$id'
+      preLoaderRoute: typeof AuthenticatedInvoicesIdRouteImport
+      parentRoute: typeof AuthenticatedInvoicesRoute
+    }
     '/_authenticated/productions/': {
       id: '/_authenticated/productions/'
       path: '/productions'
@@ -520,12 +578,27 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedInvoicesRouteChildren {
+  AuthenticatedInvoicesIdRoute: typeof AuthenticatedInvoicesIdRoute
+}
+
+const AuthenticatedInvoicesRouteChildren: AuthenticatedInvoicesRouteChildren = {
+  AuthenticatedInvoicesIdRoute: AuthenticatedInvoicesIdRoute,
+}
+
+const AuthenticatedInvoicesRouteWithChildren =
+  AuthenticatedInvoicesRoute._addFileChildren(
+    AuthenticatedInvoicesRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
+  AuthenticatedChecklistTemplatesRoute: typeof AuthenticatedChecklistTemplatesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEarningsRoute: typeof AuthenticatedEarningsRoute
   AuthenticatedGigsRoute: typeof AuthenticatedGigsRoute
+  AuthenticatedInvoicesRoute: typeof AuthenticatedInvoicesRouteWithChildren
   AuthenticatedMemoryRoute: typeof AuthenticatedMemoryRoute
   AuthenticatedPaymentsRoute: typeof AuthenticatedPaymentsRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
@@ -538,9 +611,11 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
+  AuthenticatedChecklistTemplatesRoute: AuthenticatedChecklistTemplatesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEarningsRoute: AuthenticatedEarningsRoute,
   AuthenticatedGigsRoute: AuthenticatedGigsRoute,
+  AuthenticatedInvoicesRoute: AuthenticatedInvoicesRouteWithChildren,
   AuthenticatedMemoryRoute: AuthenticatedMemoryRoute,
   AuthenticatedPaymentsRoute: AuthenticatedPaymentsRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,

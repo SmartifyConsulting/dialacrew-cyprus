@@ -23,14 +23,14 @@ export function ChecklistTemplateManager({ audience, targetId }: { audience: Che
   const refresh = () => qc.invalidateQueries({ queryKey: ["checklist-templates", audience] });
   async function save() {
     const title = name.trim(), lines = items.map((x) => x.trim()).filter(Boolean);
-    if (!title || !lines.length || !session?.user.id) return toast.error("Enter a checklist name and at least one item.");
+    if (!title || !lines.length || !session?.user.id) { toast.error("Enter a checklist name and at least one item."); return; }
     setBusy(true);
     const payload = { title, items: lines, audience, owner_id: session.user.id };
     const result = editingId
       ? await supabase.from("checklist_templates").update(payload).eq("id", editingId).eq("owner_id", session.user.id)
       : await supabase.from("checklist_templates").insert(payload);
     setBusy(false);
-    if (result.error) return toast.error(result.error.message);
+    if (result.error) { toast.error(result.error.message); return; }
     toast.success(editingId ? "Template updated" : "Template saved for reuse");
     setEditingId(null); setName(""); setItems([""]); void refresh();
   }
@@ -42,9 +42,9 @@ export function ChecklistTemplateManager({ audience, targetId }: { audience: Che
   async function apply() {
     if (!targetId || !selected) return;
     setBusy(true);
-    const { error } = await supabase.rpc("apply_checklist_template", { p_template_id: selected, p_production_id: audience === "producer" ? targetId : null, p_crew_id: audience === "crew" ? targetId : null });
+    const { error } = await supabase.rpc("apply_checklist_template", { p_template_id: selected, ...(audience === "producer" ? { p_production_id: targetId } : {}), ...(audience === "crew" ? { p_crew_id: targetId } : {}) });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Checklist added from template");
     setSelected("");
     void qc.invalidateQueries({ queryKey: audience === "producer" ? ["checklists", targetId] : ["personal-crew-checklists", targetId] });

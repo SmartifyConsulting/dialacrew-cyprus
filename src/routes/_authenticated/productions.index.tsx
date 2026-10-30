@@ -191,7 +191,7 @@ function Productions() {
     setOpen(true);
   };
   const openDuplicate = (p: (typeof list)[number]) => {
-    setF({ name: `${p.name} (copy)`, client: p.client, jobId: "", type: p.type, location: p.location, recceDate: p.recceDate ?? "", startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget, description: p.summary ?? "" });
+    setF({ name: `${p.name} (copy)`, client: p.client, jobId: "", externalRef: "", type: p.type, location: p.location, recceDate: p.recceDate ?? "", startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget, description: p.summary ?? "" });
     setEditingId(null);
     setDraftId(null);
     setSaveState("idle");
@@ -212,7 +212,7 @@ function Productions() {
         const { error } = await supabase.from("productions").update(payload).eq("id", draftId);
         if (error) { toast.error(friendlyError(error)); return; }
       } else {
-        const { data, error } = await supabase.from("productions").insert({ ...payload, status: "Draft" }).select("id").single();
+        const { data, error } = await supabase.from("productions").insert({ ...payload, status: "Draft" } as never).select("id").single();
         if (error) { toast.error(friendlyError(error)); return; }
         setDraftId(data.id);
       }
@@ -246,7 +246,7 @@ function Productions() {
     const targetId = editingId ?? draftId;
     const { data, error } = targetId
       ? await supabase.from("productions").update(payload).eq("id", targetId).select("id").single()
-      : await supabase.from("productions").insert({ ...payload, status: "Draft" }).select("id").single();
+      : await supabase.from("productions").insert({ ...payload, status: "Draft" } as never).select("id").single();
     if (error) { toast.error(friendlyError(error)); return; }
     if (coverFile) {
       try {
