@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { Award, Briefcase, Camera, Eye, EyeOff, Lock, Mail, MapPin, Package, Phone, Plus, Star, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { CrewRateCard } from "@/components/CrewRateCard";
 import { CrewEmergencySettings } from "@/components/CrewEmergencyDetails";
 import { CrewPersonalChecklists } from "@/components/CrewPersonalChecklists";
 import { Page, Panel } from "@/components/AppShell";
@@ -104,6 +105,7 @@ function CrewProfile() {
             </div>
             {canEdit && <button onClick={() => setEditing(!editing)} className="ml-auto text-xs text-primary hover:underline">{editing ? "Close" : "Edit profile"}</button>}
           </div>
+          <CrewRateCard crewId={id} canEdit={isOwnProfile} />
           {editing ? <EditForm m={m} onSave={async (patch) => { if (await update(patch)) { toast.success("Profile saved"); setEditing(false); } }} /> : (
             <div className="mt-5 space-y-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-3"><Mail className="h-4 w-4" /> {m.email || "No email"}</div>
