@@ -63,6 +63,7 @@ function CrewProfile() {
     queryKey: ["crew-assets", id],
     queryFn: async () => { const { data, error } = await supabase.from("crew_assets").select("*").eq("crew_id", id).order("name"); if (error) throw error; return data ?? []; },
   });
+  const noShows = useQuery({ queryKey: ["crew-no-shows", id], queryFn: async () => { const { data, error } = await supabase.from("crew_no_shows" as any).select("occurred_on,expires_at").eq("crew_id",id).gt("expires_at",new Date().toISOString()).order("occurred_on",{ascending:false}); if(error) throw error; return (data ?? []) as {occurred_on:string;expires_at:string}[]; } });
   const reviews = useReviews(id).data ?? [];
   const onTimePct = useOnTimePct(id);
 
@@ -97,7 +98,8 @@ function CrewProfile() {
             <div>
               <h2 className="font-display text-2xl font-bold">{m.name}</h2>
               <div className="text-muted-foreground">{m.role} · {m.department}</div>
-              <div className="mt-1 flex items-center gap-1 text-sm"><Star className="h-4 w-4 fill-primary text-primary" /> <strong>{Number(m.rating).toFixed(1)}</strong> <span className="text-muted-foreground">({reviews.length} reviews)</span></div>
+              <div className="mt-1 flex items-center gap-1 text-sm"><Star className="h-4 w-4 fill-primary text-primary" /> <strong>{Number(m.rating).toFixed(1)}</strong> <span className="text-muted-foreground">({reviews.length} reviews)</span><span className="ml-3 text-destructive font-semibold">No-shows: {noShows.data?.length ?? 0}</span></div>
+               {!!noShows.data?.length && <div className="mt-1 text-xs text-destructive">No-show date{noShows.data.length > 1 ? "s" : ""}: {noShows.data.map((n) => new Date(`${n.occurred_on}T12:00:00`).toLocaleDateString("en-ZA",{day:"numeric",month:"short",year:"numeric"})).join(", ")} · visible for six months</div>}
             </div>
             {canEdit && <button onClick={() => setEditing(!editing)} className="ml-auto text-xs text-primary hover:underline">{editing ? "Close" : "Edit profile"}</button>}
           </div>
