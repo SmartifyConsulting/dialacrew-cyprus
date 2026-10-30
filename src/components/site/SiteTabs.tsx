@@ -869,6 +869,8 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
   const inv = useInvalidate();
   const [rating, setRating] = useState<{ crewId: string; name: string; role: string | null; department: string | null } | null>(null);
   const cancelBooking = useCancelBooking();
+  const [noShowBusy, setNoShowBusy] = useState<string | null>(null);
+  const noShows = useQuery({ queryKey: ["crew-no-shows", p.id], queryFn: async () => { const { data, error } = await supabase.from("crew_no_shows" as any).select("crew_id,occurred_on,expires_at").eq("production_id",p.id).gt("expires_at",new Date().toISOString()); if(error) throw error; return (data ?? []) as {crew_id:string;occurred_on:string;expires_at:string}[]; }, enabled: isProducer });
   const wraps = (useQuery({
     queryKey: ["site-wraps", p.id],
     queryFn: async () => {
@@ -910,6 +912,18 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
     if (error) { toast.error(friendlyError(error)); return; }
     toast.success(`${m.name} wrapped`);
     inv(["site-wraps", p.id]);
+  }
+
+  async function reportNoShow(m: { crew_id: string; name: string }) {
+    if (!window.confirm(`Report ${m.name} as a no-show? This records the date on their profile for six months and immediately posts a replacement gig for the same role and area.`)) return;
+    setNoShowBusy(m.crew_id);
+    const { data: booking, error: lookupError } = await supabase.from("bookings").select("id").eq("production_id",p.id).eq("crew_id",m.crew_id).in("status",["confirmed","in_progress","awaiting_review"]).order("created_at",{ascending:false}).limit(1).maybeSingle();
+    if (lookupError || !booking) { toast.error("No eligible booking found for this crew member"); setNoShowBusy(null); return; }
+    const { error } = await supabase.rpc("report_booking_no_show" as any,{p_booking_id:booking.id});
+    setNoShowBusy(null);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success("No-show recorded. Replacement gig is live for the community.");
+    inv(["site-members",p.id],["bookings"],["open-gigs"],["production-open-gigs",p.id],["crew-no-shows",p.id]);
   }
 
   async function removeMember(m: { crew_id: string; name: string }) {
