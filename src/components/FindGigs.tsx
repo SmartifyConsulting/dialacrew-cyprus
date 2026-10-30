@@ -4,6 +4,7 @@ import { friendlyError } from "@/lib/errors";
 import { useOpenGigs } from "@/lib/db";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { GigNegotiation } from "@/components/GigNegotiation";
 import { JobTermsDialog } from "@/components/JobTermsDialog";
 import { zar } from "@/lib/demo-data";
 
@@ -90,6 +91,7 @@ export function FindGigsTab({ canClaim }: { canClaim: boolean }) {
                 {g.address || g.location || "Location TBC"}{near && g.latitude != null && g.longitude != null ? ` · ${distanceKm(g.latitude, g.longitude)}km away` : ""}
                 {g.booking_date ? ` · ${g.booking_date}` : ""}{g.call_time ? ` · call ${g.call_time}` : ""} · {zar(g.crew_rate)}/day
               </div>
+              {canClaim && <GigNegotiation bookingId={g.id} role="crew" offeredRate={Number(g.crew_rate)} productionId={g.production_id} />}
             </div>
             {canClaim && <button onClick={() => setPendingGig({ id: g.id, role: g.role, name: g.production_name })} disabled={claimBusy} className={`${btn} disabled:opacity-60`}>Grab it</button>}
           </li>
