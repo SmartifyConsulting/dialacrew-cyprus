@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { Camera, CheckCircle2, Circle, Download, FileText, GripVertical, ImageUp, LogIn, LogOut, MapPin, Mic, Minus, Paperclip, Pencil, Plus, Sparkles, Star, Trash2, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { GigNegotiation } from "@/components/GigNegotiation";
 import { ChecklistTemplateManager } from "@/components/ChecklistTemplateManager";
 import { Badge, Panel } from "@/components/AppShell";
 import { AudioRecorder } from "@/components/AudioRecorder";
@@ -852,6 +853,7 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
         </div>
       </Panel>
       <ProductionSchedule p={p} isProducer={isProducer} />
+      {isProducer && <Panel title="Open gig rate negotiations"><div className="space-y-3 p-4">{(openGigs.data ?? []).map(g => <div key={g.id} className="rounded border border-border p-3 text-sm"><strong>{g.role}</strong> · {fmtMoney(Number(g.crew_rate),p.currency)} / day<GigNegotiation bookingId={g.id} role="producer" offeredRate={Number(g.crew_rate)} productionId={p.id} /></div>)}{!openGigs.data?.length && <p className="text-xs text-muted-foreground">No open gigs.</p>}</div></Panel>}
       <Panel title="Locations">
         <LocationPoints p={p} isProducer={isProducer} myCrewId={myCrewId} />
       </Panel>
