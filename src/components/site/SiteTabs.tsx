@@ -1440,7 +1440,6 @@ export function CommercialsTab({ p, bookings, crewNames, requests }: Ctx & { boo
           </tbody>
         </table>
       </Panel>
-      </div>
     </div>
   );
 }
