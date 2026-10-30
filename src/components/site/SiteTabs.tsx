@@ -1,3 +1,4 @@
+import { ProducerCrewEmergency } from "@/components/CrewEmergencyDetails";
 import { hhmm, recceRange, validRecceTimes } from "@/lib/recce";
 import { RateDialog } from "@/components/site/RateDialog";
 import { gearValid } from "@/lib/calendar-events";
@@ -1043,6 +1044,7 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
                     <td className="px-4">
                       <div className="flex gap-2">
                         {isProducer && <RequestOvertimeButton productionId={p.id} crewId={m.crew_id} live={liveRequest(overtime, m.crew_id)} />}
+                        <ProducerCrewEmergency crewId={m.crew_id} productionId={p.id} />
                         <button onClick={() => wrapCrew(m)} disabled={!!wrapFor(m.crew_id)} className="rounded-sm border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40">Wrap</button>
                         <button onClick={() => removeMember(m)} aria-label={`Remove ${m.name}`} title="Remove from production" className="grid h-6 w-6 place-items-center rounded-sm border border-destructive text-destructive hover:bg-destructive/10"><Minus className="h-3.5 w-3.5" /></button>
                         {m.user_id !== userId && (() => {
