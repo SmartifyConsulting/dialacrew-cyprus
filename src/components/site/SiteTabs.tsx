@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { Camera, CheckCircle2, Circle, Download, FileText, GripVertical, ImageUp, LogIn, LogOut, MapPin, Mic, Minus, Paperclip, Pencil, Plus, Sparkles, Star, Trash2, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { ChecklistTemplateManager } from "@/components/ChecklistTemplateManager";
 import { Badge, Panel } from "@/components/AppShell";
 import { AudioRecorder } from "@/components/AudioRecorder";
 import { fmtMoney, zar, type Booking, type Crew, type Production } from "@/lib/demo-data";
@@ -594,6 +595,17 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
     inv(["checklists", p.id]);
   }
 
+  async function saveChecklistAsTemplate(c: { title: string; production_checklist_items: ChecklistItem[] }) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return toast.error("Sign in to save templates.");
+    const items = c.production_checklist_items.map((item) => item.label);
+    if (!items.length) return toast.error("Add checklist items before saving a template.");
+    const { error } = await supabase.from("checklist_templates").insert({ audience: "producer", owner_id: user.id, title: c.title, items });
+    if (error) return toast.error(friendlyError(error));
+    toast.success("Checklist saved as reusable template");
+    inv(["checklist-templates", "producer"]);
+  }
+
   async function removeChecklist(id: string) {
     const { error } = await supabase.from("production_checklists").delete().eq("id", id);
     if (error) { toast.error(friendlyError(error)); return; }
@@ -661,13 +673,14 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
   const doneCount = checklists.reduce((n, c) => n + c.production_checklist_items.filter((i) => i.done).length, 0);
   return (
     <div className="space-y-4">
+      {isProducer && <ChecklistTemplateManager audience="producer" targetId={p.id} />}
       <div role="tablist" aria-label="Checklist progress" className="flex gap-2 border-b border-border">
         {(["Checklist", "Done"] as const).map((tab) => <button key={tab} role="tab" aria-selected={view === tab} onClick={() => setView(tab)} className={`border-b-2 px-4 py-2 text-sm font-semibold ${view === tab ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}>{tab} ({tab === "Checklist" ? pendingCount : doneCount})</button>)}
       </div>
       <div className="grid items-start gap-5 md:grid-cols-2">
       {checklists.map((c) => (
         <Panel key={c.id} title={c.title} right={isProducer && (
-          <button onClick={() => removeChecklist(c.id)} className="text-muted-foreground hover:text-destructive" aria-label={`Remove ${c.title}`}><Trash2 className="h-3.5 w-3.5" /></button>
+          <div className="flex items-center gap-3"><button onClick={() => saveChecklistAsTemplate(c)} className="text-xs font-semibold text-primary underline">Save as template</button><button onClick={() => removeChecklist(c.id)} className="text-muted-foreground hover:text-destructive" aria-label={`Remove ${c.title}`}><Trash2 className="h-3.5 w-3.5" /></button></div>
         )}>
           <ul className="divide-y divide-border text-sm">
             {c.production_checklist_items.filter((i) => i.done === (view === "Done")).length === 0 && <li className="p-4 text-muted-foreground">{view === "Done" ? "Nothing completed yet." : "All items completed."}</li>}
