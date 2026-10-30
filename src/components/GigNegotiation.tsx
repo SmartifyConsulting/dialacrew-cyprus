@@ -20,7 +20,7 @@ export function GigNegotiation({bookingId,role,offeredRate,productionId}: {booki
    const number=Number(rate);if(action==="counter"&&(!rate||!Number.isFinite(number)||number<=0)){toast.error("Enter a valid day rate");return;}
    const acceptedRate=action==="accept"?Number(n?.latest_rate??0):number;
    const below=role==="crew"&&Number(me.data?.day_rate??0)>0&&acceptedRate<Number(me.data?.day_rate??0);
-   if(action==="accept"&&below&&!ack){toast.error("Please acknowledge the below-usual rate first");return;}
+   if((action==="accept"||action==="counter")&&below&&!ack){toast.error("Please acknowledge the below-usual rate first");return;}
    setBusy(true);
    const {error}=await supabase.rpc("gig_negotiate" as any,{p_booking_id:bookingId,p_crew_id:crewId,p_action:action,p_rate:action==="counter"?number:null,p_ack_below_usual:below&&ack});
    setBusy(false);if(error){toast.error(friendlyError(error));return;}
@@ -39,9 +39,11 @@ export function GigNegotiation({bookingId,role,offeredRate,productionId}: {booki
    </div>}
    {n.status==="accepted"&&<div className="font-semibold">Agreed: {money(Number(n.agreed_rate))} / day</div>}
   </div>)}
-  {(role==="crew"?(!mine||mine.status==="pending_crew"):current.some(n=>n.status==="pending_producer"))&&<div className="flex flex-wrap items-center gap-2">
-   <input aria-label="Counter-offer day rate" type="number" min="1" step="0.01" value={rate} onChange={e=>setRate(e.target.value)} placeholder="Your proposed day rate" className="min-w-0 flex-1 rounded border border-input bg-background px-2 py-1"/>
+  {(role==="crew"?(!mine||mine.status==="pending_crew"):current.some(n=>n.status==="pending_producer"))&&<div className="space-y-2">
+   {role==="crew"&&!!rate&&Number(rate)<Number(me.data?.day_rate??0)&&<label className="flex items-start gap-2 text-amber-700 dark:text-amber-400"><input type="checkbox" checked={ack} onChange={e=>setAck(e.target.checked)}/><span>I acknowledge my proposed rate of {money(Number(rate))} is below my usual rate of {money(Number(me.data?.day_rate??0))}.</span></label>}
+   <div className="flex flex-wrap items-center gap-2"><input aria-label="Counter-offer day rate" type="number" min="1" step="0.01" value={rate} onChange={e=>setRate(e.target.value)} placeholder="Your proposed day rate" className="min-w-0 flex-1 rounded border border-input bg-background px-2 py-1"/>
    {role==="crew"?<button disabled={busy} onClick={()=>act(me.data!.id,"counter",mine)} className="rounded border border-primary px-2 py-1 text-primary">Send counter-offer</button>:current.filter(n=>n.status==="pending_producer").map(n=><button key={n.id} disabled={busy} onClick={()=>act(n.crew_id,"counter",n)} className="rounded border border-primary px-2 py-1 text-primary">Counter crew {n.crew_id.slice(0,6)}</button>)}
+   </div>
   </div>}
   {role==="crew"&&mine?.status==="pending_producer"&&<p className="text-muted-foreground">Waiting for the producer to respond.</p>}
  </div>;
