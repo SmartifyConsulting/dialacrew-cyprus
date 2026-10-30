@@ -40,6 +40,9 @@ function CrewDashboard() {
   const qc = useQueryClient();
   const [pendingTermsJob, setPendingTermsJob] = useState<(typeof jobs)[number] | null>(null);
   const [acceptingTerms, setAcceptingTerms] = useState(false);
+  const [rejectJob, setRejectJob] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectBusy, setRejectBusy] = useState(false);
   const todayIso = new Date().toISOString().slice(0, 10);
   const todayJob = live.find((j) => j.booking_date === todayIso) ?? live.find((j) => (j.booking_date ?? "") >= todayIso);
   const pencils = live.filter((j) => j.status === "pencil" || j.status === "awaiting_crew_confirmation");
@@ -60,8 +63,15 @@ function CrewDashboard() {
   }).data ?? { count: 0, connections: 0, earned: 0 };
   async function respond(id: string, accept: boolean) {
     if (accept) { const job = jobs.find((j) => j.id === id); if (job) setPendingTermsJob(job); return; }
-    const { error } = await supabase.from("bookings").update({ status: "cancelled" }).eq("id", id);
+    setRejectJob(id); return;
+  }
+  async function confirmReject() {
+    if (!rejectJob || !rejectReason.trim()) { toast.error("Please provide a reason for declining"); return; }
+    setRejectBusy(true);
+    const { error } = await supabase.from("bookings").update({ status: "cancelled", cancelled_reason: rejectReason.trim() }).eq("id", rejectJob);
+    setRejectBusy(false);
     if (error) { toast.error(friendlyError(error)); return; }
+    setRejectJob(null); setRejectReason("");
     toast.success("Job declined");
     qc.invalidateQueries({ queryKey: ["crew-jobs"] });
   }
@@ -78,6 +88,7 @@ function CrewDashboard() {
   }
   return (
     <Page open title="Home" subtitle="Your jobs and call times">
+      {rejectJob && <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/35 p-4"><section role="dialog" aria-modal="true" aria-label="Decline pencil" className="w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-xl"><h2 className="text-lg font-bold">Decline this pencil?</h2><p className="my-2 text-sm text-muted-foreground">Please tell the producer why you cannot accept.</p><textarea autoFocus rows={3} value={rejectReason} onChange={e=>setRejectReason(e.target.value)} className="w-full rounded-md border border-input bg-background p-3 text-sm" placeholder="Reason for declining" /><div className="mt-4 flex justify-end gap-2"><button disabled={rejectBusy} onClick={()=>{setRejectJob(null);setRejectReason("");}} className="rounded-md border px-4 py-2 text-sm">Keep pencil</button><button disabled={rejectBusy||!rejectReason.trim()} onClick={confirmReject} className="rounded-md bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground disabled:opacity-50">Confirm decline</button></div></section></div>}
       {pendingTermsJob && <JobTermsDialog jobName={pendingTermsJob.productions?.name ?? "Production"} role={pendingTermsJob.role} busy={acceptingTerms} onAccept={acceptWithTerms} onClose={() => setPendingTermsJob(null)} />}
       {pencils.map((j) => {
         const pr = j.productions as { name?: string; client?: string; address?: string; location?: string } | null;
@@ -220,7 +231,7 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
 
   return (
     <Panel title="Calendar" right={<Link to="/calendar" className="text-xs font-semibold text-primary hover:underline">Open</Link>}>
-      <div className="flex flex-wrap items-center gap-2 px-3 pt-2 text-[10px] text-muted-foreground"><span className="rounded-sm bg-black px-1 py-0.5 font-semibold text-white">Recce</span>Recce day<span className="rounded-sm bg-purple-700 px-1 py-0.5 font-semibold text-white">Gear</span>Gear check</div>
+      <div className="flex flex-wrap items-center gap-2 px-3 pt-2 text-[10px] text-muted-foreground"><span className="rounded-sm bg-slate-100 px-1 py-0.5 font-semibold text-slate-700">Recce</span>Recce day<span className="rounded-sm bg-purple-700 px-1 py-0.5 font-semibold text-white">Gear</span>Gear check</div>
       <div className="p-3">
         <div className="mb-1 grid grid-cols-7 text-center text-[10px] text-muted-foreground">
           {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <div key={i}>{d}</div>)}
