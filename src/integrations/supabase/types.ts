@@ -835,6 +835,10 @@ export type Database = {
           invoice_prefix: string
           logo_url: string
           tax_number: string
+          vat_registered: boolean
+          vat_rate: number
+          tax_country: string
+          customer_tax_number: string
           updated_at: string
         }
         Insert: {
@@ -847,6 +851,10 @@ export type Database = {
           invoice_prefix?: string
           logo_url?: string
           tax_number?: string
+          vat_registered?: boolean
+          vat_rate?: number
+          tax_country?: string
+          customer_tax_number?: string
           updated_at?: string
         }
         Update: {
@@ -859,6 +867,10 @@ export type Database = {
           invoice_prefix?: string
           logo_url?: string
           tax_number?: string
+          vat_registered?: boolean
+          vat_rate?: number
+          tax_country?: string
+          customer_tax_number?: string
           updated_at?: string
         }
         Relationships: [
