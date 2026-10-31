@@ -259,7 +259,7 @@ export function ScenarioPlanner({ p }: { p: Production }) {
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Star className="h-3 w-3 text-primary" /> {c.rating.toFixed(1)} · {zar(c.dayRate)}/day ·{" "}
                       <span className={c.available && availableForRange(c.id) ? "text-success" : "text-destructive"}>
-                        {!c.available ? "Unavailable" : availableForRange(c.id) ? `Available ${rangeStart ? "for these dates" : ""}` : "Booked these dates"}
+                        {c.available && availableForRange(c.id) ? `Available ${rangeStart ? "for these dates" : ""}` : "Unavailable"}
                       </span>
                     </div>
                     {aiWhy[c.id]
