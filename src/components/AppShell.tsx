@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { type ReactNode } from "react";
-import { Briefcase, Home, Search, Shield, Star, User, type LucideIcon, Wallet, ReceiptText, CalendarDays } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { Briefcase, ChevronDown, Home, Search, Shield, Star, User, type LucideIcon, Wallet, ReceiptText, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany, useRole, useSession } from "@/lib/auth";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -256,14 +256,25 @@ export function ClientBadge({ name }: { name: string }) {
   return <span className={`inline-block rounded-sm px-2 py-0.5 text-xs font-semibold ${clientColor(name)}`}>{name}</span>;
 }
 
-export function Panel({ title, children, right }: { title: ReactNode; children: ReactNode; right?: ReactNode }) {
+export function Panel({ title, children, right, badge, collapsible, defaultCollapsed }: {
+  title: ReactNode; children: ReactNode; right?: ReactNode; badge?: ReactNode; collapsible?: boolean; defaultCollapsed?: boolean;
+}) {
+  const [collapsed, setCollapsed] = useState(!!collapsible && !!defaultCollapsed);
   return (
     <section className="rounded-sm border border-border bg-card">
-      <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-        <h2 className="font-display text-sm font-semibold uppercase tracking-wide text-primary">{title}</h2>
+      <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
+        <div className="flex min-w-0 items-center gap-2">
+          {collapsible && (
+            <button type="button" onClick={() => setCollapsed((c) => !c)} aria-label={collapsed ? "Expand" : "Collapse"} className="shrink-0 text-muted-foreground hover:text-foreground">
+              <ChevronDown className={`h-4 w-4 transition-transform ${collapsed ? "-rotate-90" : ""}`} />
+            </button>
+          )}
+          <h2 className="truncate font-display text-sm font-semibold uppercase tracking-wide text-primary">{title}</h2>
+          {badge}
+        </div>
         {right}
       </div>
-      {children}
+      {(!collapsible || !collapsed) && children}
     </section>
   );
 }

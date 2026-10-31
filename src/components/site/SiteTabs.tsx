@@ -751,8 +751,12 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
         {(["Checklist", "Done"] as const).map((tab) => <button key={tab} role="tab" aria-selected={view === tab} onClick={() => setView(tab)} className={`border-b-2 px-4 py-2 text-sm font-semibold ${view === tab ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}>{tab} ({tab === "Checklist" ? pendingCount : doneCount})</button>)}
       </div>
       <div className="grid items-start gap-5 md:grid-cols-2">
-      {checklists.map((c) => (
-        <Panel key={c.id} title={c.title} right={isProducer && (
+      {checklists.map((c) => {
+        const notDone = c.production_checklist_items.filter((i) => !i.done).length;
+        return (
+        <Panel key={c.id} title={c.title} collapsible defaultCollapsed
+          badge={notDone > 0 ? <span className="rounded-full bg-destructive px-2 py-0.5 text-xs font-bold text-white">{notDone}</span> : undefined}
+          right={isProducer && (
           <div className="flex items-center gap-3"><button onClick={() => saveChecklistAsTemplate(c)} className="text-xs font-semibold text-primary underline">Save as template</button><button onClick={() => removeChecklist(c.id)} className="text-muted-foreground hover:text-destructive" aria-label={`Remove ${c.title}`}><Trash2 className="h-3.5 w-3.5" /></button></div>
         )}>
           <ul className="divide-y divide-border text-sm">
@@ -800,7 +804,8 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
             </form>
           )}
         </Panel>
-      ))}
+        );
+      })}
       </div>
 
       {isProducer && view === "Checklist" && (

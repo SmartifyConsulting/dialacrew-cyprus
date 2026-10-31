@@ -131,6 +131,11 @@ export function DocumentsTab({ p, userId, myName, isProducer }: { p: { id: strin
   return (
     <div className="space-y-5">
       <Panel title={`Document checklist (${items.filter((i) => docs.some((d) => d.checklist_item_id === i.id)).length}/${items.length} on file)`}
+        collapsible defaultCollapsed
+        badge={(() => {
+          const outstanding = items.filter((i) => !docs.some((d) => d.checklist_item_id === i.id)).length;
+          return outstanding > 0 ? <span className="rounded-full bg-destructive px-2 py-0.5 text-xs font-bold text-white">{outstanding}</span> : undefined;
+        })()}
         right={isProducer && templates.length > 0 ? (
           <select className={`${input} py-1 text-xs`} value="" aria-label="Load a saved checklist" disabled={busy}
             onChange={(e) => { if (e.target.value) loadTemplate(e.target.value); }}>
