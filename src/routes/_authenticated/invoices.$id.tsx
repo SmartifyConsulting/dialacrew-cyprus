@@ -20,6 +20,7 @@ function InvoiceDetail() {
  const i = q.data;
  const issuer = i?.issuer_snapshot && typeof i.issuer_snapshot === "object" && !Array.isArray(i.issuer_snapshot) ? i.issuer_snapshot as Record<string, unknown> : {};
  const field = (key: string) => typeof issuer[key] === "string" ? issuer[key] as string : "";
+ const vatRegistered = issuer["vat_registered"] === true;
  const money = (n: number) => new Intl.NumberFormat("en-ZA", { style: "currency", currency: i?.productions?.currency || "ZAR" }).format(n);
  return <Page open title="Invoice" subtitle="Printable invoice attachment">
   <div className="mb-4 flex gap-3 print:hidden"><Link to="/invoices" className="text-sm text-primary underline">Back to invoices</Link><button onClick={() => window.print()} className="rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Print / Save as PDF</button></div>
@@ -31,9 +32,9 @@ function InvoiceDetail() {
     <div>{field("logo_url") && <img src={field("logo_url")} alt="Invoice logo" className="mb-3 max-h-20 max-w-40 object-contain" />}
      <h2 className="text-2xl font-bold">{field("business_name") || i.crew_members?.name || "Service provider"}</h2>
      <p className="whitespace-pre-line text-sm">{field("business_address")}</p>
-     {issuer.vat_registered === true && field("tax_number") && <p className="text-sm">VAT / tax registration: {field("tax_number")}</p>}{field("tax_country") && <p className="text-xs">Tax jurisdiction: {field("tax_country")}</p>}
+     {vatRegistered && field("tax_number") && <p className="text-sm">VAT / tax registration: {field("tax_number")}</p>}{field("tax_country") && <p className="text-xs">Tax jurisdiction: {field("tax_country")}</p>}
     </div>
-    <div className="text-right"><h1 className="text-3xl font-bold">{i.status==="draft"?"DRAFT INVOICE":issuer.vat_registered === true ? "TAX INVOICE" : "INVOICE"}</h1><p>{i.invoice_number}</p><p>{new Date(i.created_at).toLocaleDateString("en-ZA")}</p><p className="font-semibold uppercase">{i.status}</p></div>
+    <div className="text-right"><h1 className="text-3xl font-bold">{i.status==="draft"?"DRAFT INVOICE":vatRegistered ? "TAX INVOICE" : "INVOICE"}</h1><p>{i.invoice_number}</p><p>{new Date(i.created_at).toLocaleDateString("en-ZA")}</p><p className="font-semibold uppercase">{i.status}</p></div>
    </header>
    <p className="mb-6 text-sm"><strong>Bill to:</strong> {i.productions?.name} · {i.productions?.client}{field("customer_tax_number") && <span className="block">Customer VAT / tax number: {field("customer_tax_number")}</span>}</p>
    <table className="w-full text-sm"><thead><tr className="border-b text-left"><th className="py-3">Description</th><th>Qty</th><th className="text-right">Amount (excl. VAT / tax)</th></tr></thead><tbody>
@@ -42,7 +43,7 @@ function InvoiceDetail() {
     {Number(i.wrap_fee)>0 && <tr className="border-b"><td className="py-3">Wrap-up / pack-down ({i.wrap_minutes} minutes at {money(Number(i.wrap_hourly_rate))} per hour)</td><td>{(Number(i.wrap_minutes)/60).toFixed(2)}h</td><td className="text-right">{money(Number(i.wrap_fee))}</td></tr>}
     {i.overtime_amount > 0 && <tr className="border-b"><td className="py-3">Overtime</td><td>1</td><td className="text-right">{money(i.overtime_amount)}</td></tr>}
    </tbody></table>
-   <div className="mt-6 space-y-2 text-right text-sm"><p>Subtotal: {money(i.subtotal)}</p><p>{issuer.vat_registered === true ? `VAT / tax (${Number(i.vat_rate)}%)` : "VAT / tax (not charged)"}: {money(i.vat_amount)}</p><p className="text-xl font-bold">Total: {money(i.total)}</p></div>
+   <div className="mt-6 space-y-2 text-right text-sm"><p>Subtotal: {money(i.subtotal)}</p><p>{vatRegistered ? `VAT / tax (${Number(i.vat_rate)}%)` : "VAT / tax (not charged)"}: {money(i.vat_amount)}</p><p className="text-xl font-bold">Total: {money(i.total)}</p></div>
    <footer className="mt-10 border-t pt-4 text-sm"><p className="whitespace-pre-line">{field("bank_details")}</p><p className="mt-4 whitespace-pre-line">{field("footer_text")}</p></footer>
   </article>}
  </Page>;

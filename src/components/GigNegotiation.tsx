@@ -13,7 +13,7 @@ export function GigNegotiation({bookingId,role,offeredRate,productionId}: {booki
  const [busy,setBusy]=useState(false);
  const [ack,setAck]=useState(false);
  const me=useQuery({queryKey:["negotiation-my-crew"],enabled:role==="crew",queryFn:async()=>{const {data:{user}}=await supabase.auth.getUser();if(!user)return null;const {data,error}=await supabase.from("crew_members").select("id,day_rate").eq("user_id",user.id).maybeSingle();if(error)throw error;return data;}});
- const negotiations=useQuery({queryKey:["gig-negotiations",bookingId],queryFn:async()=>{const {data,error}=await supabase.from("gig_negotiations" as any).select("*").eq("booking_id",bookingId).order("created_at",{ascending:false});if(error)throw error;return (data??[]) as Negotiation[];}});
+ const negotiations=useQuery({queryKey:["gig-negotiations",bookingId],queryFn:async()=>{const {data,error}=await supabase.from("gig_negotiations").select("*").eq("booking_id",bookingId).order("created_at",{ascending:false});if(error)throw error;return (data??[]) as Negotiation[];}});
  const mine=negotiations.data?.find(n=>n.crew_id===me.data?.id);
  const current=role==="crew"? (mine?[mine]:[]):negotiations.data??[];
  async function act(crewId:string,action:"counter"|"accept"|"decline",n?:Negotiation){

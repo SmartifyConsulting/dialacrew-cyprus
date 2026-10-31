@@ -16,7 +16,7 @@ export function CrewInvoiceSettings() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const value = { ...defaults, ...q.data, ...draft };
-  const fields: { key: keyof Settings; label: string; type?: string }[] = [
+  const fields: { key: Exclude<keyof Settings, "vat_registered" | "vat_rate">; label: string; type?: string }[] = [
     { key: "business_name", label: "Invoice business name" }, { key: "business_address", label: "Business address" },
     { key: "customer_tax_number", label: "Customer VAT / tax number (if required)" }, { key: "bank_details", label: "Payment and bank details" },
     { key: "logo_url", label: "Logo image URL" }, { key: "invoice_prefix", label: "Invoice number prefix" },

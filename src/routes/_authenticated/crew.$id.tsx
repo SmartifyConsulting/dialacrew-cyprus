@@ -65,7 +65,7 @@ function CrewProfile() {
     queryKey: ["crew-assets", id],
     queryFn: async () => { const { data, error } = await supabase.from("crew_assets").select("*").eq("crew_id", id).order("name"); if (error) throw error; return data ?? []; },
   });
-  const noShows = useQuery({ queryKey: ["crew-no-shows", id], queryFn: async () => { const { data, error } = await supabase.from("crew_no_shows" as any).select("occurred_on,expires_at").eq("crew_id",id).gt("expires_at",new Date().toISOString()).order("occurred_on",{ascending:false}); if(error) throw error; return (data ?? []) as {occurred_on:string;expires_at:string}[]; } });
+  const noShows = useQuery({ queryKey: ["crew-no-shows", id], queryFn: async () => { const { data, error } = await supabase.from("crew_no_shows").select("occurred_on,expires_at").eq("crew_id",id).gt("expires_at",new Date().toISOString()).order("occurred_on",{ascending:false}); if(error) throw error; return data ?? []; } });
   const composite = useQuery({queryKey:["crew-recommendation-score",id],queryFn:async()=>{const {data,error}=await supabase.from("crew_recommendation_scores" as any).select("*").eq("crew_id",id).maybeSingle();if(error)throw error;return data as {overall_score:number;review_rating:number;discounted_daily_rate:boolean;verified_wrap_count:number;avg_wrap_minutes:number|null;comparable_wrap_count:number}|null;}});
   const reviews = useReviews(id).data ?? [];
   const onTimePct = useOnTimePct(id);
@@ -75,6 +75,9 @@ function CrewProfile() {
   const canEdit = role.data === "producer" || role.data === "admin" || m.user_id === session?.user.id;
   const isOwnProfile = m.user_id === session?.user.id;
   const done = (jobs.data ?? []).filter((j) => (j.productions as { status?: string } | null)?.status === "Wrapped").length;
+  // Distinct productions this crew member has been booked on (excluding cancelled bookings) — a simple
+  // popularity signal producers can see at a glance, separate from "Projects completed" (wrapped only).
+  const productionsBooked = new Set((jobs.data ?? []).filter((j) => j.status !== "cancelled").map((j) => j.production_id)).size;
   const refresh = () => inv(["crew-profile", id], ["crew"], ["crew-assets", id], ["crew-assets"]);
 
   async function update(patch: Record<string, unknown>) {
@@ -130,8 +133,8 @@ function CrewProfile() {
               <section className="border-t border-border pt-5"><h3 className="mb-2 flex items-center gap-2 font-semibold"><Briefcase className="h-4 w-4" /> Experience</h3>
                 <p className="whitespace-pre-wrap text-sm text-muted-foreground">{m.experience_notes || m.bio || "No experience added yet"}</p>
               </section>
-              <section className="grid grid-cols-4 gap-4 border-t border-border pt-5">
-                {[[String(done), "Projects completed"], [String(m.team_led), "Team members led"], [`${m.safety_record}%`, "Safety record"], [onTimePct.data != null ? `${onTimePct.data}%` : "—", "On-time"]].map(([v, l]) => (
+              <section className="grid grid-cols-2 gap-4 border-t border-border pt-5 sm:grid-cols-5">
+                {[[String(productionsBooked), "Productions booked"], [String(done), "Projects completed"], [String(m.team_led), "Team members led"], [`${m.safety_record}%`, "Safety record"], [onTimePct.data != null ? `${onTimePct.data}%` : "—", "On-time"]].map(([v, l]) => (
                   <div key={l}><div className="font-display text-3xl font-bold">{v}</div><div className="text-xs text-muted-foreground">{l}</div></div>
                 ))}
               </section>

@@ -1299,10 +1299,131 @@ export type Database = {
         }
         Relationships: []
       }
+      gig_negotiations: {
+        Row: {
+          agreed_rate: number | null
+          booking_id: string
+          created_at: string
+          crew_id: string
+          id: string
+          latest_by: string
+          latest_rate: number
+          production_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          agreed_rate?: number | null
+          booking_id: string
+          created_at?: string
+          crew_id: string
+          id?: string
+          latest_by: string
+          latest_rate: number
+          production_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          agreed_rate?: number | null
+          booking_id?: string
+          created_at?: string
+          crew_id?: string
+          id?: string
+          latest_by?: string
+          latest_rate?: number
+          production_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gig_negotiations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gig_negotiations_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gig_negotiations_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crew_no_shows: {
+        Row: {
+          booking_id: string
+          crew_id: string
+          expires_at: string
+          id: string
+          occurred_on: string
+          production_id: string
+          replacement_booking_id: string | null
+          reported_at: string
+          reported_by: string
+        }
+        Insert: {
+          booking_id: string
+          crew_id: string
+          expires_at: string
+          id?: string
+          occurred_on: string
+          production_id: string
+          replacement_booking_id?: string | null
+          reported_at?: string
+          reported_by: string
+        }
+        Update: {
+          booking_id?: string
+          crew_id?: string
+          expires_at?: string
+          id?: string
+          occurred_on?: string
+          production_id?: string
+          replacement_booking_id?: string | null
+          reported_at?: string
+          reported_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crew_no_shows_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crew_no_shows_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crew_no_shows_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           booking_id: string
           created_at: string
+          crew_confirmed_at: string | null
+          crew_confirmed_by: string | null
           crew_id: string
           day_rate: number
           days: number
@@ -1318,10 +1439,16 @@ export type Database = {
           total: number
           vat_amount: number
           vat_rate: number
+          wrap_calculated_at: string | null
+          wrap_fee: number
+          wrap_hourly_rate: number
+          wrap_minutes: number
         }
         Insert: {
           booking_id: string
           created_at?: string
+          crew_confirmed_at?: string | null
+          crew_confirmed_by?: string | null
           crew_id: string
           day_rate?: number
           days?: number
@@ -1337,10 +1464,16 @@ export type Database = {
           total?: number
           vat_amount?: number
           vat_rate?: number
+          wrap_calculated_at?: string | null
+          wrap_fee?: number
+          wrap_hourly_rate?: number
+          wrap_minutes?: number
         }
         Update: {
           booking_id?: string
           created_at?: string
+          crew_confirmed_at?: string | null
+          crew_confirmed_by?: string | null
           crew_id?: string
           day_rate?: number
           days?: number
@@ -1356,6 +1489,10 @@ export type Database = {
           total?: number
           vat_amount?: number
           vat_rate?: number
+          wrap_calculated_at?: string | null
+          wrap_fee?: number
+          wrap_hourly_rate?: number
+          wrap_minutes?: number
         }
         Relationships: [
           {

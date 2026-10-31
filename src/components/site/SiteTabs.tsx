@@ -885,7 +885,7 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
   const [rating, setRating] = useState<{ crewId: string; name: string; role: string | null; department: string | null } | null>(null);
   const cancelBooking = useCancelBooking();
   const [noShowBusy, setNoShowBusy] = useState<string | null>(null);
-  const noShows = useQuery({ queryKey: ["crew-no-shows", p.id], queryFn: async () => { const { data, error } = await supabase.from("crew_no_shows" as any).select("crew_id,occurred_on,expires_at").eq("production_id",p.id).gt("expires_at",new Date().toISOString()); if(error) throw error; return (data ?? []) as {crew_id:string;occurred_on:string;expires_at:string}[]; }, enabled: isProducer });
+  const noShows = useQuery({ queryKey: ["crew-no-shows", p.id], queryFn: async () => { const { data, error } = await supabase.from("crew_no_shows").select("crew_id,occurred_on,expires_at").eq("production_id",p.id).gt("expires_at",new Date().toISOString()); if(error) throw error; return data ?? []; }, enabled: isProducer });
   const wraps = (useQuery({
     queryKey: ["site-wraps", p.id],
     queryFn: async () => {
