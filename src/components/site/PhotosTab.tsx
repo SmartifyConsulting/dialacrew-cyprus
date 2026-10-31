@@ -69,7 +69,7 @@ export function PhotosTab({ p, userId, isProducer }: { p: { id: string }; userId
   }).data) ?? [];
   const locations = useLocationPoints(p.id).data ?? [];
 
-  const [view, setView] = useState<"portfolios" | "locations">("portfolios");
+  const [view, setView] = useState<"collections" | "locations">("collections");
   const [uploadLocation, setUploadLocation] = useState("");
   const [name, setName] = useState("");
   const [date, setDate] = useState(todayYmd());
@@ -92,7 +92,7 @@ export function PhotosTab({ p, userId, isProducer }: { p: { id: string }; userId
   }
 
   async function createGroup() {
-    if (!name.trim()) { toast.error("Name the portfolio first"); return; }
+    if (!name.trim()) { toast.error("Name the collection first"); return; }
     const { error } = await supabase.from("site_photo_groups").insert({ production_id: p.id, name: name.trim(), group_date: date || null });
     if (error) { toast.error(friendlyError(error)); return; }
     setName(""); refresh();
@@ -105,7 +105,7 @@ export function PhotosTab({ p, userId, isProducer }: { p: { id: string }; userId
   }
 
   async function removeGroup(id: string) {
-    if (!(await confirmDialog("Delete this portfolio? Its photos move to Unsorted.", { destructive: true }))) return;
+    if (!(await confirmDialog("Delete this collection? Its photos move to Unsorted.", { destructive: true }))) return;
     const { error } = await supabase.from("site_photo_groups").delete().eq("id", id);
     if (error) { toast.error(friendlyError(error)); return; }
     refresh();
@@ -143,18 +143,18 @@ export function PhotosTab({ p, userId, isProducer }: { p: { id: string }; userId
           <input type="file" accept="image/*" multiple hidden disabled={busy} onChange={(e) => { upload(e.target.files); e.target.value = ""; }} />
         </label>
         <div className="ml-auto inline-flex rounded-sm border border-border text-xs font-semibold">
-          <button onClick={() => setView("portfolios")} className={`px-3 py-2 ${view === "portfolios" ? "bg-primary text-primary-foreground" : ""}`}>Portfolios</button>
+          <button onClick={() => setView("collections")} className={`px-3 py-2 ${view === "collections" ? "bg-primary text-primary-foreground" : ""}`}>Collections</button>
           <button onClick={() => setView("locations")} className={`px-3 py-2 ${view === "locations" ? "bg-primary text-primary-foreground" : ""}`}>Locations</button>
         </div>
       </div>
 
-      {view === "portfolios" ? (
+      {view === "collections" ? (
         <>
-          <Panel title="New portfolio">
+          <Panel title="New collection">
             <div className="flex flex-wrap gap-2 p-4">
-              <input className={`${input} min-w-56 flex-1`} placeholder="Portfolio name, e.g. Day 1 — Location 2" value={name} onChange={(e) => setName(e.target.value)} />
-              <input type="date" className={input} value={date} onChange={(e) => setDate(e.target.value)} aria-label="Portfolio date" />
-              <button onClick={createGroup} className={btn}>Create portfolio</button>
+              <input className={`${input} min-w-56 flex-1`} placeholder="Collection name, e.g. Day 1 — Location 2" value={name} onChange={(e) => setName(e.target.value)} />
+              <input type="date" className={input} value={date} onChange={(e) => setDate(e.target.value)} aria-label="Collection date" />
+              <button onClick={createGroup} className={btn}>Create collection</button>
             </div>
           </Panel>
 
@@ -163,17 +163,17 @@ export function PhotosTab({ p, userId, isProducer }: { p: { id: string }; userId
             const canEditGroup = g.created_by === userId || isProducer;
             return (
               <Panel key={g.id} title={`${g.name}${g.group_date ? ` · ${dateLabel(g.group_date)}` : ""} (${items.length})`}
-                right={canEditGroup ? <button onClick={() => removeGroup(g.id)} aria-label="Delete portfolio" className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button> : undefined}>
+                right={canEditGroup ? <button onClick={() => removeGroup(g.id)} aria-label="Delete collection" className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button> : undefined}>
                 {canEditGroup && (
                   <div className="flex flex-wrap gap-2 border-b border-border p-4">
-                    <input className={`${input} min-w-48 flex-1`} defaultValue={g.name} aria-label="Portfolio name"
+                    <input className={`${input} min-w-48 flex-1`} defaultValue={g.name} aria-label="Collection name"
                       onBlur={(e) => { const v = e.target.value.trim(); if (v && v !== g.name) updateGroup(g.id, { name: v }); }} />
-                    <input type="date" className={input} defaultValue={g.group_date ?? ""} aria-label="Portfolio date"
+                    <input type="date" className={input} defaultValue={g.group_date ?? ""} aria-label="Collection date"
                       onChange={(e) => updateGroup(g.id, { group_date: e.target.value || null })} />
                   </div>
                 )}
                 <PhotoGrid items={items} canDelete={canDelete} onDelete={removePhoto} renderControls={(ph) => (
-                  <select className={`${input} w-full py-1 text-xs`} value={ph.group_id ?? ""} aria-label="Move photo to portfolio"
+                  <select className={`${input} w-full py-1 text-xs`} value={ph.group_id ?? ""} aria-label="Move photo to collection"
                     onChange={(e) => updatePhoto(ph.id, { group_id: e.target.value || null })}>
                     <option value="">Unsorted</option>
                     {groups.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
@@ -185,7 +185,7 @@ export function PhotosTab({ p, userId, isProducer }: { p: { id: string }; userId
 
           <Panel title={`Unsorted (${unsorted.length})`}>
             <PhotoGrid items={unsorted} canDelete={canDelete} onDelete={removePhoto} renderControls={(ph) => (
-              <select className={`${input} w-full py-1 text-xs`} value="" aria-label="Move photo to portfolio"
+              <select className={`${input} w-full py-1 text-xs`} value="" aria-label="Move photo to collection"
                 onChange={(e) => updatePhoto(ph.id, { group_id: e.target.value || null })}>
                 <option value="">Move to…</option>
                 {groups.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
