@@ -329,9 +329,20 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
     setBusy(false);
     if (error) { toast.error(friendlyError(error)); return; }
     toast.success(editingId ? "Location point updated" : "Location point added");
+    const wasAdding = !editingId;
+    const savedDay = lf.startsAt.slice(0, 10);
     cancelForm();
     inv(["location-points", p.id]);
     await syncProductionRecce();
+    // Shoot spans more than one day — automatically stage the next day's location so the
+    // producer doesn't have to click "Add Location" again for every day of the shoot.
+    const spansMultipleDays = !!p.date && !!p.endDate && p.endDate !== p.date;
+    if (wasAdding && savedDay && spansMultipleDays && p.endDate && savedDay < p.endDate) {
+      const nextDate = addDays(savedDay, 1);
+      const startsAt = `${nextDate}T00:00`;
+      setLf({ ...blankLocationForm, startsAt, endsAt: addHoursLocal(startsAt, 8), recceDate: addDays(nextDate, -1) });
+      setAdding(true);
+    }
   }
 
   async function removePoint(id: string) {
