@@ -126,6 +126,7 @@ function ImportTab() {
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — Book a Crew" }] }),
+  validateSearch: (search: Record<string, unknown>) => ({ tab: typeof search["tab"] === "string" ? (search["tab"] as string) : undefined }),
   component: AdminPage,
 });
 
@@ -153,9 +154,12 @@ function PlaceholderTab({ name }: { name: string }) {
 function AdminPage() {
   const { session } = useSession();
   const role = useRole(session?.user.id);
-  const [group, setGroup] = useState<AdminGroup>(ADMIN_GROUPS[0].name);
+  const search = Route.useSearch();
+  const requestedTab = search.tab as AdminTab | undefined;
+  const requestedGroup = ADMIN_GROUPS.find((g) => (g.tabs as readonly string[]).includes(requestedTab ?? ""));
+  const [group, setGroup] = useState<AdminGroup>(requestedGroup?.name ?? ADMIN_GROUPS[0].name);
   const activeGroup = ADMIN_GROUPS.find((g) => g.name === group)!;
-  const [tab, setTab] = useState<AdminTab>(activeGroup.tabs[0]);
+  const [tab, setTab] = useState<AdminTab>(requestedGroup && requestedTab ? requestedTab : activeGroup.tabs[0]);
 
   if (role.isLoading) return <Page open title="Admin"><p className="text-muted-foreground">Loading…</p></Page>;
   if (role.data !== "admin") {
