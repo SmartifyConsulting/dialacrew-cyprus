@@ -450,7 +450,14 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
           <div className="space-y-3">
             <div className="grid gap-2 sm:grid-cols-2">
               <label className="block min-w-0"><span className="text-xs text-muted-foreground">Shoot starts · Date & time</span>
-                <input type="datetime-local" className={`${input} mt-1 w-full min-w-0`} value={lf.startsAt} onChange={(e) => setLf({ ...lf, startsAt: e.target.value })} /></label>
+                <input type="datetime-local" className={`${input} mt-1 w-full min-w-0`} value={lf.startsAt}
+                  onChange={(e) => {
+                    const startsAt = e.target.value;
+                    const startDay = startsAt.slice(0, 10);
+                    const endDay = lf.endsAt.slice(0, 10);
+                    const endsAt = (!lf.endsAt || endDay !== startDay) && startDay ? `${startDay}T${lf.endsAt.slice(11) || "17:00"}` : lf.endsAt;
+                    setLf({ ...lf, startsAt, endsAt });
+                  }} /></label>
               <label className="block min-w-0"><span className="text-xs text-muted-foreground">Shoot ends · Date & time</span>
                 <input type="datetime-local" className={`${input} mt-1 w-full min-w-0`} value={lf.endsAt} onChange={(e) => setLf({ ...lf, endsAt: e.target.value })} /></label>
             </div>
