@@ -165,6 +165,15 @@ const localYmd = (iso: string) => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 const addDays = (ymd: string, n: number) => { const d = new Date(`${ymd}T00:00:00`); d.setDate(d.getDate() + n); return localYmd(d.toISOString()); };
+const addHoursLocal = (dtLocal: string, hours: number) => {
+  const [datePart, timePart] = dtLocal.split("T");
+  const [y, m, d] = (datePart ?? "").split("-").map(Number);
+  const [h, min] = (timePart ?? "00:00").split(":").map(Number);
+  const dt = new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1, h ?? 0, min ?? 0);
+  dt.setHours(dt.getHours() + hours);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+};
 
 const WEATHER_CODES: Record<number, string> = {
   0: "Clear", 1: "Mostly clear", 2: "Partly cloudy", 3: "Overcast", 45: "Fog", 48: "Freezing fog",
@@ -454,8 +463,7 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
                   onChange={(e) => {
                     const startsAt = e.target.value;
                     const startDay = startsAt.slice(0, 10);
-                    const endDay = lf.endsAt.slice(0, 10);
-                    const endsAt = (!lf.endsAt || endDay !== startDay) && startDay ? `${startDay}T${lf.endsAt.slice(11) || "17:00"}` : lf.endsAt;
+                    const endsAt = !lf.endsAt && startsAt ? addHoursLocal(startsAt, 8) : lf.endsAt;
                     const recceDate = !lf.recceDate && startDay ? addDays(startDay, -1) : lf.recceDate;
                     setLf({ ...lf, startsAt, endsAt, recceDate });
                   }} /></label>
