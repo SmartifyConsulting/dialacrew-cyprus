@@ -187,16 +187,9 @@ export function ScenarioPlanner({ p }: { p: Production }) {
     <div className="w-full space-y-5">
       {aiUnlocked && <Panel title="Find crew · AI MemoryBank">
         <div className="grid gap-3 p-4">
-          <p className="text-xs text-muted-foreground">Uses what the AI has learned about {p.client}. The AI picks crew and kit; you can change anything before saving.</p>
           <textarea className={`${field} min-h-24`} maxLength={4000} value={brief} onChange={(e) => setBrief(e.target.value)} placeholder="Describe the brief: look, shots, crew size…" />
-          <button onClick={suggest} disabled={busy} className={`${btn} justify-center`}><Sparkles className="h-4 w-4" />{busy ? "Matching…" : "Suggest crew & kit"}</button>
-          {ai && (
-            <div className="space-y-2 rounded-sm border border-border p-3 text-sm">
-              <p>{ai.analysis}</p>
-              {ai.memory_insights?.length > 0 && <ul className="list-disc pl-5 text-xs text-muted-foreground">{ai.memory_insights.map((m) => <li key={m}>{m}</li>)}</ul>}
-              {ai.warnings.length > 0 && <ul className="list-disc pl-5 text-xs text-destructive">{ai.warnings.map((w) => <li key={w}>{w}</li>)}</ul>}
-            </div>
-          )}
+          <button onClick={suggest} disabled={busy} className={ghost}><Sparkles className="h-3.5 w-3.5" />{busy ? "Matching…" : "Suggest crew & kit"}</button>
+          {ai?.warnings.length ? <ul className="list-disc pl-5 text-xs text-destructive">{ai.warnings.map((w) => <li key={w}>{w}</li>)}</ul> : null}
         </div>
       </Panel>}
 
