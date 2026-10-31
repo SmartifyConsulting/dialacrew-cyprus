@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell } from "lucide-react";
+import { Bell, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export function NotificationBell({ userId, requireAcknowledgement = false }: { userId: string; requireAcknowledgement?: boolean }) {
@@ -45,6 +45,16 @@ export function NotificationBell({ userId, requireAcknowledgement = false }: { u
     qc.invalidateQueries({ queryKey: ["notifications", userId] });
   }
 
+  async function clearOne(id: string) {
+    await supabase.from("notifications").delete().eq("id", id).eq("user_id", userId);
+    qc.invalidateQueries({ queryKey: ["notifications", userId] });
+  }
+
+  async function clearAll() {
+    await supabase.from("notifications").delete().eq("user_id", userId);
+    qc.invalidateQueries({ queryKey: ["notifications", userId] });
+  }
+
   return (
     <div className="relative">
       {current && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
@@ -66,16 +76,24 @@ export function NotificationBell({ userId, requireAcknowledgement = false }: { u
         <div className="absolute right-0 top-11 z-40 w-80 rounded-sm border border-border bg-card text-card-foreground shadow-lg">
           <div className="flex items-center justify-between border-b border-border px-3 py-2 text-xs">
             <span className="text-sm font-bold text-primary">Notifications</span>
-            {unread > 0 && !requireAcknowledgement && <button onClick={markAll} className="text-muted-foreground hover:text-foreground">Mark all read</button>}
+            <div className="flex items-center gap-3">
+              {unread > 0 && !requireAcknowledgement && <button onClick={markAll} className="text-muted-foreground hover:text-foreground">Mark all read</button>}
+              {list.length > 0 && <button onClick={clearAll} className="text-muted-foreground hover:text-destructive">Clear all</button>}
+            </div>
           </div>
           <div className="max-h-96 overflow-auto">
             {list.length === 0 && <p className="p-4 text-sm text-muted-foreground">Nothing yet.</p>}
             {list.map((n) => (
-              <Link key={n.id} to="/productions/$id" params={{ id: n.production_id ?? "" }} onClick={() => setOpen(false)}
-                className={`block border-b border-border px-3 py-2 text-sm hover:bg-muted ${n.read ? "opacity-60" : ""}`}>
-                <div className="font-bold">{n.title}</div>
-                <div className="line-clamp-2 text-xs text-muted-foreground">{n.body}</div>
-              </Link>
+              <div key={n.id} className={`group relative border-b border-border hover:bg-muted ${n.read ? "opacity-60" : ""}`}>
+                <Link to="/productions/$id" params={{ id: n.production_id ?? "" }} onClick={() => setOpen(false)} className="block px-3 py-2 pr-8 text-sm">
+                  <div className="font-bold">{n.title}</div>
+                  <div className="line-clamp-2 text-xs text-muted-foreground">{n.body}</div>
+                </Link>
+                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); clearOne(n.id); }} aria-label="Clear notification"
+                  className="absolute right-2 top-2 rounded-full p-1 text-muted-foreground hover:bg-background hover:text-destructive">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
             ))}
           </div>
         </div>

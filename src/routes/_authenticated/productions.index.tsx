@@ -29,6 +29,7 @@ export const Route = createFileRoute("/_authenticated/productions/")({
 });
 
 const field = "w-full rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
+const labelCls = "block text-xs font-medium text-muted-foreground";
 
 type ClientRow = { id: string; name: string; company: string };
 
@@ -181,7 +182,16 @@ function Productions() {
   };
   const editingCoverUrl = useSignedUrl(list.find((x) => x.id === editingId)?.imagePath).data;
   const closeModal = () => { setOpen(false); resetForm(); if (openOnLoad) navigate({ to: "/productions", search: {}, replace: true }); };
-  const openNew = () => { resetForm(); setOpen(true); };
+  // A Job ID is immutable and database-generated on insert, so start a Draft the moment the form
+  // opens — the Job ID is visible right away instead of only appearing once other fields are filled in.
+  const openNew = async () => {
+    resetForm();
+    setOpen(true);
+    const { data, error } = await supabase.from("productions").insert({ name: "", client: "", status: "Draft" } as never).select("id, job_id").single();
+    if (error) { toast.error(friendlyError(error)); return; }
+    setDraftId(data.id);
+    setF((prev) => ({ ...prev, jobId: data.job_id }));
+  };
   const openEdit = (p: (typeof list)[number]) => {
     setF({ name: p.name, client: p.client, jobId: p.jobId ?? "", externalRef: p.externalRef ?? "", type: p.type, location: p.location, recceDate: p.recceDate ?? "", startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget, description: p.summary ?? "" });
     setEditingId(p.id);
@@ -190,13 +200,17 @@ function Productions() {
     setDuplicating(false);
     setOpen(true);
   };
-  const openDuplicate = (p: (typeof list)[number]) => {
+  const openDuplicate = async (p: (typeof list)[number]) => {
     setF({ name: `${p.name} (copy)`, client: p.client, jobId: "", externalRef: "", type: p.type, location: p.location, recceDate: p.recceDate ?? "", startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget, description: p.summary ?? "" });
     setEditingId(null);
     setDraftId(null);
     setSaveState("idle");
     setDuplicating(true);
     setOpen(true);
+    const { data, error } = await supabase.from("productions").insert({ name: `${p.name} (copy)`, client: p.client, status: "Draft" } as never).select("id, job_id").single();
+    if (error) { toast.error(friendlyError(error)); return; }
+    setDraftId(data.id);
+    setF((prev) => ({ ...prev, jobId: data.job_id }));
   };
 
   // Autosave a Draft as the user fills in the new-production form, so an abandoned form isn't lost —
@@ -242,7 +256,8 @@ function Productions() {
     if (!f.startDate || !f.endDate) { toast.error("Start and end date are required"); return; }
     if (f.endDate < f.startDate) { toast.error("End date can't be before the start date"); return; }
     if (!f.budget) { toast.error("Budget is required"); return; }
-    const payload = { name: f.name, client: f.client, job_id: f.jobId.trim(), type: f.type, location: f.location, budget: f.budget, date: f.startDate || null, end_date: f.endDate || null, days, summary: f.description };
+    // job_id is database-generated and immutable — never sent from the client.
+    const payload = { name: f.name, client: f.client, external_ref: f.externalRef.trim() || null, type: f.type, location: f.location, budget: f.budget, recce_date: f.recceDate || null, date: f.startDate || null, end_date: f.endDate || null, days, summary: f.description };
     const targetId = editingId ?? draftId;
     const { data, error } = targetId
       ? await supabase.from("productions").update(payload).eq("id", targetId).select("id").single()
@@ -282,36 +297,46 @@ function Productions() {
             <div className="rounded-sm border border-border p-4">
               <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Production info</h3>
               <div className="mb-4 flex items-center gap-4">
-                <label className="group relative grid h-24 w-24 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-2xl border border-dashed border-border bg-muted hover:border-primary" aria-label="Add a cover picture">
-                  {coverPreview ?? editingCoverUrl ? <img src={coverPreview ?? editingCoverUrl ?? ""} alt="Cover preview" className="h-full w-full object-cover" /> : <span className="px-2 text-center text-[11px] font-semibold text-muted-foreground">Add cover picture</span>}
+                <label className="group relative grid h-20 w-20 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-xl border border-dashed border-border bg-muted hover:border-primary" aria-label="Add a cover picture">
+                  {coverPreview ?? editingCoverUrl ? <img src={coverPreview ?? editingCoverUrl ?? ""} alt="Cover preview" className="h-full w-full object-cover" /> : <span className="px-2 text-center text-[10px] font-semibold text-muted-foreground">Add cover</span>}
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => { pickCover(e.target.files?.[0]); e.target.value = ""; }} />
                 </label>
                 <p className="text-xs text-muted-foreground">Square picture shown beside the production name. You can change it later from the production site.</p>
               </div>
-              <div className="grid gap-3 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label className="block text-xs text-muted-foreground">Job ID (automatically generated)
-                    <input className={`${field} mt-1 bg-muted`} readOnly value={editingId ? f.jobId : draftId ? list.find((p) => p.id === draftId)?.jobId ?? "Generated on save" : "Generated on save"} />
-                  </label>
-                  <label className="block text-xs text-muted-foreground">Ref Number (optional — e.g. Farmer's Wife)
-                    <input className={`${field} mt-1`} placeholder="External system reference" value={f.externalRef} onChange={(e) => setF({ ...f, externalRef: e.target.value })} />
-                  </label>
-                </div>
-                <ClientPicker clients={clients} value={f.client} onChange={(company) => setF({ ...f, client: company })} onClientsChanged={() => qc.invalidateQueries({ queryKey: ["clients"] })} />
-                <input className={field} placeholder="Production name *" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
-                <select className={field} value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>
-                  {["Commercial", "Film", "Television", "Photography", "Other"].map((t) => <option key={t}>{t}</option>)}
-                </select>
-                <label className="block"><span className="text-xs text-muted-foreground">Recce date</span>
+              <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
+                <label className={labelCls}>Job ID
+                  <input className={`${field} mt-1 bg-muted`} readOnly value={f.jobId || "Generating…"} /></label>
+                <label className={labelCls}>Ref Number (optional)
+                  <input className={`${field} mt-1`} placeholder="External system reference" value={f.externalRef} onChange={(e) => setF({ ...f, externalRef: e.target.value })} /></label>
+                <label className={labelCls}>Client *
+                  <ClientPicker clients={clients} value={f.client} onChange={(company) => setF({ ...f, client: company })} onClientsChanged={() => qc.invalidateQueries({ queryKey: ["clients"] })} /></label>
+                <label className={labelCls}>Production name *
+                  <input className={`${field} mt-1`} placeholder="Production name" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></label>
+                <label className={labelCls}>Type
+                  <select className={`${field} mt-1`} value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>
+                    {["Commercial", "Film", "Television", "Photography", "Other"].map((t) => <option key={t}>{t}</option>)}
+                  </select></label>
+                <label className={labelCls}>Recce date
                   <input className={`${field} mt-1`} type="date" value={f.recceDate} onChange={(e) => setF({ ...f, recceDate: e.target.value })} /></label>
-                <label className="block"><span className="text-xs text-muted-foreground">Start date *</span>
+                <label className={labelCls}>Start date *
                   <input className={`${field} mt-1`} type="date" value={f.startDate} onChange={(e) => setF({ ...f, startDate: e.target.value })} /></label>
-                <label className="block"><span className="text-xs text-muted-foreground">End date *</span>
+                <label className={labelCls}>End date *
                   <input className={`${field} mt-1`} type="date" value={f.endDate} onChange={(e) => setF({ ...f, endDate: e.target.value })} /></label>
-                <div className="space-y-1"><label className="block text-xs font-semibold">Production budget (incl. post-production, excl. VAT / tax) *</label><input className={field} type="number" min={0} placeholder="Budget excluding VAT / tax" value={f.budget || ""} onChange={(e) => setF({ ...f, budget: +e.target.value })} /></div>
-                <div className="space-y-1"><label className="block text-xs font-semibold">Estimated budget including VAT / tax</label><div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm font-semibold">{new Intl.NumberFormat("en-ZA",{style:"currency",currency:"ZAR"}).format(f.budget * (1 + (Number((f as any).vatRate ?? 15) || 0)/100))}</div><label className="flex items-center gap-2 text-xs text-muted-foreground">VAT / tax rate % <input aria-label="Budget tax rate percentage" className="w-20 rounded border border-input bg-background p-1" type="number" min={0} max={100} step="0.01" value={(f as any).vatRate ?? 15} onChange={e=>setF({...f,vatRate:Number(e.target.value)} as typeof f)} /></label><p className="text-[11px] text-muted-foreground">Estimate only. Select the rate applicable to the production country.</p></div>
-                <div className="flex items-center text-xs text-muted-foreground">{f.startDate && f.endDate ? `${days} shoot day(s)` : "Start and end date are required"}</div>
-                <label className="block sm:col-span-2"><span className="text-xs text-muted-foreground">Description</span>
+                <label className={labelCls}>Budget excl. VAT / tax *
+                  <input className={`${field} mt-1`} type="number" min={0} placeholder="0" value={f.budget || ""} onChange={(e) => setF({ ...f, budget: +e.target.value })} /></label>
+                <div>
+                  <span className={labelCls}>Estimated budget incl. VAT / tax</span>
+                  <div className="mt-1 flex items-center gap-2">
+                    <div className="flex-1 rounded-sm border border-border bg-muted/30 px-3 py-2 text-sm font-semibold">
+                      {new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" }).format(f.budget * (1 + (Number((f as any).vatRate ?? 15) || 0) / 100))}
+                    </div>
+                    <input aria-label="VAT / tax rate percentage" className="w-16 rounded-sm border border-input bg-background px-2 py-2 text-sm" type="number" min={0} max={100} step="0.01"
+                      value={(f as any).vatRate ?? 15} onChange={(e) => setF({ ...f, vatRate: Number(e.target.value) } as typeof f)} />
+                    <span className="text-xs text-muted-foreground">%</span>
+                  </div>
+                </div>
+                <div className="flex items-end pb-2 text-xs text-muted-foreground sm:col-span-2">{f.startDate && f.endDate ? `${days} shoot day(s)` : "Start and end date are required"}</div>
+                <label className={`${labelCls} sm:col-span-2`}>Description
                   <textarea rows={3} className={`${field} mt-1`} placeholder="Brief, look, shots, anything the team should know"
                     value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} /></label>
                 <div className="flex justify-end sm:col-span-2"><PolishDescription text={f.description} name={f.name} type={f.type} client={f.client} onPolished={(v) => setF({ ...f, description: v })} /></div>
