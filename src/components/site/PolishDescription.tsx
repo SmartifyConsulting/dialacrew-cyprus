@@ -9,6 +9,7 @@ export function PolishDescription({ text, name, type, client, onPolished }: {
   text: string; name: string; type: string; client: string; onPolished: (polished: string) => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const [polishedText, setPolishedText] = useState<string | null>(null);
   const polish = useServerFn(polishDescription);
 
   async function run() {
@@ -17,10 +18,15 @@ export function PolishDescription({ text, name, type, client, onPolished }: {
     try {
       const r = await polish({ data: { text, name, type, client } });
       onPolished(r.polished);
+      setPolishedText(r.polished);
       toast.success("Description polished. Check it before you save.");
     } catch (e) { toast.error(friendlyError(e)); }
     setBusy(false);
   }
+
+  // Hide the button once the text on screen matches what we just polished — it reappears
+  // only if the user edits the text further, so Polish never re-runs on already-polished copy.
+  if (polishedText !== null && text === polishedText) return null;
 
   return (
     <button type="button" onClick={run} disabled={busy} className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline disabled:opacity-50">
