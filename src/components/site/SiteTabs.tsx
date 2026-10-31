@@ -475,6 +475,10 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
       </ul>
       {isProducer && adding && (
         <div className="m-3 space-y-2 rounded-sm border border-primary/40 bg-primary/5 p-4">
+          <div className="flex items-center gap-2">
+            <NumberedPin n={editingId ? points.findIndex((pt) => pt.id === editingId) + 1 : points.length + 1} />
+            <span className="text-sm font-bold text-foreground">{editingId ? `Edit location` : `Location ${points.length + 1}`}</span>
+          </div>
           <AddressAutocomplete className={`${input} w-full`} placeholder="Address — start typing to search" value={lf.address}
             onChange={(v) => setLf({ ...lf, address: v })}
             onSelect={(s) => setLf({ ...lf, label: s.place, address: s.exactAddress, latitude: s.lat, longitude: s.lon })} />
