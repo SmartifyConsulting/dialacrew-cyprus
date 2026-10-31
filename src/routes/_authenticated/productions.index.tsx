@@ -329,7 +329,7 @@ function Productions() {
                   <input className={`${field} mt-1`} type="date" value={f.startDate}
                     onChange={(e) => setF({
                       ...f, startDate: e.target.value,
-                      endDate: f.endDate && f.endDate < e.target.value ? e.target.value : f.endDate,
+                      endDate: !f.endDate || f.endDate < e.target.value ? e.target.value : f.endDate,
                       // Default the recce to 3 days before the shoot; keep it as-is if it's already earlier, but never after the new start date.
                       recceDate: !f.recceDate ? addDays(e.target.value, -3) : f.recceDate > e.target.value ? e.target.value : f.recceDate,
                     })} /></label>
