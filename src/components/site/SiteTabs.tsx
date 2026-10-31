@@ -7,7 +7,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
-import { Camera, CheckCircle2, Circle, Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Download, FileText, GripVertical, ImageUp, LogIn, LogOut, MapPin, Mic, Minus, Paperclip, Pencil, Plus, Sparkles, Star, Sun, Trash2, Users } from "lucide-react";
+import { Camera, Check, CheckCircle2, Circle, Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Download, FileText, GripVertical, ImageUp, LogIn, LogOut, MapPin, Mic, Minus, Paperclip, Pencil, Plus, Sparkles, Star, Sun, Trash2, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GigNegotiation } from "@/components/GigNegotiation";
 import { ChecklistTemplateManager } from "@/components/ChecklistTemplateManager";
@@ -795,9 +795,13 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
               <li key={item.id} className="px-4 py-2.5">
                 <div className="flex items-center gap-3">
                   <button onClick={() => isProducer && toggleItem(item.id, item.done)} disabled={!isProducer} aria-label={item.done ? `Mark ${item.label} not done` : `Mark ${item.label} done`}>
-                    {item.done ? <CheckCircle2 className="h-4 w-4 shrink-0 text-success" /> : <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />}
+                    {item.done
+                      ? <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-success"><Check className="h-3 w-3 text-white" strokeWidth={3} /></span>
+                      : <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />}
                   </button>
-                  <span className={`min-w-0 flex-1 ${item.done ? "text-muted-foreground line-through" : ""}`}>{item.label}</span>
+                  {item.done
+                    ? <span className="min-w-0 flex-1"><span className="rounded-full bg-success px-2 py-0.5 text-xs font-semibold text-white">{item.label}</span></span>
+                    : <span className="min-w-0 flex-1">{item.label}</span>}
                   {isProducer && uploadingItem === item.id && <span className="text-xs text-muted-foreground">Uploading…</span>}
                   {isProducer && uploadingItem !== item.id && (
                     <>
