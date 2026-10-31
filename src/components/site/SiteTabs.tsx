@@ -232,6 +232,18 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
   }
   function cancelForm() { setAdding(false); setEditingId(null); setLf(blankLocationForm); }
 
+  // The production's own recce date is never typed in directly — it always mirrors the earliest
+  // recce date set across this production's locations, so the two can't drift apart.
+  async function syncProductionRecce() {
+    const { data, error } = await supabase.from("production_locations").select("recce_date").eq("production_id", p.id);
+    if (error) return;
+    const earliest = (data ?? []).map((r) => r.recce_date).filter((d): d is string => !!d).sort()[0] ?? null;
+    if (earliest !== (p.recceDate ?? null)) {
+      await supabase.from("productions").update({ recce_date: earliest }).eq("id", p.id);
+      inv(["productions"], ["production", p.id]);
+    }
+  }
+
   async function saveRecce(id: string, patch: { recce_date?: string | null; recce_start_time?: string | null; recce_end_time?: string | null }, msg: string, start?: string | null, end?: string | null) {
     if (!validRecceTimes(start, end)) { toast.error("Recce end time must be after the start time"); return; }
     const { error } = await supabase.from("production_locations").update(patch).eq("id", id);
@@ -239,6 +251,7 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
     inv(["location-points", p.id]);
     inv(["calendar-locations"]);
     inv(["dashboard-location-recces"]);
+    if ("recce_date" in patch) await syncProductionRecce();
     toast.success(msg);
   }
 
@@ -261,11 +274,13 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
     toast.success(editingId ? "Location point updated" : "Location point added");
     cancelForm();
     inv(["location-points", p.id]);
+    await syncProductionRecce();
   }
 
   async function removePoint(id: string) {
     const { error } = await supabase.from("production_locations").delete().eq("id", id);
     if (error) { toast.error(friendlyError(error)); return; }
+    await syncProductionRecce();
     if (id === editingId) cancelForm();
     inv(["location-points", p.id]);
   }
@@ -833,6 +848,9 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
         </div>
       </Panel>
 
+      <Panel title="Locations">
+        <LocationPoints p={p} isProducer={isProducer} myCrewId={myCrewId} />
+      </Panel>
       <Panel title="Recce Date">
         <div className="space-y-1 p-4">
           {p.recceDate && <p className="font-semibold text-foreground">Production recce · {dayLabel(`${p.recceDate}T00:00:00`)}</p>}
@@ -855,9 +873,6 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
       </Panel>
       <ProductionSchedule p={p} isProducer={isProducer} />
       {isProducer && <Panel title="Open gig rate negotiations"><div className="space-y-3 p-4">{(openGigs.data ?? []).map(g => <div key={g.id} className="rounded border border-border p-3 text-sm"><strong>{g.role}</strong> · {fmtMoney(Number(g.crew_rate),p.currency)} / day<GigNegotiation bookingId={g.id} role="producer" offeredRate={Number(g.crew_rate)} productionId={p.id} /></div>)}{!openGigs.data?.length && <p className="text-xs text-muted-foreground">No open gigs.</p>}</div></Panel>}
-      <Panel title="Locations">
-        <LocationPoints p={p} isProducer={isProducer} myCrewId={myCrewId} />
-      </Panel>
     </div>
   );
 }
@@ -1435,8 +1450,9 @@ export const SiteIcons = { Users };
 
 /* Selectable 12-hour time slots; database values remain 24-hour HH:mm. */
 function AmPmTimePicker({ value, onChange, label }: { value: string; onChange: (value: string) => void; label: string }) {
+  // Listed starting at 8am (the usual start of a shoot day) and wrapping back around to 7:30am, rather than starting at midnight.
   const options = Array.from({ length: 48 }, (_, i) => {
-    const h = Math.floor(i / 2), m = i % 2 ? "30" : "00";
+    const h = Math.floor(((i + 16) % 48) / 2), m = (i + 16) % 2 ? "30" : "00";
     return { value: `${String(h).padStart(2, "0")}:${m}`, label: `${h % 12 || 12}:${m} ${h < 12 ? "AM" : "PM"}` };
   });
   const normalized = value.slice(0, 5);
@@ -1482,10 +1498,11 @@ function ProductionSchedule({ p, isProducer }: { p: Ctx["p"]; isProducer: boolea
           <div className="space-y-1 p-4 text-xs">
             <span className="font-semibold text-foreground">Recce date and times</span>
             <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
-              <input type="date" aria-label="Production recce date" className={`${input} min-w-0 w-full py-1 text-xs`} value={p.recceDate ?? ""} onChange={async (e) => { const { error } = await supabase.from("productions").update({recce_date:e.target.value || null}).eq("id",p.id); if(error) toast.error(friendlyError(error)); else inv(["productions"],["production",p.id]); }} />
+              <div className={`${input} min-w-0 w-full py-1 text-xs bg-muted text-muted-foreground`} aria-label="Production recce date">{p.recceDate ? dayLabel(`${p.recceDate}T00:00:00`) : "Set under Locations"}</div>
               <AmPmTimePicker label="Production recce start time" value={t(cur.recce_start_time)} onChange={(value) => save("recce_start_time",value)} />
               <AmPmTimePicker label="Production recce end time" value={t(cur.recce_end_time)} onChange={(value) => save("recce_end_time",value)} />
             </div>
+            <p className="text-[11px] text-muted-foreground">The date follows the earliest recce date set on a location below — it isn't entered here.</p>
           </div>
         </Panel>
       )}
