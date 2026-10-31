@@ -2,7 +2,7 @@ import { EVENT_CHIP, useCalendarEvents } from "@/lib/use-calendar-events";
 import type React from "react";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Check, CheckSquare, Square } from "lucide-react";
+import { Check, CheckSquare, ChevronLeft, ChevronRight, Square } from "lucide-react";
 import { Badge, ClientBadge, Page, Panel, clientColor } from "@/components/AppShell";
 import { fmtMoney, zar, type Booking, type Production } from "@/lib/demo-data";
 import { useBookings, useCrew, useProductions, useRequests, useRespondToBooking, useSetRequestState } from "@/lib/db";
@@ -206,6 +206,8 @@ function CalPop({ label, align, trigger, children }: { label: string; align: "le
 // task icon when tasks are due — a quick-glance version of the full /calendar page, not a replacement for it.
 function MiniCalendar({ productions, bookings }: { productions: Production[]; bookings: Booking[] }) {
   const today = new Date();
+  const [month, setMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const shift = (n: number) => setMonth((m) => new Date(m.getFullYear(), m.getMonth() + n, 1));
   void productions; void bookings;
   // Same normalized events as the full calendar and .ics export.
   const { events, conflicts } = useCalendarEvents();
@@ -219,19 +221,24 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
     byDay.set(e.day, [...(byDay.get(e.day) ?? []), item]);
     shoots.set(e.day, [...(shoots.get(e.day) ?? []), { id: e.productionId, lat: e.lat ?? null, lon: e.lon ?? null }]);
   }
-  const first = new Date(today.getFullYear(), today.getMonth(), 1);
+  const first = new Date(month.getFullYear(), month.getMonth(), 1);
   const offset = (first.getDay() + 6) % 7;
-  const daysIn = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const daysIn = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
   const cells = Array.from({ length: Math.ceil((offset + daysIn) / 7) * 7 }, (_, i) => {
     const n = i - offset + 1;
-    return n >= 1 && n <= daysIn ? new Date(today.getFullYear(), today.getMonth(), n) : null;
+    return n >= 1 && n <= daysIn ? new Date(month.getFullYear(), month.getMonth(), n) : null;
   });
   const todayIso = isoDate(today);
-  const { forecastFor, tasksByDay } = useCalendarExtras(shoots, isoDate(first), isoDate(new Date(today.getFullYear(), today.getMonth() + 1, 0)));
+  const { forecastFor, tasksByDay } = useCalendarExtras(shoots, isoDate(first), isoDate(new Date(month.getFullYear(), month.getMonth() + 1, 0)));
 
   return (
     <Panel title="Calendar" right={<Link to="/calendar" className="text-xs font-semibold text-primary hover:underline">Open</Link>}>
       <div className="flex flex-wrap items-center gap-2 px-3 pt-2 text-[10px] text-muted-foreground"><span className="rounded-sm bg-black px-1 py-0.5 font-semibold text-white">Recce Day</span><span className="rounded-sm bg-purple-700 px-1 py-0.5 font-semibold text-white">Gear check</span></div>
+      <div className="flex items-center justify-between px-3 pt-2">
+        <button type="button" aria-label="Previous month" onClick={() => shift(-1)} className="rounded-sm border border-border p-1 text-muted-foreground hover:text-foreground"><ChevronLeft className="h-3.5 w-3.5" /></button>
+        <span className="text-xs font-semibold">{month.toLocaleDateString("en-ZA", { month: "long", year: "numeric" })}</span>
+        <button type="button" aria-label="Next month" onClick={() => shift(1)} className="rounded-sm border border-border p-1 text-muted-foreground hover:text-foreground"><ChevronRight className="h-3.5 w-3.5" /></button>
+      </div>
       <div className="p-3">
         <div className="mb-1 grid grid-cols-7 text-center text-[10px] text-muted-foreground">
           {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <div key={i}>{d}</div>)}
