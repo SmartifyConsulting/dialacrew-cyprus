@@ -272,7 +272,9 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
     } else if (!baseDate && p.date) {
       startsAt = `${p.date}T00:00`;
     }
-    setLf({ ...blankLocationForm, startsAt });
+    const endsAt = startsAt ? addHoursLocal(startsAt, 8) : "";
+    const recceDate = startsAt ? addDays(startsAt.slice(0, 10), -1) : "";
+    setLf({ ...blankLocationForm, startsAt, endsAt, recceDate });
     setEditingId(null);
     setAdding(true);
   }
