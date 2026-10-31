@@ -313,13 +313,13 @@ function Productions() {
                 <label className={labelCls}>Ref Number (optional)
                   <input className={`${field} mt-1`} placeholder="External system reference" value={f.externalRef} onChange={(e) => setF({ ...f, externalRef: e.target.value })} /></label>
                 <label className={labelCls}>Client *
-                  <ClientPicker clients={clients} value={f.client} onChange={(company) => setF({ ...f, client: company })} onClientsChanged={() => qc.invalidateQueries({ queryKey: ["clients"] })} /></label>
-                <label className={labelCls}>Production name *
-                  <input className={`${field} mt-1`} placeholder="Production name" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></label>
+                  <ClientPicker clients={clients} value={f.client} onChange={(company) => setF({ ...f, client: company, name: f.name === `${f.type} - ${f.client}` || !f.name ? `${f.type} - ${company}` : f.name })} onClientsChanged={() => qc.invalidateQueries({ queryKey: ["clients"] })} /></label>
                 <label className={labelCls}>Type
-                  <select className={`${field} mt-1`} value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>
+                  <select className={`${field} mt-1`} value={f.type} onChange={(e) => setF({ ...f, type: e.target.value, name: f.name === `${f.type} - ${f.client}` || !f.name ? `${e.target.value} - ${f.client}` : f.name })}>
                     {["Commercial", "Film", "Television", "Photography", "Other"].map((t) => <option key={t}>{t}</option>)}
                   </select></label>
+                <label className={labelCls}>Production name *
+                  <input className={`${field} mt-1`} placeholder="Production name" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></label>
                 <label className={labelCls}>Recce date
                   <div className="mt-1 flex gap-2">
                     <input className={`${field} min-w-0 flex-1`} type="date" max={f.startDate || undefined} value={f.recceDate} onChange={(e) => setF({ ...f, recceDate: e.target.value })} />
