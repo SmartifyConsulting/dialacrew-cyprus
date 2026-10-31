@@ -884,11 +884,13 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
           ) : (
             <p className="whitespace-pre-wrap">{p.summary || "No summary yet."}</p>
           )}
-          <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground [&>dt]:font-bold [&>dt]:text-foreground">
             <dt>Job ID</dt><dd className="text-foreground">{p.jobId || "—"}</dd>
             <dt>Client</dt><dd className="text-foreground">{p.client}</dd>
             <dt>Type</dt><dd className="text-foreground">{p.type}</dd>
             <dt>Shoot</dt><dd className="text-foreground">{p.date || "TBC"} · {p.days} day(s)</dd>
+            <dt>Recce</dt><dd className="text-foreground">{p.recceDate ? dayLabel(`${p.recceDate}T00:00:00`) : "TBC"}</dd>
+            <dt>Gear check</dt><dd className="text-foreground">{p.gearPickupDate ? dayLabel(`${p.gearPickupDate}T00:00:00`) : "TBC"}</dd>
             <dt>Crew</dt><dd className="text-foreground">{p.crewBooked} / {p.crewNeeded}</dd>
             {isProducer && <><dt>Budget</dt><dd className="text-foreground">{fmtMoney(p.budget, p.currency)}</dd></>}
           </dl>
