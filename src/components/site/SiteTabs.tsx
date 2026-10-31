@@ -165,6 +165,12 @@ const localYmd = (iso: string) => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 const addDays = (ymd: string, n: number) => { const d = new Date(`${ymd}T00:00:00`); d.setDate(d.getDate() + n); return localYmd(d.toISOString()); };
+const addHoursToHHMM = (hhmm: string, hours: number) => {
+  const [h, m] = hhmm.split(":").map(Number);
+  const total = ((h ?? 0) * 60 + (m ?? 0) + hours * 60) % (24 * 60);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(Math.floor(total / 60))}:${pad(total % 60)}`;
+};
 const addHoursLocal = (dtLocal: string, hours: number) => {
   const [datePart, timePart] = dtLocal.split("T");
   const [y, m, d] = (datePart ?? "").split("-").map(Number);
@@ -413,7 +419,10 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
                         onChange={(e) => saveRecce(pt.id, { recce_date: e.target.value || null }, e.target.value ? "Recce date saved" : "Recce date cleared")}
                       />
                       <div className="flex items-center gap-2">
-                        <AmPmTimePicker label={`Recce start time for Shoot Day ${i + 1}`} value={hhmm(pt.recce_start_time) ?? ""} onChange={(value) => saveRecce(pt.id, { recce_start_time: value || null }, "Recce time saved", value || null, pt.recce_end_time)} />
+                        <AmPmTimePicker label={`Recce start time for Shoot Day ${i + 1}`} value={hhmm(pt.recce_start_time) ?? ""} onChange={(value) => {
+                          const recce_end_time = !pt.recce_end_time && value ? addHoursToHHMM(value, 3) : pt.recce_end_time;
+                          saveRecce(pt.id, { recce_start_time: value || null, recce_end_time }, "Recce time saved", value || null, recce_end_time);
+                        }} />
                         <AmPmTimePicker label={`Recce end time for Shoot Day ${i + 1}`} value={hhmm(pt.recce_end_time) ?? ""} onChange={(value) => saveRecce(pt.id, { recce_end_time: value || null }, "Recce time saved", pt.recce_start_time, value || null)} />
                       </div>
                     </div>
@@ -487,7 +496,7 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
               <label className="block min-w-0"><span className="text-xs text-muted-foreground">Recce date</span>
                 <input type="date" className={`${input} mt-1 w-full min-w-0`} value={lf.recceDate} onChange={(e) => setLf({ ...lf, recceDate: e.target.value })} /></label>
               <div className="flex items-center gap-2">
-                <AmPmTimePicker label="Recce start time" value={lf.recceStart} onChange={(value) => setLf({ ...lf, recceStart: value })} />
+                <AmPmTimePicker label="Recce start time" value={lf.recceStart} onChange={(value) => setLf({ ...lf, recceStart: value, recceEnd: !lf.recceEnd && value ? addHoursToHHMM(value, 3) : lf.recceEnd })} />
                 <AmPmTimePicker label="Recce end time" value={lf.recceEnd} onChange={(value) => setLf({ ...lf, recceEnd: value })} />
               </div>
             </div>
