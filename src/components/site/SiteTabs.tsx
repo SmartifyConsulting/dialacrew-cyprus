@@ -419,11 +419,11 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
                         onChange={(e) => saveRecce(pt.id, { recce_date: e.target.value || null }, e.target.value ? "Recce date saved" : "Recce date cleared")}
                       />
                       <div className="flex items-center gap-2">
-                        <AmPmTimePicker label={`Recce start time for Shoot Day ${i + 1}`} value={hhmm(pt.recce_start_time) ?? ""} onChange={(value) => {
+                        <AmPmTimePicker label={`Recce start time for Shoot Day ${i + 1}`} placeholder="Select start time" value={hhmm(pt.recce_start_time) ?? ""} onChange={(value) => {
                           const recce_end_time = !pt.recce_end_time && value ? addHoursToHHMM(value, 3) : pt.recce_end_time;
                           saveRecce(pt.id, { recce_start_time: value || null, recce_end_time }, "Recce time saved", value || null, recce_end_time);
                         }} />
-                        <AmPmTimePicker label={`Recce end time for Shoot Day ${i + 1}`} value={hhmm(pt.recce_end_time) ?? ""} onChange={(value) => saveRecce(pt.id, { recce_end_time: value || null }, "Recce time saved", pt.recce_start_time, value || null)} />
+                        <AmPmTimePicker label={`Recce end time for Shoot Day ${i + 1}`} placeholder="Select end time" value={hhmm(pt.recce_end_time) ?? ""} onChange={(value) => saveRecce(pt.id, { recce_end_time: value || null }, "Recce time saved", pt.recce_start_time, value || null)} />
                       </div>
                     </div>
                   )}
@@ -496,8 +496,8 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
               <label className="block min-w-0"><span className="text-xs text-muted-foreground">Recce date</span>
                 <input type="date" className={`${input} mt-1 w-full min-w-0`} value={lf.recceDate} onChange={(e) => setLf({ ...lf, recceDate: e.target.value })} /></label>
               <div className="flex items-center gap-2">
-                <AmPmTimePicker label="Recce start time" value={lf.recceStart} onChange={(value) => setLf({ ...lf, recceStart: value, recceEnd: !lf.recceEnd && value ? addHoursToHHMM(value, 3) : lf.recceEnd })} />
-                <AmPmTimePicker label="Recce end time" value={lf.recceEnd} onChange={(value) => setLf({ ...lf, recceEnd: value })} />
+                <AmPmTimePicker label="Recce start time" placeholder="Select start time" value={lf.recceStart} onChange={(value) => setLf({ ...lf, recceStart: value, recceEnd: !lf.recceEnd && value ? addHoursToHHMM(value, 3) : lf.recceEnd })} />
+                <AmPmTimePicker label="Recce end time" placeholder="Select end time" value={lf.recceEnd} onChange={(value) => setLf({ ...lf, recceEnd: value })} />
               </div>
             </div>
           </div>
@@ -648,7 +648,7 @@ function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
 
 /* ---------------- Custom checklists (producers add checklists + items, e.g. "Wardrobe checklist") ---------------- */
 type ChecklistItemPhoto = { id: string; path: string; sort_order: number };
-type ChecklistItem = { id: string; label: string; done: boolean; production_checklist_item_photos: ChecklistItemPhoto[] };
+type ChecklistItem = { id: string; label: string; done: boolean; done_at: string | null; production_checklist_item_photos: ChecklistItemPhoto[] };
 
 function ChecklistItemPhotoThumb({ photo, index, count, canEdit, onDelete, onMove }: {
   photo: ChecklistItemPhoto; index: number; count: number; canEdit: boolean; onDelete: () => void; onMove: (dir: -1 | 1) => void;
@@ -725,7 +725,7 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
   }
 
   async function toggleItem(id: string, done: boolean) {
-    const { error } = await supabase.from("production_checklist_items").update({ done: !done }).eq("id", id);
+    const { error } = await supabase.from("production_checklist_items").update({ done: !done, done_at: !done ? new Date().toISOString() : null }).eq("id", id);
     if (error) { toast.error(friendlyError(error)); return; }
     inv(["checklists", p.id]);
   }
@@ -800,7 +800,10 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
                       : <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />}
                   </button>
                   {item.done
-                    ? <span className="min-w-0 flex-1"><span className="rounded-full bg-success px-2 py-0.5 text-xs font-semibold text-white">{item.label}</span></span>
+                    ? <span className="min-w-0 flex-1 space-y-1">
+                        <span className="block w-fit rounded-full bg-success px-2 py-0.5 text-xs font-semibold text-white">{item.label}</span>
+                        {item.done_at && <span className="block text-[11px] text-muted-foreground">Done {when(item.done_at)}</span>}
+                      </span>
                     : <span className="min-w-0 flex-1">{item.label}</span>}
                   {isProducer && uploadingItem === item.id && <span className="text-xs text-muted-foreground">Uploading…</span>}
                   {isProducer && uploadingItem !== item.id && (
@@ -1602,7 +1605,7 @@ export const SiteIcons = { Users };
 
 
 /* Selectable 12-hour time slots; database values remain 24-hour HH:mm. */
-export function AmPmTimePicker({ value, onChange, label }: { value: string; onChange: (value: string) => void; label: string }) {
+export function AmPmTimePicker({ value, onChange, label, placeholder = "Select time" }: { value: string; onChange: (value: string) => void; label: string; placeholder?: string }) {
   // Listed starting at 8am (the usual start of a shoot day) and wrapping back around to 7:30am, rather than starting at midnight.
   const options = Array.from({ length: 48 }, (_, i) => {
     const h = Math.floor(((i + 16) % 48) / 2), m = (i + 16) % 2 ? "30" : "00";
@@ -1618,7 +1621,7 @@ export function AmPmTimePicker({ value, onChange, label }: { value: string; onCh
   }
   return (
     <select aria-label={label} className={`${input} min-w-0 flex-1 py-1 text-xs`} value={normalized} onChange={(e) => onChange(e.target.value)}>
-      <option value="">Select time</option>
+      <option value="">{placeholder}</option>
       {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
     </select>
   );
