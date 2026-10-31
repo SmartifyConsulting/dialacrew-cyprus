@@ -191,7 +191,7 @@ const tone: Record<string, string> = {
   in_progress: "bg-success/20 text-success",
   awaiting_review: "bg-chart-3/20 text-chart-3",
   payment_released: "bg-success/20 text-success",
-  completed: "bg-muted text-muted-foreground",
+  completed: "bg-black text-white", Completed: "bg-black text-white",
   disputed: "bg-destructive/20 text-destructive",
   draft: "bg-muted text-muted-foreground",
   Late: "bg-primary/20 text-primary",

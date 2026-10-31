@@ -59,6 +59,7 @@ export function ChecklistTemplateManager({ audience, targetId }: { audience: Che
       </select>
       <button disabled={!selected || busy} onClick={apply} className="rounded bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-50">Add checklist</button>
     </div>}
+    {!targetId && <>
     <div className="space-y-2">
       <h3 className="font-semibold">{editingId ? "Edit my template" : "Create a reusable template"}</h3>
       <input aria-label="Template name" placeholder="Checklist name" value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" />
@@ -79,5 +80,6 @@ export function ChecklistTemplateManager({ audience, targetId }: { audience: Che
         {t.owner_id === session?.user.id && <><button className="text-primary underline" onClick={() => { setEditingId(t.id); setName(t.title); setItems(Array.isArray(t.items) ? t.items.map(String) : [""]); }}>Edit</button><button className="text-destructive underline" onClick={() => remove(t.id)}>Delete</button></>}
       </div>)}
     </div>
+    </>}
   </section>;
 }
