@@ -92,7 +92,7 @@ export function buildCalendarEvents(prods: ProdIn[], locations: LocIn[], booking
       recceDays.add(g.date);
       const first = g.locations[0]!.loc as LocIn;
       out.push(make({
-        ...base, uid: `recce-${p.id}-${g.date}`, kind: "recce", title: `Recce · ${p.name}`, day: g.date, endDay: g.date,
+        ...base, uid: `recce-${p.id}-${g.date}`, kind: "recce", title: `Recce day · ${p.name}`, day: g.date, endDay: g.date,
         start: g.start ? zonedToUtc(g.date, g.start, tz) : null, end: g.end ? zonedToUtc(g.date, g.end, tz) : null,
         location: g.locations.length > 1 ? `${g.locations.length} locations` : place(first),
         details: g.locations.map((x) => `Location ${x.index}: ${place(x.loc as LocIn)} · ${x.start && x.end ? `${x.start}–${x.end}` : x.start ? `From ${x.start}` : x.end ? `Until ${x.end}` : "Time TBC"}`).join("\n"),
@@ -102,7 +102,7 @@ export function buildCalendarEvents(prods: ProdIn[], locations: LocIn[], booking
     if (p.recceDate && !recceDays.has(p.recceDate)) {
       const s = hm(p.recceStart), e = hm(p.recceEnd);
       out.push(make({
-        ...base, uid: `recce-${p.id}-${p.recceDate}`, kind: "recce", title: `Recce · ${p.name}`, day: p.recceDate, endDay: p.recceDate,
+        ...base, uid: `recce-${p.id}-${p.recceDate}`, kind: "recce", title: `Recce day · ${p.name}`, day: p.recceDate, endDay: p.recceDate,
         start: s ? zonedToUtc(p.recceDate, s, tz) : null, end: e ? zonedToUtc(p.recceDate, e, tz) : null,
         location: place(null), lat: p.latitude, lon: p.longitude,
       }));
