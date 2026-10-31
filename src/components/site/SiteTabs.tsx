@@ -652,7 +652,7 @@ function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
 
 /* ---------------- Custom checklists (producers add checklists + items, e.g. "Wardrobe checklist") ---------------- */
 type ChecklistItemPhoto = { id: string; path: string; sort_order: number };
-type ChecklistItem = { id: string; label: string; done: boolean; done_at: string | null; production_checklist_item_photos: ChecklistItemPhoto[] };
+type ChecklistItem = { id: string; label: string; done: boolean; done_at: string | null; assigned_to: string | null; production_checklist_item_photos: ChecklistItemPhoto[] };
 
 function ChecklistItemPhotoThumb({ photo, index, count, canEdit, onDelete, onMove }: {
   photo: ChecklistItemPhoto; index: number; count: number; canEdit: boolean; onDelete: () => void; onMove: (dir: -1 | 1) => void;
@@ -687,6 +687,7 @@ function ChecklistItemPhotoThumb({ photo, index, count, canEdit, onDelete, onMov
 export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
   const inv = useInvalidate();
   const checklists = (useChecklists(p.id).data ?? []) as Array<{ id: string; title: string; production_checklist_items: ChecklistItem[] }>;
+  const members = useSiteMembers(p.id).data ?? [];
   const [view, setView] = useState<"Checklist" | "Done">("Checklist");
   const [addingList, setAddingList] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -728,10 +729,17 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
     inv(["checklists", p.id]);
   }
 
+  async function assignItem(id: string, crewId: string) {
+    const { error } = await supabase.from("production_checklist_items").update({ assigned_to: crewId || null }).eq("id", id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success(crewId ? "Assigned — they'll see it on their task list and get a notification" : "Unassigned");
+    inv(["checklists", p.id], ["tasks", p.id]);
+  }
+
   async function toggleItem(id: string, done: boolean) {
     const { error } = await supabase.from("production_checklist_items").update({ done: !done, done_at: !done ? new Date().toISOString() : null }).eq("id", id);
     if (error) { toast.error(friendlyError(error)); return; }
-    inv(["checklists", p.id]);
+    inv(["checklists", p.id], ["tasks", p.id]);
   }
 
   async function removeItem(id: string) {
@@ -809,6 +817,15 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
                         {item.done_at && <span className="block text-[11px] text-muted-foreground">Done {when(item.done_at)}</span>}
                       </span>
                     : <span className="min-w-0 flex-1">{item.label}</span>}
+                  {isProducer ? (
+                    <select aria-label={`Assign ${item.label}`} value={item.assigned_to ?? ""} onChange={(e) => assignItem(item.id, e.target.value)}
+                      className="shrink-0 rounded-sm border border-input bg-background px-1.5 py-1 text-[11px] max-w-24">
+                      <option value="">Unassigned</option>
+                      {members.map((m) => <option key={m.crew_id} value={m.crew_id}>{m.name}</option>)}
+                    </select>
+                  ) : item.assigned_to && (
+                    <span className="shrink-0 text-[11px] text-muted-foreground">{members.find((m) => m.crew_id === item.assigned_to)?.name ?? "Assigned"}</span>
+                  )}
                   {isProducer && uploadingItem === item.id && <span className="text-xs text-muted-foreground">Uploading…</span>}
                   {isProducer && uploadingItem !== item.id && (
                     <>

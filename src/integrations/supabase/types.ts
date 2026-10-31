@@ -1986,6 +1986,7 @@ export type Database = {
       }
       production_checklist_items: {
         Row: {
+          assigned_to: string | null
           checklist_id: string
           created_at: string
           created_by: string
@@ -1996,6 +1997,7 @@ export type Database = {
           sort_order: number
         }
         Insert: {
+          assigned_to?: string | null
           checklist_id: string
           created_at?: string
           created_by?: string
@@ -2006,6 +2008,7 @@ export type Database = {
           sort_order?: number
         }
         Update: {
+          assigned_to?: string | null
           checklist_id?: string
           created_at?: string
           created_by?: string
@@ -2016,6 +2019,13 @@ export type Database = {
           sort_order?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "production_checklist_items_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "production_checklist_items_checklist_id_fkey"
             columns: ["checklist_id"]
@@ -2900,6 +2910,7 @@ export type Database = {
       site_tasks: {
         Row: {
           assigned_crew_id: string | null
+          checklist_item_id: string | null
           created_at: string
           created_by: string
           done: boolean
@@ -2911,6 +2922,7 @@ export type Database = {
         }
         Insert: {
           assigned_crew_id?: string | null
+          checklist_item_id?: string | null
           created_at?: string
           created_by?: string
           done?: boolean
@@ -2922,6 +2934,7 @@ export type Database = {
         }
         Update: {
           assigned_crew_id?: string | null
+          checklist_item_id?: string | null
           created_at?: string
           created_by?: string
           done?: boolean
@@ -2937,6 +2950,13 @@ export type Database = {
             columns: ["assigned_crew_id"]
             isOneToOne: false
             referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_tasks_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: true
+            referencedRelation: "production_checklist_items"
             referencedColumns: ["id"]
           },
           {
