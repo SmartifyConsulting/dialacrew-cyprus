@@ -399,6 +399,12 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
             onChange={(v) => setLf({ ...lf, address: v })}
             onSelect={(s) => setLf({ ...lf, label: s.place, address: s.exactAddress, latitude: s.lat, longitude: s.lon })} />
           <div className="space-y-3">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <label className="block min-w-0"><span className="text-xs text-muted-foreground">Shoot starts · Date & time</span>
+                <input type="datetime-local" className={`${input} mt-1 w-full min-w-0`} value={lf.startsAt} onChange={(e) => setLf({ ...lf, startsAt: e.target.value })} /></label>
+              <label className="block min-w-0"><span className="text-xs text-muted-foreground">Shoot ends · Date & time</span>
+                <input type="datetime-local" className={`${input} mt-1 w-full min-w-0`} value={lf.endsAt} onChange={(e) => setLf({ ...lf, endsAt: e.target.value })} /></label>
+            </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)]">
             <label className="block min-w-0"><span className="text-xs text-muted-foreground">Recce date</span>
               <input type="date" className={`${input} mt-1 w-full min-w-0`} value={lf.recceDate} onChange={(e) => setLf({ ...lf, recceDate: e.target.value })} /></label>
@@ -406,12 +412,6 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
                 <input type="time" className={`${input} mt-1 w-full min-w-0`} value={lf.recceStart} onChange={(e) => setLf({ ...lf, recceStart: e.target.value })} /></label>
               <label className="block min-w-0"><span className="text-xs text-muted-foreground">Recce end</span>
                 <input type="time" className={`${input} mt-1 w-full min-w-0`} value={lf.recceEnd} onChange={(e) => setLf({ ...lf, recceEnd: e.target.value })} /></label>
-            </div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <label className="block min-w-0"><span className="text-xs text-muted-foreground">Shoot starts · Date & time</span>
-                <input type="datetime-local" className={`${input} mt-1 w-full min-w-0`} value={lf.startsAt} onChange={(e) => setLf({ ...lf, startsAt: e.target.value })} /></label>
-              <label className="block min-w-0"><span className="text-xs text-muted-foreground">Shoot ends · Date & time</span>
-                <input type="datetime-local" className={`${input} mt-1 w-full min-w-0`} value={lf.endsAt} onChange={(e) => setLf({ ...lf, endsAt: e.target.value })} /></label>
             </div>
           </div>
           <div className="flex gap-2">
@@ -1493,19 +1493,6 @@ function ProductionSchedule({ p, isProducer }: { p: Ctx["p"]; isProducer: boolea
   const show = (d: string | null, tm: string | null) => d ? `${dayLabel(`${d}T00:00:00`)} · ${hhmm(tm) ?? "time TBC"}` : "Date TBC";
   return (
     <>
-      {isProducer && (
-        <Panel title="Production Recce Date">
-          <div className="space-y-1 p-4 text-xs">
-            <span className="font-semibold text-foreground">Recce date and times</span>
-            <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
-              <div className={`${input} min-w-0 w-full py-1 text-xs bg-muted text-muted-foreground`} aria-label="Production recce date">{p.recceDate ? dayLabel(`${p.recceDate}T00:00:00`) : "Set under Locations"}</div>
-              <AmPmTimePicker label="Production recce start time" value={t(cur.recce_start_time)} onChange={(value) => save("recce_start_time",value)} />
-              <AmPmTimePicker label="Production recce end time" value={t(cur.recce_end_time)} onChange={(value) => save("recce_end_time",value)} />
-            </div>
-            <p className="text-[11px] text-muted-foreground">The date follows the earliest recce date set on a location below — it isn't entered here.</p>
-          </div>
-        </Panel>
-      )}
       <Panel title="Gear Check Date">
         <div className="space-y-2 p-4 text-sm">
           {isProducer ? (
