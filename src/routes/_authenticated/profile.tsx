@@ -52,6 +52,9 @@ function AvatarCard({ userId }: { userId: string | undefined }) {
     queryKey: ["my-avatar", userId], enabled: !!userId,
     queryFn: async () => { const { data, error } = await supabase.from("profiles").select("full_name, avatar_url").eq("id", userId!).maybeSingle(); if (error) throw error; return data; },
   });
+  const [editingName, setEditingName] = useState(false);
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
 
   async function change(file?: File) {
     if (!file || !userId) return;
@@ -64,6 +67,17 @@ function AvatarCard({ userId }: { userId: string | undefined }) {
     } catch (e) { toast.error(friendlyError(e)); }
   }
 
+  async function saveName() {
+    if (!userId || !name.trim()) return;
+    setBusy(true);
+    const { error } = await supabase.from("profiles").update({ full_name: name.trim() }).eq("id", userId);
+    setBusy(false);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success("Name updated");
+    setEditingName(false);
+    qc.invalidateQueries({ queryKey: ["my-avatar", userId] });
+  }
+
   return (
     <div className="flex items-center gap-4 rounded-sm border border-border bg-card p-4">
       <div className="relative">
@@ -72,9 +86,23 @@ function AvatarCard({ userId }: { userId: string | undefined }) {
           <Camera className="h-3.5 w-3.5" /><input type="file" accept="image/*" hidden onChange={(e) => change(e.target.files?.[0])} />
         </label>
       </div>
-      <div className="text-sm">
-        <div className="font-semibold">{me.data?.full_name || "Your profile"}</div>
-        <div className="text-xs text-muted-foreground">Click the camera icon to update your profile picture.</div>
+      <div className="min-w-0 flex-1 text-sm">
+        {editingName ? (
+          <div className="flex items-center gap-2">
+            <input autoFocus className="min-w-0 flex-1 rounded-sm border border-input bg-background px-2 py-1 text-sm" value={name} onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") saveName(); if (e.key === "Escape") setEditingName(false); }} />
+            <button disabled={busy} onClick={saveName} className="rounded-sm bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground disabled:opacity-50">Save</button>
+            <button onClick={() => setEditingName(false)} className="text-xs font-semibold text-muted-foreground">Cancel</button>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">{me.data?.full_name || "Your profile"}</span>
+              <button onClick={() => { setName(me.data?.full_name ?? ""); setEditingName(true); }} className="text-xs font-semibold text-primary hover:underline">Edit</button>
+            </div>
+            <div className="text-xs text-muted-foreground">Click the camera icon to update your profile picture.</div>
+          </>
+        )}
       </div>
     </div>
   );
