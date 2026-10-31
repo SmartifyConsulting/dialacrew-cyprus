@@ -67,7 +67,7 @@ function CalendarPage() {
         <button aria-label="Next month" onClick={() => shift(1)} className="rounded-xl border border-border bg-card p-2"><ChevronRight className="h-4 w-4" /></button>
       </div>
       <CalendarExport events={events} userId={session?.user.id} />
-      <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><span className="inline-block rounded-md bg-black px-2 py-1 font-semibold text-white">Recce</span><span>Recce day</span><span className="ml-2 inline-block rounded-md bg-purple-700 px-2 py-1 font-semibold text-white">Gear check</span><span>Pickup → drop-off</span><span className="ml-2 font-semibold text-destructive">overlap</span><span>clashes with another production</span></div>
+      <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><span className="inline-block rounded-md bg-black px-2 py-1 font-semibold text-white">Recce Day</span><span className="inline-block rounded-md bg-purple-700 px-2 py-1 font-semibold text-white">Gear check</span><span className="ml-2 font-semibold text-destructive">overlap</span><span>clashes with another production</span></div>
       <div className="grid grid-cols-7 gap-px overflow-hidden rounded-xl border border-border bg-border">
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
           <div key={d} className="bg-muted px-2 py-2 text-center text-xs font-medium text-muted-foreground">{d}</div>

@@ -215,8 +215,10 @@ export function Badge({ children }: { children: string }) {
 // Deliberately one color per hue family (not red+rose+pink+fuchsia all at once) so neighbors are easy to
 // tell apart at a glance, not just technically different. Blue is excluded: it matches the app's primary
 // brand color, so a client badge would be mistaken for a primary-styled element (buttons, active status, links).
+// Black and purple are also excluded: the calendar reserves those for the Recce Day and Gear check chips
+// (see EVENT_CHIP in lib/use-calendar-events.ts), so a client badge in either would be mistaken for one of those.
 const CLIENT_COLORS = [
-  "bg-orange-500 text-white", "bg-red-700 text-white", "bg-fuchsia-600 text-white", "bg-violet-600 text-white",
+  "bg-orange-500 text-white", "bg-red-700 text-white", "bg-fuchsia-600 text-white", "bg-emerald-600 text-white",
   "bg-indigo-600 text-white", "bg-cyan-700 text-white", "bg-amber-700 text-white", "bg-stone-600 text-white",
 ];
 
