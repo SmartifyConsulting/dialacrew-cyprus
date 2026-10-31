@@ -9,13 +9,20 @@ import type { Production } from "@/lib/demo-data";
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring min-w-0";
 const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50";
 
+const DEFAULT_GUIDELINES = [
+  "Keep posts about the work — wrap, call times, kit, location changes.",
+  "Tag the production in any photos you share.",
+  "No confidential client info, scripts, or unreleased footage.",
+  "Be respectful — posts are visible to everyone on this job.",
+].map((l) => `• ${l}`).join("\n");
+
 // Guidelines for posts on a job. Only admins can write them; producers can hide them from the job.
 export function Guidelines({ p, isProducer }: { p: Production; isProducer: boolean }) {
   const qc = useQueryClient();
   const { session } = useSession();
   const isAdmin = useRole(session?.user.id).data === "admin";
   const [editing, setEditing] = useState(false);
-  const [text, setText] = useState(p.postRules ?? "");
+  const [text, setText] = useState(p.postRules || DEFAULT_GUIDELINES);
   const [busy, setBusy] = useState(false);
 
   async function save() {
@@ -55,7 +62,7 @@ export function Guidelines({ p, isProducer }: { p: Production; isProducer: boole
     return (
       <div className="space-y-2 rounded-sm border border-primary/40 bg-primary/5 p-4">
         <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Guidelines</div>
-        <textarea rows={4} className={`${input} w-full`} placeholder="e.g. Tag the production in every photo. Keep posts about the work." value={text} onChange={(e) => setText(e.target.value)} />
+        <textarea rows={5} className={`${input} w-full`} placeholder="e.g. Tag the production in every photo. Keep posts about the work." value={text} onChange={(e) => setText(e.target.value)} />
         <div className="flex gap-2">
           <button disabled={busy} onClick={save} className={btn}>{busy ? "Saving…" : "Save guidelines"}</button>
           <button onClick={() => setEditing(false)} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold">Cancel</button>
@@ -69,13 +76,11 @@ export function Guidelines({ p, isProducer }: { p: Production; isProducer: boole
       <div className="flex items-center justify-between gap-3">
         <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Guidelines</div>
         <div className="flex items-center gap-3">
-          {isAdmin && <button onClick={() => { setText(p.postRules ?? ""); setEditing(true); }} className="text-xs font-semibold text-primary hover:underline">{p.postRules ? "Edit" : "Set guidelines"}</button>}
+          {isAdmin && <button onClick={() => { setText(p.postRules || DEFAULT_GUIDELINES); setEditing(true); }} className="text-xs font-semibold text-primary hover:underline">Edit</button>}
           {hideToggle}
         </div>
       </div>
-      {p.postRules
-        ? <p className="mt-2 whitespace-pre-wrap text-sm">{p.postRules}</p>
-        : <p className="mt-2 text-sm text-muted-foreground">No guidelines set for posts yet.</p>}
+      <p className="mt-2 whitespace-pre-wrap text-sm">{p.postRules || DEFAULT_GUIDELINES}</p>
     </div>
   );
 }
