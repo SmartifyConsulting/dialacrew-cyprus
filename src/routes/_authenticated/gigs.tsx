@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { startGigCheckout, verifyGigCheckout, chargeGigPenalties } from "@/lib/paystack.functions";
 import { toast } from "sonner";
 import { Page, Panel } from "@/components/AppShell";
+import { confirmDialog } from "@/components/ConfirmDialog";
 import { FindGigsTab } from "@/components/FindGigs";
 import { supabase } from "@/integrations/supabase/client";
 import { useRole, useSession } from "@/lib/auth";
@@ -96,7 +97,7 @@ function GigsPage() {
   }
   async function withdraw(g: Gig) {
     const late = lateWithdrawal(g.event_date, g.call_time);
-    if (!confirm(late ? "Less than 24 hours' notice — a penalty fee will be charged to your card. Withdraw anyway?" : "Withdraw from this gig?")) return;
+    if (!(await confirmDialog(late ? "Less than 24 hours' notice — a penalty fee will be charged to your card. Withdraw anyway?" : "Withdraw from this gig?", { destructive: late }))) return;
     const { data, error } = await supabase.rpc("withdraw_from_gig" as never, { _gig: g.id } as never);
     if (error) return void toast.error(error.message);
     if (Number(data) > 0) await penalise(g.id);

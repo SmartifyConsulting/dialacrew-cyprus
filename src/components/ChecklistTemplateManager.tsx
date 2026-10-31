@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/lib/auth";
+import { confirmDialog } from "@/components/ConfirmDialog";
 
 export type ChecklistAudience = "producer" | "crew";
 export function useChecklistTemplates(audience: ChecklistAudience) {
@@ -35,7 +36,7 @@ export function ChecklistTemplateManager({ audience, targetId }: { audience: Che
     setEditingId(null); setName(""); setItems([""]); void refresh();
   }
   async function remove(id: string) {
-    if (!window.confirm("Delete this saved template? Existing checklists will remain.")) return;
+    if (!(await confirmDialog("Delete this saved template? Existing checklists will remain.", { destructive: true }))) return;
     const { error } = await supabase.from("checklist_templates").delete().eq("id", id).eq("owner_id", session?.user.id ?? "");
     if (error) toast.error(error.message); else { toast.success("Template deleted"); void refresh(); }
   }

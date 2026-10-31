@@ -11,6 +11,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
+import { ConfirmDialogHost } from "@/components/ConfirmDialog";
 import { supabase } from "@/integrations/supabase/client";
 import appCss from "../styles.css?url";
 import { reportAppError } from "../lib/error-reporting";
@@ -129,6 +130,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+      <ConfirmDialogHost />
       <Toaster closeButton={false} toastOptions={{ classNames: { toast: "!bg-[#4169E1] !border-[#4169E1] !text-white", title: "!text-white", description: "!text-white/90", icon: "!text-white" } }} />
     </QueryClientProvider>
   );

@@ -5,6 +5,7 @@ import { Star, Trash2 } from "lucide-react";
 import { friendlyError } from "@/lib/errors";
 import { supabase } from "@/integrations/supabase/client";
 import { Panel } from "@/components/AppShell";
+import { confirmDialog } from "@/components/ConfirmDialog";
 
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring min-w-0";
 const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50";
@@ -66,7 +67,7 @@ export function DocumentChecklistsAdmin() {
 
   async function remove(t: Template) {
     if (t.is_default) { toast.error("Set another default before deleting this one"); return; }
-    if (!window.confirm(`Delete “${t.name}”? This can't be undone.`)) return;
+    if (!(await confirmDialog(`Delete "${t.name}"? This can't be undone.`, { destructive: true }))) return;
     const { error } = await supabase.from("document_checklist_templates").delete().eq("id", t.id);
     if (error) { toast.error(friendlyError(error)); return; }
     setSelectedId(null);

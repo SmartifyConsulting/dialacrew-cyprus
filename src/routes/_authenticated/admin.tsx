@@ -10,6 +10,7 @@ import { zar } from "@/lib/demo-data";
 import { DocumentChecklistsAdmin } from "@/components/admin/DocumentChecklistsAdmin";
 import { EquipmentAdmin } from "@/components/admin/EquipmentAdmin";
 import { ChecklistTemplateManager } from "@/components/ChecklistTemplateManager";
+import { confirmDialog, promptDialog } from "@/components/ConfirmDialog";
 
 const REQUIRED_FIELDS = ["name", "role", "department"] as const;
 const CREW_FIELDS = [...REQUIRED_FIELDS, "location", "email", "phone", "day_rate", "experience"] as const;
@@ -626,7 +627,7 @@ function DisputesTab() {
     queryFn: async () => { const { data, error } = await supabase.from("disputes").select("*, bookings(role, production_id, productions(name))").order("created_at", { ascending: false }); if (error) throw error; return data ?? []; },
   });
   async function resolve(id: string, status: "resolved" | "rejected") {
-    const resolution = window.prompt(`Resolution notes for this ${status === "resolved" ? "resolution" : "rejection"}?`);
+    const resolution = await promptDialog(`Resolution notes for this ${status === "resolved" ? "resolution" : "rejection"}?`);
     if (resolution == null) return;
     const uid = (await supabase.auth.getUser()).data.user?.id ?? null;
     const { error } = await supabase.from("disputes").update({ status, resolution, resolved_by: uid, resolved_at: new Date().toISOString() }).eq("id", id);

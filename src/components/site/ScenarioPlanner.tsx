@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { supabase } from "@/integrations/supabase/client";
 import { Panel } from "@/components/AppShell";
+import { confirmDialog } from "@/components/ConfirmDialog";
 import { useBookings, useCrew, useCrewGroups } from "@/lib/db";
 import { matchBrief, type MatchResult } from "@/lib/memory.functions";
 import { providerTotal } from "@/lib/costing";
@@ -154,7 +155,7 @@ export function ScenarioPlanner({ p }: { p: Production }) {
   }
   // Commit: pencil the chosen group's crew + kit on the production, then drop the other sandbox groups.
   async function commit(s: Scenario) {
-    if (!confirm(`Commit "${s.name}"? Its crew will be pencilled in and the other options removed.`)) return;
+    if (!(await confirmDialog(`Commit "${s.name}"? Its crew will be pencilled in and the other options removed.`))) return;
     setCommitting(true);
     try {
       const rows = Object.keys(s.selection).map((crewId) => ({

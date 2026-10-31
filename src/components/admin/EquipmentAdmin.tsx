@@ -5,6 +5,7 @@ import { Search } from "lucide-react";
 import { friendlyError } from "@/lib/errors";
 import { supabase } from "@/integrations/supabase/client";
 import { Panel } from "@/components/AppShell";
+import { confirmDialog } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCrew, useProductions } from "@/lib/db";
@@ -63,7 +64,7 @@ export function EquipmentAdmin() {
     refresh();
   }
   async function removeItem(it: EquipmentItem) {
-    if (!window.confirm(`Delete "${it.name}" and its check-out history? This can't be undone.`)) return;
+    if (!(await confirmDialog(`Delete "${it.name}" and its check-out history? This can't be undone.`, { destructive: true }))) return;
     const { error } = await supabase.from("inventory_items").delete().eq("id", it.id);
     if (error) { toast.error(friendlyError(error)); return; }
     refresh();

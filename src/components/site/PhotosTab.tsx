@@ -6,6 +6,7 @@ import { friendlyError } from "@/lib/errors";
 import { supabase } from "@/integrations/supabase/client";
 import { Panel } from "@/components/AppShell";
 import { uploadFile, useInvalidate, useLocationPoints, useSignedUrl } from "@/lib/site";
+import { confirmDialog } from "@/components/ConfirmDialog";
 
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring min-w-0";
 const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50";
@@ -104,7 +105,7 @@ export function PhotosTab({ p, userId, isProducer }: { p: { id: string }; userId
   }
 
   async function removeGroup(id: string) {
-    if (!window.confirm("Delete this portfolio? Its photos move to Unsorted.")) return;
+    if (!(await confirmDialog("Delete this portfolio? Its photos move to Unsorted.", { destructive: true }))) return;
     const { error } = await supabase.from("site_photo_groups").delete().eq("id", id);
     if (error) { toast.error(friendlyError(error)); return; }
     refresh();

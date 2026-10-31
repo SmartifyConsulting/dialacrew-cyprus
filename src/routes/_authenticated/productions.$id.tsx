@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronLeft, ChevronRight, MapPin } from "lucide-react";
 import { Badge, ClientBadge, Page } from "@/components/AppShell";
+import { confirmDialog } from "@/components/ConfirmDialog";
 import { useRole, useSession } from "@/lib/auth";
 import { useBookings, useCrew, useProductions, useRequests } from "@/lib/db";
 import { useMyCrewId, useMyName } from "@/lib/site";
@@ -61,7 +62,7 @@ function ProductionSite() {
   const [closeError, setCloseError] = useState("");
   const closed = p?.status === "Completed";
   async function completeJob() {
-    if (!p || !window.confirm("Complete this production permanently? All activity and invoice changes will be locked.")) return;
+    if (!p || !(await confirmDialog("Complete this production permanently? All activity and invoice changes will be locked.", { destructive: true }))) return;
     setClosing(true); setCloseError("");
     const { error } = await supabase.rpc("complete_production", { p_production_id: p.id });
     if (error) setCloseError(error.message);

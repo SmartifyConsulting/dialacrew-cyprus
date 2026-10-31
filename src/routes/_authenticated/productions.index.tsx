@@ -15,6 +15,7 @@ import { uploadFile, useSignedUrl } from "@/lib/site";
 import { ProductionAvatar } from "@/components/site/ProductionCover";
 import { ImageCropDialog } from "@/components/site/ImageCropDialog";
 import { AmPmTimePicker } from "@/components/site/SiteTabs";
+import { confirmDialog } from "@/components/ConfirmDialog";
 
 export const Route = createFileRoute("/_authenticated/productions/")({
   validateSearch: (s: Record<string, unknown>): { new?: boolean } => (s["new"] ? { new: true } : {}),
@@ -241,7 +242,7 @@ function Productions() {
   }, [f.name, f.client, f.jobId, f.type, f.location, f.recceDate, f.recceTime, f.startDate, f.endDate, f.budget, f.description, open, editingId]);
 
   async function deleteProduction(p: (typeof list)[number]) {
-    if (!window.confirm(`Delete "${p.name}"? This can't be undone.`)) return;
+    if (!(await confirmDialog(`Delete "${p.name}"? This can't be undone.`, { destructive: true }))) return;
     const { error } = await supabase.from("productions").delete().eq("id", p.id);
     if (error) { toast.error(friendlyError(error)); return; }
     toast.success(`${p.name} deleted`);

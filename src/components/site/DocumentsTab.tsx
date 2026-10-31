@@ -6,6 +6,7 @@ import { friendlyError } from "@/lib/errors";
 import { supabase } from "@/integrations/supabase/client";
 import { Panel } from "@/components/AppShell";
 import { signedUrl, uploadFile, useDocs, useInvalidate } from "@/lib/site";
+import { confirmDialog } from "@/components/ConfirmDialog";
 const when = (s: string) => new Date(s).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" });
 
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring min-w-0";
@@ -101,7 +102,7 @@ export function DocumentsTab({ p, userId, myName, isProducer }: { p: { id: strin
   async function loadTemplate(templateId: string) {
     const { data, error } = await supabase.from("document_checklist_template_items").select("label, sort_order").eq("template_id", templateId).order("sort_order", { ascending: true });
     if (error) { toast.error(friendlyError(error)); return; }
-    if (!window.confirm("Replace this job's checklist with the saved one? Uploaded documents stay put.")) return;
+    if (!(await confirmDialog("Replace this job's checklist with the saved one? Uploaded documents stay put."))) return;
     setBusy(true);
     await supabase.from("production_document_items").delete().eq("production_id", p.id);
     const { error: insErr } = await supabase.from("production_document_items").insert((data ?? []).map((r) => ({ production_id: p.id, label: r.label, sort_order: r.sort_order })));

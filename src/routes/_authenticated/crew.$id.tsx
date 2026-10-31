@@ -9,6 +9,7 @@ import { CrewRateCard } from "@/components/CrewRateCard";
 import { CrewEmergencySettings } from "@/components/CrewEmergencyDetails";
 import { CrewPersonalChecklists } from "@/components/CrewPersonalChecklists";
 import { Page, Panel } from "@/components/AppShell";
+import { promptDialog } from "@/components/ConfirmDialog";
 import { Avatar } from "@/components/site/SiteTabs";
 import { useRole, useSession } from "@/lib/auth";
 import { zar } from "@/lib/demo-data";
@@ -222,7 +223,7 @@ function ProjectRow({ job: j, userId, canRespond, isProducer, onChange }: { job:
     catch (e) { toast.error(friendlyError(e)); }
   }
   async function doCancelBooking() {
-    const reason = window.prompt("Reason for cancelling this booking?");
+    const reason = await promptDialog("Reason for cancelling this booking?");
     if (!reason) return;
     try { await cancelBooking.mutateAsync({ bookingId: j.id, reason }); toast.success("Booking cancelled"); onChange(); }
     catch (e) { toast.error(friendlyError(e)); }

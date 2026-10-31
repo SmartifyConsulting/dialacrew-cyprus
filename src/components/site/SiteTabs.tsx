@@ -26,6 +26,7 @@ import { LocationRisks, ProjectWideRisks } from "@/components/site/ProjectInsigh
 import { Guidelines } from "@/components/site/Guidelines";
 import { LocationFee, LocationPhotos } from "@/components/site/LocationExtras";
 import { PolishDescription } from "@/components/site/PolishDescription";
+import { confirmDialog, promptDialog } from "@/components/ConfirmDialog";
 import { OvertimeStatus, RequestOvertimeButton, liveRequest, useBookingRates, useNow, useOvertimeRequests } from "@/components/site/Overtime";
 
 function OvertimeApprovals({ production }: { production: string }) {
@@ -1004,8 +1005,8 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
   };
 
   async function wrapCrew(m: { crew_id: string; name: string; role?: string | null }) {
-    if (!window.confirm(`Wrap ${m.name}? They'll be told they're no longer required. Pack-down time is paid until they check out.`)) return;
-    const source = window.prompt("Equipment used for this crew member’s wrap-up? Enter: own, producer, mixed, none, or unknown", "unknown")?.trim().toLowerCase();
+    if (!(await confirmDialog(`Wrap ${m.name}? They'll be told they're no longer required. Pack-down time is paid until they check out.`))) return;
+    const source = (await promptDialog("Equipment used for this crew member's wrap-up? Enter: own, producer, mixed, none, or unknown", "unknown"))?.trim().toLowerCase();
     if (source == null) return;
     if (!["own","producer","mixed","none","unknown"].includes(source)) { toast.error("Choose own, producer, mixed, none or unknown"); return; }
     const { error } = await supabase.from("site_wraps").insert({ production_id: p.id, crew_id: m.crew_id, equipment_source: source, wrap_role: m.role || null } as any);
@@ -1015,7 +1016,7 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
   }
 
   async function reportNoShow(m: { crew_id: string; name: string }) {
-    if (!window.confirm(`Report ${m.name} as a no-show? This records the date on their profile for six months and immediately posts a replacement gig for the same role and area.`)) return;
+    if (!(await confirmDialog(`Report ${m.name} as a no-show? This records the date on their profile for six months and immediately posts a replacement gig for the same role and area.`, { destructive: true }))) return;
     setNoShowBusy(m.crew_id);
     const { data: booking, error: lookupError } = await supabase.from("bookings").select("id").eq("production_id",p.id).eq("crew_id",m.crew_id).in("status",["confirmed","in_progress","awaiting_review"]).order("created_at",{ascending:false}).limit(1).maybeSingle();
     if (lookupError || !booking) { toast.error("No eligible booking found for this crew member"); setNoShowBusy(null); return; }
@@ -1027,7 +1028,7 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
   }
 
   async function removeMember(m: { crew_id: string; name: string }) {
-    if (!window.confirm(`Remove ${m.name} from this production? If the shoot is close, the cancellation penalty applies.`)) return;
+    if (!(await confirmDialog(`Remove ${m.name} from this production? If the shoot is close, the cancellation penalty applies.`, { destructive: true }))) return;
     const { data: rows, error: lookupErr } = await supabase.from("bookings").select("id").eq("production_id", p.id).eq("crew_id", m.crew_id).neq("status", "cancelled");
     if (lookupErr || !rows?.length) { toast.error("Couldn't find this crew member's booking."); return; }
     try {
