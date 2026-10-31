@@ -56,7 +56,7 @@ export function ChecklistTemplateManager({ audience, targetId }: { audience: Che
     {targetId && <div className="flex flex-wrap gap-2">
       <select aria-label="Choose checklist template" value={selected} onChange={(e) => setSelected(e.target.value)} className="min-w-52 flex-1 rounded border border-border bg-background p-2 text-sm">
         <option value="">Choose a prepared checklist…</option>
-        {(q.data ?? []).map((t) => <option key={t.id} value={t.id}>{t.title}{t.owner_id ? " (Mine)" : " (Default)"}</option>)}
+        {(q.data ?? []).map((t) => <option key={t.id} value={t.id}>{t.title}{t.owner_id ? " (Mine)" : ""}</option>)}
       </select>
       <button disabled={!selected || busy} onClick={apply} className="rounded bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-50">Add checklist</button>
     </div>}

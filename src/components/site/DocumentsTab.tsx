@@ -135,7 +135,7 @@ export function DocumentsTab({ p, userId, myName, isProducer }: { p: { id: strin
           <select className={`${input} py-1 text-xs`} value="" aria-label="Load a saved checklist" disabled={busy}
             onChange={(e) => { if (e.target.value) loadTemplate(e.target.value); }}>
             <option value="">Load a saved checklist…</option>
-            {templates.map((t) => <option key={t.id} value={t.id}>{t.name}{t.is_default ? " (default)" : ""}</option>)}
+            {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
         ) : undefined}>
         <ul className="divide-y divide-border">
