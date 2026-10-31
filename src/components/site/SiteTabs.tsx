@@ -903,12 +903,19 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
       <Panel title="Recce Date">
         <div className="space-y-1 p-4">
           {p.recceDate && <p className="font-semibold text-foreground">Production recce · {dayLabel(`${p.recceDate}T00:00:00`)}</p>}
-          {locationPoints.filter((pt) => pt.recce_date).map((pt) => (
-            <div key={pt.id} className="py-1 text-sm">
-              <p className="font-semibold text-foreground">Location {locationPoints.findIndex((point) => point.id === pt.id) + 1} · {dayLabel(`${pt.recce_date}T00:00:00`)} · {recceRange(pt.recce_start_time, pt.recce_end_time)}</p>
-              <p className="text-xs text-muted-foreground">{canSeeRecceAddress ? pt.address || pt.label : pt.label || p.location}</p>
-            </div>
-          ))}
+          {(() => {
+            const withRecce = locationPoints.filter((pt) => pt.recce_date);
+            return withRecce.map((pt) => {
+              const n = locationPoints.findIndex((point) => point.id === pt.id) + 1;
+              const label = withRecce.length > 1 ? `Recce Location ${n} Date` : "Recce Date";
+              return (
+                <div key={pt.id} className="py-1 text-sm">
+                  <p className="font-semibold text-foreground">{label} · {dayLabel(`${pt.recce_date}T00:00:00`)} · {recceRange(pt.recce_start_time, pt.recce_end_time)}</p>
+                  <p className="text-xs text-muted-foreground">{canSeeRecceAddress ? pt.address || pt.label : pt.label || p.location}</p>
+                </div>
+              );
+            });
+          })()}
           {!p.recceDate && !locationPoints.some((pt) => pt.recce_date) && <p className="font-semibold text-foreground">Not scheduled</p>}
           {p.recceDate && (() => {
             const firstLocation = locationPoints[0];
@@ -1498,7 +1505,7 @@ export const SiteIcons = { Users };
 
 
 /* Selectable 12-hour time slots; database values remain 24-hour HH:mm. */
-function AmPmTimePicker({ value, onChange, label }: { value: string; onChange: (value: string) => void; label: string }) {
+export function AmPmTimePicker({ value, onChange, label }: { value: string; onChange: (value: string) => void; label: string }) {
   // Listed starting at 8am (the usual start of a shoot day) and wrapping back around to 7:30am, rather than starting at midnight.
   const options = Array.from({ length: 48 }, (_, i) => {
     const h = Math.floor(((i + 16) % 48) / 2), m = (i + 16) % 2 ? "30" : "00";

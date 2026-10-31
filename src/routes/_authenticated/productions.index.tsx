@@ -14,6 +14,7 @@ import { PolishDescription } from "@/components/site/PolishDescription";
 import { uploadFile, useSignedUrl } from "@/lib/site";
 import { ProductionAvatar } from "@/components/site/ProductionCover";
 import { ImageCropDialog } from "@/components/site/ImageCropDialog";
+import { AmPmTimePicker } from "@/components/site/SiteTabs";
 
 export const Route = createFileRoute("/_authenticated/productions/")({
   validateSearch: (s: Record<string, unknown>): { new?: boolean } => (s["new"] ? { new: true } : {}),
@@ -156,7 +157,7 @@ function Productions() {
   const clients = clientsQuery.data ?? [];
   const [open, setOpen] = useState(!!openOnLoad);
   const [duplicating, setDuplicating] = useState(false);
-  const blankForm = { name: "", client: "", jobId: "", externalRef: "", type: "Commercial", location: "", recceDate: "", startDate: "", endDate: "", budget: 0, description: "" };
+  const blankForm = { name: "", client: "", jobId: "", externalRef: "", type: "Commercial", location: "", recceDate: "", recceTime: "", startDate: "", endDate: "", budget: 0, description: "" };
   const [f, setF] = useState(blankForm);
   const [editingId, setEditingId] = useState<string | null>(null); // editing an existing production
   const [draftId, setDraftId] = useState<string | null>(null); // autosaved draft while creating a new one
@@ -170,6 +171,7 @@ function Productions() {
 
   // Shoot days is inclusive of both the start and end date.
   const days = f.startDate && f.endDate ? Math.max(1, Math.round((+new Date(f.endDate) - +new Date(f.startDate)) / 86400000) + 1) : 1;
+  const addDays = (ymd: string, n: number) => { const d = new Date(`${ymd}T00:00:00`); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
   // Ignore the production being edited and the draft this form autosaved itself.
 
   const resetForm = () => { setF(blankForm); setEditingId(null); setDraftId(null); setSaveState("idle"); setDuplicating(false); setCoverFile(null); setCoverPreview(null); setCropSource(null); };
@@ -193,7 +195,7 @@ function Productions() {
     setF((prev) => ({ ...prev, jobId: data.job_id }));
   };
   const openEdit = (p: (typeof list)[number]) => {
-    setF({ name: p.name, client: p.client, jobId: p.jobId ?? "", externalRef: p.externalRef ?? "", type: p.type, location: p.location, recceDate: p.recceDate ?? "", startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget, description: p.summary ?? "" });
+    setF({ name: p.name, client: p.client, jobId: p.jobId ?? "", externalRef: p.externalRef ?? "", type: p.type, location: p.location, recceDate: p.recceDate ?? "", recceTime: p.recceStart ?? "", startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget, description: p.summary ?? "" });
     setEditingId(p.id);
     setDraftId(null);
     setSaveState("idle");
@@ -201,7 +203,7 @@ function Productions() {
     setOpen(true);
   };
   const openDuplicate = async (p: (typeof list)[number]) => {
-    setF({ name: `${p.name} (copy)`, client: p.client, jobId: "", externalRef: "", type: p.type, location: p.location, recceDate: p.recceDate ?? "", startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget, description: p.summary ?? "" });
+    setF({ name: `${p.name} (copy)`, client: p.client, jobId: "", externalRef: "", type: p.type, location: p.location, recceDate: p.recceDate ?? "", recceTime: p.recceStart ?? "", startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget, description: p.summary ?? "" });
     setEditingId(null);
     setDraftId(null);
     setSaveState("idle");
@@ -221,7 +223,7 @@ function Productions() {
     if (!f.name.trim() || !f.client.trim()) return;
     const t = setTimeout(async () => {
       setSaveState("saving");
-      const payload = { name: f.name, client: f.client, external_ref: f.externalRef.trim() || null, type: f.type, location: f.location, budget: f.budget, recce_date: f.recceDate || null, date: f.startDate || null, end_date: f.endDate || null, days, summary: f.description };
+      const payload = { name: f.name, client: f.client, external_ref: f.externalRef.trim() || null, type: f.type, location: f.location, budget: f.budget, recce_date: f.recceDate || null, recce_start_time: f.recceTime || null, date: f.startDate || null, end_date: f.endDate || null, days, summary: f.description };
       if (draftId) {
         const { error } = await supabase.from("productions").update(payload).eq("id", draftId);
         if (error) { toast.error(friendlyError(error)); return; }
@@ -236,7 +238,7 @@ function Productions() {
     }, 800);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [f.name, f.client, f.jobId, f.type, f.location, f.recceDate, f.startDate, f.endDate, f.budget, f.description, open, editingId]);
+  }, [f.name, f.client, f.jobId, f.type, f.location, f.recceDate, f.recceTime, f.startDate, f.endDate, f.budget, f.description, open, editingId]);
 
   async function deleteProduction(p: (typeof list)[number]) {
     if (!window.confirm(`Delete "${p.name}"? This can't be undone.`)) return;
@@ -255,9 +257,10 @@ function Productions() {
     if (!f.name.trim()) { toast.error("Production name is required"); return; }
     if (!f.startDate || !f.endDate) { toast.error("Start and end date are required"); return; }
     if (f.endDate < f.startDate) { toast.error("End date can't be before the start date"); return; }
+    if (f.recceDate && f.recceDate > f.startDate) { toast.error("Recce date can't be after the start date"); return; }
     if (!f.budget) { toast.error("Budget is required"); return; }
     // job_id is database-generated and immutable — never sent from the client.
-    const payload = { name: f.name, client: f.client, external_ref: f.externalRef.trim() || null, type: f.type, location: f.location, budget: f.budget, recce_date: f.recceDate || null, date: f.startDate || null, end_date: f.endDate || null, days, summary: f.description };
+    const payload = { name: f.name, client: f.client, external_ref: f.externalRef.trim() || null, type: f.type, location: f.location, budget: f.budget, recce_date: f.recceDate || null, recce_start_time: f.recceTime || null, date: f.startDate || null, end_date: f.endDate || null, days, summary: f.description };
     const targetId = editingId ?? draftId;
     const { data, error } = targetId
       ? await supabase.from("productions").update(payload).eq("id", targetId).select("id").single()
@@ -317,11 +320,20 @@ function Productions() {
                     {["Commercial", "Film", "Television", "Photography", "Other"].map((t) => <option key={t}>{t}</option>)}
                   </select></label>
                 <label className={labelCls}>Recce date
-                  <input className={`${field} mt-1`} type="date" value={f.recceDate} onChange={(e) => setF({ ...f, recceDate: e.target.value })} /></label>
+                  <div className="mt-1 flex gap-2">
+                    <input className={`${field} min-w-0 flex-1`} type="date" max={f.startDate || undefined} value={f.recceDate} onChange={(e) => setF({ ...f, recceDate: e.target.value })} />
+                    <AmPmTimePicker label="Recce time" value={f.recceTime} onChange={(value) => setF({ ...f, recceTime: value })} />
+                  </div></label>
                 <label className={labelCls}>Start date *
-                  <input className={`${field} mt-1`} type="date" value={f.startDate} onChange={(e) => setF({ ...f, startDate: e.target.value })} /></label>
+                  <input className={`${field} mt-1`} type="date" value={f.startDate}
+                    onChange={(e) => setF({
+                      ...f, startDate: e.target.value,
+                      endDate: f.endDate && f.endDate < e.target.value ? e.target.value : f.endDate,
+                      // Default the recce to 3 days before the shoot; keep it as-is if it's already earlier, but never after the new start date.
+                      recceDate: !f.recceDate ? addDays(e.target.value, -3) : f.recceDate > e.target.value ? e.target.value : f.recceDate,
+                    })} /></label>
                 <label className={labelCls}>End date *
-                  <input className={`${field} mt-1`} type="date" value={f.endDate} onChange={(e) => setF({ ...f, endDate: e.target.value })} /></label>
+                  <input className={`${field} mt-1`} type="date" min={f.startDate || undefined} value={f.endDate} onChange={(e) => setF({ ...f, endDate: e.target.value })} /></label>
                 <label className={labelCls}>Budget excl. VAT / tax *
                   <input className={`${field} mt-1`} type="number" min={0} placeholder="0" value={f.budget || ""} onChange={(e) => setF({ ...f, budget: +e.target.value })} /></label>
                 <div>
