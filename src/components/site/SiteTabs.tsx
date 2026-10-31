@@ -7,7 +7,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
-import { Camera, CheckCircle2, Circle, Download, FileText, GripVertical, ImageUp, LogIn, LogOut, MapPin, Mic, Minus, Paperclip, Pencil, Plus, Sparkles, Star, Trash2, Users } from "lucide-react";
+import { Camera, CheckCircle2, Circle, Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Download, FileText, GripVertical, ImageUp, LogIn, LogOut, MapPin, Mic, Minus, Paperclip, Pencil, Plus, Sparkles, Star, Sun, Trash2, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GigNegotiation } from "@/components/GigNegotiation";
 import { ChecklistTemplateManager } from "@/components/ChecklistTemplateManager";
@@ -59,6 +59,11 @@ type AddressSuggestion = { label: string; exactAddress: string; place: string; l
 type NominatimAddress = { house_number?: string; road?: string; pedestrian?: string; footway?: string; path?: string; suburb?: string; neighbourhood?: string; quarter?: string; village?: string; hamlet?: string; city?: string; town?: string; municipality?: string; county?: string };
 const isWardDetail = (value: string | undefined) => !!value && /\bward\s*\d*\b/i.test(value);
 const displayAddress = (value: string) => value.split(",").map((part) => part.trim()).filter((part) => part && !isWardDetail(part)).join(", ");
+// A coarser label than the exact address — the suburb/area, not the street or venue name — for crew who haven't booked yet.
+function areaOnly(address: string, fallback: string) {
+  const parts = address.split(",").map((s) => s.trim()).filter(Boolean);
+  return (parts.length >= 3 ? parts[2] : parts[1] ?? parts[0]) || fallback;
+}
 // "12 Main Street, Sea Point, Cape Town": the street through to the city, without province, postcode or country.
 function shortAddress(a: NominatimAddress | undefined, name: string | undefined, displayName: string) {
   const street = [a?.house_number, a?.road ?? a?.pedestrian ?? a?.footway ?? a?.path].filter(Boolean).join(" ");
@@ -166,6 +171,13 @@ const WEATHER_CODES: Record<number, string> = {
   80: "Light showers", 81: "Showers", 82: "Heavy showers", 85: "Snow showers", 86: "Heavy snow showers",
   95: "Thunderstorm", 96: "Thunderstorm with hail", 99: "Severe thunderstorm",
 };
+const WEATHER_ICONS: Record<number, typeof Sun> = {
+  0: Sun, 1: CloudSun, 2: CloudSun, 3: Cloud, 45: CloudFog, 48: CloudFog,
+  51: CloudDrizzle, 53: CloudDrizzle, 55: CloudDrizzle, 61: CloudRain, 63: CloudRain, 65: CloudRain,
+  66: CloudRain, 67: CloudRain, 71: CloudSnow, 73: CloudSnow, 75: CloudSnow, 77: CloudSnow,
+  80: CloudRain, 81: CloudRain, 82: CloudRain, 85: CloudSnow, 86: CloudSnow,
+  95: CloudLightning, 96: CloudLightning, 99: CloudLightning,
+};
 
 function DayWeather({ lat, lon, date }: { lat: number; lon: number; date: string }) {
   const forecast = useQuery({
@@ -188,13 +200,39 @@ function DayWeather({ lat, lon, date }: { lat: number; lon: number; date: string
   if (forecast.isPending) return <p className="text-xs text-muted-foreground">Checking the forecast…</p>;
   if (forecast.isError || !forecast.data) return <p className="text-xs text-muted-foreground">No forecast for this date yet (forecasts run up to 16 days ahead).</p>;
   const w = forecast.data;
+  const Icon = WEATHER_ICONS[w.code] ?? Cloud;
   return (
-    <p className="text-xs font-medium text-foreground">
+    <p className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+      <Icon className="h-4 w-4 shrink-0 text-primary" />
       {WEATHER_CODES[w.code] ?? "Mixed conditions"}
       {w.min != null && w.max != null ? ` · ${Math.round(w.min)}–${Math.round(w.max)}°C` : ""}
       {w.rain != null ? ` · ${Math.round(w.rain)}% chance of rain` : ""}
     </p>
   );
+}
+
+// Same cache key/query as DayWeather, so this never fires a second network request — just renders the icon alone.
+function DayWeatherIcon({ lat, lon, date }: { lat: number; lon: number; date: string }) {
+  const forecast = useQuery({
+    queryKey: ["weather", lat, lon, date],
+    queryFn: async () => {
+      const qs = new URLSearchParams({
+        latitude: String(lat), longitude: String(lon), timezone: "auto", start_date: date, end_date: date,
+        daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+      });
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?${qs}`);
+      if (!res.ok) throw new Error("forecast unavailable");
+      const j = (await res.json()) as { daily?: { weather_code?: number[] } };
+      const d = j.daily;
+      if (!d?.weather_code?.length) throw new Error("no forecast");
+      return { code: d.weather_code[0]! };
+    },
+    staleTime: 3 * 60 * 60 * 1000,
+    retry: false,
+  });
+  if (!forecast.data) return null;
+  const Icon = WEATHER_ICONS[forecast.data.code] ?? Cloud;
+  return <Icon className="h-4 w-4 shrink-0 text-primary" aria-label={WEATHER_CODES[forecast.data.code] ?? "Mixed conditions"} />;
 }
 
 function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer" | "myCrewId">) {
@@ -210,13 +248,19 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
   const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   function startAdd() {
+    // Production spans more than one shoot day and the previous location's day is already set —
+    // default the new location to the day right after it, instead of leaving the date blank.
+    const spansMultipleDays = !!p.date && !!p.endDate && p.endDate !== p.date;
     const scheduledDays = points.map((pt) => pt.starts_at ? localYmd(pt.starts_at) : null).filter((date): date is string => !!date).sort();
-    const baseDate = scheduledDays.at(-1) ?? p.date;
-    const nextDate = baseDate ? new Date(`${baseDate}T00:00:00`) : null;
-    if (nextDate && scheduledDays.length > 0) nextDate.setDate(nextDate.getDate() + 1);
-    const startsAt = nextDate
-      ? `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, "0")}-${String(nextDate.getDate()).padStart(2, "0")}T00:00`
-      : "";
+    const baseDate = scheduledDays.at(-1) ?? null;
+    let startsAt = "";
+    if (spansMultipleDays && baseDate) {
+      const nextDate = new Date(`${baseDate}T00:00:00`);
+      nextDate.setDate(nextDate.getDate() + 1);
+      startsAt = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, "0")}-${String(nextDate.getDate()).padStart(2, "0")}T00:00`;
+    } else if (!baseDate && p.date) {
+      startsAt = `${p.date}T00:00`;
+    }
     setLf({ ...blankLocationForm, startsAt });
     setEditingId(null);
     setAdding(true);
@@ -328,22 +372,25 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
               <div className="flex items-start gap-2">
                 <NumberedPin n={i + 1} />
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-bold text-foreground">Shoot Day {i + 1}</div>
+                  <div className="flex items-center gap-1.5 text-sm font-bold text-foreground">
+                    <span>Shoot Day {i + 1}: {canSeeExactAddress ? (pt.label || "Location TBC") : areaOnly(pt.address || pt.label || "", p.location)}</span>
+                    {pt.starts_at && pt.latitude != null && pt.longitude != null && <DayWeatherIcon lat={pt.latitude} lon={pt.longitude} date={localYmd(pt.starts_at)} />}
+                  </div>
                   <div className="text-sm font-semibold text-foreground">{pt.starts_at ? dayLabel(pt.starts_at) : "Date TBC"}</div>
                   <div className="text-xs text-muted-foreground">{pt.starts_at ? timeRange(pt.starts_at, pt.ends_at) : "Time TBC"}</div>
                   {isProducer && (
                     <div className="mt-2 space-y-1 text-xs text-muted-foreground">
                       <span className="block font-semibold text-foreground">Recce date</span>
-                      <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
                       <input
                         type="date"
                         aria-label={`Recce date for Shoot Day ${i + 1}`}
-                        className={`${input} min-w-0 w-full py-1 text-xs`}
+                        className={`${input} w-full py-1 text-xs`}
                         value={pt.recce_date ?? ""}
                         onChange={(e) => saveRecce(pt.id, { recce_date: e.target.value || null }, e.target.value ? "Recce date saved" : "Recce date cleared")}
                       />
-                      <AmPmTimePicker label={`Recce start time for Shoot Day ${i + 1}`} value={hhmm(pt.recce_start_time) ?? ""} onChange={(value) => saveRecce(pt.id, { recce_start_time: value || null }, "Recce time saved", value || null, pt.recce_end_time)} />
-                      <AmPmTimePicker label={`Recce end time for Shoot Day ${i + 1}`} value={hhmm(pt.recce_end_time) ?? ""} onChange={(value) => saveRecce(pt.id, { recce_end_time: value || null }, "Recce time saved", pt.recce_start_time, value || null)} />
+                      <div className="flex items-center gap-2">
+                        <AmPmTimePicker label={`Recce start time for Shoot Day ${i + 1}`} value={hhmm(pt.recce_start_time) ?? ""} onChange={(value) => saveRecce(pt.id, { recce_start_time: value || null }, "Recce time saved", value || null, pt.recce_end_time)} />
+                        <AmPmTimePicker label={`Recce end time for Shoot Day ${i + 1}`} value={hhmm(pt.recce_end_time) ?? ""} onChange={(value) => saveRecce(pt.id, { recce_end_time: value || null }, "Recce time saved", pt.recce_start_time, value || null)} />
                       </div>
                     </div>
                   )}
@@ -405,13 +452,13 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
               <label className="block min-w-0"><span className="text-xs text-muted-foreground">Shoot ends · Date & time</span>
                 <input type="datetime-local" className={`${input} mt-1 w-full min-w-0`} value={lf.endsAt} onChange={(e) => setLf({ ...lf, endsAt: e.target.value })} /></label>
             </div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)]">
-            <label className="block min-w-0"><span className="text-xs text-muted-foreground">Recce date</span>
-              <input type="date" className={`${input} mt-1 w-full min-w-0`} value={lf.recceDate} onChange={(e) => setLf({ ...lf, recceDate: e.target.value })} /></label>
-              <label className="block min-w-0"><span className="text-xs text-muted-foreground">Recce start</span>
-                <input type="time" className={`${input} mt-1 w-full min-w-0`} value={lf.recceStart} onChange={(e) => setLf({ ...lf, recceStart: e.target.value })} /></label>
-              <label className="block min-w-0"><span className="text-xs text-muted-foreground">Recce end</span>
-                <input type="time" className={`${input} mt-1 w-full min-w-0`} value={lf.recceEnd} onChange={(e) => setLf({ ...lf, recceEnd: e.target.value })} /></label>
+            <div className="space-y-1.5">
+              <label className="block min-w-0"><span className="text-xs text-muted-foreground">Recce date</span>
+                <input type="date" className={`${input} mt-1 w-full min-w-0`} value={lf.recceDate} onChange={(e) => setLf({ ...lf, recceDate: e.target.value })} /></label>
+              <div className="flex items-center gap-2">
+                <AmPmTimePicker label="Recce start time" value={lf.recceStart} onChange={(value) => setLf({ ...lf, recceStart: value })} />
+                <AmPmTimePicker label="Recce end time" value={lf.recceEnd} onChange={(value) => setLf({ ...lf, recceEnd: value })} />
+              </div>
             </div>
           </div>
           <div className="flex gap-2">
