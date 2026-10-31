@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { zar } from "@/lib/demo-data";
 import { DocumentChecklistsAdmin } from "@/components/admin/DocumentChecklistsAdmin";
 import { EquipmentAdmin } from "@/components/admin/EquipmentAdmin";
+import { ChecklistTemplateManager } from "@/components/ChecklistTemplateManager";
 
 const REQUIRED_FIELDS = ["name", "role", "department"] as const;
 const CREW_FIELDS = [...REQUIRED_FIELDS, "location", "email", "phone", "day_rate", "experience"] as const;
@@ -133,7 +134,7 @@ const ADMIN_GROUPS = [
   { name: "Finance", tabs: ["Payments", "Invoices", "Gig Fees"] },
   { name: "Trust & Compliance", tabs: ["Disputes", "Reviews"] },
   { name: "Engagement", tabs: ["Social Spotlights"] },
-  { name: "Documents", tabs: ["Document Checklists"] },
+  { name: "Documents", tabs: ["Document Checklists", "Templates"] },
   { name: "Platform Management", tabs: ["Configuration", "System Settings", "Audit Log"] },
 ] as const;
 type AdminGroup = (typeof ADMIN_GROUPS)[number]["name"];
@@ -200,6 +201,7 @@ function AdminPage() {
       {tab === "Gig Fees" && <GigFeesTab />}
       {tab === "Social Spotlights" && <SpotlightTab />}
       {tab === "Document Checklists" && <DocumentChecklistsAdmin />}
+      {tab === "Templates" && <ChecklistTemplateManager audience="producer" />}
       {tab === "Audit Log" && <AuditLogTab />}
       {tab === "Configuration" && <PlaceholderTab name="Configuration" />}
       {tab === "System Settings" && <PlaceholderTab name="System Settings" />}
