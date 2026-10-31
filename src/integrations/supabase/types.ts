@@ -89,6 +89,35 @@ export type Database = {
           },
         ]
       }
+      booking_day_exclusions: {
+        Row: {
+          booking_id: string
+          created_at: string
+          excluded_date: string
+          id: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          excluded_date: string
+          id?: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          excluded_date?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_day_exclusions_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_terms_acceptances: {
         Row: {
           accepted_at: string

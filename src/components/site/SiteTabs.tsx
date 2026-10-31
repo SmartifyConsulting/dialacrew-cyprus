@@ -163,6 +163,7 @@ const localYmd = (iso: string) => {
   const d = new Date(iso);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
+const addDays = (ymd: string, n: number) => { const d = new Date(`${ymd}T00:00:00`); d.setDate(d.getDate() + n); return localYmd(d.toISOString()); };
 
 const WEATHER_CODES: Record<number, string> = {
   0: "Clear", 1: "Mostly clear", 2: "Partly cloudy", 3: "Overcast", 45: "Fog", 48: "Freezing fog",
@@ -938,6 +939,31 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
   const members = (useSiteMembers(p.id).data ?? []).filter((m) => CONFIRMED_BOOKING_STATUSES.includes(m.booking_status));
   const rows = useRegister(p.id).data ?? [];
   const inv = useInvalidate();
+  const productionBookings = (useBookings().data ?? []).filter((b) => b.productionId === p.id && b.status !== "cancelled");
+  const bookingByCrew = new Map(productionBookings.map((b) => [b.crewId, b]));
+  const exclusions = useQuery({
+    queryKey: ["booking-day-exclusions", p.id],
+    queryFn: async () => {
+      const ids = productionBookings.map((b) => b.id);
+      if (!ids.length) return [];
+      const { data, error } = await supabase.from("booking_day_exclusions").select("id, booking_id, excluded_date").in("booking_id", ids);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: isProducer && productionBookings.length > 0,
+  });
+  // Every date in a booking's range, default = everyone needed every day — producers can mark specific days off per crew member below.
+  function shootDays(booking: { bookingDate?: string | null; days: number }) {
+    if (!booking.bookingDate) return [];
+    return Array.from({ length: Math.max(1, booking.days || 1) }, (_, i) => addDays(booking.bookingDate!, i));
+  }
+  async function toggleDayExclusion(bookingId: string, date: string, currentlyExcluded: boolean) {
+    const { error } = currentlyExcluded
+      ? await supabase.from("booking_day_exclusions").delete().eq("booking_id", bookingId).eq("excluded_date", date)
+      : await supabase.from("booking_day_exclusions").insert({ booking_id: bookingId, excluded_date: date });
+    if (error) { toast.error(friendlyError(error)); return; }
+    inv(["booking-day-exclusions", p.id]);
+  }
   const [rating, setRating] = useState<{ crewId: string; name: string; role: string | null; department: string | null } | null>(null);
   const cancelBooking = useCancelBooking();
   const [noShowBusy, setNoShowBusy] = useState<string | null>(null);
@@ -1085,6 +1111,29 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
                   <div><span className="font-semibold text-foreground">Wrap-up</span><div className="mt-1 text-muted-foreground">{w ? `Wrapped ${clock(w.wrapped_at)}${w.left_at ? ` · Left ${clock(w.left_at)} · ${packdown(w.wrapped_at, w.left_at)}` : " · Packing down"}` : "Not wrapped yet"}</div></div>
                 </div>
                 {request && <div className="rounded-lg border border-border px-3 py-2 text-xs"><OvertimeStatus request={request} rate={rates[m.crew_id] ?? 0} date={p.date || null} now={now} /></div>}
+                {isProducer && (() => {
+                  const booking = bookingByCrew.get(m.crew_id);
+                  const days = booking ? shootDays(booking) : [];
+                  if (!booking || days.length < 2) return null;
+                  const excludedDates = new Set((exclusions.data ?? []).filter((x) => x.booking_id === booking.id).map((x) => x.excluded_date));
+                  return (
+                    <div className="rounded-lg border border-border/60 p-3 text-xs">
+                      <span className="mb-1.5 block font-semibold text-foreground">Shoot days — tap a day to mark {m.name.split(" ")[0]} not needed</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {days.map((d, i) => {
+                          const excluded = excludedDates.has(d);
+                          return (
+                            <button key={d} type="button" onClick={() => toggleDayExclusion(booking.id, d, excluded)}
+                              title={dayLabel(`${d}T00:00:00`)}
+                              className={`rounded-sm border px-2 py-1 font-semibold ${excluded ? "border-border text-muted-foreground line-through" : "border-primary bg-primary/10 text-primary"}`}>
+                              Day {i + 1}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
                 {isProducer && <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
                   <div className="mr-auto flex items-center gap-1">
                     <span className="mr-1 text-xs font-medium text-muted-foreground">Attendance</span>

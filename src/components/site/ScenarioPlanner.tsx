@@ -75,6 +75,7 @@ export function ScenarioPlanner({ p }: { p: Production }) {
   const [committing, setCommitting] = useState(false);
   const groups = useCrewGroups().data ?? [];
   const [mixOpen, setMixOpen] = useState(false);
+  const [suggestOpen, setSuggestOpen] = useState(false);
   const [mixNotice, setMixNotice] = useState<{ name: string; total: number; unavailable: string[] } | null>(null);
 
   const rates = useMemo(() => Object.fromEntries(crew.map((c) => [c.id, c.dayRate])), [crew]);
@@ -185,14 +186,6 @@ export function ScenarioPlanner({ p }: { p: Production }) {
 
   return (
     <div className="w-full space-y-5">
-      {aiUnlocked && <Panel title="Find crew · AI MemoryBank">
-        <div className="grid gap-3 p-4">
-          <textarea className={`${field} min-h-24`} maxLength={4000} value={brief} onChange={(e) => setBrief(e.target.value)} placeholder="Describe the brief: look, shots, crew size…" />
-          <button onClick={suggest} disabled={busy} className={ghost}><Sparkles className="h-3.5 w-3.5" />{busy ? "Matching…" : "Suggest crew & kit"}</button>
-          {ai?.warnings.length ? <ul className="list-disc pl-5 text-xs text-destructive">{ai.warnings.map((w) => <li key={w}>{w}</li>)}</ul> : null}
-        </div>
-      </Panel>}
-
       <Panel title={`Sandbox · ${days} day(s)`} right={<input className="w-40 rounded-sm border border-input bg-background px-2 py-1 text-xs" placeholder="Filter crew" value={filter} onChange={(e) => setFilter(e.target.value)} />}>
         <div className="flex flex-wrap items-center gap-2 border-b border-border p-4">
           <select className="rounded-sm border border-input bg-background px-2 py-2 text-sm" value={activeId} onChange={(e) => pick(e.target.value)} aria-label="Option">
@@ -201,6 +194,18 @@ export function ScenarioPlanner({ p }: { p: Production }) {
           </select>
           <input className="min-w-40 flex-1 rounded-sm border border-input bg-background px-2 py-2 text-sm" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} aria-label="Option name" placeholder="Option name" />
           {activeId && <button className={ghost} onClick={() => pick("")}><Plus className="h-3 w-3" /> New</button>}
+          {aiUnlocked && (
+            <div className="relative">
+              <button className={ghost} onClick={() => setSuggestOpen(!suggestOpen)}><Sparkles className="h-3 w-3" /> Suggest crew & kit</button>
+              {suggestOpen && (
+                <div className="absolute right-0 z-20 mt-1 w-72 space-y-2 rounded-sm border border-border bg-card p-3 shadow-md">
+                  <textarea className={`${field} min-h-20 text-xs`} maxLength={4000} value={brief} onChange={(e) => setBrief(e.target.value)} placeholder="Describe the brief: look, shots, crew size…" />
+                  <button onClick={async () => { await suggest(); setSuggestOpen(false); }} disabled={busy} className={`${ghost} w-full justify-center`}><Sparkles className="h-3.5 w-3.5" />{busy ? "Matching…" : "Suggest crew & kit"}</button>
+                  {ai?.warnings.length ? <ul className="list-disc pl-5 text-xs text-destructive">{ai.warnings.map((w) => <li key={w}>{w}</li>)}</ul> : null}
+                </div>
+              )}
+            </div>
+          )}
           <div className="relative">
             <button className={ghost} onClick={() => setMixOpen(!mixOpen)}><Users className="h-3 w-3" /> Crew Combos</button>
             {mixOpen && (
