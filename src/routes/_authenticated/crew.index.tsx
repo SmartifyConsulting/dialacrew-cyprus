@@ -8,7 +8,7 @@ import { Page } from "@/components/AppShell";
 import { useRole, useSession } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { zar } from "@/lib/demo-data";
-import { useCreateCrewGroup, useCreatePencil, useCrewSearch, useDeleteCrewGroup, useCrewGroups, useDepartments, useFavourites, useProductions, useToggleFavourite } from "@/lib/db";
+import { useCreateCrewGroup, useCreatePencil, useCrewSearch, useDeleteCrewGroup, useCrewGroups, useDepartments, useFavourites, useProductions, useProductionTypes, useToggleFavourite } from "@/lib/db";
 
 function monthMatrix(year: number, month: number) {
   const startDay = new Date(year, month, 1).getDay();
@@ -111,6 +111,8 @@ function CrewPage() {
   const [picking, setPicking] = useState(false);
   const [picked, setPicked] = useState<string[]>([]);
   const [mixName, setMixName] = useState("");
+  const [mixType, setMixType] = useState("");
+  const productionTypes = useProductionTypes().data ?? [];
   const departments = useDepartments().data ?? ["All"];
   const favourites = useFavourites(session?.user.id);
   const toggleFav = useToggleFavourite();
@@ -128,13 +130,13 @@ function CrewPage() {
     try { await toggleFav.mutateAsync({ crewId: id, on }); } catch (e) { toast.error(friendlyError(e)); }
   }
 
-  function startPicking() { setPicking(true); setPicked([]); setMixName(""); setMixOpen(false); }
-  function cancelPicking() { setPicking(false); setPicked([]); setMixName(""); }
+  function startPicking() { setPicking(true); setPicked([]); setMixName(""); setMixType(""); setMixOpen(false); }
+  function cancelPicking() { setPicking(false); setPicked([]); setMixName(""); setMixType(""); }
   async function saveMix() {
     if (!mixName.trim()) { toast.error("Name this combo"); return; }
     if (picked.length < 2) { toast.error("Pick at least two crew members"); return; }
     try {
-      await createGroup.mutateAsync({ name: mixName.trim(), crewIds: picked });
+      await createGroup.mutateAsync({ name: mixName.trim(), crewIds: picked, productionType: mixType || null });
       toast.success(`"${mixName.trim()}" saved — pick it from Crew Combos next time you're crewing a job`);
       cancelPicking();
     } catch (e) { toast.error(friendlyError(e)); }
@@ -160,7 +162,7 @@ function CrewPage() {
                   {(groups.data ?? []).length === 0 && <li className="p-3 text-xs text-muted-foreground">No mixes saved yet.</li>}
                   {(groups.data ?? []).map((g) => (
                     <li key={g.id} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
-                      <span className="min-w-0 truncate">{g.name} <span className="text-xs text-muted-foreground">({g.memberIds.length})</span></span>
+                      <span className="min-w-0 truncate">{g.name} <span className="text-xs text-muted-foreground">({g.memberIds.length}){g.productionType ? ` · ${g.productionType}` : ""}</span></span>
                       <button onClick={() => deleteGroup.mutate(g.id)} className="shrink-0 text-muted-foreground hover:text-destructive" aria-label={`Delete ${g.name}`}><Trash2 className="h-3.5 w-3.5" /></button>
                     </li>
                   ))}
@@ -174,6 +176,10 @@ function CrewPage() {
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <span className="text-xs text-muted-foreground">{picked.length} selected</span>
             <input value={mixName} onChange={(e) => setMixName(e.target.value)} placeholder="Name this combo" className="rounded-sm border border-input bg-card px-2 py-1.5 text-sm" />
+            <select value={mixType} onChange={(e) => setMixType(e.target.value)} className="rounded-sm border border-input bg-card px-2 py-1.5 text-sm" aria-label="Production type this combo is for">
+              <option value="">Any production type</option>
+              {productionTypes.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
             <button onClick={saveMix} disabled={createGroup.isPending} className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-60">{createGroup.isPending ? "Saving…" : "Save mix"}</button>
             <button onClick={cancelPicking} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold">Cancel</button>
           </div>

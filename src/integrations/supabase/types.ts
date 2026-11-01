@@ -838,16 +838,37 @@ export type Database = {
           created_by: string | null
           id: string
           name: string
+          production_type: string | null
         }
         Insert: {
           created_at?: string
           created_by?: string | null
           id?: string
           name: string
+          production_type?: string | null
         }
         Update: {
           created_at?: string
           created_by?: string | null
+          id?: string
+          name?: string
+          production_type?: string | null
+        }
+        Relationships: []
+      }
+      production_types: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
           id?: string
           name?: string
         }

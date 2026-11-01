@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { Copy, Pencil, Search, Trash2, Upload } from "lucide-react";
 import { Badge, ClientBadge, Page, Panel } from "@/components/AppShell";
 import { fmtMoney } from "@/lib/demo-data";
-import { useProductions } from "@/lib/db";
+import { useProductions, useProductionTypes, useCreateProductionType } from "@/lib/db";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRole, useSession } from "@/lib/auth";
 import { PolishDescription } from "@/components/site/PolishDescription";
@@ -156,8 +156,12 @@ function Productions() {
     queryFn: async () => { const { data, error } = await supabase.from("clients").select("id, name, company").order("company"); if (error) throw error; return data ?? []; },
   });
   const clients = clientsQuery.data ?? [];
+  const productionTypes = useProductionTypes().data ?? ["Commercial", "Film", "Television", "Photography", "Other"];
+  const createProductionType = useCreateProductionType();
   const [open, setOpen] = useState(!!openOnLoad);
   const [duplicating, setDuplicating] = useState(false);
+  const [addingType, setAddingType] = useState(false);
+  const [newType, setNewType] = useState("");
   const blankForm = { name: "", client: "", jobId: "", externalRef: "", type: "Commercial", location: "", recceDate: "", recceTime: "", startDate: "", endDate: "", budget: 0, description: "" };
   const [f, setF] = useState(blankForm);
   const [editingId, setEditingId] = useState<string | null>(null); // editing an existing production
@@ -185,6 +189,16 @@ function Productions() {
   };
   const editingCoverUrl = useSignedUrl(list.find((x) => x.id === editingId)?.imagePath).data;
   const closeModal = () => { setOpen(false); resetForm(); if (openOnLoad) navigate({ to: "/productions", search: {}, replace: true }); };
+  async function addType() {
+    const name = newType.trim();
+    if (!name) { toast.error("Enter a type name"); return; }
+    try {
+      await createProductionType.mutateAsync(name);
+      setF((f) => ({ ...f, type: name, name: f.name === `${f.type} - ${f.client}` || !f.name ? `${name} - ${f.client}` : f.name }));
+      setNewType("");
+      setAddingType(false);
+    } catch (e) { toast.error(friendlyError(e)); }
+  }
   // A Job ID is immutable and database-generated on insert, so start a Draft the moment the form
   // opens — the Job ID is visible right away instead of only appearing once other fields are filled in.
   const openNew = async () => {
@@ -317,9 +331,18 @@ function Productions() {
                 <label className={labelCls}>Production name *
                   <input className={`${field} mt-1`} placeholder="Production name" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></label>
                 <label className={labelCls}>Type
-                  <select className={`${field} mt-1`} value={f.type} onChange={(e) => setF({ ...f, type: e.target.value, name: f.name === `${f.type} - ${f.client}` || !f.name ? `${e.target.value} - ${f.client}` : f.name })}>
-                    {["Commercial", "Film", "Television", "Photography", "Other"].map((t) => <option key={t}>{t}</option>)}
-                  </select></label>
+                  {addingType ? (
+                    <div className="mt-1 flex gap-2">
+                      <input autoFocus className={field} placeholder="New type name" value={newType} onChange={(e) => setNewType(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addType())} />
+                      <button type="button" onClick={addType} className="shrink-0 rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground">Save</button>
+                      <button type="button" onClick={() => { setAddingType(false); setNewType(""); }} className="shrink-0 rounded-sm border border-border px-3 py-2 text-xs font-semibold">Cancel</button>
+                    </div>
+                  ) : (
+                    <select className={`${field} mt-1`} value={f.type} onChange={(e) => e.target.value === "__add__" ? setAddingType(true) : setF({ ...f, type: e.target.value, name: f.name === `${f.type} - ${f.client}` || !f.name ? `${e.target.value} - ${f.client}` : f.name })}>
+                      {productionTypes.map((t) => <option key={t}>{t}</option>)}
+                      <option value="__add__">+ Add new type…</option>
+                    </select>
+                  )}</label>
                 <label className={labelCls}>Recce date
                   <div className="mt-1 flex gap-2">
                     <input className={`${field} min-w-0 flex-1`} type="date" max={f.startDate || undefined} value={f.recceDate} onChange={(e) => setF({ ...f, recceDate: e.target.value })} />

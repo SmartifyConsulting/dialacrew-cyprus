@@ -51,19 +51,20 @@ export const useRequests = () => useQuery({
 });
 
 // Crew Combos: a named, reusable group of crew members a producer has picked out as working well together.
-export type CrewGroup = { id: string; name: string; memberIds: string[]; createdAt: string };
+// Optionally tagged to the production type it's meant for (e.g. a different combo per Commercial vs Film).
+export type CrewGroup = { id: string; name: string; memberIds: string[]; createdAt: string; productionType: string | null };
 
 export const useCrewGroups = () => useQuery({
   queryKey: ["crew-groups"],
   queryFn: async () => {
     const [groupsRes, membersRes] = await Promise.all([
-      supabase.from("crew_groups").select("id, name, created_at").order("name"),
+      supabase.from("crew_groups").select("id, name, created_at, production_type").order("name"),
       supabase.from("crew_group_members").select("group_id, crew_id"),
     ]);
     if (groupsRes.error) throw groupsRes.error;
     if (membersRes.error) throw membersRes.error;
     return (groupsRes.data ?? []).map((g): CrewGroup => ({
-      id: g.id, name: g.name, createdAt: g.created_at,
+      id: g.id, name: g.name, createdAt: g.created_at, productionType: g.production_type ?? null,
       memberIds: (membersRes.data ?? []).filter((m) => m.group_id === g.id).map((m) => m.crew_id),
     }));
   },
@@ -72,8 +73,8 @@ export const useCrewGroups = () => useQuery({
 export const useCreateCrewGroup = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (f: { name: string; crewIds: string[] }) => {
-      const { data, error } = await supabase.from("crew_groups").insert({ name: f.name }).select("id").single();
+    mutationFn: async (f: { name: string; crewIds: string[]; productionType?: string | null }) => {
+      const { data, error } = await supabase.from("crew_groups").insert({ name: f.name, production_type: f.productionType || null }).select("id").single();
       if (error) throw error;
       if (f.crewIds.length) {
         const { error: memErr } = await supabase.from("crew_group_members").insert(f.crewIds.map((crew_id) => ({ group_id: data.id, crew_id })));
@@ -82,6 +83,29 @@ export const useCreateCrewGroup = () => {
       return data.id as string;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["crew-groups"] }),
+  });
+};
+
+// Production types: the options shown in a production's Type field. Starts with a handful of
+// defaults but a producer adding a new one persists it here, so it shows for every production after that.
+export const useProductionTypes = () => useQuery({
+  queryKey: ["production-types"],
+  queryFn: async () => {
+    const { data, error } = await supabase.from("production_types").select("name").order("name");
+    if (error) throw error;
+    return (data ?? []).map((r) => r.name as string);
+  },
+});
+
+export const useCreateProductionType = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (name: string) => {
+      const { error } = await supabase.from("production_types").upsert({ name }, { onConflict: "name" });
+      if (error) throw error;
+      return name;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["production-types"] }),
   });
 };
 

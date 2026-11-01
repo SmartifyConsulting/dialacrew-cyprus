@@ -100,6 +100,8 @@ export function ScenarioPlanner({ p }: { p: Production }) {
   const [activeId, setActiveId] = useState<string>(""); // "" = new scenario
   const [committing, setCommitting] = useState(false);
   const groups = useCrewGroups().data ?? [];
+  // Select Crew Type: templates saved for this production's own type float to the top.
+  const sortedGroups = useMemo(() => [...groups].sort((a, b) => Number(b.productionType === p.type) - Number(a.productionType === p.type)), [groups, p.type]);
   const [mixOpen, setMixOpen] = useState(false);
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [mixNotice, setMixNotice] = useState<{ name: string; total: number; unavailable: string[] } | null>(null);
@@ -273,15 +275,15 @@ export function ScenarioPlanner({ p }: { p: Production }) {
             </div>
           )}
           <div className="relative">
-            <button className={ghost} onClick={() => setMixOpen(!mixOpen)}><Users className="h-3 w-3" /> Crew Combos</button>
+            <button className={ghost} onClick={() => setMixOpen(!mixOpen)}><Users className="h-3 w-3" /> Select Crew Type</button>
             {mixOpen && (
               <div className="absolute right-0 z-20 mt-1 w-64 rounded-sm border border-border bg-card shadow-md">
                 <ul className="max-h-56 divide-y divide-border overflow-y-auto">
-                  {groups.length === 0 && <li className="p-3 text-xs text-muted-foreground">No mixes saved yet — build one from the Crew directory.</li>}
-                  {groups.map((g) => (
+                  {groups.length === 0 && <li className="p-3 text-xs text-muted-foreground">No crew templates saved yet — build one from the Crew directory.</li>}
+                  {sortedGroups.map((g) => (
                     <li key={g.id}>
                       <button onClick={() => applyMix(g)} className="block w-full px-3 py-2 text-left text-sm hover:bg-muted">
-                        {g.name} <span className="text-xs text-muted-foreground">({g.memberIds.length})</span>
+                        {g.name} <span className="text-xs text-muted-foreground">({g.memberIds.length}){g.productionType ? ` · ${g.productionType}` : ""}</span>
                       </button>
                     </li>
                   ))}
