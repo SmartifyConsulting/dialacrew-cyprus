@@ -132,7 +132,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 const ADMIN_GROUPS = [
-  { name: "People & Organisations", tabs: ["Users", "Crew", "Companies", "Subscriptions"] },
+  { name: "People & Organisations", tabs: ["Users", "Crew", "Crew Types", "Companies", "Subscriptions"] },
   { name: "Operations", tabs: ["Bookings", "Equipment", "Import"] },
   { name: "Finance", tabs: ["Payments", "Invoices", "Gig Fees"] },
   { name: "Trust & Compliance", tabs: ["Disputes", "Reviews"] },
@@ -328,11 +328,15 @@ function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
   return (
     <Panel title={`Users (${users.data?.length ?? 0})`}>
       <table className="w-full text-sm">
-        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Name</th><th className="px-4">Email</th><th className="px-4">Roles</th><th className="px-4">Status</th><th className="px-4">Action</th></tr></thead>
+        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">First name</th><th className="px-4">Last name</th><th className="px-4">Email</th><th className="px-4">Roles</th><th className="px-4">Status</th><th className="px-4">Action</th></tr></thead>
         <tbody>
-          {(users.data ?? []).map((u) => (
+          {(users.data ?? []).map((u) => {
+            const [first, ...rest] = (u.full_name || "").trim().split(/\s+/).filter(Boolean);
+            const last = rest.join(" ");
+            return (
             <tr key={u.id} className="border-t border-border">
-              <td className="px-4 py-2 font-medium">{u.full_name || "—"}</td>
+              <td className="px-4 py-2 font-medium">{first || "—"}</td>
+              <td className="px-4 font-medium">{last || "—"}</td>
               <td className="px-4 text-muted-foreground">{u.email}</td>
               <td className="px-4">
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -354,7 +358,8 @@ function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
               <td className="px-4">{u.suspended ? <Badge>Declined</Badge> : <Badge>Confirmed</Badge>}</td>
               <td className="px-4"><button onClick={() => toggleSuspend(u.id, u.suspended)} className="text-xs text-primary hover:underline">{u.suspended ? "Reactivate" : "Suspend"}</button></td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </Panel>
