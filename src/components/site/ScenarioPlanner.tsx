@@ -92,7 +92,7 @@ export function ScenarioPlanner({ p, initialGroupId }: { p: Production; initialG
 
   const [selByDay, setSelByDay] = useState<SelectionByDay>(blankSelByDay);
   const [activeDay, setActiveDay] = useState<string>(shootDays[0] ?? "");
-  const [name, setName] = useState("Option A");
+  const [name, setName] = useState("Scenario A");
   const [brief, setBrief] = useState(p.summary ?? "");
   const [busy, setBusy] = useState(false);
   const [ai, setAi] = useState<MatchResult | null>(null);
@@ -149,7 +149,7 @@ export function ScenarioPlanner({ p, initialGroupId }: { p: Production; initialG
 
   async function save() {
     if (!Object.values(selByDay).some((s) => Object.keys(s).length)) { toast.error("Select at least one crew member."); return; }
-    const clean = name.trim() || "Untitled option";
+    const clean = name.trim() || "Untitled scenario";
     const dup = scenarios.data?.find((x) => x.name.toLowerCase() === clean.toLowerCase() && x.id !== activeId);
     if (dup) { toast.error(`"${clean}" already exists — pick it from the list to update it, or use another name.`); return; }
     const result = { selByDay, total };
@@ -164,7 +164,7 @@ export function ScenarioPlanner({ p, initialGroupId }: { p: Production; initialG
   function pick(id: string) {
     setActiveId(id);
     setActiveDay(shootDays[0] ?? "");
-    if (!id) { setSelByDay(blankSelByDay()); setName(`Option ${String.fromCharCode(65 + Math.min(scenarios.data?.length ?? 0, 25))}`); return; }
+    if (!id) { setSelByDay(blankSelByDay()); setName(`Scenario ${String.fromCharCode(65 + Math.min(scenarios.data?.length ?? 0, 25))}`); return; }
     const s = scenarios.data?.find((x) => x.id === id);
     if (s) { setSelByDay(s.selByDay); setName(s.name); }
   }
@@ -199,9 +199,9 @@ export function ScenarioPlanner({ p, initialGroupId }: { p: Production; initialG
   }, [initialGroupId, groups]);
   // Commit: pencil the chosen group's crew + kit on the production (one booking per contiguous
   // run of days a crew member is on, since different days can now carry different people), then
-  // drop the other sandbox options.
+  // drop the other sandbox scenarios.
   async function commit(s: Scenario) {
-    if (!(await confirmDialog(`Commit "${s.name}"? Its crew will be pencilled in and the other options removed.`))) return;
+    if (!(await confirmDialog(`Commit "${s.name}"? Its crew will be pencilled in and the other scenarios removed.`))) return;
     setCommitting(true);
     try {
       const byCrew = new Map<string, string[]>();
@@ -256,7 +256,7 @@ export function ScenarioPlanner({ p, initialGroupId }: { p: Production; initialG
   return (
     <div className="w-full space-y-5">
       <Panel title={`Sandbox · ${shootDays.length || days} day(s)`} right={<input className="w-40 rounded-sm border border-input bg-background px-2 py-1 text-xs" placeholder="Filter crew" value={filter} onChange={(e) => setFilter(e.target.value)} />}>
-        {/* Options: cards you click to switch between, instead of a dropdown + a separate comparison table. */}
+        {/* Scenarios: cards you click to switch between, instead of a dropdown + a separate comparison table. */}
         <div className="flex flex-wrap items-center gap-2 border-b border-border p-4">
           {(scenarios.data ?? []).map((s) => {
             const cost = scenarioCostAllDays(s.selByDay, rates, fees);
@@ -269,8 +269,8 @@ export function ScenarioPlanner({ p, initialGroupId }: { p: Production; initialG
               </button>
             );
           })}
-          <button onClick={() => pick("")} className={ghost}><Plus className="h-3 w-3" /> New option</button>
-          <input className="min-w-40 flex-1 rounded-sm border border-input bg-background px-2 py-2 text-sm" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} aria-label="Option name" placeholder="Option name" />
+          <button onClick={() => pick("")} className={ghost}><Plus className="h-3 w-3" /> New scenario</button>
+          <input className="min-w-40 flex-1 rounded-sm border border-input bg-background px-2 py-2 text-sm" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} aria-label="Scenario name" placeholder="Scenario name" />
           {aiUnlocked && (
             <div className="relative">
               <button className={ghost} onClick={() => setSuggestOpen(!suggestOpen)}><Sparkles className="h-3 w-3" /> Suggest crew & kit</button>
@@ -392,9 +392,9 @@ export function ScenarioPlanner({ p, initialGroupId }: { p: Production; initialG
             <div className={`text-xs ${variance < 0 ? "text-destructive" : "text-success"}`}>{variance < 0 ? `${fmtMoney(-variance, p.currency)} over` : `${fmtMoney(variance, p.currency)} under`} budget of {fmtMoney(p.budget, p.currency)}</div>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <button onClick={save} className={btn}><Save className="h-4 w-4" /> {activeId ? "Update option" : "Save option"}</button>
+            <button onClick={save} className={btn}><Save className="h-4 w-4" /> {activeId ? "Update scenario" : "Save scenario"}</button>
             {activeId && <button className={ghost} disabled={committing} onClick={() => { const s = scenarios.data?.find((x) => x.id === activeId); if (s) commit(s); }}><CheckCircle2 className="h-3.5 w-3.5" /> Commit</button>}
-            {activeId && <button className={ghost} aria-label="Delete option" onClick={() => remove(activeId)}><Trash2 className="h-3.5 w-3.5" /> Delete</button>}
+            {activeId && <button className={ghost} aria-label="Delete scenario" onClick={() => remove(activeId)}><Trash2 className="h-3.5 w-3.5" /> Delete</button>}
           </div>
         </div>
       </Panel>
