@@ -574,12 +574,12 @@ export function crewRelevantToChecklist(c: { role: string; department?: string; 
 
 export const CONFIRMED_BOOKING_STATUSES =["confirmed", "in_progress", "completed", "payment_released"];
 
-/* ---------------- Crew role required: the role list itself (shared, fixed left pane) and each
-   shoot day's per-role status — Crew Required is scenario 1, Sandbox scenarios sit beside it ---------------- */
-const ROW = "flex items-center gap-2 px-3 min-h-[3.5rem] border-b border-border last:border-b-0";
+/* ---------------- Crew role required: the role list itself (shared across every scenario for a
+   given day) and each shoot day's per-role booking status — Crew Required is scenario 1, Sandbox
+   scenarios sit beside it. Both are rendered as columns of one shared table by CrewDayPlanner. ---------------- */
 
 // The role list is shared across every scenario for a given day (and across days) — managed once
-// in the fixed "Crew Required" label pane, not repeated in each scenario column.
+// from the table's Role column, not repeated per scenario.
 export function useCrewRoleList(p: Pick<Production, "id">) {
   const inv = useInvalidate();
   const savedRoles = useProductionCrewRoles(p.id).data ?? [];
@@ -604,46 +604,22 @@ export function useCrewRoleList(p: Pick<Production, "id">) {
   return { roleList, newRole, setNewRole, addRole, removeRole };
 }
 
-// Fixed left pane: just the role names (shared row height with every scenario column to its
-// right) plus the add/remove-role controls — stays put while scenario columns scroll beside it.
-export function CrewRequiredColumn({ roleList, newRole, setNewRole, addRole, removeRole }: ReturnType<typeof useCrewRoleList>) {
-  return (
-    <Panel title="Crew Required">
-      <ul className="text-sm">
-        {roleList.map((role) => (
-          <li key={role} className={ROW}>
-            <span className="min-w-0 flex-1 truncate font-medium">{role}</span>
-            <button onClick={() => removeRole(role)} aria-label={`Remove ${role}`} className="shrink-0 text-muted-foreground hover:text-destructive">✕</button>
-          </li>
-        ))}
-      </ul>
-      <div className="flex items-center gap-2 border-t border-border p-3">
-        <input value={newRole} onChange={(e) => setNewRole(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addRole())}
-          placeholder="Add a role" className="min-w-0 flex-1 rounded-sm border border-input bg-background px-2 py-1.5 text-sm" />
-        <button onClick={addRole} className="shrink-0 rounded-sm border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary hover:text-primary">+ Add role</button>
-      </div>
-    </Panel>
-  );
-}
+export type CrewRequiredMatch = { id: string; crewId: string; name: string; rate: number };
 
-export function CrewRoleStatus({ p, date, roleList }: Pick<Ctx, "p"> & { date: string; roleList: string[] }) {
-  const groups = useCrewGroups().data ?? [];
-  const sortedGroups = [...groups].sort((a, b) => Number(b.productionType === p.type) - Number(a.productionType === p.type));
+// Scenario 1: the production's real pencilled/confirmed bookings for one shoot day. A pure data
+// hook (no JSX) so CrewDayPlanner can render it as one column of a shared role×scenario table.
+export function useCrewRequiredDay(p: Pick<Ctx, "p">["p"], date: string, roleList: string[]) {
+  const qc = useQueryClient();
   const bookings = useQuery({
     queryKey: ["production-checklist", p.id, date],
     queryFn: async () => {
       const { data, error } = await supabase.from("bookings")
-        .select("id, role, status, crew_id, crew_members(name)")
+        .select("id, role, status, crew_id, crew_rate, crew_members(name)")
         .eq("production_id", p.id).eq("booking_date", date).neq("status", "cancelled").order("role");
       if (error) throw error;
       return data ?? [];
     },
   }).data ?? [];
-
-  const byRole = (role: string) => bookings.filter((b) => b.role.trim().toLowerCase() === role.toLowerCase());
-  // Once a role has a confirmed booking, it's done — drop it from this list entirely; it now shows under Confirmed Members instead.
-  const openRoles = roleList.filter((role) => !byRole(role).some((b) => CONFIRMED_BOOKING_STATUSES.includes(b.status)));
-  const extras = bookings.filter((b) => !roleList.some((r) => r.toLowerCase() === b.role.trim().toLowerCase()) && !CONFIRMED_BOOKING_STATUSES.includes(b.status));
   const crew = useCrew().data ?? [];
   const allBookings = useBookings().data ?? [];
   // Busy elsewhere on this specific day — a crew member already booked on another production for this date isn't offered.
@@ -651,8 +627,17 @@ export function CrewRoleStatus({ p, date, roleList }: Pick<Ctx, "p"> & { date: s
     allBookings.filter((b) => b.productionId !== p.id && b.status !== "cancelled" && b.crewId &&
       b.bookingDate && b.bookingDate <= date && addDays(b.bookingDate, Math.max(1, b.days || 1) - 1) >= date).map((b) => b.crewId));
   const availableForDate = (c: { id: string; available: boolean }) => c.available && !busyElsewhere.has(c.id);
-  const qc = useQueryClient();
-  const [pickRole, setPickRole] = useState<string | null>(null);
+
+  function byRole(role: string): CrewRequiredMatch[] {
+    return bookings.filter((b) => b.role.trim().toLowerCase() === role.toLowerCase())
+      .map((b) => ({ id: b.id, crewId: b.crew_id ?? "", name: (b.crew_members as { name: string } | null)?.name ?? "Unknown", rate: Number(b.crew_rate ?? 0) }));
+  }
+  function isConfirmed(role: string) {
+    return bookings.some((b) => b.role.trim().toLowerCase() === role.toLowerCase() && CONFIRMED_BOOKING_STATUSES.includes(b.status));
+  }
+  function candidatesFor(role: string, matches: CrewRequiredMatch[]) {
+    return crew.filter((c) => crewFitsRole(c, role) && !matches.some((m) => m.crewId === c.id) && availableForDate(c));
+  }
   // Pencil a crew member into a role (same "pencil" status the planner uses on commit). When
   // swapping, replaceIds are the not-yet-confirmed bookings for that role to drop first.
   async function pencil(role: string, crewId: string, replaceIds: string[] = [], silent = false) {
@@ -668,7 +653,6 @@ export function CrewRoleStatus({ p, date, roleList }: Pick<Ctx, "p"> & { date: s
     });
     if (error) { toast.error(friendlyError(error)); return; }
     if (!silent) toast.success(replaceIds.length ? `Swapped in ${c.name} as ${role}` : `${c.name} pencilled in as ${role}`);
-    setPickRole(null);
     ["production-checklist", "bookings", "production-open-gigs"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
   }
   async function cancelPencil(bookingId: string, name: string) {
@@ -677,95 +661,10 @@ export function CrewRoleStatus({ p, date, roleList }: Pick<Ctx, "p"> & { date: s
     toast.success(`${name} removed from this role`);
     ["production-checklist", "bookings", "production-open-gigs"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
   }
-  // Select Crew Type applies directly here now — pencil each member into whichever role they fit, skipping anyone already pencilled or confirmed.
-  async function applyGroup(group: { name: string; memberIds: string[] }) {
-    let count = 0;
-    for (const id of group.memberIds) {
-      const c = crew.find((x) => x.id === id);
-      if (!c) continue;
-      const role = openRoles.find((r) => crewFitsRole(c, r) && !byRole(r).some((b) => b.crew_id === id));
-      if (!role) continue;
-      await pencil(role, id, [], true);
-      count++;
-    }
-    toast.success(count ? `${group.name}: pencilled ${count} role${count === 1 ? "" : "s"}` : `${group.name}: no matching open roles`);
-  }
+  const extras = bookings.filter((b) => !roleList.some((r) => r.toLowerCase() === b.role.trim().toLowerCase()) && !CONFIRMED_BOOKING_STATUSES.includes(b.status));
+  const dayTotal = bookings.reduce((sum, b) => sum + Number(b.crew_rate ?? 0), 0);
 
-  return (
-    <Panel title="Scenario 1" right={
-      <select disabled={sortedGroups.length === 0} value=""
-        onChange={(e) => { const g = sortedGroups.find((x) => x.id === e.target.value); if (g) applyGroup(g); }}
-        className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40" aria-label="Select Crew Type">
-        <option value="" disabled>Select Crew Type</option>
-        {sortedGroups.length === 0 && <option value="" disabled>No crew templates saved yet</option>}
-        {sortedGroups.map((g) => (
-          <option key={g.id} value={g.id}>{g.name} ({g.memberIds.length}){g.productionType ? ` · ${g.productionType}` : ""}</option>
-        ))}
-      </select>
-    }>
-      <ul className="text-sm">
-        {roleList.map((role) => {
-          if (!openRoles.includes(role)) return <li key={role} className={ROW}><span className="text-xs text-success">Confirmed</span></li>;
-          const matches = byRole(role);
-          return (
-            <li key={role} className={ROW}>
-              <span className="min-w-0 flex-1">
-                {matches.length === 0 ? <span className="text-xs text-muted-foreground">Unassigned</span> : (
-                  <span className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
-                    {matches.map((b) => {
-                      const mName = (b.crew_members as { name: string } | null)?.name ?? "Unknown";
-                      return (
-                        <span key={b.id} className="inline-flex items-center gap-1">
-                          {mName}
-                          <button onClick={() => cancelPencil(b.id, mName)} aria-label={`Cancel ${mName} for ${role}`} className="text-muted-foreground hover:text-destructive">✕</button>
-                        </span>
-                      );
-                    })}
-                  </span>
-                )}
-              </span>
-              <div className="relative shrink-0">
-                <button onClick={() => setPickRole(pickRole === role ? null : role)} className="inline-flex items-center rounded-sm bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground">
-                  {matches.length === 0 ? "Find" : "Swap"}
-                </button>
-                {pickRole === role && (
-                  <div className="absolute right-0 top-full z-20 mt-1 w-64 max-h-64 space-y-1 overflow-y-auto rounded-sm border border-border bg-card p-2 shadow-md">
-                    {crew.filter((c) => crewFitsRole(c, role) && !matches.some((b) => b.crew_id === c.id) && availableForDate(c)).map((c) => (
-                      <div key={c.id} className="flex w-full items-center justify-between gap-3 rounded-sm border border-border px-3 py-2 text-sm">
-                        <span className="min-w-0">
-                          <span className="font-medium">{c.name}</span>{c.role && <span className="text-xs text-muted-foreground"> · {c.role}</span>}
-                          <span className="block text-xs text-muted-foreground">{fmtMoney(c.dayRate, p.currency)} / day</span>
-                        </span>
-                        <button onClick={() => pencil(role, c.id, matches.map((b) => b.id))} className="shrink-0 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
-                          Select
-                        </button>
-                      </div>
-                    ))}
-                    {!crew.some((c) => crewFitsRole(c, role) && !matches.some((b) => b.crew_id === c.id) && availableForDate(c)) && (
-                      <p className="whitespace-nowrap p-1 text-xs text-muted-foreground">No available crew listed as {role}.</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </li>
-          );
-        })}
-        {extras.map((b) => {
-          const name = (b.crew_members as { name: string } | null)?.name;
-          return (
-            <li key={b.id} className="flex items-center gap-3 px-4 py-2.5">
-              <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <span className="min-w-0 flex-1">
-                <span className="font-medium">{b.role}</span>
-                {name && <span className="text-muted-foreground"> · {name}</span>}
-              </span>
-              <span className="shrink-0 text-xs text-muted-foreground">Not yet confirmed</span>
-            </li>
-          );
-        })}
-      </ul>
-    </Panel>
-  );
+  return { byRole, isConfirmed, candidatesFor, pencil, cancelPencil, extras, dayTotal, currency: p.currency };
 }
 
 /* ---------------- Custom checklists (producers add checklists + items, e.g. "Wardrobe checklist") ---------------- */

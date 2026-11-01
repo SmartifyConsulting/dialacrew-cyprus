@@ -1,20 +1,166 @@
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Copy } from "lucide-react";
+import { Copy, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { supabase } from "@/integrations/supabase/client";
 import { Panel } from "@/components/AppShell";
-import { useBookings } from "@/lib/db";
+import { useBookings, useCrewGroups } from "@/lib/db";
 import { useLocationPoints } from "@/lib/site";
-import { fmtMoney, type Production } from "@/lib/demo-data";
-import { CrewRequiredColumn, CrewRoleStatus, useCrewRoleList } from "@/components/site/SiteTabs";
-import { ScenarioPlanner, scenarioKey } from "@/components/site/ScenarioPlanner";
+import { fmtMoney, zar, type Production } from "@/lib/demo-data";
+import { crewFitsRole, useCrewRequiredDay, useCrewRoleList, type CrewRequiredMatch } from "@/components/site/SiteTabs";
+import { useScenarios, scenarioKey, type Scenario } from "@/components/site/ScenarioPlanner";
 
 const addDays = (ymd: string, n: number) => { const d = new Date(`${ymd}T00:00:00`); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 const localYmd = (iso: string) => { const d = new Date(iso); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 const dayLabel = (ymd: string) => new Date(`${ymd}T00:00:00`).toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short" });
 const ghost = "inline-flex items-center gap-1 rounded-sm border border-border px-2 py-1 text-xs hover:border-primary hover:text-primary disabled:opacity-50";
+const SIZE_TIERS = ["Small", "Medium", "Large", "Extra-Large"] as const;
+
+type Candidate = { id: string; name: string; role: string; dayRate: number };
+
+function CandidatePopover({ candidates, onSelect, currency }: { candidates: Candidate[]; onSelect: (c: Candidate) => void; currency?: string | undefined }) {
+  return (
+    <div className="absolute right-0 top-full z-20 mt-1 w-64 max-h-64 space-y-1 overflow-y-auto rounded-sm border border-border bg-card p-2 shadow-md">
+      {candidates.map((c) => (
+        <div key={c.id} className="flex items-center justify-between gap-3 rounded-sm border border-border px-3 py-2 text-xs">
+          <span className="min-w-0">
+            <span className="font-medium">{c.name}</span>{c.role && <span className="text-muted-foreground"> · {c.role}</span>}
+            <span className="block text-muted-foreground">{fmtMoney(c.dayRate, currency)} / day</span>
+          </span>
+          <button onClick={() => onSelect(c)} className="shrink-0 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Select</button>
+        </div>
+      ))}
+      {candidates.length === 0 && <p className="whitespace-nowrap p-1 text-xs text-muted-foreground">No available crew for this role.</p>}
+    </div>
+  );
+}
+
+// One day's role × scenario table: Role column, Scenario 1 (Crew Required's real bookings), then
+// one column per Sandbox scenario, then an Add Scenario column. Rows line up natively since
+// they're real table rows — no manual row-height matching needed.
+function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole }: {
+  p: Production; date: string; roleList: string[]; newRole: string; setNewRole: (s: string) => void; addRole: () => void; removeRole: (role: string) => void;
+}) {
+  const req = useCrewRequiredDay(p, date, roleList);
+  const sc = useScenarios(p, date, roleList);
+  const [pickKey, setPickKey] = useState<string | null>(null); // "s1:<role>" or "<scenarioId>:<role>"
+
+  const s1Candidates = (role: string, matches: CrewRequiredMatch[]): Candidate[] =>
+    req.candidatesFor(role, matches).map((c) => ({ id: c.id, name: c.name, role: c.role, dayRate: c.dayRate }));
+  const scCandidates = (s: Scenario, role: string, excludeId?: string): Candidate[] =>
+    sc.candidatesFor(s, role, excludeId).map((c) => ({ id: c.id, name: c.name, role: c.role, dayRate: c.dayRate }));
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full border-collapse text-sm">
+        <thead>
+          <tr className="border-b border-border">
+            <th className="min-w-[13rem] px-3 py-2 text-left"><span className="font-display text-sm font-semibold uppercase tracking-wide text-primary">Crew Required</span></th>
+            <th className="min-w-[16rem] px-3 py-2 text-left"><span className="font-display text-sm font-semibold uppercase tracking-wide text-primary">Scenario 1</span></th>
+            {sc.scenarios.map((s) => (
+              <th key={s.id} className="min-w-[17rem] px-3 py-2 text-left">
+                <div className="flex items-center gap-2">
+                  <input defaultValue={s.name} onBlur={(e) => sc.renameScenario(s, e.target.value)} maxLength={80} aria-label="Scenario name"
+                    className="min-w-0 flex-1 bg-transparent font-display text-sm font-semibold uppercase tracking-wide text-primary outline-none" />
+                  <select className="shrink-0 rounded-sm bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground" value=""
+                    onChange={(e) => { const g = sc.crewMixes.find((x) => x.id === e.target.value); if (g) sc.applyGroupToScenario(s, g); }} aria-label={`Select Crew Mix for ${s.name}`}>
+                    <option value="" disabled>Select Crew Mix</option>
+                    {sc.crewMixes.length === 0 && <option value="" disabled>No crew mixes saved yet</option>}
+                    {sc.crewMixes.map((g) => <option key={g.id} value={g.id}>{g.name} ({g.memberIds.length}){g.productionType ? ` · ${g.productionType}` : ""}</option>)}
+                  </select>
+                  <button onClick={() => sc.deleteScenario(s.id)} aria-label={`Delete ${s.name}`} className="shrink-0 text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+                </div>
+              </th>
+            ))}
+            <th className="min-w-[11rem] px-3 py-2 text-left">
+              <button onClick={sc.createScenario} className={ghost}><Plus className="h-3.5 w-3.5" /> Add Scenario {sc.scenarios.length + 2}</button>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {roleList.map((role) => {
+            const matches = req.byRole(role);
+            const s1Key = `s1:${role}`;
+            return (
+              <tr key={role} className="border-b border-border">
+                <td className="px-3 py-2.5 align-top">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium">{role}</span>
+                    <button onClick={() => removeRole(role)} aria-label={`Remove ${role}`} className="shrink-0 text-muted-foreground hover:text-destructive">✕</button>
+                  </div>
+                </td>
+                <td className="px-3 py-2.5 align-top">
+                  {req.isConfirmed(role) ? <span className="text-xs text-success">Confirmed</span> : (
+                    <div className="flex items-start gap-2">
+                      <span className="min-w-0 flex-1 text-xs text-muted-foreground">
+                        {matches.length === 0 ? "Unassigned" : matches.map((m) => (
+                          <span key={m.id} className="mr-2 inline-flex items-center gap-1">
+                            {m.name} · {zar(m.rate)} <button onClick={() => req.cancelPencil(m.id, m.name)} aria-label={`Cancel ${m.name} for ${role}`} className="hover:text-destructive">✕</button>
+                          </span>
+                        ))}
+                      </span>
+                      <div className="relative shrink-0">
+                        <button onClick={() => setPickKey(pickKey === s1Key ? null : s1Key)} className="inline-flex items-center rounded-sm bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground">
+                          {matches.length === 0 ? "Find" : "Swap"}
+                        </button>
+                        {pickKey === s1Key && (
+                          <CandidatePopover currency={p.currency} candidates={s1Candidates(role, matches)}
+                            onSelect={(c) => { req.pencil(role, c.id, matches.map((m) => m.id)); setPickKey(null); }} />
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </td>
+                {sc.scenarios.map((s) => {
+                  const assigned = sc.assignedForRole(s, role);
+                  const key = `${s.id}:${role}`;
+                  return (
+                    <td key={s.id} className="px-3 py-2.5 align-top">
+                      <div className="flex items-start gap-2">
+                        <span className="min-w-0 flex-1 text-xs text-muted-foreground">{assigned ? <>{assigned.name} · {zar(assigned.dayRate)}</> : "Unassigned"}</span>
+                        {assigned && <button onClick={() => sc.removeFromScenario(s, assigned.id, assigned.name)} aria-label={`Remove ${assigned.name} from ${role}`} className="shrink-0 text-muted-foreground hover:text-destructive">✕</button>}
+                        <div className="relative shrink-0">
+                          <button onClick={() => setPickKey(pickKey === key ? null : key)} className="inline-flex items-center rounded-sm bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground">
+                            {assigned ? "Swap" : "Find"}
+                          </button>
+                          {pickKey === key && (
+                            <CandidatePopover currency={p.currency} candidates={scCandidates(s, role, assigned?.id)}
+                              onSelect={(c) => { sc.selectForRole(s, role, c.id, assigned?.id ?? null); setPickKey(null); }} />
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                  );
+                })}
+                <td />
+              </tr>
+            );
+          })}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td className="px-3 py-3 align-top">
+              <div className="flex items-center gap-2">
+                <input value={newRole} onChange={(e) => setNewRole(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addRole())}
+                  placeholder="Add a role" className="min-w-0 flex-1 rounded-sm border border-input bg-background px-2 py-1.5 text-sm" />
+                <button onClick={addRole} className="shrink-0 rounded-sm border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary hover:text-primary">+ Add role</button>
+              </div>
+            </td>
+            <td className="px-3 py-3 align-top text-xs"><span className="text-muted-foreground">Total:</span> <b>{fmtMoney(req.dayTotal, p.currency)}</b></td>
+            {sc.scenarios.map((s) => (
+              <td key={s.id} className="space-y-2 px-3 py-3 align-top">
+                <div className="text-xs"><span className="text-muted-foreground">Total:</span> <b>{fmtMoney(sc.totalFor(s), p.currency)}</b></div>
+                <button onClick={() => sc.commit(s)} disabled={sc.committing} className={`${ghost} w-full justify-center`}>Pencil this scenario</button>
+              </td>
+            ))}
+            <td />
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
+}
 
 // Crew Required + Sandbox, one independent workspace per shoot day. A producer fills each day on
 // its own (crew can differ day to day); Copy to: carries one day's pencils and scenarios across
@@ -23,6 +169,8 @@ export function CrewDayPlanner({ p }: { p: Production }) {
   const qc = useQueryClient();
   const locationPoints = useLocationPoints(p.id).data ?? [];
   const allBookings = useBookings().data ?? [];
+  const groups = useCrewGroups().data ?? [];
+  const sizeTypes = SIZE_TIERS.map((tier) => groups.find((g) => g.sizeTier === tier)).filter((g): g is NonNullable<typeof g> => !!g);
   const roles = useCrewRoleList(p);
   const [copying, setCopying] = useState<string | null>(null);
   const [copyOpenFor, setCopyOpenFor] = useState<string | null>(null);
@@ -40,6 +188,25 @@ export function CrewDayPlanner({ p }: { p: Production }) {
   const costOf = (b: (typeof productionBookings)[number]) => b.crewRate * Math.max(1, b.days || 1);
   const totalPencilled = productionBookings.reduce((sum, b) => sum + costOf(b), 0);
   const variance = p.budget - totalPencilled;
+
+  // Select Crew Type (a size tier) applies at the day level: pencil each member of that tier's
+  // group into whichever open role they fit on this specific day.
+  async function applySizeType(day: string, group: { name: string; memberIds: string[] }) {
+    const [{ data: crewRows }, { data: existing }] = await Promise.all([
+      supabase.from("crew_members").select("id, name, role, department, day_rate").in("id", group.memberIds),
+      supabase.from("bookings").select("role").eq("production_id", p.id).eq("booking_date", day).neq("status", "cancelled"),
+    ]);
+    const takenRoles = new Set((existing ?? []).map((b) => b.role.toLowerCase()));
+    let count = 0;
+    for (const c of crewRows ?? []) {
+      const role = roles.roleList.find((r) => !takenRoles.has(r.toLowerCase()) && crewFitsRole({ role: c.role, department: c.department }, r));
+      if (!role) continue;
+      const { error } = await supabase.from("bookings").insert({ production_id: p.id, crew_id: c.id, role, status: "pencil", booking_date: day, crew_rate: Number(c.day_rate), client_charge: Number(c.day_rate), days: 1 });
+      if (!error) { takenRoles.add(role.toLowerCase()); count++; }
+    }
+    toast.success(count ? `${group.name}: pencilled ${count} role${count === 1 ? "" : "s"}` : `${group.name}: no matching open roles`);
+    ["production-checklist", "bookings", "production-open-gigs"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+  }
 
   function openCopy(day: string) {
     setCopyOpenFor(copyOpenFor === day ? null : day);
@@ -98,38 +265,44 @@ export function CrewDayPlanner({ p }: { p: Production }) {
         return (
           <Panel key={day} title={`Day ${i + 1} · ${dayLabel(day)}`} collapsible defaultCollapsed={i > 0}
             badge={<span className="text-xs font-normal text-muted-foreground">{fmtMoney(dayTotal, p.currency)} pencilled</span>}
-            right={shootDays.length > 1 && (
-              <div className="relative">
-                <button disabled={copying === day} onClick={() => openCopy(day)} className={ghost}><Copy className="h-3 w-3" /> Copy to…</button>
-                {copyOpenFor === day && (
-                  <div className="absolute right-0 top-full z-20 mt-1 w-60 rounded-sm border border-border bg-card p-3 shadow-md">
-                    <label className="flex items-center gap-2 border-b border-border pb-2 text-xs font-semibold">
-                      <input type="checkbox" checked={copyTargets.size === otherDays.length} onChange={() => toggleSelectAll(otherDays)} className="accent-primary" />
-                      Select all
-                    </label>
-                    <ul className="max-h-48 space-y-1 overflow-y-auto py-2">
-                      {otherDays.map((d) => (
-                        <li key={d}>
-                          <label className="flex items-center gap-2 text-xs">
-                            <input type="checkbox" checked={copyTargets.has(d)} onChange={() => toggleTarget(d)} className="accent-primary" />
-                            Day {shootDays.indexOf(d) + 1} · {dayLabel(d)}
-                          </label>
-                        </li>
-                      ))}
-                    </ul>
-                    <button disabled={copying === day || copyTargets.size === 0} onClick={() => copyDay(day, [...copyTargets])}
-                      className="w-full rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50">
-                      {copying === day ? "Copying…" : `Copy to ${copyTargets.size || ""} day${copyTargets.size === 1 ? "" : "s"}`}
-                    </button>
+            right={
+              <div className="flex items-center gap-2">
+                <select disabled={sizeTypes.length === 0} value=""
+                  onChange={(e) => { const g = sizeTypes.find((x) => x.id === e.target.value); if (g) applySizeType(day, g); }}
+                  className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40" aria-label="Select Crew Type">
+                  <option value="" disabled>Select Crew Type</option>
+                  {sizeTypes.map((g) => <option key={g.id} value={g.id}>{g.name} ({g.memberIds.length})</option>)}
+                </select>
+                {shootDays.length > 1 && (
+                  <div className="relative">
+                    <button disabled={copying === day} onClick={() => openCopy(day)} className={ghost}><Copy className="h-3 w-3" /> Copy to…</button>
+                    {copyOpenFor === day && (
+                      <div className="absolute right-0 top-full z-20 mt-1 w-60 rounded-sm border border-border bg-card p-3 shadow-md">
+                        <label className="flex items-center gap-2 border-b border-border pb-2 text-xs font-semibold">
+                          <input type="checkbox" checked={copyTargets.size === otherDays.length} onChange={() => toggleSelectAll(otherDays)} className="accent-primary" />
+                          Select all
+                        </label>
+                        <ul className="max-h-48 space-y-1 overflow-y-auto py-2">
+                          {otherDays.map((d) => (
+                            <li key={d}>
+                              <label className="flex items-center gap-2 text-xs">
+                                <input type="checkbox" checked={copyTargets.has(d)} onChange={() => toggleTarget(d)} className="accent-primary" />
+                                Day {shootDays.indexOf(d) + 1} · {dayLabel(d)}
+                              </label>
+                            </li>
+                          ))}
+                        </ul>
+                        <button disabled={copying === day || copyTargets.size === 0} onClick={() => copyDay(day, [...copyTargets])}
+                          className="w-full rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50">
+                          {copying === day ? "Copying…" : `Copy to ${copyTargets.size || ""} day${copyTargets.size === 1 ? "" : "s"}`}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            )}>
-            <div className="flex items-start gap-4 overflow-x-auto p-4">
-              <div className="w-56 shrink-0"><CrewRequiredColumn {...roles} /></div>
-              <div className="w-72 shrink-0"><CrewRoleStatus p={p} date={day} roleList={roles.roleList} /></div>
-              <ScenarioPlanner p={p} date={day} roleList={roles.roleList} />
-            </div>
+            }>
+            <DayTable p={p} date={day} roleList={roles.roleList} newRole={roles.newRole} setNewRole={roles.setNewRole} addRole={roles.addRole} removeRole={roles.removeRole} />
           </Panel>
         );
       })}

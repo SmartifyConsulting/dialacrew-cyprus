@@ -50,21 +50,22 @@ export const useRequests = () => useQuery({
   queryFn: () => run(supabase.from("change_requests").select("*").order("id"), (r) => ({ ...r, amount: Number(r.amount), createdAt: r.created_at }) as ChangeRequest),
 });
 
-// Crew Combos: a named, reusable group of crew members a producer has picked out as working well together.
-// Optionally tagged to the production type it's meant for (e.g. a different combo per Commercial vs Film).
-export type CrewGroup = { id: string; name: string; memberIds: string[]; createdAt: string; productionType: string | null };
+// Crew groups come in two kinds: a "Crew Type" is one of 4 fixed size tiers (Small/Medium/Large/
+// Extra-Large, size_tier set) applied at the day level; a "Crew Mix" is a free-form named combo
+// (size_tier null, optionally tagged to a production type) applied per Sandbox scenario.
+export type CrewGroup = { id: string; name: string; memberIds: string[]; createdAt: string; productionType: string | null; sizeTier: string | null };
 
 export const useCrewGroups = () => useQuery({
   queryKey: ["crew-groups"],
   queryFn: async () => {
     const [groupsRes, membersRes] = await Promise.all([
-      supabase.from("crew_groups").select("id, name, created_at, production_type").order("name"),
+      supabase.from("crew_groups").select("id, name, created_at, production_type, size_tier").order("name"),
       supabase.from("crew_group_members").select("group_id, crew_id"),
     ]);
     if (groupsRes.error) throw groupsRes.error;
     if (membersRes.error) throw membersRes.error;
     return (groupsRes.data ?? []).map((g): CrewGroup => ({
-      id: g.id, name: g.name, createdAt: g.created_at, productionType: g.production_type ?? null,
+      id: g.id, name: g.name, createdAt: g.created_at, productionType: g.production_type ?? null, sizeTier: g.size_tier ?? null,
       memberIds: (membersRes.data ?? []).filter((m) => m.group_id === g.id).map((m) => m.crew_id),
     }));
   },

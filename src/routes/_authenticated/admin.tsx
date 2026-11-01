@@ -158,8 +158,9 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 const ADMIN_GROUPS = [
-  { name: "People & Organisations", tabs: ["Users", "Crew Types", "Companies", "Subscriptions"] },
-  { name: "Operations", tabs: ["Bookings", "Gigs", "Equipment"] },
+  { name: "People & Organisations", tabs: ["Users", "Crew Type", "Curated Crew", "Companies", "Subscriptions"] },
+  { name: "Operations", tabs: ["Bookings", "Gigs"] },
+  { name: "Equipment", tabs: ["Equipment"] },
   { name: "Finance", tabs: ["Payments", "Invoices", "Gig Fees"] },
   { name: "Disputes", tabs: ["Disputes"] },
   { name: "Reviews", tabs: ["Reviews"] },
@@ -171,8 +172,8 @@ const ADMIN_GROUPS = [
 // with the raw Crew roster swapped for Crew Types — producers group crew into reusable, typed
 // templates rather than editing crew records directly.
 const PRODUCER_ADMIN_GROUPS = [
-  { name: "People & Organisations", tabs: ["Users", "Crew Types"] },
-  { name: "Operations", tabs: ["Bookings", "Equipment"] },
+  { name: "People & Organisations", tabs: ["Users", "Crew Type", "Curated Crew"] },
+  { name: "Operations", tabs: ["Bookings"] },
   { name: "Finance", tabs: ["Payments", "Invoices", "Gig Fees"] },
   { name: "Disputes", tabs: ["Disputes"] },
   { name: "Reviews", tabs: ["Reviews"] },
@@ -236,7 +237,8 @@ function AdminPage() {
         ))}
       </nav>
       {tab === "Users" && <UsersTab canManageAdmins={isSuperAdmin} />}
-      {tab === "Crew Types" && <CrewTypesTab />}
+      {tab === "Crew Type" && <CrewTypeSizesTab />}
+      {tab === "Curated Crew" && <CrewTypesTab />}
       {tab === "Companies" && <CompaniesTab />}
       {tab === "Bookings" && <BookingsTab />}
       {tab === "Gigs" && <GigsTab />}
@@ -399,8 +401,8 @@ function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
   );
 }
 
-// The global "Default" role list every new production's Crew Role Required list starts from
-// (see CrewRoleStatus in SiteTabs.tsx), editable here instead of being hardcoded.
+// The global "Default" role list every new production's Crew Required list starts from
+// (see useCrewRoleList in SiteTabs.tsx), editable here instead of being hardcoded.
 function DefaultCrewRolesPanel() {
   const inv = useInv();
   const roles = useDefaultCrewRoles().data ?? [];
@@ -442,8 +444,71 @@ function DefaultCrewRolesPanel() {
 
 // Crew Types: producers group crew members into named, reusable templates (optionally tagged to
 // a production type) instead of editing raw crew records — picked from Find Crew's Select Crew Type.
+const SIZE_TIERS = ["Small", "Medium", "Large", "Extra-Large"] as const;
+
+// Crew Type: the 4 fixed size tiers, seeded via migration. Membership only — no creating or
+// deleting tiers, just who's in each one. Applied at the day level on a production's Crew tab.
+function CrewTypeSizesTab() {
+  const allGroups = useCrewGroups().data ?? [];
+  const crew = useCrew().data ?? [];
+  const addMember = useAddCrewGroupMember();
+  const removeMember = useRemoveCrewGroupMember();
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [memberPick, setMemberPick] = useState<Record<string, string>>({});
+
+  async function addCrewToGroup(groupId: string) {
+    const crewId = memberPick[groupId];
+    if (!crewId) return;
+    try { await addMember.mutateAsync({ groupId, crewId }); setMemberPick((prev) => ({ ...prev, [groupId]: "" })); }
+    catch (e) { toast.error(friendlyError(e)); }
+  }
+
+  return (
+    <Panel title="Crew Type">
+      <ul className="divide-y divide-border text-sm">
+        {SIZE_TIERS.map((tier) => {
+          const g = allGroups.find((x) => x.sizeTier === tier);
+          if (!g) return <li key={tier} className="p-4 text-xs text-muted-foreground">{tier} — not seeded yet. Run the latest migration.</li>;
+          return (
+            <li key={g.id}>
+              <button onClick={() => setExpanded(expanded === g.id ? null : g.id)} className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left font-medium hover:text-primary">
+                {tier} <span className="font-normal text-muted-foreground">({g.memberIds.length})</span>
+              </button>
+              {expanded === g.id && (
+                <div className="space-y-2 border-t border-border bg-muted/20 px-4 py-3">
+                  {g.memberIds.length === 0 && <p className="text-xs text-muted-foreground">No crew members added yet.</p>}
+                  <ul className="divide-y divide-border rounded-sm border border-border bg-card">
+                    {g.memberIds.map((id) => {
+                      const c = crew.find((x) => x.id === id);
+                      return (
+                        <li key={id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                          <span className="min-w-0 truncate">{c?.name ?? "Unknown"}{c?.role && <span className="text-xs text-muted-foreground"> · {c.role}</span>}</span>
+                          <button onClick={() => removeMember.mutate({ groupId: g.id, crewId: id })} aria-label={`Remove ${c?.name ?? "member"}`} className="shrink-0 text-xs text-muted-foreground hover:text-destructive">Remove</button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <div className="flex items-center gap-2">
+                    <select className={`${invField} min-w-48`} value={memberPick[g.id] ?? ""} onChange={(e) => setMemberPick((prev) => ({ ...prev, [g.id]: e.target.value }))}>
+                      <option value="">+ Add a user to this tier…</option>
+                      {crew.filter((c) => !g.memberIds.includes(c.id)).map((c) => <option key={c.id} value={c.id}>{c.name} · {c.role}</option>)}
+                    </select>
+                    <button onClick={() => addCrewToGroup(g.id)} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary hover:text-primary">Add</button>
+                  </div>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </Panel>
+  );
+}
+
+// Curated Crew: free-form named combos producers build themselves (optionally tagged to a
+// production type) — distinct from the fixed Crew Type size tiers above.
 function CrewTypesTab() {
-  const groups = useCrewGroups().data ?? [];
+  const groups = (useCrewGroups().data ?? []).filter((g) => !g.sizeTier);
   const crew = useCrew().data ?? [];
   const productionTypes = useProductionTypes().data ?? [];
   const createGroup = useCreateCrewGroup();
@@ -482,8 +547,8 @@ function CrewTypesTab() {
   return (
     <div className="space-y-5">
     <DefaultCrewRolesPanel />
-    <Panel title={`Crew Types (${groups.length})`} right={!adding && (
-      <button onClick={() => setAdding(true)} className="text-xs font-semibold text-primary hover:underline">+ Add crew type</button>
+    <Panel title={`Curated Crew (${groups.length})`} right={!adding && (
+      <button onClick={() => setAdding(true)} className="text-xs font-semibold text-primary hover:underline">+ Add crew mix</button>
     )}>
       {adding && (
         <div className="flex flex-wrap items-end gap-2 border-b border-border p-4">
@@ -508,7 +573,7 @@ function CrewTypesTab() {
         </div>
       )}
       <ul className="divide-y divide-border text-sm">
-        {groups.length === 0 && <li className="p-4 text-xs text-muted-foreground">No crew types yet — add one above.</li>}
+        {groups.length === 0 && <li className="p-4 text-xs text-muted-foreground">No crew mixes yet — add one above.</li>}
         {groups.map((g) => (
           <li key={g.id}>
             <div className="flex items-center justify-between gap-3 px-4 py-2.5">

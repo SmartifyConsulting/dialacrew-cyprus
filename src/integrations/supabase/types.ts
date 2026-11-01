@@ -839,6 +839,7 @@ export type Database = {
           id: string
           name: string
           production_type: string | null
+          size_tier: string | null
         }
         Insert: {
           created_at?: string
@@ -846,6 +847,7 @@ export type Database = {
           id?: string
           name: string
           production_type?: string | null
+          size_tier?: string | null
         }
         Update: {
           created_at?: string
@@ -853,6 +855,7 @@ export type Database = {
           id?: string
           name?: string
           production_type?: string | null
+          size_tier?: string | null
         }
         Relationships: []
       }
