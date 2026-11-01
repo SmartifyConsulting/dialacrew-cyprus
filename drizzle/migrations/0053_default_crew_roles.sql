@@ -15,9 +15,11 @@ ON CONFLICT (role) DO NOTHING;
 
 ALTER TABLE public.default_crew_roles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "anyone reads default crew roles" ON public.default_crew_roles;
 CREATE POLICY "anyone reads default crew roles" ON public.default_crew_roles
   FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "producers manage default crew roles" ON public.default_crew_roles;
 CREATE POLICY "producers manage default crew roles" ON public.default_crew_roles
   FOR ALL TO authenticated
   USING (public.has_role(auth.uid(), 'producer') OR public.has_role(auth.uid(), 'admin'))

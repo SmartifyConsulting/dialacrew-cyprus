@@ -12,9 +12,11 @@ CREATE TABLE IF NOT EXISTS public.production_crew_roles (
 
 ALTER TABLE public.production_crew_roles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "site members read crew roles" ON public.production_crew_roles;
 CREATE POLICY "site members read crew roles" ON public.production_crew_roles
   FOR SELECT TO authenticated USING (public.is_site_member(production_id));
 
+DROP POLICY IF EXISTS "producers manage crew roles" ON public.production_crew_roles;
 CREATE POLICY "producers manage crew roles" ON public.production_crew_roles
   FOR ALL TO authenticated
   USING (public.has_role(auth.uid(), 'producer'))
