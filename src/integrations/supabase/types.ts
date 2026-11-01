@@ -2298,6 +2298,27 @@ export type Database = {
           },
         ]
       }
+      default_crew_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       production_crew_roles: {
         Row: {
           created_at: string

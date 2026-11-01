@@ -53,6 +53,7 @@ export const useChecklists = (pid: string) => useQuery(q(["checklists", pid], ()
 export const useCrewAssets = (enabled: boolean) => useQuery(q(["crew-assets"], () => supabase.from("crew_assets").select("*").order("name"), enabled));
 export const useBookingAssets = (enabled: boolean) => useQuery(q(["booking-assets"], () => supabase.from("booking_assets").select("*"), enabled));
 export const useProductionCrewRoles = (pid: string) => useQuery(q(["production-crew-roles", pid], () => supabase.from("production_crew_roles").select("*").eq("production_id", pid).order("sort_order", { ascending: true })));
+export const useDefaultCrewRoles = () => useQuery(q(["default-crew-roles"], () => supabase.from("default_crew_roles").select("*").order("sort_order", { ascending: true })));
 export const useReviews = (crewId?: string) => useQuery(q(["reviews", crewId ?? "all"], () => {
   const b = supabase.from("crew_reviews").select("*").order("created_at", { ascending: false });
   return crewId ? b.eq("crew_id", crewId) : b;

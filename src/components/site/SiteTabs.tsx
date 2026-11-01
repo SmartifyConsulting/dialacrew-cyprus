@@ -18,7 +18,7 @@ import { assetsTotal, providerTotal } from "@/lib/costing";
 import { distanceMeters, getPosition, isOnSite } from "@/lib/geo";
 import { isOnline, pendingCount, queueCheckin, syncQueue } from "@/lib/offline-checkin";
 import {
-  signedUrl, uploadFile, useBookingAssets, useChecklists, useCrewAssets, useDocs, useInvalidate, useLocationPoints, useMessages, usePosts,
+  signedUrl, uploadFile, useBookingAssets, useChecklists, useCrewAssets, useDefaultCrewRoles, useDocs, useInvalidate, useLocationPoints, useMessages, usePosts,
   useProductionCrewRoles, useRegister, useReviews, useSignedUrl, useSiteMembers, useTasks,
 } from "@/lib/site";
 import { useBookings, useCancelBooking, useCreateOpenGig, useCrew, useCrewGroups, useRequests, useSetRequestState } from "@/lib/db";
@@ -567,8 +567,10 @@ export function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
   const groups = useCrewGroups().data ?? [];
   const sortedGroups = [...groups].sort((a, b) => Number(b.productionType === p.type) - Number(a.productionType === p.type));
   const savedRoles = useProductionCrewRoles(p.id).data ?? [];
-  // No customisation saved yet for this production — the standard 9 roles are the default list.
-  const roleList = savedRoles.length ? savedRoles.map((r) => r.role) : [...CREW_ROLES];
+  const globalDefaults = useDefaultCrewRoles().data ?? [];
+  // No customisation saved yet for this production — fall back to the editable global default
+  // list (managed in Admin ▸ Crew Types ▸ Default), or the hardcoded list if that's still empty.
+  const roleList = savedRoles.length ? savedRoles.map((r) => r.role) : globalDefaults.length ? globalDefaults.map((r) => r.role) : [...CREW_ROLES];
   const [newRole, setNewRole] = useState("");
   async function setRoleList(next: string[]) {
     await supabase.from("production_crew_roles").delete().eq("production_id", p.id);

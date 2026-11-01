@@ -14,7 +14,7 @@ import { EquipmentAdmin } from "@/components/admin/EquipmentAdmin";
 import { ChecklistTemplateManager } from "@/components/ChecklistTemplateManager";
 import { confirmDialog, promptDialog } from "@/components/ConfirmDialog";
 import { useAddCrewGroupMember, useCreateCrewGroup, useCreateProductionType, useCrew, useCrewGroups, useDeleteCrewGroup, useProductionTypes, useRemoveCrewGroupMember } from "@/lib/db";
-import { CREW_ROLES } from "@/components/site/SiteTabs";
+import { useDefaultCrewRoles } from "@/lib/site";
 
 const REQUIRED_FIELDS = ["name", "role", "department"] as const;
 const CREW_FIELDS = [...REQUIRED_FIELDS, "location", "email", "phone", "day_rate", "experience"] as const;
@@ -398,6 +398,47 @@ function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
   );
 }
 
+// The global "Default" role list every new production's Crew Role Required list starts from
+// (see CrewRoleStatus in SiteTabs.tsx), editable here instead of being hardcoded.
+function DefaultCrewRolesPanel() {
+  const inv = useInv();
+  const roles = useDefaultCrewRoles().data ?? [];
+  const [newRole, setNewRole] = useState("");
+
+  async function setRoles(next: string[]) {
+    await supabase.from("default_crew_roles").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    if (next.length) await supabase.from("default_crew_roles").insert(next.map((role, sort_order) => ({ role, sort_order })));
+    inv(["default-crew-roles"]);
+  }
+  function addRole() {
+    const name = newRole.trim();
+    if (!name) return;
+    if (roles.some((r) => r.role.toLowerCase() === name.toLowerCase())) { toast.error(`"${name}" is already in the list`); return; }
+    setRoles([...roles.map((r) => r.role), name]);
+    setNewRole("");
+  }
+  function removeRole(role: string) { setRoles(roles.filter((r) => r.role !== role).map((r) => r.role)); }
+
+  return (
+    <Panel title="Default">
+      <p className="px-4 pt-3 text-xs text-muted-foreground">The roles every new production's Crew Role Required list starts with.</p>
+      <ul className="divide-y divide-border text-sm">
+        {roles.map((r) => (
+          <li key={r.id} className="flex items-center justify-between gap-3 px-4 py-2">
+            {r.role}
+            <button onClick={() => removeRole(r.role)} aria-label={`Remove ${r.role}`} className="text-xs text-muted-foreground hover:text-destructive">Remove</button>
+          </li>
+        ))}
+      </ul>
+      <div className="flex items-center gap-2 border-t border-border p-3">
+        <input value={newRole} onChange={(e) => setNewRole(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addRole())}
+          placeholder="Add a role" className={`${invField} min-w-0 flex-1`} />
+        <button onClick={addRole} className="shrink-0 rounded-sm border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary hover:text-primary">+ Add role</button>
+      </div>
+    </Panel>
+  );
+}
+
 // Crew Types: producers group crew members into named, reusable templates (optionally tagged to
 // a production type) instead of editing raw crew records — picked from Find Crew's Select Crew Type.
 function CrewTypesTab() {
@@ -438,6 +479,8 @@ function CrewTypesTab() {
   }
 
   return (
+    <div className="space-y-5">
+    <DefaultCrewRolesPanel />
     <Panel title={`Crew Types (${groups.length})`} right={!adding && (
       <button onClick={() => setAdding(true)} className="text-xs font-semibold text-primary hover:underline">+ Add crew type</button>
     )}>
@@ -476,7 +519,7 @@ function CrewTypesTab() {
             {expanded === g.id && (
               <div className="space-y-2 border-t border-border bg-muted/20 px-4 py-3">
                 {g.name === "Default Crew Type" && (
-                  <p className="text-xs text-muted-foreground">Add crew covering these roles: {CREW_ROLES.join(", ")}.</p>
+                  <p className="text-xs text-muted-foreground">Add crew covering the roles listed in Default above.</p>
                 )}
                 {g.memberIds.length === 0 && <p className="text-xs text-muted-foreground">No crew members added yet.</p>}
                 <ul className="divide-y divide-border rounded-sm border border-border bg-card">
@@ -503,6 +546,7 @@ function CrewTypesTab() {
         ))}
       </ul>
     </Panel>
+    </div>
   );
 }
 
