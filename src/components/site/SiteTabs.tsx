@@ -4,7 +4,7 @@ import { RateDialog } from "@/components/site/RateDialog";
 import { gearValid } from "@/lib/calendar-events";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { Camera, Check, CheckCircle2, Circle, Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Download, FileText, GripVertical, ImageUp, LogIn, LogOut, MapPin, Mic, Minus, Paperclip, Pencil, Plus, Sparkles, Star, Sun, Trash2, Users } from "lucide-react";
@@ -576,7 +576,6 @@ export const CONFIRMED_BOOKING_STATUSES =["confirmed", "in_progress", "completed
 
 /* ---------------- Crew role required (standard roles still needing a confirmed booking) — the Crew tab's whole screen ---------------- */
 export function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
-  const navigate = useNavigate();
   const inv = useInvalidate();
   const groups = useCrewGroups().data ?? [];
   const sortedGroups = [...groups].sort((a, b) => Number(b.productionType === p.type) - Number(a.productionType === p.type));
@@ -614,13 +613,12 @@ export function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
   // Once a role has a confirmed booking, it's done — drop it from this list entirely; it now shows under Confirmed Members instead.
   const openRoles = roleList.filter((role) => !byRole(role).some((b) => CONFIRMED_BOOKING_STATUSES.includes(b.status)));
   const extras = bookings.filter((b) => !roleList.some((r) => r.toLowerCase() === b.role.trim().toLowerCase()) && !CONFIRMED_BOOKING_STATUSES.includes(b.status));
-  const unassignedRoles = openRoles.filter((role) => byRole(role).length === 0);
   const crew = useCrew().data ?? [];
   const qc = useQueryClient();
   const [pickRole, setPickRole] = useState<string | null>(null);
   // Pencil a crew member into a role (same "pencil" status the planner uses on commit). When
   // swapping, replaceIds are the not-yet-confirmed bookings for that role to drop first.
-  async function pencil(role: string, crewId: string, replaceIds: string[] = []) {
+  async function pencil(role: string, crewId: string, replaceIds: string[] = [], silent = false) {
     const c = crew.find((x) => x.id === crewId);
     if (!c) return;
     if (replaceIds.length) {
@@ -632,7 +630,7 @@ export function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
       booking_date: p.date || null, crew_rate: c.dayRate, client_charge: c.dayRate, days: Math.max(1, p.days || 1),
     });
     if (error) { toast.error(friendlyError(error)); return; }
-    toast.success(replaceIds.length ? `Swapped in ${c.name} as ${role}` : `${c.name} pencilled in as ${role}`);
+    if (!silent) toast.success(replaceIds.length ? `Swapped in ${c.name} as ${role}` : `${c.name} pencilled in as ${role}`);
     setPickRole(null);
     ["production-checklist", "bookings", "production-open-gigs"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
   }
@@ -642,14 +640,27 @@ export function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
     toast.success(`${name} removed from this role`);
     ["production-checklist", "bookings", "production-open-gigs"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
   }
+  // Select Crew Type applies directly here now — pencil each member into whichever role they fit, skipping anyone already pencilled or confirmed.
+  async function applyGroup(group: { name: string; memberIds: string[] }) {
+    let count = 0;
+    for (const id of group.memberIds) {
+      const c = crew.find((x) => x.id === id);
+      if (!c) continue;
+      const role = openRoles.find((r) => crewFitsRole(c, r) && !byRole(r).some((b) => b.crew_id === id));
+      if (!role) continue;
+      await pencil(role, id, [], true);
+      count++;
+    }
+    toast.success(count ? `${group.name}: pencilled ${count} role${count === 1 ? "" : "s"}` : `${group.name}: no matching open roles`);
+  }
 
   return (
     <Panel title="Crew Role Required" right={
-      <select disabled={unassignedRoles.length === 0} value=""
-        onChange={(e) => navigate({ to: "/productions/$id", params: { id: p.id }, search: e.target.value === "__browse__" ? { tab: "Crew" } : { tab: "Crew", group: e.target.value } })}
+      <select disabled={sortedGroups.length === 0} value=""
+        onChange={(e) => { const g = sortedGroups.find((x) => x.id === e.target.value); if (g) applyGroup(g); }}
         className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40" aria-label="Select Crew Type">
         <option value="" disabled>Select Crew Type</option>
-        <option value="__browse__">Browse all crew…</option>
+        {sortedGroups.length === 0 && <option value="" disabled>No crew templates saved yet</option>}
         {sortedGroups.map((g) => (
           <option key={g.id} value={g.id}>{g.name} ({g.memberIds.length}){g.productionType ? ` · ${g.productionType}` : ""}</option>
         ))}

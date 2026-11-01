@@ -1,29 +1,23 @@
-import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Sparkles, Save, Trash2, Star, CheckCircle2, Plus, ArrowLeftRight, Users, AlertTriangle, Copy } from "lucide-react";
+import { CheckCircle2, Plus, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { supabase } from "@/integrations/supabase/client";
 import { Panel } from "@/components/AppShell";
 import { confirmDialog } from "@/components/ConfirmDialog";
 import { useBookings, useCrew, useCrewGroups } from "@/lib/db";
-import { useLocationPoints } from "@/lib/site";
-import { matchBrief, type MatchResult } from "@/lib/memory.functions";
+import { useLocationPoints, useProductionCrewRoles, useDefaultCrewRoles } from "@/lib/site";
 import { providerTotal } from "@/lib/costing";
-import { useAiUnlocked } from "@/lib/ai-access";
 import { fmtMoney, zar, type Production } from "@/lib/demo-data";
+import { CREW_ROLES, crewFitsRole } from "@/components/site/SiteTabs";
 
 type Selection = Record<string, string[]>; // crewId -> selected asset ids
 type SelectionByDay = Record<string, Selection>; // YYYY-MM-DD -> that day's selection
-type Asset = { id: string; crew_id: string; name: string; category: string; daily_fee: number };
 type Scenario = { id: string; name: string; selByDay: SelectionByDay; total: number; created_at: string };
 
-const field = "w-full rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
 const addDays = (iso: string, n: number) => { const d = new Date(iso + "T00:00:00"); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
-const dayLabel = (ymd: string) => new Date(`${ymd}T00:00:00`).toLocaleDateString("en-ZA", { day: "numeric", month: "short" });
 const localYmd = (iso: string) => { const d = new Date(iso); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
-const btn = "inline-flex items-center gap-1.5 rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50";
 const ghost = "inline-flex items-center gap-1 rounded-sm border border-border px-2 py-1 text-xs hover:border-primary hover:text-primary";
 
 /** Scenario key: drafts for a production are stored as brief_matches rows under this client key. */
@@ -40,17 +34,16 @@ function scenarioCostAllDays(selByDay: SelectionByDay, rates: Record<string, num
   return Object.values(selByDay).reduce((sum, sel) => sum + scenarioCost(sel, 1, rates, fees), 0);
 }
 
-export function ScenarioPlanner({ p, initialGroupId }: { p: Production; initialGroupId?: string | undefined }) {
+// Sandbox: alternative crew line-ups laid out as columns next to Crew Role Required (which is
+// scenario 1 for all practical purposes), numbered from 2. Every action here writes straight to
+// the saved scenario — there's no separate draft/save step, it's a live workspace.
+export function ScenarioPlanner({ p }: { p: Production }) {
   const qc = useQueryClient();
-  const match = useServerFn(matchBrief);
   const crew = useCrew().data ?? [];
   const allBookings = useBookings().data ?? [];
   const locationPoints = useLocationPoints(p.id).data ?? [];
-  const aiUnlocked = useAiUnlocked();
   const days = Math.max(1, p.days || 1);
 
-  // One subtab per shoot day — from this production's scheduled locations where possible (real
-  // dates), falling back to an evenly spaced range from the production's own start date.
   const shootDays = useMemo(() => {
     const fromLocations = [...new Set(locationPoints.filter((pt) => pt.starts_at).map((pt) => localYmd(pt.starts_at!)))].sort();
     if (fromLocations.length) return fromLocations;
@@ -59,7 +52,6 @@ export function ScenarioPlanner({ p, initialGroupId }: { p: Production; initialG
   }, [locationPoints, p.date, days]);
   const blankSelByDay = (): SelectionByDay => Object.fromEntries(shootDays.map((d) => [d, {}]));
 
-  // This production's full shoot date range — crew with a clashing booking elsewhere aren't available for it.
   const rangeStart = p.date || null;
   const rangeEnd = p.endDate || (p.date ? addDays(p.date, days - 1) : null);
   const availableForRange = useMemo(() => {
@@ -75,7 +67,7 @@ export function ScenarioPlanner({ p, initialGroupId }: { p: Production; initialG
   }, [allBookings, p.id, rangeStart, rangeEnd]);
   const assets = useQuery({
     queryKey: ["all-crew-assets"],
-    queryFn: async () => { const { data, error } = await supabase.from("crew_assets").select("id, crew_id, name, category, daily_fee"); if (error) throw error; return (data ?? []).map((a) => ({ ...a, daily_fee: Number(a.daily_fee) })) as Asset[]; },
+    queryFn: async () => { const { data, error } = await supabase.from("crew_assets").select("id, crew_id, name, category, daily_fee"); if (error) throw error; return (data ?? []).map((a) => ({ ...a, daily_fee: Number(a.daily_fee) })); },
   });
   const scenarios = useQuery({
     queryKey: ["scenarios", p.id, shootDays.join(",")],
@@ -90,120 +82,83 @@ export function ScenarioPlanner({ p, initialGroupId }: { p: Production; initialG
     },
   });
 
-  const [selByDay, setSelByDay] = useState<SelectionByDay>(blankSelByDay);
-  const [activeDay, setActiveDay] = useState<string>(shootDays[0] ?? "");
-  // Crew Role Required (above this panel) is scenario 1 for all practical purposes — Sandbox
-  // scenarios are the alternatives to weigh up against it, so numbering starts at 2.
-  const [name, setName] = useState("Scenario 2");
-  const [brief, setBrief] = useState(p.summary ?? "");
-  const [busy, setBusy] = useState(false);
-  const [ai, setAi] = useState<MatchResult | null>(null);
-  const [filter, setFilter] = useState("");
-  const [activeId, setActiveId] = useState<string>(""); // "" = new scenario
-  const [committing, setCommitting] = useState(false);
   const groups = useCrewGroups().data ?? [];
-  // Select Crew Type: templates saved for this production's own type float to the top.
   const sortedGroups = useMemo(() => [...groups].sort((a, b) => Number(b.productionType === p.type) - Number(a.productionType === p.type)), [groups, p.type]);
-  const [suggestOpen, setSuggestOpen] = useState(false);
-  const [mixNotice, setMixNotice] = useState<{ name: string; total: number; unavailable: string[] } | null>(null);
+  const [committing, setCommitting] = useState(false);
+  const [pickKey, setPickKey] = useState<string | null>(null); // `${scenarioId}:${role}`
 
-  const sel = selByDay[activeDay] ?? {};
-  const setSel = (updater: Selection | ((prev: Selection) => Selection)) => {
-    setSelByDay((prev) => ({ ...prev, [activeDay]: typeof updater === "function" ? (updater as (p: Selection) => Selection)(prev[activeDay] ?? {}) : updater }));
-  };
+  const savedRoles = useProductionCrewRoles(p.id).data ?? [];
+  const globalDefaults = useDefaultCrewRoles().data ?? [];
+  const roleList = savedRoles.length ? savedRoles.map((r) => r.role) : globalDefaults.length ? globalDefaults.map((r) => r.role) : [...CREW_ROLES];
 
   const rates = useMemo(() => Object.fromEntries(crew.map((c) => [c.id, c.dayRate])), [crew]);
   const fees = useMemo(() => Object.fromEntries((assets.data ?? []).map((a) => [a.id, a.daily_fee])), [assets.data]);
-  const kitBy = useMemo(() => {
-    const m: Record<string, Asset[]> = {};
-    for (const a of assets.data ?? []) (m[a.crew_id] ??= []).push(a);
-    return m;
-  }, [assets.data]);
-  const crewName = (id: string) => crew.find((c) => c.id === id)?.name ?? "Unknown";
-  const total = scenarioCostAllDays(selByDay, rates, fees);
-  const variance = p.budget - total;
 
-  const toggleCrew = (id: string) => setSel((s) => { const n = { ...s }; if (n[id]) delete n[id]; else n[id] = []; return n; });
-  const toggleKit = (crewId: string, assetId: string) => setSel((s) => {
-    const cur = s[crewId] ?? [];
-    return { ...s, [crewId]: cur.includes(assetId) ? cur.filter((x) => x !== assetId) : [...cur, assetId] };
-  });
-  function applyDayToAll() {
-    if (shootDays.length < 2) return;
-    setSelByDay((prev) => Object.fromEntries(shootDays.map((d) => [d, prev[activeDay] ?? {}])));
-    toast.success(`Applied ${dayLabel(activeDay)}'s crew to every other day`);
+  function crewIdsIn(s: Scenario) { return new Set(Object.values(s.selByDay).flatMap((sel) => Object.keys(sel))); }
+  function assignedForRole(s: Scenario, role: string) {
+    const ids = crewIdsIn(s);
+    return crew.find((c) => ids.has(c.id) && crewFitsRole(c, role));
   }
-
-  async function suggest() {
-    if (brief.trim().length < 10) { toast.error("Describe the brief in a sentence or two."); return; }
-    setBusy(true);
-    try {
-      const r = await match({ data: { client: p.client, brief, days, location: p.address || p.location } });
-      setAi(r);
-      const next: Selection = {};
-      for (const c of r.crew) next[c.crew_id] = [];
-      for (const k of r.kit) { const owner = assets.data?.find((a) => a.id === k.asset_id)?.crew_id; if (owner) (next[owner] ??= []).push(k.asset_id); }
-      setSel(next);
-      toast.success("AI selection loaded — adjust crew and kit, then save as a draft");
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Matching failed."); }
-    finally { setBusy(false); }
+  function withEveryDay(s: Scenario, fn: (day: Selection) => Selection): SelectionByDay {
+    const next: SelectionByDay = {};
+    for (const d of shootDays) next[d] = fn({ ...(s.selByDay[d] ?? {}) });
+    return next;
   }
-
-  async function save() {
-    if (!Object.values(selByDay).some((s) => Object.keys(s).length)) { toast.error("Select at least one crew member."); return; }
-    const clean = name.trim() || "Untitled scenario";
-    const dup = scenarios.data?.find((x) => x.name.toLowerCase() === clean.toLowerCase() && x.id !== activeId);
-    if (dup) { toast.error(`"${clean}" already exists — pick it from the list to update it, or use another name.`); return; }
-    const result = { selByDay, total };
-    const res = activeId
-      ? await supabase.from("brief_matches").update({ brief: clean, result }).eq("id", activeId).select("id").single()
-      : await supabase.from("brief_matches").insert({ client: scenarioKey(p.id), brief: clean, result }).select("id").single();
-    if (res.error) { toast.error(res.error.message); return; }
-    setActiveId(res.data.id);
-    toast.success(activeId ? `Updated "${clean}"` : `Saved "${clean}"`);
+  async function mutateScenario(s: Scenario, nextSelByDay: SelectionByDay) {
+    const total = scenarioCostAllDays(nextSelByDay, rates, fees);
+    const { error } = await supabase.from("brief_matches").update({ result: { selByDay: nextSelByDay, total } }).eq("id", s.id);
+    if (error) { toast.error(friendlyError(error)); return; }
     qc.invalidateQueries({ queryKey: ["scenarios", p.id] });
   }
-  function pick(id: string) {
-    setActiveId(id);
-    setActiveDay(shootDays[0] ?? "");
-    if (!id) { setSelByDay(blankSelByDay()); setName(`Scenario ${(scenarios.data?.length ?? 0) + 2}`); return; }
-    const s = scenarios.data?.find((x) => x.id === id);
-    if (s) { setSelByDay(s.selByDay); setName(s.name); }
+  async function selectForRole(s: Scenario, role: string, newId: string, oldId: string | null) {
+    const next = withEveryDay(s, (day) => { if (oldId) delete day[oldId]; day[newId] = day[newId] ?? []; return day; });
+    await mutateScenario(s, next);
+    setPickKey(null);
+    const name = crew.find((c) => c.id === newId)?.name ?? "Crew member";
+    toast.success(oldId ? `Swapped in ${name} as ${role}` : `${name} added as ${role}`);
   }
-  function swap(from: string, to: string) {
-    if (!to) return;
-    setSel((s) => { const n = { ...s }; delete n[from]; n[to] = []; return n; });
-    toast.success(`Swapped ${crewName(from)} for ${crewName(to)}`);
+  async function removeFromScenario(s: Scenario, crewId: string, name: string) {
+    const next = withEveryDay(s, (day) => { delete day[crewId]; return day; });
+    await mutateScenario(s, next);
+    toast.success(`${name} removed`);
   }
-  // Apply a saved Crew Combos: add every available member to the active day, and flag whoever's
-  // booked elsewhere across this production's dates so they can be swapped out.
-  function applyMix(group: { id: string; name: string; memberIds: string[] }) {
+  async function applyGroupToScenario(s: Scenario, group: { name: string; memberIds: string[] }) {
     const unavailable: string[] = [];
-    setSel((s) => {
-      const n = { ...s };
-      for (const id of group.memberIds) {
-        const c = crew.find((x) => x.id === id);
-        if (!c) continue;
-        if (!c.available || !availableForRange(id)) { unavailable.push(c.name); continue; }
-        if (!n[id]) n[id] = [];
-      }
-      return n;
-    });
-    setMixNotice({ name: group.name, total: group.memberIds.length, unavailable });
+    const next = withEveryDay(s, (day) => day);
+    for (const id of group.memberIds) {
+      const c = crew.find((x) => x.id === id);
+      if (!c) continue;
+      if (!c.available || !availableForRange(id)) { unavailable.push(c.name); continue; }
+      for (const d of shootDays) if (next[d] && !(id in next[d]!)) next[d]![id] = [];
+    }
+    await mutateScenario(s, next);
+    toast.success(unavailable.length ? `${group.name} added — unavailable: ${unavailable.join(", ")}` : `${group.name} added`);
   }
-  // Arrived from the Crew tab's Select Crew Type dropdown with a template already chosen —
-  // apply it once the template list has loaded, instead of making them pick it again here.
-  const appliedInitialGroup = useRef(false);
-  useEffect(() => {
-    if (appliedInitialGroup.current || !initialGroupId || groups.length === 0) return;
-    const g = groups.find((x) => x.id === initialGroupId);
-    if (g) { appliedInitialGroup.current = true; applyMix(g); }
-  }, [initialGroupId, groups]);
-  // Commit: pencil the chosen group's crew + kit on the production (one booking per contiguous
-  // run of days a crew member is on, since different days can now carry different people), then
-  // drop the other sandbox scenarios.
+  async function renameScenario(s: Scenario, name: string) {
+    const clean = name.trim();
+    if (!clean || clean === s.name) return;
+    const dup = scenarios.data?.find((x) => x.name.toLowerCase() === clean.toLowerCase() && x.id !== s.id);
+    if (dup) { toast.error(`"${clean}" already exists.`); return; }
+    const { error } = await supabase.from("brief_matches").update({ brief: clean }).eq("id", s.id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    qc.invalidateQueries({ queryKey: ["scenarios", p.id] });
+  }
+  async function createScenario() {
+    const nextNum = (scenarios.data?.length ?? 0) + 2;
+    const { error } = await supabase.from("brief_matches").insert({ client: scenarioKey(p.id), brief: `Scenario ${nextNum}`, result: { selByDay: blankSelByDay(), total: 0 } });
+    if (error) { toast.error(friendlyError(error)); return; }
+    qc.invalidateQueries({ queryKey: ["scenarios", p.id] });
+  }
+  async function deleteScenario(id: string) {
+    if (!(await confirmDialog("Delete this scenario?", { destructive: true }))) return;
+    const { error } = await supabase.from("brief_matches").delete().eq("id", id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    qc.invalidateQueries({ queryKey: ["scenarios", p.id] });
+  }
+  // Pencil: commit the chosen scenario's crew (one booking per contiguous run of days a crew
+  // member is on, since different days can carry different people), then drop the alternatives.
   async function commit(s: Scenario) {
-    if (!(await confirmDialog(`Commit "${s.name}"? Its crew will be pencilled in and the other scenarios removed.`))) return;
+    if (!(await confirmDialog(`Pencil "${s.name}"? Its crew will be pencilled in and the other scenarios removed.`))) return;
     setCommitting(true);
     try {
       const byCrew = new Map<string, string[]>();
@@ -236,192 +191,90 @@ export function ScenarioPlanner({ p, initialGroupId }: { p: Production; initialG
       const others = (scenarios.data ?? []).filter((x) => x.id !== s.id).map((x) => x.id);
       if (others.length) await supabase.from("brief_matches").delete().in("id", others);
       if (p.status === "Draft") await supabase.from("productions").update({ status: "Upcoming" }).eq("id", p.id);
-      toast.success(`"${s.name}" committed — crew pencilled in`);
+      toast.success(`"${s.name}" pencilled in`);
       ["scenarios", "bookings", "productions", "production-open-gigs"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
-      qc.invalidateQueries({ queryKey: ["scenarios", p.id] });
     } catch (e) { toast.error(friendlyError(e)); }
     finally { setCommitting(false); }
   }
-  async function remove(id: string) {
-    const { error } = await supabase.from("brief_matches").delete().eq("id", id);
-    if (error) { toast.error(friendlyError(error)); return; }
-    if (id === activeId) pick("");
-    qc.invalidateQueries({ queryKey: ["scenarios", p.id] });
-  }
-
-  const shown = crew.filter((c) => !filter || `${c.name} ${c.role} ${c.department}`.toLowerCase().includes(filter.toLowerCase()));
-  const aiWhy = Object.fromEntries((ai?.crew ?? []).map((c) => [c.crew_id, c]));
-  // Which shoot days a crew member is booked on, across every day — not just the active one —
-  // so coverage is visible without clicking through each day's subtab.
-  const daysOn = (id: string) => shootDays.filter((d) => !!selByDay[d]?.[id]);
 
   return (
-    <div className="w-full space-y-5">
-      <Panel title={`Sandbox · ${shootDays.length || days} day(s)`} right={<input className="w-40 rounded-sm border border-input bg-background px-2 py-1 text-xs" placeholder="Filter crew" value={filter} onChange={(e) => setFilter(e.target.value)} />}>
-        {/* Scenarios: cards you click to switch between, listed vertically instead of a dropdown + a separate comparison table. */}
-        {(scenarios.data ?? []).length > 0 && (
-          <div className="flex flex-col gap-2 border-b border-border p-4">
-            {(scenarios.data ?? []).map((s) => {
-              const cost = scenarioCostAllDays(s.selByDay, rates, fees);
-              const crewCount = new Set(Object.values(s.selByDay).flatMap((d) => Object.keys(d))).size;
-              return (
-                <div key={s.id} className={`flex items-center gap-2 rounded-sm border px-3 py-2 text-xs ${activeId === s.id ? "border-primary bg-primary/10" : "border-border hover:border-primary"}`}>
-                  <button onClick={() => pick(s.id)} className="min-w-0 flex-1 text-left">
-                    <div className="font-semibold">{s.name}</div>
-                    <div className="text-muted-foreground">{crewCount} crew · {zar(cost)}</div>
-                  </button>
-                  <button onClick={() => commit(s)} disabled={committing} className={`${ghost} shrink-0`}><CheckCircle2 className="h-3.5 w-3.5" /> Pencil</button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-        <div className="flex flex-wrap items-center gap-2 border-b border-border p-4">
-          <button onClick={() => pick("")} className={ghost}><Plus className="h-3 w-3" /> Add Scenario {(scenarios.data?.length ?? 0) + 2}</button>
-          <input className="min-w-40 flex-1 rounded-sm border border-input bg-background px-2 py-2 text-sm" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} aria-label="Scenario name" placeholder="Scenario name" />
-          {aiUnlocked && (
-            <div className="relative">
-              <button className={ghost} onClick={() => setSuggestOpen(!suggestOpen)}><Sparkles className="h-3 w-3" /> Suggest crew & kit</button>
-              {suggestOpen && (
-                <div className="absolute right-0 z-20 mt-1 w-72 space-y-2 rounded-sm border border-border bg-card p-3 shadow-md">
-                  <textarea className={`${field} min-h-20 text-xs`} maxLength={4000} value={brief} onChange={(e) => setBrief(e.target.value)} placeholder="Describe the brief: look, shots, crew size…" />
-                  <button onClick={async () => { await suggest(); setSuggestOpen(false); }} disabled={busy} className={`${ghost} w-full justify-center`}><Sparkles className="h-3.5 w-3.5" />{busy ? "Matching…" : "Suggest crew & kit"}</button>
-                  {ai?.warnings.length ? <ul className="list-disc pl-5 text-xs text-destructive">{ai.warnings.map((w) => <li key={w}>{w}</li>)}</ul> : null}
-                </div>
-              )}
-            </div>
-          )}
-          <div className="flex items-center gap-1.5">
-            <Users className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            <select className="min-w-44 rounded-sm border border-input bg-background px-2 py-2 text-xs" value=""
-              onChange={(e) => { const g = sortedGroups.find((x) => x.id === e.target.value); if (g) applyMix(g); }} aria-label="Select Crew Type">
-              <option value="">Select Crew Type…</option>
-              {sortedGroups.length === 0 && <option value="" disabled>No crew templates saved yet</option>}
-              {sortedGroups.map((g) => (
-                <option key={g.id} value={g.id}>{g.name} ({g.memberIds.length}){g.productionType ? ` · ${g.productionType}` : ""}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-        {/* Day subtabs: each shoot day gets its own crew selection. */}
-        {shootDays.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1 border-b border-border px-4 py-2">
-            {shootDays.map((d, i) => (
-              <button key={d} onClick={() => setActiveDay(d)}
-                className={`rounded-sm px-2 py-1 text-xs font-semibold ${activeDay === d ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>
-                Day {i + 1} · {dayLabel(d)}
-              </button>
-            ))}
-            {shootDays.length > 1 && <button onClick={applyDayToAll} className={`${ghost} ml-auto`}><Copy className="h-3 w-3" /> Apply this day's crew to all days</button>}
-          </div>
-        )}
-        {mixNotice && (
-          <div className="border-b border-border bg-primary/5 p-3 text-xs">
-            <div className="flex items-start gap-2">
-              <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-              <div className="flex-1">
-                {mixNotice.unavailable.length === 0 ? (
-                  <span>"{mixNotice.name}" added — everyone in this combo is available for these dates.</span>
-                ) : (
-                  <span>
-                    "{mixNotice.name}" added. <span className="inline-flex items-center gap-1 font-semibold text-destructive"><AlertTriangle className="h-3 w-3" /> {mixNotice.unavailable.length} of {mixNotice.total} member(s)</span>{" "}
-                    {mixNotice.unavailable.length === 1 ? "isn't" : "aren't"} available for these dates: <strong>{mixNotice.unavailable.join(", ")}</strong>. They weren't added — swap in a replacement from the list below.
-                  </span>
-                )}
+    <div className="flex items-start gap-4 overflow-x-auto pb-2">
+      {(scenarios.data ?? []).map((s) => {
+        const total = scenarioCostAllDays(s.selByDay, rates, fees);
+        const variance = p.budget - total;
+        return (
+          <div key={s.id} className="w-80 shrink-0">
+            <Panel title={
+              <input defaultValue={s.name} onBlur={(e) => renameScenario(s, e.target.value)} maxLength={80}
+                className="w-full bg-transparent font-display text-sm font-semibold uppercase tracking-wide text-primary outline-none" aria-label="Scenario name" />
+            } right={
+              <button onClick={() => deleteScenario(s.id)} aria-label={`Delete ${s.name}`} className="shrink-0 text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+            }>
+              <div className="flex items-center gap-1.5 border-b border-border p-3">
+                <Users className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <select className="min-w-0 flex-1 rounded-sm border border-input bg-background px-2 py-1.5 text-xs"
+                  value="" onChange={(e) => { const g = sortedGroups.find((x) => x.id === e.target.value); if (g) applyGroupToScenario(s, g); }} aria-label={`Select Crew Type for ${s.name}`}>
+                  <option value="" disabled>Select Crew Type</option>
+                  {sortedGroups.length === 0 && <option value="" disabled>No crew templates saved yet</option>}
+                  {sortedGroups.map((g) => (
+                    <option key={g.id} value={g.id}>{g.name} ({g.memberIds.length}){g.productionType ? ` · ${g.productionType}` : ""}</option>
+                  ))}
+                </select>
               </div>
-              <button onClick={() => setMixNotice(null)} className="shrink-0 text-muted-foreground hover:text-foreground">✕</button>
-            </div>
-          </div>
-        )}
-        <div className="border-b border-border px-4 py-3"><BudgetBar used={total} budget={p.budget} currency={p.currency} /></div>
-        <ul className="max-h-[520px] divide-y divide-border overflow-y-auto">
-          {shown.map((c) => {
-            const on = !!sel[c.id];
-            const kit = kitBy[c.id] ?? [];
-            const line = on ? providerTotal(c.dayRate, 1, (sel[c.id] ?? []).map((a) => ({ dailyFee: fees[a] ?? 0, days: 1 }))) : 0;
-            const onDays = daysOn(c.id);
-            return (
-              <li key={c.id} className={`px-4 py-2.5 ${on ? "bg-primary/5" : ""}`}>
-                <label className="flex cursor-pointer items-center gap-3">
-                  <input type="checkbox" checked={on} onChange={() => toggleCrew(c.id)} className="h-4 w-4 accent-primary" />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-semibold">
-                      {c.name} <span className="font-normal text-muted-foreground">· {aiWhy[c.id]?.suggested_role ?? c.role}</span>
-                      {shootDays.length > 1 && onDays.length > 0 && (
-                        <span className="ml-2 inline-flex items-center gap-1 align-middle" title={`On: ${onDays.map(dayLabel).join(", ")}`}>
-                          {shootDays.map((d) => <span key={d} className={`h-1.5 w-1.5 rounded-full ${selByDay[d]?.[c.id] ? "bg-primary" : "bg-muted"}`} />)}
-                          <span className="text-[10px] font-normal text-muted-foreground">{onDays.length === shootDays.length ? "All days" : `${onDays.length}/${shootDays.length} days`}</span>
+              <ul className="divide-y divide-border text-sm">
+                {roleList.map((role) => {
+                  const assigned = assignedForRole(s, role);
+                  const pickOpen = pickKey === `${s.id}:${role}`;
+                  return (
+                    <li key={role} className="px-3 py-2.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="min-w-0 flex-1">
+                          <span className="block font-medium">{role}</span>
+                          {assigned && <span className="block text-xs text-muted-foreground">{assigned.name} · {zar(assigned.dayRate)}/day{assigned.available && availableForRange(assigned.id) ? "" : " · unavailable"}</span>}
                         </span>
+                        <span className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
+                          {!assigned && "Unassigned"}
+                          <button onClick={() => setPickKey(pickOpen ? null : `${s.id}:${role}`)} className="inline-flex items-center rounded-sm bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground">
+                            {assigned ? "Swap" : "Find"}
+                          </button>
+                          {assigned && <button onClick={() => removeFromScenario(s, assigned.id, assigned.name)} aria-label={`Remove ${assigned.name} from ${role}`} className="text-muted-foreground hover:text-destructive">✕</button>}
+                        </span>
+                      </div>
+                      {pickOpen && (
+                        <div className="mt-2 space-y-1">
+                          {crew.filter((c) => crewFitsRole(c, role) && c.id !== assigned?.id).map((c) => (
+                            <div key={c.id} className="flex items-center justify-between gap-3 rounded-sm border border-border px-3 py-2 text-xs">
+                              <span className="min-w-0">
+                                <span className="font-medium">{c.name}</span>{c.role && <span className="text-muted-foreground"> · {c.role}</span>}
+                                <span className="block text-muted-foreground">{fmtMoney(c.dayRate, p.currency)} / day{c.available && availableForRange(c.id) ? "" : " · unavailable"}</span>
+                              </span>
+                              <button onClick={() => selectForRole(s, role, c.id, assigned?.id ?? null)} className="shrink-0 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Select</button>
+                            </div>
+                          ))}
+                          {!crew.some((c) => crewFitsRole(c, role) && c.id !== assigned?.id) && <p className="text-xs text-muted-foreground">No other crew listed as {role}.</p>}
+                        </div>
                       )}
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Star className="h-3 w-3 text-primary" /> {c.rating.toFixed(1)} · {zar(c.dayRate)}/day ·{" "}
-                      <span className={c.available && availableForRange(c.id) ? "text-success" : "text-destructive"}>
-                        {c.available && availableForRange(c.id) ? `Available ${rangeStart ? "for these dates" : ""}` : "Unavailable"}
-                      </span>
-                    </div>
-                    {aiWhy[c.id]
-                      ? <div className="mt-1 rounded-sm bg-primary/10 px-2 py-1.5 text-xs text-foreground"><span className="font-semibold">Why the AI picked {c.name}:</span> {aiWhy[c.id]?.why || "No reason was given. Check before selecting."}</div>
-                      : null}
-                  </div>
-                  {on && <span className="text-sm font-semibold">{zar(line)}<span className="font-normal text-muted-foreground"> / this day</span></span>}
-                </label>
-                {on && (
-                  <div className="ml-7 mt-2 flex items-center gap-2 text-xs">
-                    <ArrowLeftRight className="h-3 w-3 text-muted-foreground" />
-                    <select className="rounded-sm border border-input bg-background px-2 py-1 text-xs" value="" onChange={(e) => swap(c.id, e.target.value)} aria-label={`Swap ${c.name}`}>
-                      <option value="">Swap for…</option>
-                      {crew.filter((o) => !sel[o.id] && o.id !== c.id).sort((a, b) => Number(b.department === c.department) - Number(a.department === c.department)).map((o) => (
-                        <option key={o.id} value={o.id}>{`${o.name} · ${o.role} · ${zar(o.dayRate)}/day${(kitBy[o.id] ?? []).length ? ` · Gear: ${(kitBy[o.id] ?? []).map((a) => a.name).join(", ")}` : " · No gear listed"}`}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                {on && kit.length > 0 && (
-                  <div className="ml-7 mt-2 flex flex-wrap gap-2">
-                    {kit.map((a) => {
-                      const k = (sel[c.id] ?? []).includes(a.id);
-                      return (
-                        <button key={a.id} type="button" onClick={() => toggleKit(c.id, a.id)}
-                          className={`rounded-sm border px-2 py-1 text-xs ${k ? "border-primary bg-primary/15 text-primary" : "border-border text-muted-foreground hover:border-primary"}`}>
-                          {k ? "✓ " : "+ "}{a.name} · {zar(a.daily_fee)}/day
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-        <div className="flex flex-wrap items-center gap-3 border-t border-border p-4">
-          <div className="text-sm">
-            <div><span className="text-muted-foreground">Estimate:</span> <b>{fmtMoney(total, p.currency)}</b> across {shootDays.length || days} day(s)</div>
-            <div className={`text-xs ${variance < 0 ? "text-destructive" : "text-success"}`}>{variance < 0 ? `${fmtMoney(-variance, p.currency)} over` : `${fmtMoney(variance, p.currency)} under`} budget of {fmtMoney(p.budget, p.currency)}</div>
+                    </li>
+                  );
+                })}
+              </ul>
+              <div className="space-y-2 border-t border-border p-3">
+                <div className="text-xs">
+                  <div><span className="text-muted-foreground">Estimate:</span> <b>{fmtMoney(total, p.currency)}</b></div>
+                  <div className={variance < 0 ? "text-destructive" : "text-success"}>{variance < 0 ? `${fmtMoney(-variance, p.currency)} over` : `${fmtMoney(variance, p.currency)} under`} budget</div>
+                </div>
+                <button onClick={() => commit(s)} disabled={committing} className={`${ghost} w-full justify-center`}><CheckCircle2 className="h-3.5 w-3.5" /> Pencil this scenario</button>
+              </div>
+            </Panel>
           </div>
-          <div className="ml-auto flex items-center gap-2">
-            <button onClick={save} className={btn}><Save className="h-4 w-4" /> {activeId ? "Update scenario" : "Save scenario"}</button>
-            {activeId && <button className={ghost} aria-label="Delete scenario" onClick={() => remove(activeId)}><Trash2 className="h-3.5 w-3.5" /> Delete</button>}
-          </div>
-        </div>
-      </Panel>
+        );
+      })}
+      <div className="w-56 shrink-0 pt-9">
+        <button onClick={createScenario} className={`${ghost} w-full justify-center`}><Plus className="h-3.5 w-3.5" /> Add Scenario {(scenarios.data?.length ?? 0) + 2}</button>
+      </div>
     </div>
   );
 }
 
 /** Budget usage %: green under 85%, amber 85–100%, red over budget. */
 export function budgetPct(used: number, budget: number) { return budget > 0 ? Math.round((used / budget) * 100) : 0; }
-
-function BudgetBar({ used, budget, compact, currency = "ZAR" }: { used: number; budget: number; compact?: boolean; currency?: string | undefined }) {
-  const pct = budgetPct(used, budget);
-  const tone = pct > 100 ? "bg-destructive" : pct >= 85 ? "bg-chart-3" : "bg-success";
-  return (
-    <div>
-      {!compact && <div className="mb-1 flex justify-between text-xs"><span className="text-muted-foreground">Budget used</span><span className="font-semibold">{pct}% · {fmtMoney(used, currency)} of {fmtMoney(budget, currency)}</span></div>}
-      <div className={`${compact ? "h-1.5" : "h-2.5"} overflow-hidden rounded-full bg-muted`} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
-        <div className={`h-full ${tone}`} style={{ width: `${Math.min(100, pct)}%` }} />
-      </div>
-      {compact && <div className="text-[10px] font-semibold">{pct}%</div>}
-    </div>
-  );
-}

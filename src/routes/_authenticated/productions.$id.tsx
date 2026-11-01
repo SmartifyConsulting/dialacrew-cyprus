@@ -19,10 +19,7 @@ import { CrewOvertimePanel, useBookingRates } from "@/components/site/Overtime";
 import { ChecklistsPanel, CommercialsTab, CONFIRMED_BOOKING_STATUSES, CrewRoleStatus, MembersList, OverviewTab, PostsTab, RegisterTab, TasksTab } from "@/components/site/SiteTabs";
 
 export const Route = createFileRoute("/_authenticated/productions/$id")({
-  validateSearch: (s: Record<string, unknown>): { tab?: string; group?: string } => ({
-    ...(typeof s["tab"] === "string" ? { tab: s["tab"] } : {}),
-    ...(typeof s["group"] === "string" ? { group: s["group"] } : {}),
-  }),
+  validateSearch: (s: Record<string, unknown>): { tab?: string } => (typeof s["tab"] === "string" ? { tab: s["tab"] } : {}),
   head: () => ({
     meta: [
       { title: "Production site — Book a Crew" },
@@ -54,7 +51,7 @@ function ProductionSite() {
   const requests = useRequests().data ?? [];
   const myCrewId = useMyCrewId(!!userId && role.data === "crew").data ?? null;
   const myName = useMyName(userId || undefined).data ?? "";
-  const { tab: tabParam, group: groupParam } = Route.useSearch();
+  const { tab: tabParam } = Route.useSearch();
   const isValidTab = (t: string | undefined): t is Tab => !!t && (MANAGER_TABS as readonly string[]).includes(t);
   const [tab, setTab] = useState<Tab>(tabParam === "find-crew" ? "Crew" : isValidTab(tabParam) ? tabParam : "Posts");
   useEffect(() => { if (tabParam === "find-crew") setTab("Crew"); else if (isValidTab(tabParam)) setTab(tabParam); }, [tabParam]);
@@ -117,8 +114,12 @@ function ProductionSite() {
           {tab === "Posts" && <PostsTab {...ctx} />}
           {tab === "Crew" && isProducer && (
             <div className="space-y-5">
-              <CrewRoleStatus p={p} />
-              <ScenarioPlanner p={p} initialGroupId={groupParam} />
+              {/* Crew Role Required (scenario 1 for all practical purposes) and the Sandbox's alternative
+                  scenarios sit side by side as one horizontally-scrolling live workspace. */}
+              <div className="flex items-start gap-4 overflow-x-auto pb-2">
+                <div className="w-96 shrink-0"><CrewRoleStatus p={p} /></div>
+                <ScenarioPlanner p={p} />
+              </div>
               {/* Hidden until someone's actually confirmed — pencilled bookings don't count, and an empty roster + register is just visual noise before then. */}
               {bookings.some((b) => b.productionId === p.id && CONFIRMED_BOOKING_STATUSES.includes(b.status)) && <><MembersList {...ctx} /><RegisterTab {...ctx} /></>}
             </div>
