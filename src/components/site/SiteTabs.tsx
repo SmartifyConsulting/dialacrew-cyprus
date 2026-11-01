@@ -589,7 +589,7 @@ export function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
     queryKey: ["production-checklist", p.id],
     queryFn: async () => {
       const { data, error } = await supabase.from("bookings")
-        .select("id, role, status, crew_members(name)")
+        .select("id, role, status, crew_id, crew_members(name)")
         .eq("production_id", p.id).neq("status", "cancelled").order("role");
       if (error) throw error;
       return data ?? [];
@@ -604,17 +604,28 @@ export function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
   const crew = useCrew().data ?? [];
   const qc = useQueryClient();
   const [pickRole, setPickRole] = useState<string | null>(null);
-  // Pencil a crew member into an unassigned role (same "pencil" status the planner uses on commit).
-  async function pencil(role: string, crewId: string) {
+  // Pencil a crew member into a role (same "pencil" status the planner uses on commit). When
+  // swapping, replaceIds are the not-yet-confirmed bookings for that role to drop first.
+  async function pencil(role: string, crewId: string, replaceIds: string[] = []) {
     const c = crew.find((x) => x.id === crewId);
     if (!c) return;
+    if (replaceIds.length) {
+      const { error: delErr } = await supabase.from("bookings").delete().in("id", replaceIds);
+      if (delErr) { toast.error(friendlyError(delErr)); return; }
+    }
     const { error } = await supabase.from("bookings").insert({
       production_id: p.id, crew_id: crewId, role, status: "pencil" as const,
       booking_date: p.date || null, crew_rate: c.dayRate, client_charge: c.dayRate, days: Math.max(1, p.days || 1),
     });
     if (error) { toast.error(friendlyError(error)); return; }
-    toast.success(`${c.name} pencilled in as ${role}`);
+    toast.success(replaceIds.length ? `Swapped in ${c.name} as ${role}` : `${c.name} pencilled in as ${role}`);
     setPickRole(null);
+    ["production-checklist", "bookings", "production-open-gigs"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+  }
+  async function cancelPencil(bookingId: string, name: string) {
+    const { error } = await supabase.from("bookings").delete().eq("id", bookingId);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success(`${name} removed from this role`);
     ["production-checklist", "bookings", "production-open-gigs"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
   }
 
@@ -639,23 +650,33 @@ export function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
               <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />
               <span className="min-w-0 flex-1">
                 <span className="font-medium">{role}</span>
-                {names && <span className="text-muted-foreground"> · {names}</span>}
+                {matches.length > 0 && (
+                  <span className="ml-1 inline-flex flex-wrap items-center gap-1">
+                    {matches.map((b) => {
+                      const mName = (b.crew_members as { name: string } | null)?.name ?? "Unknown";
+                      return (
+                        <span key={b.id} className="inline-flex items-center gap-1 text-muted-foreground">
+                          · {mName}
+                          <button onClick={() => cancelPencil(b.id, mName)} aria-label={`Cancel ${mName} for ${role}`} className="text-muted-foreground hover:text-destructive">✕</button>
+                        </span>
+                      );
+                    })}
+                  </span>
+                )}
               </span>
               <span className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
                 {matches.length === 0 ? "Unassigned" : "Not yet confirmed"}
-                {matches.length === 0 && (
-                  <button onClick={() => setPickRole(pickRole === role ? null : role)} className="inline-flex items-center rounded-sm bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground">
-                    Find
-                  </button>
-                )}
+                <button onClick={() => setPickRole(pickRole === role ? null : role)} className="inline-flex items-center rounded-sm bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground">
+                  {matches.length === 0 ? "Find" : "Swap"}
+                </button>
                 {matches.length === 0 && (
                   <button onClick={() => removeRole(role)} aria-label={`Remove ${role} from this production's role list`} className="text-muted-foreground hover:text-destructive">✕</button>
                 )}
               </span>
               {pickRole === role && (
                 <div className="w-full space-y-1 pt-1">
-                  {crew.filter((c) => crewFitsRole(c, role)).map((c) => (
-                    <button key={c.id} onClick={() => pencil(role, c.id)} className="flex w-full items-center justify-between gap-3 rounded-sm border border-border px-3 py-2 text-left text-sm hover:border-primary">
+                  {crew.filter((c) => crewFitsRole(c, role) && !matches.some((b) => b.crew_id === c.id)).map((c) => (
+                    <button key={c.id} onClick={() => pencil(role, c.id, matches.map((b) => b.id))} className="flex w-full items-center justify-between gap-3 rounded-sm border border-border px-3 py-2 text-left text-sm hover:border-primary">
                       <span className="min-w-0"><span className="font-medium">{c.name}</span>{c.role && <span className="text-xs text-muted-foreground"> · {c.role}</span>}</span>
                       <span className="text-xs text-muted-foreground">{fmtMoney(c.dayRate, p.currency)} / day{c.available ? "" : " · unavailable"}</span>
                     </button>
