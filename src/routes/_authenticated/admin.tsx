@@ -12,6 +12,7 @@ import { EquipmentAdmin } from "@/components/admin/EquipmentAdmin";
 import { ChecklistTemplateManager } from "@/components/ChecklistTemplateManager";
 import { confirmDialog, promptDialog } from "@/components/ConfirmDialog";
 import { useAddCrewGroupMember, useCreateCrewGroup, useCreateProductionType, useCrew, useCrewGroups, useDeleteCrewGroup, useProductionTypes, useRemoveCrewGroupMember } from "@/lib/db";
+import { CREW_ROLES } from "@/components/site/SiteTabs";
 
 const REQUIRED_FIELDS = ["name", "role", "department"] as const;
 const CREW_FIELDS = [...REQUIRED_FIELDS, "location", "email", "phone", "day_rate", "experience"] as const;
@@ -132,7 +133,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 const ADMIN_GROUPS = [
-  { name: "People & Organisations", tabs: ["Users", "Crew", "Crew Types", "Companies", "Subscriptions"] },
+  { name: "People & Organisations", tabs: ["Users", "Crew Types", "Companies", "Subscriptions"] },
   { name: "Operations", tabs: ["Bookings", "Equipment", "Import"] },
   { name: "Finance", tabs: ["Payments", "Invoices", "Gig Fees"] },
   { name: "Trust & Compliance", tabs: ["Disputes", "Reviews"] },
@@ -208,7 +209,6 @@ function AdminPage() {
         ))}
       </nav>
       {tab === "Users" && <UsersTab canManageAdmins={isSuperAdmin} />}
-      {tab === "Crew" && <CrewTab />}
       {tab === "Crew Types" && <CrewTypesTab />}
       {tab === "Import" && <ImportTab />}
       {tab === "Companies" && <CompaniesTab />}
@@ -366,83 +366,6 @@ function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
   );
 }
 
-function CrewTab() {
-  const inv = useInv();
-  const crew = useQuery({
-    queryKey: ["admin-crew"],
-    queryFn: async () => { const { data, error } = await supabase.from("crew_members").select("id, name, role, department, day_rate, rating, available").order("name"); if (error) throw error; return data ?? []; },
-  });
-  const [editing, setEditing] = useState<string | null>(null);
-  const [draft, setDraft] = useState({ name: "", role: "", department: "", day_rate: "" });
-  const [adding, setAdding] = useState(false);
-  const [newCrew, setNewCrew] = useState({ name: "", role: "", department: "", day_rate: "" });
-
-  function startEdit(c: { id: string; name: string; role: string; department: string; day_rate: number }) {
-    setEditing(c.id);
-    setDraft({ name: c.name, role: c.role, department: c.department, day_rate: String(c.day_rate) });
-  }
-
-  async function saveEdit(id: string) {
-    const { error } = await supabase.from("crew_members").update({ name: draft.name.trim(), role: draft.role.trim(), department: draft.department.trim(), day_rate: Number(draft.day_rate) || 0 }).eq("id", id);
-    if (error) { toast.error(friendlyError(error)); return; }
-    toast.success("Crew member updated");
-    setEditing(null);
-    inv(["admin-crew"], ["crew"], ["crew-search"]);
-  }
-
-  async function addCrew() {
-    if (!newCrew.name.trim() || !newCrew.role.trim() || !newCrew.department.trim()) { toast.error("Name, role and department are required"); return; }
-    const { error } = await supabase.from("crew_members").insert({ name: newCrew.name.trim(), role: newCrew.role.trim(), department: newCrew.department.trim(), day_rate: Number(newCrew.day_rate) || 0 });
-    if (error) { toast.error(friendlyError(error)); return; }
-    toast.success("Crew member added");
-    setNewCrew({ name: "", role: "", department: "", day_rate: "" });
-    setAdding(false);
-    inv(["admin-crew"], ["crew"], ["crew-search"], ["departments"]);
-  }
-
-  async function removeCrew(id: string) {
-    const { error } = await supabase.from("crew_members").delete().eq("id", id);
-    if (error) { toast.error(friendlyError(error)); return; }
-    toast.success("Crew member removed");
-    inv(["admin-crew"], ["crew"], ["crew-search"]);
-  }
-
-  return (
-    <Panel title={`Crew (${crew.data?.length ?? 0})`} right={!adding && (
-      <button onClick={() => setAdding(true)} className="text-xs font-semibold text-primary hover:underline">+ Add crew member</button>
-    )}>
-      {adding && (
-        <div className="flex flex-wrap items-end gap-2 border-b border-border p-4">
-          <input placeholder="Name" className={`${invField} min-w-40`} value={newCrew.name} onChange={(e) => setNewCrew({ ...newCrew, name: e.target.value })} />
-          <input placeholder="Role" className={`${invField} min-w-32`} value={newCrew.role} onChange={(e) => setNewCrew({ ...newCrew, role: e.target.value })} />
-          <input placeholder="Department" className={`${invField} min-w-32`} value={newCrew.department} onChange={(e) => setNewCrew({ ...newCrew, department: e.target.value })} />
-          <input type="number" placeholder="Day rate" className={`${invField} w-28`} value={newCrew.day_rate} onChange={(e) => setNewCrew({ ...newCrew, day_rate: e.target.value })} />
-          <button onClick={addCrew} className={btn}>Add</button>
-          <button onClick={() => setAdding(false)} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold">Cancel</button>
-        </div>
-      )}
-      <table className="w-full text-sm">
-        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Name</th><th className="px-4">Role</th><th className="px-4">Department</th><th className="px-4">Rate</th><th className="px-4">Rating</th><th className="px-4">Action</th></tr></thead>
-        <tbody>{(crew.data ?? []).map((c) => editing === c.id ? (
-          <tr key={c.id} className="border-t border-border">
-            <td className="px-4 py-2"><input className={`${invField} w-full`} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></td>
-            <td className="px-4"><input className={`${invField} w-full`} value={draft.role} onChange={(e) => setDraft({ ...draft, role: e.target.value })} /></td>
-            <td className="px-4"><input className={`${invField} w-full`} value={draft.department} onChange={(e) => setDraft({ ...draft, department: e.target.value })} /></td>
-            <td className="px-4"><input type="number" className={`${invField} w-24`} value={draft.day_rate} onChange={(e) => setDraft({ ...draft, day_rate: e.target.value })} /></td>
-            <td className="px-4">★ {c.rating}</td>
-            <td className="px-4 flex gap-2"><button onClick={() => saveEdit(c.id)} className="text-xs text-primary hover:underline">Save</button><button onClick={() => setEditing(null)} className="text-xs text-muted-foreground hover:underline">Cancel</button></td>
-          </tr>
-        ) : (
-          <tr key={c.id} className="border-t border-border">
-            <td className="px-4 py-2 font-medium">{c.name}</td><td className="px-4">{c.role}</td><td className="px-4">{c.department}</td><td className="px-4">{zar(c.day_rate)}</td><td className="px-4">★ {c.rating}</td>
-            <td className="px-4 flex gap-2"><button onClick={() => startEdit(c)} className="text-xs text-primary hover:underline">Edit</button><button onClick={() => removeCrew(c.id)} className="text-xs text-destructive hover:underline">Delete</button></td>
-          </tr>
-        ))}</tbody>
-      </table>
-    </Panel>
-  );
-}
-
 // Crew Types: producers group crew members into named, reusable templates (optionally tagged to
 // a production type) instead of editing raw crew records — picked from Find Crew's Select Crew Type.
 function CrewTypesTab() {
@@ -520,14 +443,17 @@ function CrewTypesTab() {
             </div>
             {expanded === g.id && (
               <div className="space-y-2 border-t border-border bg-muted/20 px-4 py-3">
+                {g.name === "Default Crew Type" && (
+                  <p className="text-xs text-muted-foreground">Add crew covering these roles: {CREW_ROLES.join(", ")}.</p>
+                )}
                 {g.memberIds.length === 0 && <p className="text-xs text-muted-foreground">No crew members added yet.</p>}
-                <ul className="flex flex-wrap gap-1.5">
+                <ul className="divide-y divide-border rounded-sm border border-border bg-card">
                   {g.memberIds.map((id) => {
                     const c = crew.find((x) => x.id === id);
                     return (
-                      <li key={id} className="inline-flex items-center gap-1 rounded-sm bg-card px-2 py-1 text-xs">
-                        {c?.name ?? "Unknown"}
-                        <button onClick={() => removeMember.mutate({ groupId: g.id, crewId: id })} aria-label={`Remove ${c?.name ?? "member"}`} className="text-muted-foreground hover:text-destructive">×</button>
+                      <li key={id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                        <span className="min-w-0 truncate">{c?.name ?? "Unknown"}{c?.role && <span className="text-xs text-muted-foreground"> · {c.role}</span>}</span>
+                        <button onClick={() => removeMember.mutate({ groupId: g.id, crewId: id })} aria-label={`Remove ${c?.name ?? "member"}`} className="shrink-0 text-xs text-muted-foreground hover:text-destructive">Remove</button>
                       </li>
                     );
                   })}
