@@ -37,10 +37,10 @@ export const Route = createFileRoute("/_authenticated/productions/$id")({
 });
 
 // Crew see only Posts, Tasks and Photos (Overview is the fixed left widget).
-// Find Crew (scenario planner) opens from the header button beside the status badge.
+// The Crew tab is a live workspace: Crew Role Required on top, the Sandbox scenario planner below.
 const CREW_TABS = ["Posts", "Tasks", "Photos"] as const;
 const MANAGER_TABS = ["Posts", "Crew", "Checklists", "Tasks", "Documents", "Photos", "Budget", "Review", "Audit"] as const;
-type Tab = (typeof MANAGER_TABS)[number] | "Find Crew";
+type Tab = (typeof MANAGER_TABS)[number];
 
 function ProductionSite() {
   const { id } = Route.useParams();
@@ -55,8 +55,9 @@ function ProductionSite() {
   const myCrewId = useMyCrewId(!!userId && role.data === "crew").data ?? null;
   const myName = useMyName(userId || undefined).data ?? "";
   const { tab: tabParam, group: groupParam } = Route.useSearch();
-  const [tab, setTab] = useState<Tab>(tabParam === "find-crew" ? "Find Crew" : "Posts");
-  useEffect(() => { if (tabParam === "find-crew") setTab("Find Crew"); }, [tabParam]);
+  const isValidTab = (t: string | undefined): t is Tab => !!t && (MANAGER_TABS as readonly string[]).includes(t);
+  const [tab, setTab] = useState<Tab>(tabParam === "find-crew" ? "Crew" : isValidTab(tabParam) ? tabParam : "Posts");
+  useEffect(() => { if (tabParam === "find-crew") setTab("Crew"); else if (isValidTab(tabParam)) setTab(tabParam); }, [tabParam]);
   const [asideOpen, setAsideOpen] = useState(true);
   const p = prods.data?.find((x) => x.id === id);
   const rates = useBookingRates(p?.id ?? "");
@@ -100,7 +101,7 @@ function ProductionSite() {
           </button>
           {myCrewId && <CrewOvertimePanel productionId={p.id} crewId={myCrewId} rate={rates[myCrewId] ?? 0} date={p.date || null} />}
           <fieldset disabled={closed} className="min-w-0"><OverviewTab {...ctx} /></fieldset>
-          {isProducer && tab === "Find Crew" && <EquipmentAvailability p={p} />}
+          {isProducer && tab === "Crew" && <EquipmentAvailability p={p} />}
         </aside>
         <section className="flex min-w-0 flex-col">
           <nav className="mb-4 flex w-full gap-1 overflow-x-auto rounded-sm border border-border bg-card">
@@ -114,6 +115,7 @@ function ProductionSite() {
           {tab === "Crew" && isProducer && (
             <div className="space-y-5">
               <CrewRoleStatus p={p} />
+              <ScenarioPlanner p={p} initialGroupId={groupParam} />
               {/* Hidden until someone's actually confirmed — pencilled bookings don't count, and an empty roster + register is just visual noise before then. */}
               {bookings.some((b) => b.productionId === p.id && CONFIRMED_BOOKING_STATUSES.includes(b.status)) && <><MembersList {...ctx} /><RegisterTab {...ctx} /></>}
             </div>
@@ -124,7 +126,6 @@ function ProductionSite() {
           {tab === "Photos" && <PhotosTab p={p} userId={userId} isProducer={isProducer} />}
           {tab === "Documents" && isProducer && <DocumentsTab p={p} userId={userId} myName={myName} isProducer={isProducer} />}
           {tab === "Budget" && isProducer && <CommercialsTab {...ctx} bookings={bookings} crewNames={crewNames} requests={requests} />}
-          {tab === "Find Crew" && isProducer && <ScenarioPlanner p={p} initialGroupId={groupParam} />}
           {tab === "Review" && isProducer && <RetroTab p={p} />}
           </fieldset>
         </section>

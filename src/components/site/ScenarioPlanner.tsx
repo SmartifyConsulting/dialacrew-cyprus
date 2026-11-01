@@ -92,7 +92,9 @@ export function ScenarioPlanner({ p, initialGroupId }: { p: Production; initialG
 
   const [selByDay, setSelByDay] = useState<SelectionByDay>(blankSelByDay);
   const [activeDay, setActiveDay] = useState<string>(shootDays[0] ?? "");
-  const [name, setName] = useState("Scenario A");
+  // Crew Role Required (above this panel) is scenario 1 for all practical purposes — Sandbox
+  // scenarios are the alternatives to weigh up against it, so numbering starts at 2.
+  const [name, setName] = useState("Scenario 2");
   const [brief, setBrief] = useState(p.summary ?? "");
   const [busy, setBusy] = useState(false);
   const [ai, setAi] = useState<MatchResult | null>(null);
@@ -164,7 +166,7 @@ export function ScenarioPlanner({ p, initialGroupId }: { p: Production; initialG
   function pick(id: string) {
     setActiveId(id);
     setActiveDay(shootDays[0] ?? "");
-    if (!id) { setSelByDay(blankSelByDay()); setName(`Scenario ${String.fromCharCode(65 + Math.min(scenarios.data?.length ?? 0, 25))}`); return; }
+    if (!id) { setSelByDay(blankSelByDay()); setName(`Scenario ${(scenarios.data?.length ?? 0) + 2}`); return; }
     const s = scenarios.data?.find((x) => x.id === id);
     if (s) { setSelByDay(s.selByDay); setName(s.name); }
   }
@@ -263,17 +265,19 @@ export function ScenarioPlanner({ p, initialGroupId }: { p: Production; initialG
               const cost = scenarioCostAllDays(s.selByDay, rates, fees);
               const crewCount = new Set(Object.values(s.selByDay).flatMap((d) => Object.keys(d))).size;
               return (
-                <button key={s.id} onClick={() => pick(s.id)}
-                  className={`rounded-sm border px-3 py-2 text-left text-xs ${activeId === s.id ? "border-primary bg-primary/10" : "border-border hover:border-primary"}`}>
-                  <div className="font-semibold">{s.name}</div>
-                  <div className="text-muted-foreground">{crewCount} crew · {zar(cost)}</div>
-                </button>
+                <div key={s.id} className={`flex items-center gap-2 rounded-sm border px-3 py-2 text-xs ${activeId === s.id ? "border-primary bg-primary/10" : "border-border hover:border-primary"}`}>
+                  <button onClick={() => pick(s.id)} className="min-w-0 flex-1 text-left">
+                    <div className="font-semibold">{s.name}</div>
+                    <div className="text-muted-foreground">{crewCount} crew · {zar(cost)}</div>
+                  </button>
+                  <button onClick={() => commit(s)} disabled={committing} className={`${ghost} shrink-0`}><CheckCircle2 className="h-3.5 w-3.5" /> Pencil</button>
+                </div>
               );
             })}
           </div>
         )}
         <div className="flex flex-wrap items-center gap-2 border-b border-border p-4">
-          <button onClick={() => pick("")} className={ghost}><Plus className="h-3 w-3" /> New scenario</button>
+          <button onClick={() => pick("")} className={ghost}><Plus className="h-3 w-3" /> Add Scenario {(scenarios.data?.length ?? 0) + 2}</button>
           <input className="min-w-40 flex-1 rounded-sm border border-input bg-background px-2 py-2 text-sm" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} aria-label="Scenario name" placeholder="Scenario name" />
           {aiUnlocked && (
             <div className="relative">
@@ -397,7 +401,6 @@ export function ScenarioPlanner({ p, initialGroupId }: { p: Production; initialG
           </div>
           <div className="ml-auto flex items-center gap-2">
             <button onClick={save} className={btn}><Save className="h-4 w-4" /> {activeId ? "Update scenario" : "Save scenario"}</button>
-            {activeId && <button className={ghost} disabled={committing} onClick={() => { const s = scenarios.data?.find((x) => x.id === activeId); if (s) commit(s); }}><CheckCircle2 className="h-3.5 w-3.5" /> Commit</button>}
             {activeId && <button className={ghost} aria-label="Delete scenario" onClick={() => remove(activeId)}><Trash2 className="h-3.5 w-3.5" /> Delete</button>}
           </div>
         </div>

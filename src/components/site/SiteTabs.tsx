@@ -646,7 +646,7 @@ export function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
   return (
     <Panel title="Crew Role Required" right={
       <select disabled={unassignedRoles.length === 0} value=""
-        onChange={(e) => navigate({ to: "/productions/$id", params: { id: p.id }, search: e.target.value === "__browse__" ? { tab: "find-crew" } : { tab: "find-crew", group: e.target.value } })}
+        onChange={(e) => navigate({ to: "/productions/$id", params: { id: p.id }, search: e.target.value === "__browse__" ? { tab: "Crew" } : { tab: "Crew", group: e.target.value } })}
         className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40" aria-label="Select Crew Type">
         <option value="" disabled>Select Crew Type</option>
         <option value="__browse__">Browse all crew…</option>
