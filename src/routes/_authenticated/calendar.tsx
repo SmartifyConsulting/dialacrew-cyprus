@@ -82,7 +82,7 @@ function CalendarPage() {
               {d && <p className={`mb-1 text-xs font-semibold ${key === today ? "text-primary" : "text-muted-foreground"}`}>{d.getDate()}</p>}
               {weather && (
                 <p className="mb-1 flex items-center gap-1 text-[10px] text-muted-foreground" title={forecastSummary(weather)}>
-                  <span className="text-sm leading-none" aria-hidden="true">{WEATHER_ICONS[weather.code] ?? "🌡️"}</span>
+                  <span className="text-[1.3125rem] leading-none" aria-hidden="true">{WEATHER_ICONS[weather.code] ?? "🌡️"}</span>
                   {weather.max != null && weather.min != null ? `${Math.round(weather.min)}–${Math.round(weather.max)}°` : ""}
                 </p>
               )}

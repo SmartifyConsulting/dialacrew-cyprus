@@ -255,7 +255,7 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
                 {d && <span>{d.getDate()}</span>}
                 {weather && (
                   <CalPop label={forecastSummary(weather)} align={align}
-                    trigger={<span className="flex items-center gap-0.5 text-[11px] leading-none"><span aria-hidden="true">{WEATHER_ICONS[weather.code] ?? "🌡️"}</span>{weather.max != null ? `${Math.round(weather.max)}°` : ""}</span>}>
+                    trigger={<span className="flex items-center gap-0.5 text-[11px] leading-none"><span className="text-[16.5px]" aria-hidden="true">{WEATHER_ICONS[weather.code] ?? "🌡️"}</span>{weather.max != null ? `${Math.round(weather.max)}°` : ""}</span>}>
                     {forecastSummary(weather)}
                   </CalPop>
                 )}
