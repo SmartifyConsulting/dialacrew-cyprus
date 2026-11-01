@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
+import { inviteCrewMembers } from "@/lib/invite.functions";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { Page, Badge, Panel } from "@/components/AppShell";
@@ -26,11 +28,12 @@ function parseCsv(text: string): { headers: string[]; rows: string[][] } {
 
 function ImportTab() {
   const inv = useInv();
+  const invite = useServerFn(inviteCrewMembers);
   const fileRef = useRef<HTMLInputElement>(null);
   const [csv, setCsv] = useState<{ headers: string[]; rows: string[][] } | null>(null);
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [importing, setImporting] = useState(false);
-  const [result, setResult] = useState<{ imported: number; skipped: number; errors: string[] } | null>(null);
+  const [result, setResult] = useState<{ imported: number; skipped: number; errors: string[]; invited: number; inviteErrors: string[] } | null>(null);
 
   function onFile(file?: File) {
     if (!file) return;
@@ -70,20 +73,36 @@ function ImportTab() {
         experience: mapping["experience"] ? (Number(row[idx("experience")]) || 0) : 0,
       });
     });
+    let invited = 0;
+    let inviteErrors: string[] = [];
     if (rowsToInsert.length) {
-      const { error } = await supabase.from("crew_members").insert(rowsToInsert);
-      if (error) errors.push(`Insert failed: ${error.message}`); else imported = rowsToInsert.length;
+      const { data: inserted, error } = await supabase.from("crew_members").insert(rowsToInsert).select("id, name, email");
+      if (error) errors.push(`Insert failed: ${error.message}`);
+      else {
+        imported = rowsToInsert.length;
+        const withEmail = (inserted ?? []).filter((r) => r.email).map((r) => ({ crewId: r.id, email: r.email, name: r.name }));
+        if (withEmail.length) {
+          try {
+            const res = await invite({ data: { crew: withEmail } });
+            invited = res.invited;
+            inviteErrors = res.errors;
+          } catch (e) { inviteErrors = [e instanceof Error ? e.message : "Could not send invites"]; }
+        }
+      }
     }
-    setResult({ imported, skipped, errors });
+    setResult({ imported, skipped, errors, invited, inviteErrors });
     setImporting(false);
-    if (imported > 0) { toast.success(`Imported ${imported} crew member${imported > 1 ? "s" : ""}`); inv(["admin-crew"], ["crew"], ["crew-search"], ["departments"]); }
+    if (imported > 0) {
+      toast.success(`Imported ${imported} crew member${imported > 1 ? "s" : ""}${invited ? ` — ${invited} invited to the app` : ""}`);
+      inv(["admin-crew"], ["crew"], ["crew-search"], ["departments"]);
+    }
   }
 
   return (
     <div className="space-y-5">
       <Panel title="Import crew from CSV">
         <div className="space-y-3 p-4">
-          <p className="text-sm text-muted-foreground">Upload a CSV with a header row. Map its columns to crew fields below, preview, then import. Required: name, role, department.</p>
+          <p className="text-sm text-muted-foreground">Upload a CSV with a header row. Map its columns to crew fields below, preview, then import. Required: name, role, department. Rows with an email are automatically invited to the app.</p>
           <label className="inline-flex w-fit cursor-pointer items-center rounded-sm bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground">
             Upload
             <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={(e) => onFile(e.target.files?.[0])} className="hidden" />
@@ -116,8 +135,14 @@ function ImportTab() {
           )}
           {result && (
             <div className="rounded-sm border border-border bg-muted/30 p-3 text-sm">
-              <div>Imported: {result.imported} · Skipped: {result.skipped}</div>
+              <div>Imported: {result.imported} · Skipped: {result.skipped} · Invited: {result.invited}</div>
               {result.errors.length > 0 && <ul className="mt-2 max-h-40 list-disc overflow-y-auto pl-5 text-xs text-muted-foreground">{result.errors.map((e, i) => <li key={i}>{e}</li>)}</ul>}
+              {result.inviteErrors.length > 0 && (
+                <>
+                  <div className="mt-2 text-xs font-semibold text-destructive">Invite errors</div>
+                  <ul className="max-h-40 list-disc overflow-y-auto pl-5 text-xs text-muted-foreground">{result.inviteErrors.map((e, i) => <li key={i}>{e}</li>)}</ul>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -136,7 +161,8 @@ const ADMIN_GROUPS = [
   { name: "People & Organisations", tabs: ["Users", "Import", "Crew Types", "Companies", "Subscriptions"] },
   { name: "Operations", tabs: ["Bookings", "Equipment"] },
   { name: "Finance", tabs: ["Payments", "Invoices", "Gig Fees"] },
-  { name: "Trust & Compliance", tabs: ["Disputes", "Reviews"] },
+  { name: "Disputes", tabs: ["Disputes"] },
+  { name: "Reviews", tabs: ["Reviews"] },
   { name: "Engagement", tabs: ["Social Spotlights"] },
   { name: "Documents", tabs: ["Document Checklists", "Templates"] },
   { name: "Platform Management", tabs: ["Configuration", "System Settings", "Audit Log"] },
@@ -148,7 +174,8 @@ const PRODUCER_ADMIN_GROUPS = [
   { name: "People & Organisations", tabs: ["Users", "Import", "Crew Types"] },
   { name: "Operations", tabs: ["Bookings", "Equipment"] },
   { name: "Finance", tabs: ["Payments", "Invoices", "Gig Fees"] },
-  { name: "Trust & Compliance", tabs: ["Disputes", "Reviews"] },
+  { name: "Disputes", tabs: ["Disputes"] },
+  { name: "Reviews", tabs: ["Reviews"] },
   { name: "Engagement", tabs: ["Social Spotlights"] },
   { name: "Documents", tabs: ["Document Checklists", "Templates"] },
 ] as const;
@@ -554,9 +581,10 @@ const BOOKING_STATUSES = ["draft", "open", "pencil", "awaiting_crew_confirmation
 
 function BookingsTab() {
   const inv = useInv();
+  const [openProd, setOpenProd] = useState<string | null>(null);
   const bookings = useQuery({
     queryKey: ["admin-bookings"],
-    queryFn: async () => { const { data, error } = await supabase.from("bookings").select("id, role, status, payment_status, booking_date, crew_members(name), productions(name)").order("booking_date", { ascending: false }); if (error) throw error; return data ?? []; },
+    queryFn: async () => { const { data, error } = await supabase.from("bookings").select("id, role, status, payment_status, booking_date, crew_members(name), productions(id, name)").order("booking_date", { ascending: false }); if (error) throw error; return data ?? []; },
   });
 
   async function setStatus(id: string, status: (typeof BOOKING_STATUSES)[number]) {
@@ -573,25 +601,44 @@ function BookingsTab() {
     inv(["admin-bookings"], ["admin-payments"]);
   }
 
+  const byProduction = new Map<string, { name: string; rows: NonNullable<typeof bookings.data> }>();
+  for (const b of bookings.data ?? []) {
+    const prod = b.productions as { id: string; name: string } | null;
+    const key = prod?.id ?? "unassigned";
+    if (!byProduction.has(key)) byProduction.set(key, { name: prod?.name ?? "No production", rows: [] });
+    byProduction.get(key)!.rows.push(b);
+  }
+
   return (
     <Panel title={`Bookings (${bookings.data?.length ?? 0})`}>
-      <table className="w-full text-sm">
-        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Production</th><th className="px-4">Crew</th><th className="px-4">Role</th><th className="px-4">Date</th><th className="px-4">Status</th><th className="px-4">Payment</th><th className="px-4">Action</th></tr></thead>
-        <tbody>{(bookings.data ?? []).map((b) => (
-          <tr key={b.id} className="border-t border-border">
-            <td className="px-4 py-2 font-medium">{(b.productions as { name: string } | null)?.name}</td>
-            <td className="px-4">{(b.crew_members as { name: string } | null)?.name}</td>
-            <td className="px-4">{b.role}</td><td className="px-4">{b.booking_date}</td>
-            <td className="px-4">
-              <select className={`${invField} py-1`} value={b.status} onChange={(e) => setStatus(b.id, e.target.value as (typeof BOOKING_STATUSES)[number])}>
-                {BOOKING_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </td>
-            <td className="px-4 text-xs text-muted-foreground">{b.payment_status}</td>
-            <td className="px-4"><button onClick={() => removeBooking(b.id)} className="text-xs text-destructive hover:underline">Delete</button></td>
-          </tr>
-        ))}</tbody>
-      </table>
+      <ul className="divide-y divide-border">
+        {[...byProduction.entries()].map(([prodId, group]) => (
+          <li key={prodId}>
+            <button onClick={() => setOpenProd(openProd === prodId ? null : prodId)} className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left hover:bg-muted/40">
+              <span className="font-medium">{group.name} <span className="font-normal text-muted-foreground">({group.rows.length})</span></span>
+              <span className="text-xs text-muted-foreground">{openProd === prodId ? "Hide ▲" : "Show ▼"}</span>
+            </button>
+            {openProd === prodId && (
+              <table className="w-full text-sm">
+                <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Crew</th><th className="px-4">Role</th><th className="px-4">Date</th><th className="px-4">Status</th><th className="px-4">Payment</th><th className="px-4">Action</th></tr></thead>
+                <tbody>{group.rows.map((b) => (
+                  <tr key={b.id} className="border-t border-border">
+                    <td className="px-4 py-2">{(b.crew_members as { name: string } | null)?.name}</td>
+                    <td className="px-4">{b.role}</td><td className="px-4">{b.booking_date}</td>
+                    <td className="px-4">
+                      <select className={`${invField} py-1`} value={b.status} onChange={(e) => setStatus(b.id, e.target.value as (typeof BOOKING_STATUSES)[number])}>
+                        {BOOKING_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </td>
+                    <td className="px-4 text-xs text-muted-foreground">{b.payment_status}</td>
+                    <td className="px-4"><button onClick={() => removeBooking(b.id)} className="text-xs text-destructive hover:underline">Delete</button></td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            )}
+          </li>
+        ))}
+      </ul>
     </Panel>
   );
 }
