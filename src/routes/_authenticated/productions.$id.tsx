@@ -16,7 +16,7 @@ import { ProductionCover } from "@/components/site/ProductionCover";
 import { DocumentsTab } from "@/components/site/DocumentsTab";
 import { EquipmentAvailability } from "@/components/site/EquipmentAvailability";
 import { CrewOvertimePanel, useBookingRates } from "@/components/site/Overtime";
-import { ChecklistsPanel, CommercialsTab, CrewRoleStatus, MembersList, OverviewTab, PostsTab, RegisterTab, TasksTab } from "@/components/site/SiteTabs";
+import { ChecklistsPanel, CommercialsTab, CONFIRMED_BOOKING_STATUSES, CrewRoleStatus, MembersList, OverviewTab, PostsTab, RegisterTab, TasksTab } from "@/components/site/SiteTabs";
 
 export const Route = createFileRoute("/_authenticated/productions/$id")({
   validateSearch: (s: Record<string, unknown>): { tab?: string; group?: string } => ({
@@ -114,8 +114,8 @@ function ProductionSite() {
           {tab === "Crew" && isProducer && (
             <div className="space-y-5">
               <CrewRoleStatus p={p} />
-              {/* Hidden until someone's actually booked — an empty roster + register is just visual noise on a fresh production. */}
-              {bookings.some((b) => b.productionId === p.id && b.status !== "cancelled") && <><MembersList {...ctx} /><RegisterTab {...ctx} /></>}
+              {/* Hidden until someone's actually confirmed — pencilled bookings don't count, and an empty roster + register is just visual noise before then. */}
+              {bookings.some((b) => b.productionId === p.id && CONFIRMED_BOOKING_STATUSES.includes(b.status)) && <><MembersList {...ctx} /><RegisterTab {...ctx} /></>}
             </div>
           )}
           {tab === "Checklists" && <ChecklistsPanel p={p} isProducer={isProducer} />}
