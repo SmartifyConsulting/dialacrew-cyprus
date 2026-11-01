@@ -8,7 +8,7 @@ import { Panel } from "@/components/AppShell";
 import { useBookings } from "@/lib/db";
 import { useLocationPoints } from "@/lib/site";
 import { fmtMoney, type Production } from "@/lib/demo-data";
-import { CrewRoleStatus } from "@/components/site/SiteTabs";
+import { CrewRequiredColumn, CrewRoleStatus, useCrewRoleList } from "@/components/site/SiteTabs";
 import { ScenarioPlanner, scenarioKey } from "@/components/site/ScenarioPlanner";
 
 const addDays = (ymd: string, n: number) => { const d = new Date(`${ymd}T00:00:00`); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
@@ -17,13 +17,16 @@ const dayLabel = (ymd: string) => new Date(`${ymd}T00:00:00`).toLocaleDateString
 const ghost = "inline-flex items-center gap-1 rounded-sm border border-border px-2 py-1 text-xs hover:border-primary hover:text-primary disabled:opacity-50";
 
 // Crew Required + Sandbox, one independent workspace per shoot day. A producer fills each day on
-// its own (crew can differ day to day); Copy buttons carry one day's pencils and scenarios across
-// instead of starting from scratch every time.
+// its own (crew can differ day to day); Copy to: carries one day's pencils and scenarios across
+// to whichever other days are ticked, instead of starting from scratch every time.
 export function CrewDayPlanner({ p }: { p: Production }) {
   const qc = useQueryClient();
   const locationPoints = useLocationPoints(p.id).data ?? [];
   const allBookings = useBookings().data ?? [];
+  const roles = useCrewRoleList(p);
   const [copying, setCopying] = useState<string | null>(null);
+  const [copyOpenFor, setCopyOpenFor] = useState<string | null>(null);
+  const [copyTargets, setCopyTargets] = useState<Set<string>>(new Set());
 
   const days = Math.max(1, p.days || 1);
   const shootDays = useMemo(() => {
@@ -37,6 +40,17 @@ export function CrewDayPlanner({ p }: { p: Production }) {
   const costOf = (b: (typeof productionBookings)[number]) => b.crewRate * Math.max(1, b.days || 1);
   const totalPencilled = productionBookings.reduce((sum, b) => sum + costOf(b), 0);
   const variance = p.budget - totalPencilled;
+
+  function openCopy(day: string) {
+    setCopyOpenFor(copyOpenFor === day ? null : day);
+    setCopyTargets(new Set());
+  }
+  function toggleTarget(day: string) {
+    setCopyTargets((prev) => { const n = new Set(prev); if (n.has(day)) n.delete(day); else n.add(day); return n; });
+  }
+  function toggleSelectAll(others: string[]) {
+    setCopyTargets((prev) => (prev.size === others.length ? new Set() : new Set(others)));
+  }
 
   async function copyDay(fromDate: string, toDates: string[]) {
     setCopying(fromDate);
@@ -62,10 +76,10 @@ export function CrewDayPlanner({ p }: { p: Production }) {
           if (error) throw error;
         }
       }
-      toast.success(toDates.length > 1 ? `Copied ${dayLabel(fromDate)} to every other day` : `Copied ${dayLabel(fromDate)} to ${dayLabel(toDates[0]!)}`);
+      toast.success(toDates.length > 1 ? `Copied ${dayLabel(fromDate)} to ${toDates.length} day(s)` : `Copied ${dayLabel(fromDate)} to ${dayLabel(toDates[0]!)}`);
       ["production-checklist", "bookings", "scenarios"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
     } catch (e) { toast.error(friendlyError(e)); }
-    finally { setCopying(null); }
+    finally { setCopying(null); setCopyOpenFor(null); }
   }
 
   if (shootDays.length === 0) {
@@ -80,19 +94,41 @@ export function CrewDayPlanner({ p }: { p: Production }) {
       </div>
       {shootDays.map((day, i) => {
         const dayTotal = productionBookings.filter((b) => b.bookingDate === day).reduce((sum, b) => sum + costOf(b), 0);
-        const nextDay = shootDays[i + 1];
+        const otherDays = shootDays.filter((d) => d !== day);
         return (
           <Panel key={day} title={`Day ${i + 1} · ${dayLabel(day)}`} collapsible defaultCollapsed={i > 0}
             badge={<span className="text-xs font-normal text-muted-foreground">{fmtMoney(dayTotal, p.currency)} pencilled</span>}
             right={shootDays.length > 1 && (
-              <div className="flex items-center gap-2">
-                {nextDay && <button disabled={copying === day} onClick={() => copyDay(day, [nextDay])} className={ghost}><Copy className="h-3 w-3" /> Copy to Day {i + 2}</button>}
-                <button disabled={copying === day} onClick={() => copyDay(day, shootDays.filter((d) => d !== day))} className={ghost}><Copy className="h-3 w-3" /> Copy to all days</button>
+              <div className="relative">
+                <button disabled={copying === day} onClick={() => openCopy(day)} className={ghost}><Copy className="h-3 w-3" /> Copy to…</button>
+                {copyOpenFor === day && (
+                  <div className="absolute right-0 top-full z-20 mt-1 w-60 rounded-sm border border-border bg-card p-3 shadow-md">
+                    <label className="flex items-center gap-2 border-b border-border pb-2 text-xs font-semibold">
+                      <input type="checkbox" checked={copyTargets.size === otherDays.length} onChange={() => toggleSelectAll(otherDays)} className="accent-primary" />
+                      Select all
+                    </label>
+                    <ul className="max-h-48 space-y-1 overflow-y-auto py-2">
+                      {otherDays.map((d) => (
+                        <li key={d}>
+                          <label className="flex items-center gap-2 text-xs">
+                            <input type="checkbox" checked={copyTargets.has(d)} onChange={() => toggleTarget(d)} className="accent-primary" />
+                            Day {shootDays.indexOf(d) + 1} · {dayLabel(d)}
+                          </label>
+                        </li>
+                      ))}
+                    </ul>
+                    <button disabled={copying === day || copyTargets.size === 0} onClick={() => copyDay(day, [...copyTargets])}
+                      className="w-full rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50">
+                      {copying === day ? "Copying…" : `Copy to ${copyTargets.size || ""} day${copyTargets.size === 1 ? "" : "s"}`}
+                    </button>
+                  </div>
+                )}
               </div>
             )}>
             <div className="flex items-start gap-4 overflow-x-auto p-4">
-              <div className="w-96 shrink-0"><CrewRoleStatus p={p} date={day} /></div>
-              <ScenarioPlanner p={p} date={day} />
+              <div className="w-56 shrink-0"><CrewRequiredColumn {...roles} /></div>
+              <div className="w-72 shrink-0"><CrewRoleStatus p={p} date={day} roleList={roles.roleList} /></div>
+              <ScenarioPlanner p={p} date={day} roleList={roles.roleList} />
             </div>
           </Panel>
         );

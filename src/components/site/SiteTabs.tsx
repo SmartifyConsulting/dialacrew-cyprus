@@ -574,11 +574,14 @@ export function crewRelevantToChecklist(c: { role: string; department?: string; 
 
 export const CONFIRMED_BOOKING_STATUSES =["confirmed", "in_progress", "completed", "payment_released"];
 
-/* ---------------- Crew role required (standard roles still needing a confirmed booking) — one per shoot day ---------------- */
-export function CrewRoleStatus({ p, date }: Pick<Ctx, "p"> & { date: string }) {
+/* ---------------- Crew role required: the role list itself (shared, fixed left pane) and each
+   shoot day's per-role status — Crew Required is scenario 1, Sandbox scenarios sit beside it ---------------- */
+const ROW = "flex items-center gap-2 px-3 min-h-[3.5rem] border-b border-border last:border-b-0";
+
+// The role list is shared across every scenario for a given day (and across days) — managed once
+// in the fixed "Crew Required" label pane, not repeated in each scenario column.
+export function useCrewRoleList(p: Pick<Production, "id">) {
   const inv = useInvalidate();
-  const groups = useCrewGroups().data ?? [];
-  const sortedGroups = [...groups].sort((a, b) => Number(b.productionType === p.type) - Number(a.productionType === p.type));
   const savedRoles = useProductionCrewRoles(p.id).data ?? [];
   const globalDefaults = useDefaultCrewRoles().data ?? [];
   // No customisation saved yet for this production — fall back to the editable global default
@@ -598,6 +601,34 @@ export function CrewRoleStatus({ p, date }: Pick<Ctx, "p"> & { date: string }) {
     setNewRole("");
   }
   function removeRole(role: string) { setRoleList(roleList.filter((r) => r !== role)); }
+  return { roleList, newRole, setNewRole, addRole, removeRole };
+}
+
+// Fixed left pane: just the role names (shared row height with every scenario column to its
+// right) plus the add/remove-role controls — stays put while scenario columns scroll beside it.
+export function CrewRequiredColumn({ roleList, newRole, setNewRole, addRole, removeRole }: ReturnType<typeof useCrewRoleList>) {
+  return (
+    <Panel title="Crew Required">
+      <ul className="text-sm">
+        {roleList.map((role) => (
+          <li key={role} className={ROW}>
+            <span className="min-w-0 flex-1 truncate font-medium">{role}</span>
+            <button onClick={() => removeRole(role)} aria-label={`Remove ${role}`} className="shrink-0 text-muted-foreground hover:text-destructive">✕</button>
+          </li>
+        ))}
+      </ul>
+      <div className="flex items-center gap-2 border-t border-border p-3">
+        <input value={newRole} onChange={(e) => setNewRole(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addRole())}
+          placeholder="Add a role" className="min-w-0 flex-1 rounded-sm border border-input bg-background px-2 py-1.5 text-sm" />
+        <button onClick={addRole} className="shrink-0 rounded-sm border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary hover:text-primary">+ Add role</button>
+      </div>
+    </Panel>
+  );
+}
+
+export function CrewRoleStatus({ p, date, roleList }: Pick<Ctx, "p"> & { date: string; roleList: string[] }) {
+  const groups = useCrewGroups().data ?? [];
+  const sortedGroups = [...groups].sort((a, b) => Number(b.productionType === p.type) - Number(a.productionType === p.type));
   const bookings = useQuery({
     queryKey: ["production-checklist", p.id, date],
     queryFn: async () => {
@@ -661,7 +692,7 @@ export function CrewRoleStatus({ p, date }: Pick<Ctx, "p"> & { date: string }) {
   }
 
   return (
-    <Panel title="Crew Required · Scenario 1" right={
+    <Panel title="Scenario 1" right={
       <select disabled={sortedGroups.length === 0} value=""
         onChange={(e) => { const g = sortedGroups.find((x) => x.id === e.target.value); if (g) applyGroup(g); }}
         className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40" aria-label="Select Crew Type">
@@ -672,22 +703,20 @@ export function CrewRoleStatus({ p, date }: Pick<Ctx, "p"> & { date: string }) {
         ))}
       </select>
     }>
-      <ul className="divide-y divide-border text-sm">
-        {openRoles.map((role) => {
+      <ul className="text-sm">
+        {roleList.map((role) => {
+          if (!openRoles.includes(role)) return <li key={role} className={ROW}><span className="text-xs text-success">Confirmed</span></li>;
           const matches = byRole(role);
-          const names = matches.map((b) => (b.crew_members as { name: string } | null)?.name).filter(Boolean).join(", ");
           return (
-            <li key={role} className="flex flex-wrap items-center gap-3 px-4 py-2.5">
-              <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <li key={role} className={ROW}>
               <span className="min-w-0 flex-1">
-                <span className="font-medium">{role}</span>
-                {matches.length > 0 && (
-                  <span className="ml-1 inline-flex flex-wrap items-center gap-1">
+                {matches.length === 0 ? <span className="text-xs text-muted-foreground">Unassigned</span> : (
+                  <span className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
                     {matches.map((b) => {
                       const mName = (b.crew_members as { name: string } | null)?.name ?? "Unknown";
                       return (
-                        <span key={b.id} className="inline-flex items-center gap-1 text-muted-foreground">
-                          · {mName}
+                        <span key={b.id} className="inline-flex items-center gap-1">
+                          {mName}
                           <button onClick={() => cancelPencil(b.id, mName)} aria-label={`Cancel ${mName} for ${role}`} className="text-muted-foreground hover:text-destructive">✕</button>
                         </span>
                       );
@@ -695,33 +724,29 @@ export function CrewRoleStatus({ p, date }: Pick<Ctx, "p"> & { date: string }) {
                   </span>
                 )}
               </span>
-              <span className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
-                {matches.length === 0 ? "Unassigned" : "Not yet confirmed"}
+              <div className="relative shrink-0">
                 <button onClick={() => setPickRole(pickRole === role ? null : role)} className="inline-flex items-center rounded-sm bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground">
                   {matches.length === 0 ? "Find" : "Swap"}
                 </button>
-                {matches.length === 0 && (
-                  <button onClick={() => removeRole(role)} aria-label={`Remove ${role} from this production's role list`} className="text-muted-foreground hover:text-destructive">✕</button>
+                {pickRole === role && (
+                  <div className="absolute right-0 top-full z-20 mt-1 w-64 max-h-64 space-y-1 overflow-y-auto rounded-sm border border-border bg-card p-2 shadow-md">
+                    {crew.filter((c) => crewFitsRole(c, role) && !matches.some((b) => b.crew_id === c.id) && availableForDate(c)).map((c) => (
+                      <div key={c.id} className="flex w-full items-center justify-between gap-3 rounded-sm border border-border px-3 py-2 text-sm">
+                        <span className="min-w-0">
+                          <span className="font-medium">{c.name}</span>{c.role && <span className="text-xs text-muted-foreground"> · {c.role}</span>}
+                          <span className="block text-xs text-muted-foreground">{fmtMoney(c.dayRate, p.currency)} / day</span>
+                        </span>
+                        <button onClick={() => pencil(role, c.id, matches.map((b) => b.id))} className="shrink-0 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
+                          Select
+                        </button>
+                      </div>
+                    ))}
+                    {!crew.some((c) => crewFitsRole(c, role) && !matches.some((b) => b.crew_id === c.id) && availableForDate(c)) && (
+                      <p className="whitespace-nowrap p-1 text-xs text-muted-foreground">No available crew listed as {role}.</p>
+                    )}
+                  </div>
                 )}
-              </span>
-              {pickRole === role && (
-                <div className="w-full space-y-1 pt-1">
-                  {crew.filter((c) => crewFitsRole(c, role) && !matches.some((b) => b.crew_id === c.id) && availableForDate(c)).map((c) => (
-                    <div key={c.id} className="flex w-full items-center justify-between gap-3 rounded-sm border border-border px-3 py-2 text-sm">
-                      <span className="min-w-0">
-                        <span className="font-medium">{c.name}</span>{c.role && <span className="text-xs text-muted-foreground"> · {c.role}</span>}
-                        <span className="block text-xs text-muted-foreground">{fmtMoney(c.dayRate, p.currency)} / day</span>
-                      </span>
-                      <button onClick={() => pencil(role, c.id, matches.map((b) => b.id))} className="shrink-0 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
-                        Select
-                      </button>
-                    </div>
-                  ))}
-                  {!crew.some((c) => crewFitsRole(c, role) && !matches.some((b) => b.crew_id === c.id) && availableForDate(c)) && (
-                    <p className="text-xs text-muted-foreground">No available crew listed as {role} for this day.</p>
-                  )}
-                </div>
-              )}
+              </div>
             </li>
           );
         })}
@@ -739,11 +764,6 @@ export function CrewRoleStatus({ p, date }: Pick<Ctx, "p"> & { date: string }) {
           );
         })}
       </ul>
-      <div className="flex items-center gap-2 border-t border-border p-3">
-        <input value={newRole} onChange={(e) => setNewRole(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addRole())}
-          placeholder="Add a role" className="min-w-0 flex-1 rounded-sm border border-input bg-background px-2 py-1.5 text-sm" />
-        <button onClick={addRole} className="shrink-0 rounded-sm border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary hover:text-primary">+ Add role</button>
-      </div>
     </Panel>
   );
 }
