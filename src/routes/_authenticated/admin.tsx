@@ -159,7 +159,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 const ADMIN_GROUPS = [
   { name: "People & Organisations", tabs: ["Users", "Crew Types", "Companies", "Subscriptions"] },
-  { name: "Operations", tabs: ["Bookings", "Equipment"] },
+  { name: "Operations", tabs: ["Bookings", "Gigs", "Equipment"] },
   { name: "Finance", tabs: ["Payments", "Invoices", "Gig Fees"] },
   { name: "Disputes", tabs: ["Disputes"] },
   { name: "Reviews", tabs: ["Reviews"] },
@@ -239,6 +239,7 @@ function AdminPage() {
       {tab === "Crew Types" && <CrewTypesTab />}
       {tab === "Companies" && <CompaniesTab />}
       {tab === "Bookings" && <BookingsTab />}
+      {tab === "Gigs" && <GigsTab />}
       {tab === "Payments" && <PaymentsTab />}
       {tab === "Invoices" && <InvoicesTab />}
       {tab === "Equipment" && <EquipmentAdmin />}
@@ -772,6 +773,48 @@ function InvoicesTab() {
         ))}</tbody>
       </table>
       {invoices.data?.length === 0 && <p className="p-4 text-sm text-muted-foreground">No invoices generated yet.</p>}
+    </Panel>
+  );
+}
+
+const GIG_STATUSES = ["open", "secured", "cancelled", "expired", "completed"] as const;
+
+function GigsTab() {
+  const inv = useInv();
+  const gigs = useQuery({
+    queryKey: ["admin-gigs"],
+    queryFn: async () => { const { data, error } = await supabase.from("community_gigs").select("*").order("event_date", { ascending: false }); if (error) throw error; return data ?? []; },
+  });
+  async function setStatus(id: string, status: (typeof GIG_STATUSES)[number]) {
+    const { error } = await supabase.from("community_gigs").update({ status }).eq("id", id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success("Gig status updated"); inv(["admin-gigs"]);
+  }
+  async function removeGig(id: string) {
+    const { error } = await supabase.from("community_gigs").delete().eq("id", id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success("Gig deleted"); inv(["admin-gigs"]);
+  }
+  return (
+    <Panel title={`Gigs (${gigs.data?.length ?? 0})`}>
+      <table className="w-full text-sm">
+        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Title</th><th className="px-4">Posted by</th><th className="px-4">Secured by</th><th className="px-4">Date</th><th className="px-4">Amount</th><th className="px-4">Status</th><th className="px-4">Action</th></tr></thead>
+        <tbody>{(gigs.data ?? []).map((g) => (
+          <tr key={g.id} className="border-t border-border">
+            <td className="px-4 py-2 font-medium">{g.title}<div className="text-xs font-normal text-muted-foreground">{g.role} · {g.department}</div></td>
+            <td className="px-4">{g.poster_name}</td>
+            <td className="px-4">{g.secured_name ?? "—"}</td>
+            <td className="px-4">{g.event_date}</td>
+            <td className="px-4">{zar(g.amount)}</td>
+            <td className="px-4">
+              <select className={`${invField} py-1`} value={g.status} onChange={(e) => setStatus(g.id, e.target.value as (typeof GIG_STATUSES)[number])}>
+                {GIG_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </td>
+            <td className="px-4"><button onClick={() => removeGig(g.id)} className="text-xs text-destructive hover:underline">Delete</button></td>
+          </tr>
+        ))}</tbody>
+      </table>
     </Panel>
   );
 }
