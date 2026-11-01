@@ -131,7 +131,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 const ADMIN_GROUPS = [
-  { name: "People & Organisations", tabs: ["Users", "Crew", "Companies", "Memberships"] },
+  { name: "People & Organisations", tabs: ["Users", "Crew", "Companies", "Subscriptions"] },
   { name: "Operations", tabs: ["Bookings", "Equipment", "Import"] },
   { name: "Finance", tabs: ["Payments", "Invoices", "Gig Fees"] },
   { name: "Trust & Compliance", tabs: ["Disputes", "Reviews"] },
@@ -202,7 +202,7 @@ function AdminPage() {
       {tab === "Equipment" && <EquipmentAdmin />}
       {tab === "Disputes" && <DisputesTab />}
       {tab === "Reviews" && <ReviewsTab />}
-      {tab === "Memberships" && <MembershipsTab />}
+      {tab === "Subscriptions" && <SubscriptionsTab />}
       {tab === "Gig Fees" && <GigFeesTab />}
       {tab === "Social Spotlights" && <SpotlightTab />}
       {tab === "Document Checklists" && <DocumentChecklistsAdmin />}
@@ -699,39 +699,16 @@ function ReviewsTab() {
   );
 }
 
-function MembershipsTab() {
+function SubscriptionsTab() {
   const inv = useInv();
   const plans = useQuery({
     queryKey: ["admin-plans"],
     queryFn: async () => { const { data, error } = await supabase.from("membership_plans").select("*"); if (error) throw error; return data ?? []; },
   });
-  const memberships = useQuery({
-    queryKey: ["admin-memberships"],
-    queryFn: async () => {
-      const [m, p] = await Promise.all([
-        supabase.from("memberships").select("*").order("created_at", { ascending: false }),
-        supabase.from("profiles").select("id, full_name, email"),
-      ]);
-      if (m.error) throw m.error; if (p.error) throw p.error;
-      const byId = new Map((p.data ?? []).map((u) => [u.id, u]));
-      return (m.data ?? []).map((row) => ({ ...row, profile: byId.get(row.user_id) }));
-    },
-  });
   async function updatePrice(id: string, cents: number) {
     const { error } = await supabase.from("membership_plans").update({ price_cents: cents }).eq("id", id);
     if (error) { toast.error(friendlyError(error)); return; }
     toast.success("Price updated"); inv(["admin-plans"]);
-  }
-  const MEMBERSHIP_STATUSES = ["active", "cancelled", "expired", "pending"];
-  async function setMembershipStatus(id: string, status: string) {
-    const { error } = await supabase.from("memberships").update({ status }).eq("id", id);
-    if (error) { toast.error(friendlyError(error)); return; }
-    toast.success("Membership status updated"); inv(["admin-memberships"]);
-  }
-  async function removeMembership(id: string) {
-    const { error } = await supabase.from("memberships").delete().eq("id", id);
-    if (error) { toast.error(friendlyError(error)); return; }
-    toast.success("Membership removed"); inv(["admin-memberships"]);
   }
   return (
     <div className="space-y-5">
@@ -740,23 +717,6 @@ function MembershipsTab() {
           <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Type</th><th className="px-4">Price (cents)</th><th className="px-4">Currency</th><th className="px-4">Action</th></tr></thead>
           <tbody>{(plans.data ?? []).map((p) => (
             <PlanRow key={p.id} plan={p} onSave={updatePrice} />
-          ))}</tbody>
-        </table>
-      </Panel>
-      <Panel title={`Memberships (${memberships.data?.length ?? 0})`}>
-        <table className="w-full text-sm">
-          <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">User</th><th className="px-4">Type</th><th className="px-4">Status</th><th className="px-4">Action</th></tr></thead>
-          <tbody>{(memberships.data ?? []).map((m) => (
-            <tr key={m.id} className="border-t border-border">
-              <td className="px-4 py-2">{m.profile?.full_name || m.profile?.email || "—"}</td>
-              <td className="px-4">{m.membership_type}</td>
-              <td className="px-4">
-                <select className={`${invField} py-1`} value={m.status} onChange={(e) => setMembershipStatus(m.id, e.target.value)}>
-                  {MEMBERSHIP_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </td>
-              <td className="px-4"><button onClick={() => removeMembership(m.id)} className="text-xs text-destructive hover:underline">Delete</button></td>
-            </tr>
           ))}</tbody>
         </table>
       </Panel>
