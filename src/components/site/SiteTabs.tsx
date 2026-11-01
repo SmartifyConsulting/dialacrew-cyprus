@@ -21,7 +21,7 @@ import {
   signedUrl, uploadFile, useBookingAssets, useChecklists, useCrewAssets, useDocs, useInvalidate, useLocationPoints, useMessages, usePosts,
   useProductionCrewRoles, useRegister, useReviews, useSignedUrl, useSiteMembers, useTasks,
 } from "@/lib/site";
-import { useBookings, useCancelBooking, useCreateOpenGig, useCrew, useRequests, useSetRequestState } from "@/lib/db";
+import { useBookings, useCancelBooking, useCreateOpenGig, useCrew, useCrewGroups, useRequests, useSetRequestState } from "@/lib/db";
 import { LocationRisks, ProjectWideRisks } from "@/components/site/ProjectInsights";
 import { Guidelines } from "@/components/site/Guidelines";
 import { LocationFee, LocationPhotos } from "@/components/site/LocationExtras";
@@ -562,6 +562,8 @@ export const CONFIRMED_BOOKING_STATUSES =["confirmed", "in_progress", "completed
 export function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
   const navigate = useNavigate();
   const inv = useInvalidate();
+  const groups = useCrewGroups().data ?? [];
+  const sortedGroups = [...groups].sort((a, b) => Number(b.productionType === p.type) - Number(a.productionType === p.type));
   const savedRoles = useProductionCrewRoles(p.id).data ?? [];
   // No customisation saved yet for this production — the standard 9 roles are the default list.
   const roleList = savedRoles.length ? savedRoles.map((r) => r.role) : [...CREW_ROLES];
@@ -614,10 +616,15 @@ export function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
 
   return (
     <Panel title="Crew Role Required" right={
-      <button onClick={() => navigate({ to: "/productions/$id", params: { id: p.id }, search: { tab: "find-crew" } })}
-        disabled={unassignedRoles.length === 0} className="inline-flex items-center gap-1.5 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40">
-        <Sparkles className="h-3.5 w-3.5" /> Select Crew Type
-      </button>
+      <select disabled={unassignedRoles.length === 0} value=""
+        onChange={(e) => navigate({ to: "/productions/$id", params: { id: p.id }, search: e.target.value === "__browse__" ? { tab: "find-crew" } : { tab: "find-crew", group: e.target.value } })}
+        className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40" aria-label="Select Crew Type">
+        <option value="" disabled>Select Crew Type</option>
+        <option value="__browse__">Browse all crew…</option>
+        {sortedGroups.map((g) => (
+          <option key={g.id} value={g.id}>{g.name} ({g.memberIds.length}){g.productionType ? ` · ${g.productionType}` : ""}</option>
+        ))}
+      </select>
     }>
       <ul className="divide-y divide-border text-sm">
         {openRoles.map((role) => {

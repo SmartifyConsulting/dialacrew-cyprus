@@ -19,7 +19,10 @@ import { CrewOvertimePanel, useBookingRates } from "@/components/site/Overtime";
 import { ChecklistsPanel, CommercialsTab, CrewRoleStatus, MembersList, OverviewTab, PostsTab, RegisterTab, TasksTab } from "@/components/site/SiteTabs";
 
 export const Route = createFileRoute("/_authenticated/productions/$id")({
-  validateSearch: (s: Record<string, unknown>): { tab?: string } => (typeof s["tab"] === "string" ? { tab: s["tab"] } : {}),
+  validateSearch: (s: Record<string, unknown>): { tab?: string; group?: string } => ({
+    ...(typeof s["tab"] === "string" ? { tab: s["tab"] } : {}),
+    ...(typeof s["group"] === "string" ? { group: s["group"] } : {}),
+  }),
   head: () => ({
     meta: [
       { title: "Production site — Book a Crew" },
@@ -51,7 +54,7 @@ function ProductionSite() {
   const requests = useRequests().data ?? [];
   const myCrewId = useMyCrewId(!!userId && role.data === "crew").data ?? null;
   const myName = useMyName(userId || undefined).data ?? "";
-  const { tab: tabParam } = Route.useSearch();
+  const { tab: tabParam, group: groupParam } = Route.useSearch();
   const [tab, setTab] = useState<Tab>(tabParam === "find-crew" ? "Find Crew" : "Posts");
   useEffect(() => { if (tabParam === "find-crew") setTab("Find Crew"); }, [tabParam]);
   const [asideOpen, setAsideOpen] = useState(true);
@@ -116,7 +119,7 @@ function ProductionSite() {
           {tab === "Photos" && <PhotosTab p={p} userId={userId} isProducer={isProducer} />}
           {tab === "Documents" && isProducer && <DocumentsTab p={p} userId={userId} myName={myName} isProducer={isProducer} />}
           {tab === "Budget" && isProducer && <CommercialsTab {...ctx} bookings={bookings} crewNames={crewNames} requests={requests} />}
-          {tab === "Find Crew" && isProducer && <ScenarioPlanner p={p} />}
+          {tab === "Find Crew" && isProducer && <ScenarioPlanner p={p} initialGroupId={groupParam} />}
           {tab === "Review" && isProducer && <RetroTab p={p} />}
           </fieldset>
         </section>

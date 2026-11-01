@@ -1,5 +1,5 @@
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sparkles, Save, Trash2, Star, CheckCircle2, Plus, ArrowLeftRight, Users, AlertTriangle, Copy } from "lucide-react";
 import { toast } from "sonner";
@@ -40,7 +40,7 @@ function scenarioCostAllDays(selByDay: SelectionByDay, rates: Record<string, num
   return Object.values(selByDay).reduce((sum, sel) => sum + scenarioCost(sel, 1, rates, fees), 0);
 }
 
-export function ScenarioPlanner({ p }: { p: Production }) {
+export function ScenarioPlanner({ p, initialGroupId }: { p: Production; initialGroupId?: string | undefined }) {
   const qc = useQueryClient();
   const match = useServerFn(matchBrief);
   const crew = useCrew().data ?? [];
@@ -189,6 +189,14 @@ export function ScenarioPlanner({ p }: { p: Production }) {
     });
     setMixNotice({ name: group.name, total: group.memberIds.length, unavailable });
   }
+  // Arrived from the Crew tab's Select Crew Type dropdown with a template already chosen —
+  // apply it once the template list has loaded, instead of making them pick it again here.
+  const appliedInitialGroup = useRef(false);
+  useEffect(() => {
+    if (appliedInitialGroup.current || !initialGroupId || groups.length === 0) return;
+    const g = groups.find((x) => x.id === initialGroupId);
+    if (g) { appliedInitialGroup.current = true; applyMix(g); }
+  }, [initialGroupId, groups]);
   // Commit: pencil the chosen group's crew + kit on the production (one booking per contiguous
   // run of days a crew member is on, since different days can now carry different people), then
   // drop the other sandbox options.
