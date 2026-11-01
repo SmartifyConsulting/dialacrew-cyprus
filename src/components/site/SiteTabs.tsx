@@ -690,10 +690,15 @@ export function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
               {pickRole === role && (
                 <div className="w-full space-y-1 pt-1">
                   {crew.filter((c) => crewFitsRole(c, role) && !matches.some((b) => b.crew_id === c.id)).map((c) => (
-                    <button key={c.id} onClick={() => pencil(role, c.id, matches.map((b) => b.id))} className="flex w-full items-center justify-between gap-3 rounded-sm border border-border px-3 py-2 text-left text-sm hover:border-primary">
-                      <span className="min-w-0"><span className="font-medium">{c.name}</span>{c.role && <span className="text-xs text-muted-foreground"> · {c.role}</span>}</span>
-                      <span className="text-xs text-muted-foreground">{fmtMoney(c.dayRate, p.currency)} / day{c.available ? "" : " · unavailable"}</span>
-                    </button>
+                    <div key={c.id} className="flex w-full items-center justify-between gap-3 rounded-sm border border-border px-3 py-2 text-sm">
+                      <span className="min-w-0">
+                        <span className="font-medium">{c.name}</span>{c.role && <span className="text-xs text-muted-foreground"> · {c.role}</span>}
+                        <span className="block text-xs text-muted-foreground">{fmtMoney(c.dayRate, p.currency)} / day{c.available ? "" : " · unavailable"}</span>
+                      </span>
+                      <button onClick={() => pencil(role, c.id, matches.map((b) => b.id))} className="shrink-0 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
+                        Select
+                      </button>
+                    </div>
                   ))}
                   {!crew.some((c) => crewFitsRole(c, role)) && (
                     <p className="text-xs text-muted-foreground">No crew are listed as {role} yet.</p>
