@@ -9,14 +9,14 @@ import { useRole, useSession } from "@/lib/auth";
 import { useBookings, useCrew, useProductions, useRequests } from "@/lib/db";
 import { useMyCrewId, useMyName } from "@/lib/site";
 import { RetroTab } from "@/components/site/RetroTab";
-import { ScenarioPlanner } from "@/components/site/ScenarioPlanner";
+import { CrewDayPlanner } from "@/components/site/CrewDayPlanner";
 import { PhotosTab } from "@/components/site/PhotosTab";
 import { AuditTab } from "@/components/site/AuditTab";
 import { ProductionCover } from "@/components/site/ProductionCover";
 import { DocumentsTab } from "@/components/site/DocumentsTab";
 import { EquipmentAvailability } from "@/components/site/EquipmentAvailability";
 import { CrewOvertimePanel, useBookingRates } from "@/components/site/Overtime";
-import { ChecklistsPanel, CommercialsTab, CONFIRMED_BOOKING_STATUSES, CrewRoleStatus, MembersList, OverviewTab, PostsTab, RegisterTab, TasksTab } from "@/components/site/SiteTabs";
+import { ChecklistsPanel, CommercialsTab, CONFIRMED_BOOKING_STATUSES, MembersList, OverviewTab, PostsTab, RegisterTab, TasksTab } from "@/components/site/SiteTabs";
 
 export const Route = createFileRoute("/_authenticated/productions/$id")({
   validateSearch: (s: Record<string, unknown>): { tab?: string } => (typeof s["tab"] === "string" ? { tab: s["tab"] } : {}),
@@ -114,12 +114,7 @@ function ProductionSite() {
           {tab === "Posts" && <PostsTab {...ctx} />}
           {tab === "Crew" && isProducer && (
             <div className="space-y-5">
-              {/* Crew Role Required (scenario 1 for all practical purposes) and the Sandbox's alternative
-                  scenarios sit side by side as one horizontally-scrolling live workspace. */}
-              <div className="flex items-start gap-4 overflow-x-auto pb-2">
-                <div className="w-96 shrink-0"><CrewRoleStatus p={p} /></div>
-                <ScenarioPlanner p={p} />
-              </div>
+              <CrewDayPlanner p={p} />
               {/* Hidden until someone's actually confirmed — pencilled bookings don't count, and an empty roster + register is just visual noise before then. */}
               {bookings.some((b) => b.productionId === p.id && CONFIRMED_BOOKING_STATUSES.includes(b.status)) && <><MembersList {...ctx} /><RegisterTab {...ctx} /></>}
             </div>

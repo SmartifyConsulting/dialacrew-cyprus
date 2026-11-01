@@ -1,13 +1,13 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Plus, Trash2, Users } from "lucide-react";
+import { CheckCircle2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { supabase } from "@/integrations/supabase/client";
 import { Panel } from "@/components/AppShell";
 import { confirmDialog } from "@/components/ConfirmDialog";
 import { useBookings, useCrew, useCrewGroups } from "@/lib/db";
-import { useLocationPoints, useProductionCrewRoles, useDefaultCrewRoles } from "@/lib/site";
+import { useProductionCrewRoles, useDefaultCrewRoles } from "@/lib/site";
 import { providerTotal } from "@/lib/costing";
 import { fmtMoney, zar, type Production } from "@/lib/demo-data";
 import { CREW_ROLES, crewFitsRole } from "@/components/site/SiteTabs";
@@ -17,11 +17,10 @@ type SelectionByDay = Record<string, Selection>; // YYYY-MM-DD -> that day's sel
 type Scenario = { id: string; name: string; selByDay: SelectionByDay; total: number; created_at: string };
 
 const addDays = (iso: string, n: number) => { const d = new Date(iso + "T00:00:00"); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
-const localYmd = (iso: string) => { const d = new Date(iso); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 const ghost = "inline-flex items-center gap-1 rounded-sm border border-border px-2 py-1 text-xs hover:border-primary hover:text-primary";
 
-/** Scenario key: drafts for a production are stored as brief_matches rows under this client key. */
-export const scenarioKey = (productionId: string) => `scenario:${productionId}`;
+/** Scenario key: a shoot day's drafts are stored as brief_matches rows under this client key. */
+export const scenarioKey = (productionId: string, date: string) => `scenario:${productionId}:${date}`;
 
 /** Cost of one day's selection: each chosen crew member's day rate × days plus their chosen kit fees × days. */
 export function scenarioCost(sel: Selection, days: number, rates: Record<string, number>, fees: Record<string, number>) {
@@ -34,23 +33,16 @@ function scenarioCostAllDays(selByDay: SelectionByDay, rates: Record<string, num
   return Object.values(selByDay).reduce((sum, sel) => sum + scenarioCost(sel, 1, rates, fees), 0);
 }
 
-// Sandbox: alternative crew line-ups laid out as columns next to Crew Role Required (which is
-// scenario 1 for all practical purposes), numbered from 2. Every action here writes straight to
-// the saved scenario — there's no separate draft/save step, it's a live workspace.
-export function ScenarioPlanner({ p }: { p: Production }) {
+// Sandbox: alternative crew line-ups for one shoot day, laid out as columns next to that day's
+// Crew Required (which is scenario 1 for all practical purposes), numbered from 2. Every action
+// here writes straight to the saved scenario — there's no separate draft/save step, it's a live workspace.
+export function ScenarioPlanner({ p, date }: { p: Production; date: string }) {
   const qc = useQueryClient();
   const crew = useCrew().data ?? [];
   const allBookings = useBookings().data ?? [];
-  const locationPoints = useLocationPoints(p.id).data ?? [];
   const days = Math.max(1, p.days || 1);
-
-  const shootDays = useMemo(() => {
-    const fromLocations = [...new Set(locationPoints.filter((pt) => pt.starts_at).map((pt) => localYmd(pt.starts_at!)))].sort();
-    if (fromLocations.length) return fromLocations;
-    if (p.date) return Array.from({ length: days }, (_, i) => addDays(p.date!, i));
-    return [];
-  }, [locationPoints, p.date, days]);
-  const blankSelByDay = (): SelectionByDay => Object.fromEntries(shootDays.map((d) => [d, {}]));
+  const shootDays = useMemo(() => [date], [date]);
+  const blankSelByDay = (): SelectionByDay => ({ [date]: {} });
 
   const rangeStart = p.date || null;
   const rangeEnd = p.endDate || (p.date ? addDays(p.date, days - 1) : null);
@@ -70,9 +62,9 @@ export function ScenarioPlanner({ p }: { p: Production }) {
     queryFn: async () => { const { data, error } = await supabase.from("crew_assets").select("id, crew_id, name, category, daily_fee"); if (error) throw error; return (data ?? []).map((a) => ({ ...a, daily_fee: Number(a.daily_fee) })); },
   });
   const scenarios = useQuery({
-    queryKey: ["scenarios", p.id, shootDays.join(",")],
+    queryKey: ["scenarios", p.id, date],
     queryFn: async () => {
-      const { data, error } = await supabase.from("brief_matches").select("id, brief, result, created_at").eq("client", scenarioKey(p.id)).order("created_at");
+      const { data, error } = await supabase.from("brief_matches").select("id, brief, result, created_at").eq("client", scenarioKey(p.id, date)).order("created_at");
       if (error) throw error;
       return (data ?? []).map((r) => {
         const result = r.result as { selection?: Selection; selByDay?: SelectionByDay; total: number };
@@ -108,7 +100,7 @@ export function ScenarioPlanner({ p }: { p: Production }) {
     const total = scenarioCostAllDays(nextSelByDay, rates, fees);
     const { error } = await supabase.from("brief_matches").update({ result: { selByDay: nextSelByDay, total } }).eq("id", s.id);
     if (error) { toast.error(friendlyError(error)); return; }
-    qc.invalidateQueries({ queryKey: ["scenarios", p.id] });
+    qc.invalidateQueries({ queryKey: ["scenarios", p.id, date] });
   }
   async function selectForRole(s: Scenario, role: string, newId: string, oldId: string | null) {
     const next = withEveryDay(s, (day) => { if (oldId) delete day[oldId]; day[newId] = day[newId] ?? []; return day; });
@@ -141,19 +133,19 @@ export function ScenarioPlanner({ p }: { p: Production }) {
     if (dup) { toast.error(`"${clean}" already exists.`); return; }
     const { error } = await supabase.from("brief_matches").update({ brief: clean }).eq("id", s.id);
     if (error) { toast.error(friendlyError(error)); return; }
-    qc.invalidateQueries({ queryKey: ["scenarios", p.id] });
+    qc.invalidateQueries({ queryKey: ["scenarios", p.id, date] });
   }
   async function createScenario() {
     const nextNum = (scenarios.data?.length ?? 0) + 2;
-    const { error } = await supabase.from("brief_matches").insert({ client: scenarioKey(p.id), brief: `Scenario ${nextNum}`, result: { selByDay: blankSelByDay(), total: 0 } });
+    const { error } = await supabase.from("brief_matches").insert({ client: scenarioKey(p.id, date), brief: `Scenario ${nextNum}`, result: { selByDay: blankSelByDay(), total: 0 } });
     if (error) { toast.error(friendlyError(error)); return; }
-    qc.invalidateQueries({ queryKey: ["scenarios", p.id] });
+    qc.invalidateQueries({ queryKey: ["scenarios", p.id, date] });
   }
   async function deleteScenario(id: string) {
     if (!(await confirmDialog("Delete this scenario?", { destructive: true }))) return;
     const { error } = await supabase.from("brief_matches").delete().eq("id", id);
     if (error) { toast.error(friendlyError(error)); return; }
-    qc.invalidateQueries({ queryKey: ["scenarios", p.id] });
+    qc.invalidateQueries({ queryKey: ["scenarios", p.id, date] });
   }
   // Pencil: commit the chosen scenario's crew (one booking per contiguous run of days a crew
   // member is on, since different days can carry different people), then drop the alternatives.
@@ -201,18 +193,14 @@ export function ScenarioPlanner({ p }: { p: Production }) {
     <div className="flex items-start gap-4 overflow-x-auto pb-2">
       {(scenarios.data ?? []).map((s) => {
         const total = scenarioCostAllDays(s.selByDay, rates, fees);
-        const variance = p.budget - total;
         return (
           <div key={s.id} className="w-80 shrink-0">
             <Panel title={
               <input defaultValue={s.name} onBlur={(e) => renameScenario(s, e.target.value)} maxLength={80}
                 className="w-full bg-transparent font-display text-sm font-semibold uppercase tracking-wide text-primary outline-none" aria-label="Scenario name" />
             } right={
-              <button onClick={() => deleteScenario(s.id)} aria-label={`Delete ${s.name}`} className="shrink-0 text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
-            }>
-              <div className="flex items-center gap-1.5 border-b border-border p-3">
-                <Users className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                <select className="min-w-0 flex-1 rounded-sm border border-input bg-background px-2 py-1.5 text-xs"
+              <div className="flex shrink-0 items-center gap-2">
+                <select className="min-w-0 rounded-sm bg-primary px-2 py-1.5 text-[11px] font-semibold text-primary-foreground"
                   value="" onChange={(e) => { const g = sortedGroups.find((x) => x.id === e.target.value); if (g) applyGroupToScenario(s, g); }} aria-label={`Select Crew Type for ${s.name}`}>
                   <option value="" disabled>Select Crew Type</option>
                   {sortedGroups.length === 0 && <option value="" disabled>No crew templates saved yet</option>}
@@ -220,7 +208,9 @@ export function ScenarioPlanner({ p }: { p: Production }) {
                     <option key={g.id} value={g.id}>{g.name} ({g.memberIds.length}){g.productionType ? ` · ${g.productionType}` : ""}</option>
                   ))}
                 </select>
+                <button onClick={() => deleteScenario(s.id)} aria-label={`Delete ${s.name}`} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
               </div>
+            }>
               <ul className="divide-y divide-border text-sm">
                 {roleList.map((role) => {
                   const assigned = assignedForRole(s, role);
@@ -242,16 +232,16 @@ export function ScenarioPlanner({ p }: { p: Production }) {
                       </div>
                       {pickOpen && (
                         <div className="mt-2 space-y-1">
-                          {crew.filter((c) => crewFitsRole(c, role) && c.id !== assigned?.id).map((c) => (
+                          {crew.filter((c) => crewFitsRole(c, role) && c.id !== assigned?.id && c.available && availableForRange(c.id)).map((c) => (
                             <div key={c.id} className="flex items-center justify-between gap-3 rounded-sm border border-border px-3 py-2 text-xs">
                               <span className="min-w-0">
                                 <span className="font-medium">{c.name}</span>{c.role && <span className="text-muted-foreground"> · {c.role}</span>}
-                                <span className="block text-muted-foreground">{fmtMoney(c.dayRate, p.currency)} / day{c.available && availableForRange(c.id) ? "" : " · unavailable"}</span>
+                                <span className="block text-muted-foreground">{fmtMoney(c.dayRate, p.currency)} / day</span>
                               </span>
                               <button onClick={() => selectForRole(s, role, c.id, assigned?.id ?? null)} className="shrink-0 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Select</button>
                             </div>
                           ))}
-                          {!crew.some((c) => crewFitsRole(c, role) && c.id !== assigned?.id) && <p className="text-xs text-muted-foreground">No other crew listed as {role}.</p>}
+                          {!crew.some((c) => crewFitsRole(c, role) && c.id !== assigned?.id && c.available && availableForRange(c.id)) && <p className="text-xs text-muted-foreground">No available crew listed as {role}.</p>}
                         </div>
                       )}
                     </li>
@@ -259,10 +249,7 @@ export function ScenarioPlanner({ p }: { p: Production }) {
                 })}
               </ul>
               <div className="space-y-2 border-t border-border p-3">
-                <div className="text-xs">
-                  <div><span className="text-muted-foreground">Estimate:</span> <b>{fmtMoney(total, p.currency)}</b></div>
-                  <div className={variance < 0 ? "text-destructive" : "text-success"}>{variance < 0 ? `${fmtMoney(-variance, p.currency)} over` : `${fmtMoney(variance, p.currency)} under`} budget</div>
-                </div>
+                <div className="text-xs"><span className="text-muted-foreground">This day's estimate:</span> <b>{fmtMoney(total, p.currency)}</b></div>
                 <button onClick={() => commit(s)} disabled={committing} className={`${ghost} w-full justify-center`}><CheckCircle2 className="h-3.5 w-3.5" /> Pencil this scenario</button>
               </div>
             </Panel>

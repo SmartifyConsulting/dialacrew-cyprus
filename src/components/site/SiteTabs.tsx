@@ -574,8 +574,8 @@ export function crewRelevantToChecklist(c: { role: string; department?: string; 
 
 export const CONFIRMED_BOOKING_STATUSES =["confirmed", "in_progress", "completed", "payment_released"];
 
-/* ---------------- Crew role required (standard roles still needing a confirmed booking) — the Crew tab's whole screen ---------------- */
-export function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
+/* ---------------- Crew role required (standard roles still needing a confirmed booking) — one per shoot day ---------------- */
+export function CrewRoleStatus({ p, date }: Pick<Ctx, "p"> & { date: string }) {
   const inv = useInvalidate();
   const groups = useCrewGroups().data ?? [];
   const sortedGroups = [...groups].sort((a, b) => Number(b.productionType === p.type) - Number(a.productionType === p.type));
@@ -599,11 +599,11 @@ export function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
   }
   function removeRole(role: string) { setRoleList(roleList.filter((r) => r !== role)); }
   const bookings = useQuery({
-    queryKey: ["production-checklist", p.id],
+    queryKey: ["production-checklist", p.id, date],
     queryFn: async () => {
       const { data, error } = await supabase.from("bookings")
         .select("id, role, status, crew_id, crew_members(name)")
-        .eq("production_id", p.id).neq("status", "cancelled").order("role");
+        .eq("production_id", p.id).eq("booking_date", date).neq("status", "cancelled").order("role");
       if (error) throw error;
       return data ?? [];
     },
@@ -614,6 +614,12 @@ export function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
   const openRoles = roleList.filter((role) => !byRole(role).some((b) => CONFIRMED_BOOKING_STATUSES.includes(b.status)));
   const extras = bookings.filter((b) => !roleList.some((r) => r.toLowerCase() === b.role.trim().toLowerCase()) && !CONFIRMED_BOOKING_STATUSES.includes(b.status));
   const crew = useCrew().data ?? [];
+  const allBookings = useBookings().data ?? [];
+  // Busy elsewhere on this specific day — a crew member already booked on another production for this date isn't offered.
+  const busyElsewhere = new Set(
+    allBookings.filter((b) => b.productionId !== p.id && b.status !== "cancelled" && b.crewId &&
+      b.bookingDate && b.bookingDate <= date && addDays(b.bookingDate, Math.max(1, b.days || 1) - 1) >= date).map((b) => b.crewId));
+  const availableForDate = (c: { id: string; available: boolean }) => c.available && !busyElsewhere.has(c.id);
   const qc = useQueryClient();
   const [pickRole, setPickRole] = useState<string | null>(null);
   // Pencil a crew member into a role (same "pencil" status the planner uses on commit). When
@@ -627,7 +633,7 @@ export function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
     }
     const { error } = await supabase.from("bookings").insert({
       production_id: p.id, crew_id: crewId, role, status: "pencil" as const,
-      booking_date: p.date || null, crew_rate: c.dayRate, client_charge: c.dayRate, days: Math.max(1, p.days || 1),
+      booking_date: date, crew_rate: c.dayRate, client_charge: c.dayRate, days: 1,
     });
     if (error) { toast.error(friendlyError(error)); return; }
     if (!silent) toast.success(replaceIds.length ? `Swapped in ${c.name} as ${role}` : `${c.name} pencilled in as ${role}`);
@@ -655,7 +661,7 @@ export function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
   }
 
   return (
-    <Panel title="Crew Role Required" right={
+    <Panel title="Crew Required · Scenario 1" right={
       <select disabled={sortedGroups.length === 0} value=""
         onChange={(e) => { const g = sortedGroups.find((x) => x.id === e.target.value); if (g) applyGroup(g); }}
         className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40" aria-label="Select Crew Type">
@@ -700,19 +706,19 @@ export function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
               </span>
               {pickRole === role && (
                 <div className="w-full space-y-1 pt-1">
-                  {crew.filter((c) => crewFitsRole(c, role) && !matches.some((b) => b.crew_id === c.id)).map((c) => (
+                  {crew.filter((c) => crewFitsRole(c, role) && !matches.some((b) => b.crew_id === c.id) && availableForDate(c)).map((c) => (
                     <div key={c.id} className="flex w-full items-center justify-between gap-3 rounded-sm border border-border px-3 py-2 text-sm">
                       <span className="min-w-0">
                         <span className="font-medium">{c.name}</span>{c.role && <span className="text-xs text-muted-foreground"> · {c.role}</span>}
-                        <span className="block text-xs text-muted-foreground">{fmtMoney(c.dayRate, p.currency)} / day{c.available ? "" : " · unavailable"}</span>
+                        <span className="block text-xs text-muted-foreground">{fmtMoney(c.dayRate, p.currency)} / day</span>
                       </span>
                       <button onClick={() => pencil(role, c.id, matches.map((b) => b.id))} className="shrink-0 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
                         Select
                       </button>
                     </div>
                   ))}
-                  {!crew.some((c) => crewFitsRole(c, role)) && (
-                    <p className="text-xs text-muted-foreground">No crew are listed as {role} yet.</p>
+                  {!crew.some((c) => crewFitsRole(c, role) && !matches.some((b) => b.crew_id === c.id) && availableForDate(c)) && (
+                    <p className="text-xs text-muted-foreground">No available crew listed as {role} for this day.</p>
                   )}
                 </div>
               )}
