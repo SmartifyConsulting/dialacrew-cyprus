@@ -78,12 +78,12 @@ function CalendarPage() {
           const weather = d ? forecastFor(key) : null;
           const dayTasks = d ? tasksByDay.get(key) ?? [] : [];
           return (
-            <div key={i} className="min-h-28 min-w-0 bg-card p-1.5">
+            <div key={i} className="relative min-h-28 min-w-0 bg-card p-1.5">
               {d && <p className={`mb-1 text-xs font-semibold ${key === today ? "text-primary" : "text-muted-foreground"}`}>{d.getDate()}</p>}
               {weather && (
-                <p className="mb-1 flex items-center gap-1 text-[10px] text-muted-foreground" title={forecastSummary(weather)}>
-                  <span className="text-[1.3125rem] leading-none" aria-hidden="true">{WEATHER_ICONS[weather.code] ?? "🌡️"}</span>
+                <p className="absolute right-1 top-1 flex items-center gap-1 text-[10px] text-muted-foreground" title={forecastSummary(weather)}>
                   {weather.max != null && weather.min != null ? `${Math.round(weather.min)}–${Math.round(weather.max)}°` : ""}
+                  <span className="text-[1.3125rem] leading-none" aria-hidden="true">{WEATHER_ICONS[weather.code] ?? "🌡️"}</span>
                 </p>
               )}
               {items.map((it) => (
