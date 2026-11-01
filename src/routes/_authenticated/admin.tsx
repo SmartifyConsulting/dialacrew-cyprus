@@ -133,8 +133,8 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 const ADMIN_GROUPS = [
-  { name: "People & Organisations", tabs: ["Users", "Crew Types", "Companies", "Subscriptions"] },
-  { name: "Operations", tabs: ["Bookings", "Equipment", "Import"] },
+  { name: "People & Organisations", tabs: ["Users", "Import", "Crew Types", "Companies", "Subscriptions"] },
+  { name: "Operations", tabs: ["Bookings", "Equipment"] },
   { name: "Finance", tabs: ["Payments", "Invoices", "Gig Fees"] },
   { name: "Trust & Compliance", tabs: ["Disputes", "Reviews"] },
   { name: "Engagement", tabs: ["Social Spotlights"] },
@@ -145,8 +145,8 @@ const ADMIN_GROUPS = [
 // with the raw Crew roster swapped for Crew Types — producers group crew into reusable, typed
 // templates rather than editing crew records directly.
 const PRODUCER_ADMIN_GROUPS = [
-  { name: "People & Organisations", tabs: ["Users", "Crew Types"] },
-  { name: "Operations", tabs: ["Bookings", "Equipment", "Import"] },
+  { name: "People & Organisations", tabs: ["Users", "Import", "Crew Types"] },
+  { name: "Operations", tabs: ["Bookings", "Equipment"] },
   { name: "Finance", tabs: ["Payments", "Invoices", "Gig Fees"] },
   { name: "Trust & Compliance", tabs: ["Disputes", "Reviews"] },
   { name: "Engagement", tabs: ["Social Spotlights"] },
