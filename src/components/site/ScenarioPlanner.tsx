@@ -102,7 +102,6 @@ export function ScenarioPlanner({ p }: { p: Production }) {
   const groups = useCrewGroups().data ?? [];
   // Select Crew Type: templates saved for this production's own type float to the top.
   const sortedGroups = useMemo(() => [...groups].sort((a, b) => Number(b.productionType === p.type) - Number(a.productionType === p.type)), [groups, p.type]);
-  const [mixOpen, setMixOpen] = useState(false);
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [mixNotice, setMixNotice] = useState<{ name: string; total: number; unavailable: string[] } | null>(null);
 
@@ -188,7 +187,6 @@ export function ScenarioPlanner({ p }: { p: Production }) {
       }
       return n;
     });
-    setMixOpen(false);
     setMixNotice({ name: group.name, total: group.memberIds.length, unavailable });
   }
   // Commit: pencil the chosen group's crew + kit on the production (one booking per contiguous
@@ -243,6 +241,9 @@ export function ScenarioPlanner({ p }: { p: Production }) {
 
   const shown = crew.filter((c) => !filter || `${c.name} ${c.role} ${c.department}`.toLowerCase().includes(filter.toLowerCase()));
   const aiWhy = Object.fromEntries((ai?.crew ?? []).map((c) => [c.crew_id, c]));
+  // Which shoot days a crew member is booked on, across every day — not just the active one —
+  // so coverage is visible without clicking through each day's subtab.
+  const daysOn = (id: string) => shootDays.filter((d) => !!selByDay[d]?.[id]);
 
   return (
     <div className="w-full space-y-5">
@@ -274,22 +275,16 @@ export function ScenarioPlanner({ p }: { p: Production }) {
               )}
             </div>
           )}
-          <div className="relative">
-            <button className={ghost} onClick={() => setMixOpen(!mixOpen)}><Users className="h-3 w-3" /> Select Crew Type</button>
-            {mixOpen && (
-              <div className="absolute right-0 z-20 mt-1 w-64 rounded-sm border border-border bg-card shadow-md">
-                <ul className="max-h-56 divide-y divide-border overflow-y-auto">
-                  {groups.length === 0 && <li className="p-3 text-xs text-muted-foreground">No crew templates saved yet — build one from the Crew directory.</li>}
-                  {sortedGroups.map((g) => (
-                    <li key={g.id}>
-                      <button onClick={() => applyMix(g)} className="block w-full px-3 py-2 text-left text-sm hover:bg-muted">
-                        {g.name} <span className="text-xs text-muted-foreground">({g.memberIds.length}){g.productionType ? ` · ${g.productionType}` : ""}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+          <div className="flex items-center gap-1.5">
+            <Users className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <select className="min-w-44 rounded-sm border border-input bg-background px-2 py-2 text-xs" value=""
+              onChange={(e) => { const g = sortedGroups.find((x) => x.id === e.target.value); if (g) applyMix(g); }} aria-label="Select Crew Type">
+              <option value="">Select Crew Type…</option>
+              {sortedGroups.length === 0 && <option value="" disabled>No crew templates saved yet</option>}
+              {sortedGroups.map((g) => (
+                <option key={g.id} value={g.id}>{g.name} ({g.memberIds.length}){g.productionType ? ` · ${g.productionType}` : ""}</option>
+              ))}
+            </select>
           </div>
         </div>
         {/* Day subtabs: each shoot day gets its own crew selection. */}
@@ -328,12 +323,21 @@ export function ScenarioPlanner({ p }: { p: Production }) {
             const on = !!sel[c.id];
             const kit = kitBy[c.id] ?? [];
             const line = on ? providerTotal(c.dayRate, 1, (sel[c.id] ?? []).map((a) => ({ dailyFee: fees[a] ?? 0, days: 1 }))) : 0;
+            const onDays = daysOn(c.id);
             return (
               <li key={c.id} className={`px-4 py-2.5 ${on ? "bg-primary/5" : ""}`}>
                 <label className="flex cursor-pointer items-center gap-3">
                   <input type="checkbox" checked={on} onChange={() => toggleCrew(c.id)} className="h-4 w-4 accent-primary" />
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-semibold">{c.name} <span className="font-normal text-muted-foreground">· {aiWhy[c.id]?.suggested_role ?? c.role}</span></div>
+                    <div className="text-sm font-semibold">
+                      {c.name} <span className="font-normal text-muted-foreground">· {aiWhy[c.id]?.suggested_role ?? c.role}</span>
+                      {shootDays.length > 1 && onDays.length > 0 && (
+                        <span className="ml-2 inline-flex items-center gap-1 align-middle" title={`On: ${onDays.map(dayLabel).join(", ")}`}>
+                          {shootDays.map((d) => <span key={d} className={`h-1.5 w-1.5 rounded-full ${selByDay[d]?.[c.id] ? "bg-primary" : "bg-muted"}`} />)}
+                          <span className="text-[10px] font-normal text-muted-foreground">{onDays.length === shootDays.length ? "All days" : `${onDays.length}/${shootDays.length} days`}</span>
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Star className="h-3 w-3 text-primary" /> {c.rating.toFixed(1)} · {zar(c.dayRate)}/day ·{" "}
                       <span className={c.available && availableForRange(c.id) ? "text-success" : "text-destructive"}>
