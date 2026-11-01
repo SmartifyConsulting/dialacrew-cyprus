@@ -59,6 +59,9 @@ function ProductionSite() {
   const [tab, setTab] = useState<Tab>(tabParam === "find-crew" ? "Crew" : isValidTab(tabParam) ? tabParam : "Posts");
   useEffect(() => { if (tabParam === "find-crew") setTab("Crew"); else if (isValidTab(tabParam)) setTab(tabParam); }, [tabParam]);
   const [asideOpen, setAsideOpen] = useState(true);
+  // Crew is the busiest tab (Crew Role Required + the Sandbox scenario planner) — collapse the
+  // overview/location panel to give it room, then bring it back once the producer looks elsewhere.
+  useEffect(() => { setAsideOpen(tab !== "Crew"); }, [tab]);
   const p = prods.data?.find((x) => x.id === id);
   const rates = useBookingRates(p?.id ?? "");
   const qc = useQueryClient();
