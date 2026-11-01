@@ -18,8 +18,8 @@ import { assetsTotal, providerTotal } from "@/lib/costing";
 import { distanceMeters, getPosition, isOnSite } from "@/lib/geo";
 import { isOnline, pendingCount, queueCheckin, syncQueue } from "@/lib/offline-checkin";
 import {
-  signedUrl, uploadFile, useBookingAssets, useChecklists, useCrewAssets, useDocs, useInvalidate, useLocationPoints, useMessages, usePosts, useRegister,
-  useReviews, useSignedUrl, useSiteMembers, useTasks,
+  signedUrl, uploadFile, useBookingAssets, useChecklists, useCrewAssets, useDocs, useInvalidate, useLocationPoints, useMessages, usePosts,
+  useProductionCrewRoles, useRegister, useReviews, useSignedUrl, useSiteMembers, useTasks,
 } from "@/lib/site";
 import { useBookings, useCancelBooking, useCreateOpenGig, useCrew, useRequests, useSetRequestState } from "@/lib/db";
 import { LocationRisks, ProjectWideRisks } from "@/components/site/ProjectInsights";
@@ -558,9 +558,27 @@ export function crewFitsRole(c: { role: string; department?: string; skills?: st
 
 export const CONFIRMED_BOOKING_STATUSES =["confirmed", "in_progress", "completed", "payment_released"];
 
-/* ---------------- Crew role required (standard roles still needing a confirmed booking) — shown on Members tab ---------------- */
-function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
+/* ---------------- Crew role required (standard roles still needing a confirmed booking) — the Crew tab's whole screen ---------------- */
+export function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
   const navigate = useNavigate();
+  const inv = useInvalidate();
+  const savedRoles = useProductionCrewRoles(p.id).data ?? [];
+  // No customisation saved yet for this production — the standard 9 roles are the default list.
+  const roleList = savedRoles.length ? savedRoles.map((r) => r.role) : [...CREW_ROLES];
+  const [newRole, setNewRole] = useState("");
+  async function setRoleList(next: string[]) {
+    await supabase.from("production_crew_roles").delete().eq("production_id", p.id);
+    if (next.length) await supabase.from("production_crew_roles").insert(next.map((role, sort_order) => ({ production_id: p.id, role, sort_order })));
+    inv(["production-crew-roles", p.id]);
+  }
+  function addRole() {
+    const name = newRole.trim();
+    if (!name) return;
+    if (roleList.some((r) => r.toLowerCase() === name.toLowerCase())) { toast.error(`"${name}" is already in the list`); return; }
+    setRoleList([...roleList, name]);
+    setNewRole("");
+  }
+  function removeRole(role: string) { setRoleList(roleList.filter((r) => r !== role)); }
   const bookings = useQuery({
     queryKey: ["production-checklist", p.id],
     queryFn: async () => {
@@ -574,8 +592,8 @@ function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
 
   const byRole = (role: string) => bookings.filter((b) => b.role.trim().toLowerCase() === role.toLowerCase());
   // Once a role has a confirmed booking, it's done — drop it from this list entirely; it now shows under Confirmed Members instead.
-  const openRoles = CREW_ROLES.filter((role) => !byRole(role).some((b) => CONFIRMED_BOOKING_STATUSES.includes(b.status)));
-  const extras = bookings.filter((b) => !CREW_ROLES.some((r) => r.toLowerCase() === b.role.trim().toLowerCase()) && !CONFIRMED_BOOKING_STATUSES.includes(b.status));
+  const openRoles = roleList.filter((role) => !byRole(role).some((b) => CONFIRMED_BOOKING_STATUSES.includes(b.status)));
+  const extras = bookings.filter((b) => !roleList.some((r) => r.toLowerCase() === b.role.trim().toLowerCase()) && !CONFIRMED_BOOKING_STATUSES.includes(b.status));
   const unassignedRoles = openRoles.filter((role) => byRole(role).length === 0);
   const crew = useCrew().data ?? [];
   const qc = useQueryClient();
@@ -594,13 +612,11 @@ function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
     ["production-checklist", "bookings", "production-open-gigs"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
   }
 
-  if (openRoles.length === 0 && extras.length === 0) return null;
-
   return (
     <Panel title="Crew Role Required" right={
       <button onClick={() => navigate({ to: "/productions/$id", params: { id: p.id }, search: { tab: "find-crew" } })}
         disabled={unassignedRoles.length === 0} className="inline-flex items-center gap-1.5 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40">
-        <Sparkles className="h-3.5 w-3.5" /> Find Crew
+        <Sparkles className="h-3.5 w-3.5" /> Select Crew Type
       </button>
     }>
       <ul className="divide-y divide-border text-sm">
@@ -620,6 +636,9 @@ function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
                   <button onClick={() => setPickRole(pickRole === role ? null : role)} className="inline-flex items-center rounded-sm bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground">
                     Find
                   </button>
+                )}
+                {matches.length === 0 && (
+                  <button onClick={() => removeRole(role)} aria-label={`Remove ${role} from this production's role list`} className="text-muted-foreground hover:text-destructive">✕</button>
                 )}
               </span>
               {pickRole === role && (
@@ -652,6 +671,11 @@ function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
           );
         })}
       </ul>
+      <div className="flex items-center gap-2 border-t border-border p-3">
+        <input value={newRole} onChange={(e) => setNewRole(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addRole())}
+          placeholder="Add a role" className="min-w-0 flex-1 rounded-sm border border-input bg-background px-2 py-1.5 text-sm" />
+        <button onClick={addRole} className="shrink-0 rounded-sm border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary hover:text-primary">+ Add role</button>
+      </div>
     </Panel>
   );
 }
@@ -1146,7 +1170,6 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
           </div>
         );
       })()}
-      <CrewRoleStatus p={p} />
       <Panel title={`${isActive ? "Crew on Set" : "Confirmed Crew"} (${members.length})`}>
         {isProducer && eligible.length > 0 && (
           <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-2.5 text-xs">

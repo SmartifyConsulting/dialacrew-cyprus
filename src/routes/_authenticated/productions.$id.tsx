@@ -16,7 +16,7 @@ import { ProductionCover } from "@/components/site/ProductionCover";
 import { DocumentsTab } from "@/components/site/DocumentsTab";
 import { EquipmentAvailability } from "@/components/site/EquipmentAvailability";
 import { CrewOvertimePanel, useBookingRates } from "@/components/site/Overtime";
-import { ChecklistsPanel, CommercialsTab, MembersList, OverviewTab, PostsTab, RegisterTab, TasksTab } from "@/components/site/SiteTabs";
+import { ChecklistsPanel, CommercialsTab, CrewRoleStatus, MembersList, OverviewTab, PostsTab, RegisterTab, TasksTab } from "@/components/site/SiteTabs";
 
 export const Route = createFileRoute("/_authenticated/productions/$id")({
   validateSearch: (s: Record<string, unknown>): { tab?: string } => (typeof s["tab"] === "string" ? { tab: s["tab"] } : {}),
@@ -36,7 +36,7 @@ export const Route = createFileRoute("/_authenticated/productions/$id")({
 // Crew see only Posts, Tasks and Photos (Overview is the fixed left widget).
 // Find Crew (scenario planner) opens from the header button beside the status badge.
 const CREW_TABS = ["Posts", "Tasks", "Photos"] as const;
-const MANAGER_TABS = ["Posts", "Crew", "Checklists", "Tasks", "Documents", "Photos", "Budget", "Review", "Audit"] as const;
+const MANAGER_TABS = ["Posts", "Crew", "Register", "Checklists", "Tasks", "Documents", "Photos", "Budget", "Review", "Audit"] as const;
 type Tab = (typeof MANAGER_TABS)[number] | "Find Crew";
 
 function ProductionSite() {
@@ -108,7 +108,8 @@ function ProductionSite() {
           </nav>
           <fieldset disabled={closed} className="min-w-0 w-full [&>*]:w-full">
           {tab === "Posts" && <PostsTab {...ctx} />}
-          {tab === "Crew" && <div className="space-y-5"><MembersList {...ctx} /><RegisterTab {...ctx} /></div>}
+          {tab === "Crew" && isProducer && <CrewRoleStatus p={p} />}
+          {tab === "Register" && <div className="space-y-5"><MembersList {...ctx} /><RegisterTab {...ctx} /></div>}
           {tab === "Checklists" && <ChecklistsPanel p={p} isProducer={isProducer} />}
           {tab === "Tasks" && <TasksTab {...ctx} />}
           {tab === "Audit" && isProducer && <AuditTab p={p} />}

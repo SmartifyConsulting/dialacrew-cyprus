@@ -2298,6 +2298,38 @@ export type Database = {
           },
         ]
       }
+      production_crew_roles: {
+        Row: {
+          created_at: string
+          id: string
+          production_id: string
+          role: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          production_id: string
+          role: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          production_id?: string
+          role?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_crew_roles_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_retrospectives: {
         Row: {
           client: string
