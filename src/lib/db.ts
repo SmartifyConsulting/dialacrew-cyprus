@@ -120,6 +120,28 @@ export const useDeleteCrewGroup = () => {
   });
 };
 
+export const useAddCrewGroupMember = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (f: { groupId: string; crewId: string }) => {
+      const { error } = await supabase.from("crew_group_members").insert({ group_id: f.groupId, crew_id: f.crewId });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["crew-groups"] }),
+  });
+};
+
+export const useRemoveCrewGroupMember = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (f: { groupId: string; crewId: string }) => {
+      const { error } = await supabase.from("crew_group_members").delete().eq("group_id", f.groupId).eq("crew_id", f.crewId);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["crew-groups"] }),
+  });
+};
+
 export const useCreateProduction = () => {
   const qc = useQueryClient();
   return useMutation({

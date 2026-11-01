@@ -531,7 +531,7 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
 // shows all of these on its checklist, ticked once that role has a confirmed booking — there's no
 // separate "pencil crew" step at creation time, assignment happens via Find Crew / pencilling as usual.
 export const CREW_ROLES = [
-  "Director", "Director of Photography", "Focus Puller", "Gaffer", "Art Department", "Wardrobe", "Make-Up",
+  "Director", "Cast", "Artist", "Director of Photography", "Focus Puller", "Gaffer", "Art Department", "Wardrobe", "Make-Up",
   "Catering", "Production Assistant",
 ] as const;
 
@@ -539,6 +539,8 @@ export const CREW_ROLES = [
 // department or skills, unless one of `exclude` is also there (an "Assistant Director" is not a "Director").
 const ROLE_MATCH: Record<string, { include: string[]; exclude?: string[] }> = {
   "Director": { include: ["director"], exclude: ["director of photography", "assistant director", "art director", "casting director"] },
+  "Cast": { include: ["cast", "actor", "actress", "talent", "presenter", "model"] },
+  "Artist": { include: ["artist", "performer", "musician", "singer", "dancer"] },
   "Director of Photography": { include: ["director of photography", "dop", "dp", "cinematographer"] },
   "Focus Puller": { include: ["focus puller", "focus pulling", "1st ac", "first ac", "1st assistant camera", "first assistant camera"] },
   "Gaffer": { include: ["gaffer", "spark", "lighting"] },

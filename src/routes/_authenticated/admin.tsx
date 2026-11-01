@@ -11,6 +11,7 @@ import { DocumentChecklistsAdmin } from "@/components/admin/DocumentChecklistsAd
 import { EquipmentAdmin } from "@/components/admin/EquipmentAdmin";
 import { ChecklistTemplateManager } from "@/components/ChecklistTemplateManager";
 import { confirmDialog, promptDialog } from "@/components/ConfirmDialog";
+import { useAddCrewGroupMember, useCreateCrewGroup, useCreateProductionType, useCrew, useCrewGroups, useDeleteCrewGroup, useProductionTypes, useRemoveCrewGroupMember } from "@/lib/db";
 
 const REQUIRED_FIELDS = ["name", "role", "department"] as const;
 const CREW_FIELDS = [...REQUIRED_FIELDS, "location", "email", "phone", "day_rate", "experience"] as const;
@@ -139,8 +140,19 @@ const ADMIN_GROUPS = [
   { name: "Documents", tabs: ["Document Checklists", "Templates"] },
   { name: "Platform Management", tabs: ["Configuration", "System Settings", "Audit Log"] },
 ] as const;
-type AdminGroup = (typeof ADMIN_GROUPS)[number]["name"];
-type AdminTab = (typeof ADMIN_GROUPS)[number]["tabs"][number];
+// Producers get everything Super Admin has, except Platform Management (super-admin only) and
+// with the raw Crew roster swapped for Crew Types — producers group crew into reusable, typed
+// templates rather than editing crew records directly.
+const PRODUCER_ADMIN_GROUPS = [
+  { name: "People & Organisations", tabs: ["Users", "Crew Types", "Companies", "Subscriptions"] },
+  { name: "Operations", tabs: ["Bookings", "Equipment", "Import"] },
+  { name: "Finance", tabs: ["Payments", "Invoices", "Gig Fees"] },
+  { name: "Trust & Compliance", tabs: ["Disputes", "Reviews"] },
+  { name: "Engagement", tabs: ["Social Spotlights"] },
+  { name: "Documents", tabs: ["Document Checklists", "Templates"] },
+] as const;
+type AdminGroup = (typeof ADMIN_GROUPS)[number]["name"] | (typeof PRODUCER_ADMIN_GROUPS)[number]["name"];
+type AdminTab = (typeof ADMIN_GROUPS)[number]["tabs"][number] | (typeof PRODUCER_ADMIN_GROUPS)[number]["tabs"][number];
 const btn = "rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground";
 
 function PlaceholderTab({ name }: { name: string }) {
@@ -154,34 +166,37 @@ function PlaceholderTab({ name }: { name: string }) {
 function AdminPage() {
   const { session } = useSession();
   const role = useRole(session?.user.id);
+  const isSuperAdmin = role.data === "admin";
+  const isProducer = role.data === "producer";
+  const groups = isSuperAdmin ? ADMIN_GROUPS : PRODUCER_ADMIN_GROUPS;
   const search = Route.useSearch();
   const requestedTab = search.tab as AdminTab | undefined;
-  const requestedGroup = ADMIN_GROUPS.find((g) => (g.tabs as readonly string[]).includes(requestedTab ?? ""));
-  const [group, setGroup] = useState<AdminGroup>(requestedGroup?.name ?? ADMIN_GROUPS[0].name);
-  const activeGroup = ADMIN_GROUPS.find((g) => g.name === group)!;
+  const requestedGroup = groups.find((g) => (g.tabs as readonly string[]).includes(requestedTab ?? ""));
+  const [group, setGroup] = useState<AdminGroup>(requestedGroup?.name ?? groups[0].name);
+  const activeGroup = groups.find((g) => g.name === group) ?? groups[0];
   const [tab, setTab] = useState<AdminTab>(requestedGroup && requestedTab ? requestedTab : activeGroup.tabs[0]);
 
   if (role.isLoading) return <Page open title="Admin"><p className="text-muted-foreground">Loading…</p></Page>;
-  if (role.data !== "admin") {
+  if (!isSuperAdmin && !isProducer) {
     return (
       <Page open title="Admin">
         <div className="rounded-sm border border-border bg-card p-8 text-center">
           <h2 className="font-script text-4xl text-primary">Not authorized</h2>
-          <p className="mt-3 text-muted-foreground">This area is for platform administrators only.</p>
+          <p className="mt-3 text-muted-foreground">This area is for producers and platform administrators only.</p>
         </div>
       </Page>
     );
   }
 
-  function selectGroup(g: (typeof ADMIN_GROUPS)[number]) {
+  function selectGroup(g: (typeof groups)[number]) {
     setGroup(g.name);
     setTab(g.tabs[0]);
   }
 
   return (
-    <Page open title="Admin" subtitle="Platform operations and oversight">
+    <Page open title="Admin" subtitle={isSuperAdmin ? "Platform operations and oversight" : "Production and crew operations"}>
       <nav className="mb-1 flex gap-1 overflow-x-auto border-b border-border">
-        {ADMIN_GROUPS.map((g) => (
+        {groups.map((g) => (
           <button key={g.name} onClick={() => selectGroup(g)}
             className={`whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-semibold ${group === g.name ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>{g.name}</button>
         ))}
@@ -192,8 +207,9 @@ function AdminPage() {
             className={`whitespace-nowrap rounded-sm px-3 py-1.5 text-xs font-semibold ${tab === t ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>{t}</button>
         ))}
       </nav>
-      {tab === "Users" && <UsersTab />}
+      {tab === "Users" && <UsersTab canManageAdmins={isSuperAdmin} />}
       {tab === "Crew" && <CrewTab />}
+      {tab === "Crew Types" && <CrewTypesTab />}
       {tab === "Import" && <ImportTab />}
       {tab === "Companies" && <CompaniesTab />}
       {tab === "Bookings" && <BookingsTab />}
@@ -268,7 +284,7 @@ function useInv() {
   return (...keys: string[][]) => keys.forEach((k) => qc.invalidateQueries({ queryKey: k }));
 }
 
-function UsersTab() {
+function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
   const inv = useInv();
   const users = useQuery({
     queryKey: ["admin-users"],
@@ -283,7 +299,9 @@ function UsersTab() {
       return (p.data ?? []).map((u) => ({ ...u, roles: roles.get(u.id) ?? [] }));
     },
   });
-  const ROLES = ["producer", "crew", "client", "admin"] as const;
+  // Producers can hand out producer/crew/client roles but never grant or remove admin — that stays Super Admin-only.
+  const ALL_ROLES = ["producer", "crew", "client", "admin"] as const;
+  const ROLES: readonly (typeof ALL_ROLES)[number][] = canManageAdmins ? ALL_ROLES : ALL_ROLES.filter((r) => r !== "admin");
   const [addingRole, setAddingRole] = useState<Record<string, string>>({});
 
   async function toggleSuspend(id: string, suspended: boolean) {
@@ -293,7 +311,7 @@ function UsersTab() {
     inv(["admin-users"]);
   }
   async function addRole(userId: string) {
-    const role = addingRole[userId] as (typeof ROLES)[number] | undefined;
+    const role = addingRole[userId] as (typeof ALL_ROLES)[number] | undefined;
     if (!role) return;
     const { error } = await supabase.from("user_roles").insert({ user_id: userId, role });
     if (error) { toast.error(friendlyError(error)); return; }
@@ -302,7 +320,7 @@ function UsersTab() {
     inv(["admin-users"]);
   }
   async function removeRole(userId: string, role: string) {
-    const { error } = await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role as (typeof ROLES)[number]);
+    const { error } = await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role as (typeof ALL_ROLES)[number]);
     if (error) { toast.error(friendlyError(error)); return; }
     toast.success("Role removed");
     inv(["admin-users"]);
@@ -321,7 +339,9 @@ function UsersTab() {
                   {u.roles.map((r) => (
                     <span key={r} className="inline-flex items-center gap-1 rounded-sm bg-muted px-1.5 py-0.5 text-xs">
                       {r}
-                      <button onClick={() => removeRole(u.id, r)} aria-label={`Remove ${r} role`} className="text-muted-foreground hover:text-destructive">×</button>
+                      {(canManageAdmins || r !== "admin") && (
+                        <button onClick={() => removeRole(u.id, r)} aria-label={`Remove ${r} role`} className="text-muted-foreground hover:text-destructive">×</button>
+                      )}
                     </span>
                   ))}
                   <select className={`${invField} py-0.5 text-xs`} value={addingRole[u.id] ?? ""} onChange={(e) => setAddingRole((prev) => ({ ...prev, [u.id]: e.target.value }))}>
@@ -414,6 +434,111 @@ function CrewTab() {
           </tr>
         ))}</tbody>
       </table>
+    </Panel>
+  );
+}
+
+// Crew Types: producers group crew members into named, reusable templates (optionally tagged to
+// a production type) instead of editing raw crew records — picked from Find Crew's Select Crew Type.
+function CrewTypesTab() {
+  const groups = useCrewGroups().data ?? [];
+  const crew = useCrew().data ?? [];
+  const productionTypes = useProductionTypes().data ?? [];
+  const createGroup = useCreateCrewGroup();
+  const createType = useCreateProductionType();
+  const deleteGroup = useDeleteCrewGroup();
+  const addMember = useAddCrewGroupMember();
+  const removeMember = useRemoveCrewGroupMember();
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newType, setNewType] = useState("");
+  const [addingType, setAddingType] = useState(false);
+  const [newTypeName, setNewTypeName] = useState("");
+  const [memberPick, setMemberPick] = useState<Record<string, string>>({});
+
+  async function createCrewType() {
+    if (!newName.trim()) { toast.error("Name this crew type"); return; }
+    try {
+      await createGroup.mutateAsync({ name: newName.trim(), crewIds: [], productionType: newType || null });
+      toast.success(`"${newName.trim()}" created`);
+      setNewName(""); setNewType(""); setAdding(false);
+    } catch (e) { toast.error(friendlyError(e)); }
+  }
+  async function addProductionType() {
+    if (!newTypeName.trim()) return;
+    try { await createType.mutateAsync(newTypeName.trim()); setNewType(newTypeName.trim()); setNewTypeName(""); setAddingType(false); }
+    catch (e) { toast.error(friendlyError(e)); }
+  }
+  async function addCrewToGroup(groupId: string) {
+    const crewId = memberPick[groupId];
+    if (!crewId) return;
+    try { await addMember.mutateAsync({ groupId, crewId }); setMemberPick((prev) => ({ ...prev, [groupId]: "" })); }
+    catch (e) { toast.error(friendlyError(e)); }
+  }
+
+  return (
+    <Panel title={`Crew Types (${groups.length})`} right={!adding && (
+      <button onClick={() => setAdding(true)} className="text-xs font-semibold text-primary hover:underline">+ Add crew type</button>
+    )}>
+      {adding && (
+        <div className="flex flex-wrap items-end gap-2 border-b border-border p-4">
+          <label className="text-xs"><span className="block text-muted-foreground">Name</span>
+            <input className={`${invField} min-w-40`} value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g. Commercial B-Unit" /></label>
+          <label className="text-xs"><span className="block text-muted-foreground">Production type (optional)</span>
+            {addingType ? (
+              <span className="mt-1 flex gap-1">
+                <input autoFocus className={invField} value={newTypeName} onChange={(e) => setNewTypeName(e.target.value)} placeholder="New type" />
+                <button onClick={addProductionType} className="rounded-sm bg-primary px-2 py-1.5 text-xs font-semibold text-primary-foreground">Save</button>
+              </span>
+            ) : (
+              <select className={invField} value={newType} onChange={(e) => e.target.value === "__add__" ? setAddingType(true) : setNewType(e.target.value)}>
+                <option value="">Any production type</option>
+                {productionTypes.map((t) => <option key={t} value={t}>{t}</option>)}
+                <option value="__add__">+ Add new type…</option>
+              </select>
+            )}
+          </label>
+          <button onClick={createCrewType} className={btn}>Create</button>
+          <button onClick={() => { setAdding(false); setNewName(""); setNewType(""); }} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold">Cancel</button>
+        </div>
+      )}
+      <ul className="divide-y divide-border text-sm">
+        {groups.length === 0 && <li className="p-4 text-xs text-muted-foreground">No crew types yet — add one above.</li>}
+        {groups.map((g) => (
+          <li key={g.id}>
+            <div className="flex items-center justify-between gap-3 px-4 py-2.5">
+              <button onClick={() => setExpanded(expanded === g.id ? null : g.id)} className="flex-1 text-left font-medium hover:text-primary">
+                {g.name} <span className="font-normal text-muted-foreground">({g.memberIds.length}){g.productionType ? ` · ${g.productionType}` : ""}</span>
+              </button>
+              <button onClick={() => deleteGroup.mutate(g.id)} className="shrink-0 text-xs text-destructive hover:underline">Delete</button>
+            </div>
+            {expanded === g.id && (
+              <div className="space-y-2 border-t border-border bg-muted/20 px-4 py-3">
+                {g.memberIds.length === 0 && <p className="text-xs text-muted-foreground">No crew members added yet.</p>}
+                <ul className="flex flex-wrap gap-1.5">
+                  {g.memberIds.map((id) => {
+                    const c = crew.find((x) => x.id === id);
+                    return (
+                      <li key={id} className="inline-flex items-center gap-1 rounded-sm bg-card px-2 py-1 text-xs">
+                        {c?.name ?? "Unknown"}
+                        <button onClick={() => removeMember.mutate({ groupId: g.id, crewId: id })} aria-label={`Remove ${c?.name ?? "member"}`} className="text-muted-foreground hover:text-destructive">×</button>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <div className="flex items-center gap-2">
+                  <select className={`${invField} min-w-48`} value={memberPick[g.id] ?? ""} onChange={(e) => setMemberPick((prev) => ({ ...prev, [g.id]: e.target.value }))}>
+                    <option value="">+ Add a user to this crew type…</option>
+                    {crew.filter((c) => !g.memberIds.includes(c.id)).map((c) => <option key={c.id} value={c.id}>{c.name} · {c.role}</option>)}
+                  </select>
+                  <button onClick={() => addCrewToGroup(g.id)} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary hover:text-primary">Add</button>
+                </div>
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
     </Panel>
   );
 }
