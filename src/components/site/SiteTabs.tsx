@@ -337,16 +337,22 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
     toast.success(editingId ? "Location point updated" : "Location point added");
     const wasAdding = !editingId;
     const savedDay = lf.startsAt.slice(0, 10);
+    const savedRecceDate = lf.recceDate, savedRecceStart = lf.recceStart, savedRecceEnd = lf.recceEnd;
+    // Days that already have a location (including the one just saved) — used below to avoid
+    // staging a day that's already covered, e.g. when locations are saved out of day order.
+    const assignedDays = new Set([...points.map((pt) => pt.starts_at ? localYmd(pt.starts_at) : null).filter((d): d is string => !!d), savedDay].filter(Boolean));
     cancelForm();
     inv(["location-points", p.id]);
     await syncProductionRecce();
     // Shoot spans more than one day — automatically stage the next day's location so the
-    // producer doesn't have to click "Add Location" again for every day of the shoot.
+    // producer doesn't have to click "Add Location" again for every day of the shoot. Recce
+    // date/time default to the same as the location just saved, since most shoots recce once
+    // for the whole run rather than per location.
     const spansMultipleDays = !!p.date && !!p.endDate && p.endDate !== p.date;
-    if (wasAdding && savedDay && spansMultipleDays && p.endDate && savedDay < p.endDate) {
-      const nextDate = addDays(savedDay, 1);
+    const nextDate = savedDay ? addDays(savedDay, 1) : "";
+    if (wasAdding && savedDay && spansMultipleDays && p.endDate && savedDay < p.endDate && nextDate && !assignedDays.has(nextDate)) {
       const startsAt = `${nextDate}T00:00`;
-      setLf({ ...blankLocationForm, startsAt, endsAt: addHoursLocal(startsAt, 8), recceDate: addDays(nextDate, -1) });
+      setLf({ ...blankLocationForm, startsAt, endsAt: addHoursLocal(startsAt, 8), recceDate: savedRecceDate, recceStart: savedRecceStart, recceEnd: savedRecceEnd });
       setAdding(true);
     }
   }
