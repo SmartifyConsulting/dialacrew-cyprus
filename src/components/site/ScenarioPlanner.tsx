@@ -256,19 +256,23 @@ export function ScenarioPlanner({ p, initialGroupId }: { p: Production; initialG
   return (
     <div className="w-full space-y-5">
       <Panel title={`Sandbox · ${shootDays.length || days} day(s)`} right={<input className="w-40 rounded-sm border border-input bg-background px-2 py-1 text-xs" placeholder="Filter crew" value={filter} onChange={(e) => setFilter(e.target.value)} />}>
-        {/* Scenarios: cards you click to switch between, instead of a dropdown + a separate comparison table. */}
+        {/* Scenarios: cards you click to switch between, listed vertically instead of a dropdown + a separate comparison table. */}
+        {(scenarios.data ?? []).length > 0 && (
+          <div className="flex flex-col gap-2 border-b border-border p-4">
+            {(scenarios.data ?? []).map((s) => {
+              const cost = scenarioCostAllDays(s.selByDay, rates, fees);
+              const crewCount = new Set(Object.values(s.selByDay).flatMap((d) => Object.keys(d))).size;
+              return (
+                <button key={s.id} onClick={() => pick(s.id)}
+                  className={`rounded-sm border px-3 py-2 text-left text-xs ${activeId === s.id ? "border-primary bg-primary/10" : "border-border hover:border-primary"}`}>
+                  <div className="font-semibold">{s.name}</div>
+                  <div className="text-muted-foreground">{crewCount} crew · {zar(cost)}</div>
+                </button>
+              );
+            })}
+          </div>
+        )}
         <div className="flex flex-wrap items-center gap-2 border-b border-border p-4">
-          {(scenarios.data ?? []).map((s) => {
-            const cost = scenarioCostAllDays(s.selByDay, rates, fees);
-            const crewCount = new Set(Object.values(s.selByDay).flatMap((d) => Object.keys(d))).size;
-            return (
-              <button key={s.id} onClick={() => pick(s.id)}
-                className={`rounded-sm border px-3 py-2 text-left text-xs ${activeId === s.id ? "border-primary bg-primary/10" : "border-border hover:border-primary"}`}>
-                <div className="font-semibold">{s.name}</div>
-                <div className="text-muted-foreground">{crewCount} crew · {zar(cost)}</div>
-              </button>
-            );
-          })}
           <button onClick={() => pick("")} className={ghost}><Plus className="h-3 w-3" /> New scenario</button>
           <input className="min-w-40 flex-1 rounded-sm border border-input bg-background px-2 py-2 text-sm" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} aria-label="Scenario name" placeholder="Scenario name" />
           {aiUnlocked && (

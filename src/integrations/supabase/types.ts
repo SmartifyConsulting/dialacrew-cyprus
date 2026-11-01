@@ -2013,6 +2013,7 @@ export type Database = {
           created_by: string
           done: boolean
           done_at: string | null
+          due_date: string | null
           id: string
           label: string
           sort_order: number
@@ -2024,6 +2025,7 @@ export type Database = {
           created_by?: string
           done?: boolean
           done_at?: string | null
+          due_date?: string | null
           id?: string
           label: string
           sort_order?: number
@@ -2035,6 +2037,7 @@ export type Database = {
           created_by?: string
           done?: boolean
           done_at?: string | null
+          due_date?: string | null
           id?: string
           label?: string
           sort_order?: number

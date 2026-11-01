@@ -558,6 +558,20 @@ export function crewFitsRole(c: { role: string; department?: string; skills?: st
     rule.include.some((ph) => hasPhrase(f, ph)) && !(rule.exclude ?? []).some((ph) => hasPhrase(f, ph)));
 }
 
+// Whether a crew member should appear as an assignable option for a given checklist — e.g. a
+// camera department member shouldn't show up for a "Hair and Make-up" checklist. Producers and
+// assistant producers are always relevant, since they oversee every checklist. A checklist whose
+// title doesn't match any standard role (e.g. "Pre-production") shows everyone, since relevance
+// can't be determined.
+export function crewRelevantToChecklist(c: { role: string; department?: string; skills?: string[] }, checklistTitle: string): boolean {
+  if (hasPhrase(words(`${c.role} ${c.department ?? ""}`), "producer")) return true;
+  const title = words(checklistTitle);
+  const matchedRole = Object.keys(ROLE_MATCH).find((key) =>
+    hasPhrase(title, words(key).trim()) || ROLE_MATCH[key]!.include.some((ph) => hasPhrase(title, ph)));
+  if (!matchedRole) return true;
+  return crewFitsRole(c, matchedRole);
+}
+
 export const CONFIRMED_BOOKING_STATUSES =["confirmed", "in_progress", "completed", "payment_released"];
 
 /* ---------------- Crew role required (standard roles still needing a confirmed booking) — the Crew tab's whole screen ---------------- */
@@ -714,7 +728,7 @@ export function CrewRoleStatus({ p }: Pick<Ctx, "p">) {
 
 /* ---------------- Custom checklists (producers add checklists + items, e.g. "Wardrobe checklist") ---------------- */
 type ChecklistItemPhoto = { id: string; path: string; sort_order: number };
-type ChecklistItem = { id: string; label: string; done: boolean; done_at: string | null; assigned_to: string | null; production_checklist_item_photos: ChecklistItemPhoto[] };
+type ChecklistItem = { id: string; label: string; done: boolean; done_at: string | null; assigned_to: string | null; due_date: string | null; production_checklist_item_photos: ChecklistItemPhoto[] };
 
 function ChecklistItemPhotoThumb({ photo, index, count, canEdit, onDelete, onMove }: {
   photo: ChecklistItemPhoto; index: number; count: number; canEdit: boolean; onDelete: () => void; onMove: (dir: -1 | 1) => void;
@@ -785,7 +799,9 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
   async function addItem(checklistId: string, count: number) {
     const label = (newItem[checklistId] ?? "").trim();
     if (!label) return;
-    const { error } = await supabase.from("production_checklist_items").insert({ checklist_id: checklistId, label, sort_order: count });
+    // Defaults to the Producer so every item has an owner from the start — they reassign as needed.
+    const defaultAssignee = members.find((m) => m.role?.trim().toLowerCase() === "producer")?.crew_id ?? null;
+    const { error } = await supabase.from("production_checklist_items").insert({ checklist_id: checklistId, label, sort_order: count, assigned_to: defaultAssignee });
     if (error) { toast.error(friendlyError(error)); return; }
     setNewItem((prev) => ({ ...prev, [checklistId]: "" }));
     inv(["checklists", p.id]);
@@ -795,6 +811,12 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
     const { error } = await supabase.from("production_checklist_items").update({ assigned_to: crewId || null }).eq("id", id);
     if (error) { toast.error(friendlyError(error)); return; }
     toast.success(crewId ? "Assigned — they'll see it on their task list and get a notification" : "Unassigned");
+    inv(["checklists", p.id], ["tasks", p.id]);
+  }
+
+  async function setDueDate(id: string, dueDate: string) {
+    const { error } = await supabase.from("production_checklist_items").update({ due_date: dueDate || null }).eq("id", id);
+    if (error) { toast.error(friendlyError(error)); return; }
     inv(["checklists", p.id], ["tasks", p.id]);
   }
 
@@ -880,13 +902,22 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
                       </span>
                     : <span className="min-w-0 flex-1">{item.label}</span>}
                   {isProducer ? (
-                    <select aria-label={`Assign ${item.label}`} value={item.assigned_to ?? ""} onChange={(e) => assignItem(item.id, e.target.value)}
-                      className="shrink-0 rounded-sm border border-input bg-background px-1.5 py-1 text-[11px] max-w-24">
-                      <option value="">Unassigned</option>
-                      {members.map((m) => <option key={m.crew_id} value={m.crew_id}>{m.name}</option>)}
-                    </select>
+                    <>
+                      <select aria-label={`Assign ${item.label}`} value={item.assigned_to ?? ""} onChange={(e) => assignItem(item.id, e.target.value)}
+                        className="shrink-0 rounded-sm border border-input bg-background px-1.5 py-1 text-[11px] max-w-24">
+                        <option value="">Unassigned</option>
+                        {members.filter((m) => crewRelevantToChecklist(m, c.title)).map((m) => <option key={m.crew_id} value={m.crew_id}>{m.name}</option>)}
+                      </select>
+                      {item.assigned_to && (
+                        <input type="date" aria-label={`Due date for ${item.label}`} value={item.due_date ?? ""} onChange={(e) => setDueDate(item.id, e.target.value)}
+                          className="shrink-0 rounded-sm border border-input bg-background px-1.5 py-1 text-[11px]" />
+                      )}
+                    </>
                   ) : item.assigned_to && (
-                    <span className="shrink-0 text-[11px] text-muted-foreground">{members.find((m) => m.crew_id === item.assigned_to)?.name ?? "Assigned"}</span>
+                    <span className="shrink-0 text-[11px] text-muted-foreground">
+                      {members.find((m) => m.crew_id === item.assigned_to)?.name ?? "Assigned"}
+                      {item.due_date && ` · due ${dayLabel(`${item.due_date}T00:00:00`)}`}
+                    </span>
                   )}
                   {isProducer && uploadingItem === item.id && <span className="text-xs text-muted-foreground">Uploading…</span>}
                   {isProducer && uploadingItem !== item.id && (
