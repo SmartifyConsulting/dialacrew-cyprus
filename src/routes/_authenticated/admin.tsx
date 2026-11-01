@@ -158,7 +158,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 const ADMIN_GROUPS = [
-  { name: "People & Organisations", tabs: ["Users", "Import", "Crew Types", "Companies", "Subscriptions"] },
+  { name: "People & Organisations", tabs: ["Users", "Crew Types", "Companies", "Subscriptions"] },
   { name: "Operations", tabs: ["Bookings", "Equipment"] },
   { name: "Finance", tabs: ["Payments", "Invoices", "Gig Fees"] },
   { name: "Disputes", tabs: ["Disputes"] },
@@ -171,7 +171,7 @@ const ADMIN_GROUPS = [
 // with the raw Crew roster swapped for Crew Types — producers group crew into reusable, typed
 // templates rather than editing crew records directly.
 const PRODUCER_ADMIN_GROUPS = [
-  { name: "People & Organisations", tabs: ["Users", "Import", "Crew Types"] },
+  { name: "People & Organisations", tabs: ["Users", "Crew Types"] },
   { name: "Operations", tabs: ["Bookings", "Equipment"] },
   { name: "Finance", tabs: ["Payments", "Invoices", "Gig Fees"] },
   { name: "Disputes", tabs: ["Disputes"] },
@@ -237,7 +237,6 @@ function AdminPage() {
       </nav>
       {tab === "Users" && <UsersTab canManageAdmins={isSuperAdmin} />}
       {tab === "Crew Types" && <CrewTypesTab />}
-      {tab === "Import" && <ImportTab />}
       {tab === "Companies" && <CompaniesTab />}
       {tab === "Bookings" && <BookingsTab />}
       {tab === "Payments" && <PaymentsTab />}
@@ -313,6 +312,7 @@ function useInv() {
 
 function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
   const inv = useInv();
+  const [showImport, setShowImport] = useState(false);
   const users = useQuery({
     queryKey: ["admin-users"],
     queryFn: async () => {
@@ -353,7 +353,10 @@ function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
     inv(["admin-users"]);
   }
   return (
-    <Panel title={`Users (${users.data?.length ?? 0})`}>
+    <div className="space-y-5">
+    <Panel title={`Users (${users.data?.length ?? 0})`} right={
+      <button onClick={() => setShowImport(!showImport)} className="text-xs font-semibold text-primary hover:underline">{showImport ? "Hide import" : "+ Import crew from CSV"}</button>
+    }>
       <table className="w-full text-sm">
         <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">First name</th><th className="px-4">Last name</th><th className="px-4">Email</th><th className="px-4">Roles</th><th className="px-4">Status</th><th className="px-4">Action</th></tr></thead>
         <tbody>
@@ -390,6 +393,8 @@ function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
         </tbody>
       </table>
     </Panel>
+    {showImport && <ImportTab />}
+    </div>
   );
 }
 
