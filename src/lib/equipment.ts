@@ -3,10 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 
 // The production company's own equipment, kept like a library: each item has a stock count, and every check-out
 // records who has it, which production it is for, when it left and when it is due back.
-export type EquipmentItem = { id: string; name: string; category: string; total_count: number; notes: string };
+export type EquipmentItem = { id: string; name: string; category: string; total_count: number; notes: string; serial_code: string | null };
 export type EquipmentCheckout = {
-  id: string; item_id: string; quantity: number; production_id: string | null; checked_out_to: string;
-  checked_out_at: string; expected_return_at: string | null; returned_at: string | null; productions: { name: string } | null;
+  id: string; item_id: string; quantity: number; production_id: string | null; checked_out_to: string; checked_out_crew_id: string | null;
+  checked_out_at: string; expected_return_at: string | null; returned_at: string | null; due_notified_at: string | null; productions: { name: string } | null;
 };
 
 export const EQUIPMENT_CATEGORIES = ["Equipment", "Lighting", "Sound", "Camera", "Grip", "Wardrobe", "Props", "Vehicle"];

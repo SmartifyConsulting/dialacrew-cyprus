@@ -15,7 +15,7 @@ import {
 
 const field = "rounded-sm border border-input bg-background px-2 py-1.5 text-sm outline-none focus:border-ring";
 const addBtn = "rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50";
-const blankItem = { name: "", category: "Equipment", total_count: "1", notes: "" };
+const blankItem = { name: "", category: "Equipment", total_count: "1", notes: "", serial_code: "" };
 
 const addDays = (ymd: string, n: number) => {
   const d = new Date(`${ymd}T00:00:00`);
@@ -45,7 +45,7 @@ export function EquipmentAdmin() {
 
   async function addItem() {
     if (!newItem.name.trim()) { toast.error("Name the item first"); return; }
-    const { error } = await supabase.from("inventory_items").insert({ name: newItem.name.trim(), category: newItem.category, total_count: Math.max(1, Number(newItem.total_count) || 1), notes: newItem.notes.trim() });
+    const { error } = await supabase.from("inventory_items").insert({ name: newItem.name.trim(), category: newItem.category, total_count: Math.max(1, Number(newItem.total_count) || 1), notes: newItem.notes.trim(), serial_code: newItem.serial_code.trim() || null });
     if (error) { toast.error(friendlyError(error)); return; }
     toast.success("Equipment added");
     setNewItem(blankItem);
@@ -53,11 +53,11 @@ export function EquipmentAdmin() {
   }
   function startEdit(it: EquipmentItem) {
     setEditingId(it.id);
-    setDraft({ name: it.name, category: it.category, total_count: String(it.total_count), notes: it.notes });
+    setDraft({ name: it.name, category: it.category, total_count: String(it.total_count), notes: it.notes, serial_code: it.serial_code ?? "" });
   }
   async function saveEdit(id: string) {
     if (!draft.name.trim()) { toast.error("Name the item first"); return; }
-    const { error } = await supabase.from("inventory_items").update({ name: draft.name.trim(), category: draft.category, total_count: Math.max(1, Number(draft.total_count) || 1), notes: draft.notes.trim() }).eq("id", id);
+    const { error } = await supabase.from("inventory_items").update({ name: draft.name.trim(), category: draft.category, total_count: Math.max(1, Number(draft.total_count) || 1), notes: draft.notes.trim(), serial_code: draft.serial_code.trim() || null }).eq("id", id);
     if (error) { toast.error(friendlyError(error)); return; }
     toast.success("Equipment updated");
     setEditingId(null);
@@ -85,7 +85,8 @@ export function EquipmentAdmin() {
             {EQUIPMENT_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
           </select>
           <input type="number" min="1" className={`${field} w-24`} placeholder="How many" value={newItem.total_count} onChange={(e) => setNewItem({ ...newItem, total_count: e.target.value })} aria-label="How many we own" />
-          <input placeholder="Notes (serial number, condition…)" className={`${field} min-w-48`} value={newItem.notes} onChange={(e) => setNewItem({ ...newItem, notes: e.target.value })} />
+          <input placeholder="Serial/Asset ID" className={`${field} w-32`} value={newItem.serial_code} onChange={(e) => setNewItem({ ...newItem, serial_code: e.target.value })} />
+          <input placeholder="Notes (condition…)" className={`${field} min-w-48`} value={newItem.notes} onChange={(e) => setNewItem({ ...newItem, notes: e.target.value })} />
           <button onClick={addItem} className={addBtn}>Add equipment</button>
         </div>
       </Panel>
@@ -109,6 +110,7 @@ export function EquipmentAdmin() {
                   return (
                     <tr key={it.id} className="border-t border-border">
                       <td className="px-4 py-2"><input className={`${field} w-full`} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} aria-label="Item name" />
+                        <input className={`${field} mt-1 w-full`} placeholder="Serial/Asset ID" value={draft.serial_code} onChange={(e) => setDraft({ ...draft, serial_code: e.target.value })} aria-label="Serial/Asset ID" />
                         <input className={`${field} mt-1 w-full`} placeholder="Notes" value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} aria-label="Notes" /></td>
                       <td className="px-4">
                         <select className={field} value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })} aria-label="Category">
@@ -129,6 +131,7 @@ export function EquipmentAdmin() {
                   <tr key={it.id} className="border-t border-border align-top">
                     <td className="px-4 py-2">
                       <div className="font-medium">{it.name}</div>
+                      {it.serial_code && <div className="text-xs text-muted-foreground">Serial/Asset ID: {it.serial_code}</div>}
                       {it.notes && <div className="text-xs text-muted-foreground">{it.notes}</div>}
                       {outNow(it.id).map((c) => (
                         <div key={c.id} className={`mt-0.5 text-xs ${isOverdue(c) ? "font-semibold text-destructive" : "text-muted-foreground"}`}>
@@ -210,8 +213,10 @@ function CheckoutDialog({ item, free, onClose, onDone }: { item: EquipmentItem; 
     if (!f.dueAt) { toast.error("Set the date it is due back"); return; }
     if (f.dueAt < f.outAt) { toast.error("The return date can't be before the day it goes out"); return; }
     setBusy(true);
+    // If the name matches a known crew member, link them so the due-back notification can reach them directly.
+    const matchedCrew = crew.find((c) => c.name.trim().toLowerCase() === f.who.trim().toLowerCase());
     const { error } = await supabase.from("inventory_checkouts").insert({
-      item_id: item.id, quantity, checked_out_to: f.who.trim(), production_id: f.productionId || null,
+      item_id: item.id, quantity, checked_out_to: f.who.trim(), checked_out_crew_id: matchedCrew?.id ?? null, production_id: f.productionId || null,
       checked_out_at: f.outAt, expected_return_at: f.dueAt,
     });
     setBusy(false);

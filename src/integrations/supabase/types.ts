@@ -1277,8 +1277,10 @@ export type Database = {
       inventory_checkouts: {
         Row: {
           checked_out_at: string
+          checked_out_crew_id: string | null
           checked_out_to: string
           created_at: string
+          due_notified_at: string | null
           expected_return_at: string | null
           id: string
           item_id: string
@@ -1288,8 +1290,10 @@ export type Database = {
         }
         Insert: {
           checked_out_at?: string
+          checked_out_crew_id?: string | null
           checked_out_to?: string
           created_at?: string
+          due_notified_at?: string | null
           expected_return_at?: string | null
           id?: string
           item_id: string
@@ -1299,8 +1303,10 @@ export type Database = {
         }
         Update: {
           checked_out_at?: string
+          checked_out_crew_id?: string | null
           checked_out_to?: string
           created_at?: string
+          due_notified_at?: string | null
           expected_return_at?: string | null
           id?: string
           item_id?: string
@@ -1332,6 +1338,7 @@ export type Database = {
           id: string
           name: string
           notes: string
+          serial_code: string | null
           total_count: number
         }
         Insert: {
@@ -1340,6 +1347,7 @@ export type Database = {
           id?: string
           name: string
           notes?: string
+          serial_code?: string | null
           total_count?: number
         }
         Update: {
@@ -1348,6 +1356,7 @@ export type Database = {
           id?: string
           name?: string
           notes?: string
+          serial_code?: string | null
           total_count?: number
         }
         Relationships: []
