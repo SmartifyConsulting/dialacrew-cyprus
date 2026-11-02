@@ -257,7 +257,7 @@ function CheckoutDialog({ item, free, onClose, onDone }: { item: EquipmentItem; 
           <label className="block"><span className="text-xs text-muted-foreground">Which production it is for</span>
             <select className={`${field} mt-1 w-full`} value={f.productionId} onChange={(e) => chooseProduction(e.target.value)}>
               <option value="">No production</option>
-              {productions.map((p) => <option key={p.id} value={p.id}>{p.name}{p.date ? ` · ${p.date}` : ""}</option>)}
+              {[...productions].sort((a, b) => a.name.localeCompare(b.name)).map((p) => <option key={p.id} value={p.id}>{p.name}{p.date ? ` · ${p.date}` : ""}</option>)}
             </select></label>
           <div className="grid grid-cols-3 gap-3">
             <label className="block"><span className="text-xs text-muted-foreground">How many</span>
