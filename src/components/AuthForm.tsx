@@ -32,6 +32,8 @@ export function AuthForm() {
   const [invite, setInvite] = useState<{ company_name: string; company_role: string; email: string; valid: boolean } | null>(null);
   const pwRef = useRef<HTMLInputElement>(null);
   const producerSignupEnabled = usePlatformSetting("producer_self_signup_enabled").data === true;
+  const signupsDisabled = usePlatformSetting("signups_enabled").data === false;
+  const signupBlocked = signupsDisabled && !inviteToken;
 
   useEffect(() => {
     if (!inviteToken) return;
@@ -55,6 +57,10 @@ export function AuthForm() {
     return () => clearTimeout(t);
   }, [wait]);
 
+  useEffect(() => {
+    if (signupBlocked && mode === "signup") setMode("signin");
+  }, [signupBlocked, mode]);
+
   const checks = passwordChecks(password, email);
 
   const fail = (err: unknown) => {
@@ -67,6 +73,10 @@ export function AuthForm() {
   async function submit(e: FormEvent) {
     e.preventDefault();
     setError("");
+    if (mode === "signup" && signupBlocked) {
+      setError("New sign-ups are currently closed. Please contact your producer for an invite.");
+      return;
+    }
     if (mode === "signup" && checks.some((c) => !c.ok)) {
       setError("Your password doesn't meet the requirements below.");
       pwRef.current?.focus();
@@ -122,12 +132,17 @@ export function AuthForm() {
     <div className="w-full">
     <div className="grid grid-cols-2 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
       {(["signin", "signup"] as const).map((m) => (
-        <button key={m} type="button" onClick={() => { setMode(m); setError(""); }}
-          className={`py-2 font-display text-sm font-semibold ${mode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}>
+        <button key={m} type="button" disabled={m === "signup" && signupBlocked}
+          title={m === "signup" && signupBlocked ? "New sign-ups are currently closed" : undefined}
+          onClick={() => { setMode(m); setError(""); }}
+          className={`py-2 font-display text-sm font-semibold ${mode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"} disabled:cursor-not-allowed disabled:opacity-40`}>
           {m === "signin" ? "Sign in" : "Sign up"}
         </button>
       ))}
     </div>
+    {signupBlocked && mode === "signin" && (
+      <p className="mt-2 text-center text-xs text-muted-foreground">New sign-ups are currently closed. Existing users can still sign in.</p>
+    )}
 
     <form onSubmit={submit} className="mt-4 space-y-4 rounded-xl border border-border bg-card p-6 shadow-sm">
       {mode === "signup" && (
