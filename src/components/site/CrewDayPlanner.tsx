@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeftRight, Copy, Plus, Trash2, UserPlus } from "lucide-react";
+import { ArrowLeftRight, Copy, Plus, Sparkles, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useBookings, useCrewGroups } from "@/lib/db";
 import { useLocationPoints } from "@/lib/site";
 import { fmtMoney, zar, type Production } from "@/lib/demo-data";
@@ -32,6 +34,36 @@ function CandidatePopover({ candidates, onSelect, currency }: { candidates: Cand
         </div>
       ))}
       {candidates.length === 0 && <p className="whitespace-nowrap p-1 text-xs text-muted-foreground">No available crew for this role.</p>}
+    </div>
+  );
+}
+
+// A Sandbox column (Scenario 1 or a drafted Sandbox), abstracted so the AI Crew Wizard can fill
+// either kind the same way: which roles are still open, who's available for one, and how to assign.
+type WizardTarget = {
+  key: string; label: string;
+  openRoles: () => string[];
+  candidatesFor: (role: string) => Candidate[];
+  assign: (role: string, candidateId: string) => Promise<void> | void;
+};
+
+function WizardMenu({ target, open, onToggle, onRunAuto, onGuided }: {
+  target: WizardTarget; open: boolean; onToggle: () => void;
+  onRunAuto: (strategy: "cheapest" | "bestfit") => void; onGuided: () => void;
+}) {
+  return (
+    <div className="relative shrink-0">
+      <button type="button" onClick={onToggle} title="AI Crew Wizard" aria-label={`AI Crew Wizard for ${target.label}`}
+        className="inline-flex items-center justify-center rounded-sm border border-primary bg-background p-1 text-primary">
+        <Sparkles className="h-3.5 w-3.5" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full z-20 mt-1 w-44 space-y-1 rounded-sm border border-border bg-card p-1.5 shadow-md">
+          <button onClick={() => onRunAuto("cheapest")} className="block w-full rounded-sm px-2 py-1.5 text-left text-xs hover:bg-muted">Cheapest available</button>
+          <button onClick={() => onRunAuto("bestfit")} className="block w-full rounded-sm px-2 py-1.5 text-left text-xs hover:bg-muted">Best fit</button>
+          <button onClick={onGuided} className="block w-full rounded-sm px-2 py-1.5 text-left text-xs hover:bg-muted">Step-by-step</button>
+        </div>
+      )}
     </div>
   );
 }
@@ -65,6 +97,56 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
     toast.success(count ? `${group.name}: pencilled ${count} role${count === 1 ? "" : "s"}` : `${group.name}: no matching open roles`);
   }
 
+  // AI Crew Wizard: three ways to fill a Sandbox's open roles — cheapest, best-fit by experience, or
+  // a guided one-role-at-a-time picker. "Best fit" ranks candidates by how many times they've
+  // worked on this production before (ties broken by day rate).
+  const allBookings = useBookings().data ?? [];
+  const experienceCount = (crewId: string) => allBookings.filter((b) => b.crewId === crewId && b.status !== "cancelled").length;
+  const [wizardMenuFor, setWizardMenuFor] = useState<string | null>(null);
+  const [guidedFor, setGuidedFor] = useState<{ targetKey: string; roles: string[]; idx: number } | null>(null);
+
+  const s1Target: WizardTarget = {
+    key: "s1", label: "Sandbox 1",
+    openRoles: () => roleList.filter((r) => !req.isConfirmed(r) && req.byRole(r).length === 0),
+    candidatesFor: (role) => s1Candidates(role, req.byRole(role)),
+    assign: async (role, id) => { await req.pencil(role, id, [], true); },
+  };
+  const scTarget = (s: Scenario): WizardTarget => ({
+    key: s.id, label: s.name,
+    openRoles: () => roleList.filter((r) => !sc.assignedForRole(s, r)),
+    candidatesFor: (role) => scCandidates(s, role),
+    assign: async (role, id) => { await sc.selectForRole(s, role, id, null); },
+  });
+  function getTarget(key: string): WizardTarget | undefined {
+    if (key === "s1") return s1Target;
+    const s = sc.scenarios.find((x) => x.id === key);
+    return s ? scTarget(s) : undefined;
+  }
+  function rankedCandidates(target: WizardTarget, role: string) {
+    return [...target.candidatesFor(role)].sort((a, b) => (experienceCount(b.id) - experienceCount(a.id)) || (a.dayRate - b.dayRate));
+  }
+  async function runAutoWizard(target: WizardTarget, strategy: "cheapest" | "bestfit") {
+    const used = new Set<string>();
+    let count = 0;
+    for (const role of target.openRoles()) {
+      const candidates = target.candidatesFor(role).filter((c) => !used.has(c.id));
+      if (candidates.length === 0) continue;
+      const sorted = strategy === "cheapest"
+        ? [...candidates].sort((a, b) => a.dayRate - b.dayRate)
+        : rankedCandidates({ ...target, candidatesFor: () => candidates }, role);
+      const pick = sorted[0]!;
+      await target.assign(role, pick.id);
+      used.add(pick.id);
+      count++;
+    }
+    toast.success(count ? `AI Crew Wizard filled ${count} role${count === 1 ? "" : "s"} for ${target.label}` : `${target.label}: no open roles to fill`);
+  }
+  function startGuided(target: WizardTarget) {
+    const roles = target.openRoles();
+    if (!roles.length) { toast.success(`${target.label}: no open roles to fill`); return; }
+    setGuidedFor({ targetKey: target.key, roles, idx: 0 });
+  }
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full table-fixed border-collapse text-sm">
@@ -86,23 +168,32 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
                   {sc.crewMixes.length === 0 && <option value="" disabled className="bg-background text-foreground">No crew mixes saved yet</option>}
                   {sc.crewMixes.map((g) => <option key={g.id} value={g.id} className="bg-background text-foreground">{g.name} ({g.memberIds.length}){g.productionType ? ` · ${g.productionType}` : ""}</option>)}
                 </select>
+                <WizardMenu target={s1Target} open={wizardMenuFor === "s1"} onToggle={() => setWizardMenuFor(wizardMenuFor === "s1" ? null : "s1")}
+                  onRunAuto={(strategy) => { setWizardMenuFor(null); runAutoWizard(s1Target, strategy); }}
+                  onGuided={() => { setWizardMenuFor(null); startGuided(s1Target); }} />
               </div>
             </th>
-            {sc.scenarios.map((s) => (
-              <th key={s.id} className="min-w-[10rem] border-l-2 border-border px-2 py-2 text-left sm:min-w-[17rem] sm:px-3">
-                <div className="flex items-center gap-2">
-                  <input defaultValue={s.name} onBlur={(e) => sc.renameScenario(s, e.target.value)} maxLength={80} aria-label="Sandbox name"
-                    className="min-w-0 flex-1 bg-transparent font-display text-xs font-semibold uppercase tracking-wide text-primary outline-none sm:text-sm" />
-                  <select className="w-20 shrink-0 rounded-sm bg-primary px-1.5 py-1 text-[9px] font-semibold text-primary-foreground sm:w-28 sm:text-[10px]" value=""
-                    onChange={(e) => { const g = sc.crewMixes.find((x) => x.id === e.target.value); if (g) sc.applyGroupToScenario(s, g); }} aria-label={`Favourites for ${s.name}`}>
-                    <option value="" disabled className="bg-background text-foreground">Favourites</option>
-                    {sc.crewMixes.length === 0 && <option value="" disabled className="bg-background text-foreground">No crew mixes saved yet</option>}
-                    {sc.crewMixes.map((g) => <option key={g.id} value={g.id} className="bg-background text-foreground">{g.name} ({g.memberIds.length}){g.productionType ? ` · ${g.productionType}` : ""}</option>)}
-                  </select>
-                  <button onClick={() => sc.deleteScenario(s.id)} aria-label={`Delete ${s.name}`} className="shrink-0 text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
-                </div>
-              </th>
-            ))}
+            {sc.scenarios.map((s) => {
+              const target = scTarget(s);
+              return (
+                <th key={s.id} className="min-w-[10rem] border-l-2 border-border px-2 py-2 text-left sm:min-w-[17rem] sm:px-3">
+                  <div className="flex items-center gap-2">
+                    <input defaultValue={s.name} onBlur={(e) => sc.renameScenario(s, e.target.value)} maxLength={80} aria-label="Sandbox name"
+                      className="min-w-0 flex-1 bg-transparent font-display text-xs font-semibold uppercase tracking-wide text-primary outline-none sm:text-sm" />
+                    <select className="w-20 shrink-0 rounded-sm bg-primary px-1.5 py-1 text-[9px] font-semibold text-primary-foreground sm:w-28 sm:text-[10px]" value=""
+                      onChange={(e) => { const g = sc.crewMixes.find((x) => x.id === e.target.value); if (g) sc.applyGroupToScenario(s, g); }} aria-label={`Favourites for ${s.name}`}>
+                      <option value="" disabled className="bg-background text-foreground">Favourites</option>
+                      {sc.crewMixes.length === 0 && <option value="" disabled className="bg-background text-foreground">No crew mixes saved yet</option>}
+                      {sc.crewMixes.map((g) => <option key={g.id} value={g.id} className="bg-background text-foreground">{g.name} ({g.memberIds.length}){g.productionType ? ` · ${g.productionType}` : ""}</option>)}
+                    </select>
+                    <WizardMenu target={target} open={wizardMenuFor === s.id} onToggle={() => setWizardMenuFor(wizardMenuFor === s.id ? null : s.id)}
+                      onRunAuto={(strategy) => { setWizardMenuFor(null); runAutoWizard(target, strategy); }}
+                      onGuided={() => { setWizardMenuFor(null); startGuided(target); }} />
+                    <button onClick={() => sc.deleteScenario(s.id)} aria-label={`Delete ${s.name}`} className="shrink-0 text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+                  </div>
+                </th>
+              );
+            })}
             <th className="min-w-[7rem] px-2 py-2 text-left sm:min-w-[11rem] sm:px-3">
               <button onClick={sc.createScenario} className={`${ghost} whitespace-nowrap`}><Plus className="h-3.5 w-3.5 shrink-0" /> <span className="hidden sm:inline">Add Sandbox {sc.scenarios.length + 2}</span><span className="sm:hidden">Add</span></button>
             </th>
@@ -204,6 +295,49 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
           </tr>
         </tfoot>
       </table>
+      {guidedFor && (() => {
+        const target = getTarget(guidedFor.targetKey);
+        if (!target) return null;
+        if (guidedFor.idx >= guidedFor.roles.length) {
+          return (
+            <Dialog open onOpenChange={() => setGuidedFor(null)}>
+              <DialogContent className="max-w-sm">
+                <DialogHeader><DialogTitle>AI Crew Wizard · {target.label}</DialogTitle><DialogDescription>Done — every open role has been reviewed.</DialogDescription></DialogHeader>
+                <DialogFooter><Button type="button" onClick={() => setGuidedFor(null)}>Close</Button></DialogFooter>
+              </DialogContent>
+            </Dialog>
+          );
+        }
+        const role = guidedFor.roles[guidedFor.idx]!;
+        const candidates = rankedCandidates(target, role);
+        const advance = () => setGuidedFor((g) => (g ? { ...g, idx: g.idx + 1 } : g));
+        return (
+          <Dialog open onOpenChange={(o) => { if (!o) setGuidedFor(null); }}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>AI Crew Wizard · {target.label}</DialogTitle>
+                <DialogDescription>Role {guidedFor.idx + 1} of {guidedFor.roles.length}: {role}</DialogDescription>
+              </DialogHeader>
+              <div className="max-h-72 space-y-1.5 overflow-y-auto">
+                {candidates.length === 0 && <p className="text-xs text-muted-foreground">No available crew fit this role.</p>}
+                {candidates.map((c) => (
+                  <div key={c.id} className="flex items-center justify-between gap-3 rounded-sm border border-border px-3 py-2 text-xs">
+                    <span className="min-w-0">
+                      <span className="font-medium">{c.name}</span>
+                      <span className="block text-muted-foreground">{fmtMoney(c.dayRate, p.currency)} / day · {experienceCount(c.id)} past booking{experienceCount(c.id) === 1 ? "" : "s"}</span>
+                    </span>
+                    <button onClick={async () => { await target.assign(role, c.id); advance(); }} className="shrink-0 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Select</button>
+                  </div>
+                ))}
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setGuidedFor(null)}>Stop</Button>
+                <Button type="button" variant="ghost" onClick={advance}>Skip role</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
     </div>
   );
 }
