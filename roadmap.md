@@ -1,4 +1,6 @@
 # Roadmap
+- [ ] Despia store configuration: identifiers, signing, icons and store connections
+- [ ] Native push: Firebase connection, secure device registration and gig/schedule/booking alerts
 - [x] Despia bridge: installed SDK, pencil/check-in feedback, themed status bar; 4 tests and browser bridge check pass (physical-device testing requires Despia build)
 - [x] Shrink homepage logo 20%
 - [x] AI Brief Matcher (crew + kit) using MemoryBank
