@@ -14,6 +14,7 @@ import { useMyCrewId, useMyName } from "@/lib/site";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
+import { nativeFeedback } from "@/lib/native";
 import { JobTermsDialog } from "@/components/JobTermsDialog";
 import { WEATHER_ICONS } from "@/lib/weather";
 import { forecastSummary, useCalendarExtras, type DayShoot } from "@/lib/calendar-extras";
@@ -73,6 +74,7 @@ function CrewDashboard() {
     if (error) { toast.error(friendlyError(error)); return; }
     setRejectJob(null); setRejectReason("");
     toast.success("Job declined");
+    void nativeFeedback("warning");
     qc.invalidateQueries({ queryKey: ["crew-jobs"] });
   }
   async function acceptWithTerms() {
@@ -82,6 +84,7 @@ function CrewDashboard() {
     setAcceptingTerms(false);
     if (error) { toast.error(friendlyError(error)); return; }
     toast.success("Terms accepted and job confirmed");
+    void nativeFeedback("success");
     setPendingTermsJob(null);
     void qc.invalidateQueries({ queryKey: ["crew-jobs"] });
     void qc.invalidateQueries({ queryKey: ["bookings"] });
