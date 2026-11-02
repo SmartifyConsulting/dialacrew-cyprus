@@ -4,8 +4,11 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export const retryNativePush = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: allowed, error } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "producer" });
-    if (error || !allowed) throw new Error("Only producers can retry job alerts");
+    const [producer, admin] = await Promise.all([
+      context.supabase.rpc("has_role", { _user_id: context.userId, _role: "producer" }),
+      context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
+    ]);
+    if (producer.error || admin.error || (!producer.data && !admin.data)) throw new Error("Only producers and admins can retry job alerts");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error: readError } = await supabaseAdmin.from("native_push_outbox").select("id,dispatch_token").eq("status", "pending").lt("attempts", 4).order("created_at").limit(20);
     if (readError) throw readError;

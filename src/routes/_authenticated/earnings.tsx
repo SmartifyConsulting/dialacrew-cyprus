@@ -97,6 +97,7 @@ export const Route = createFileRoute("/_authenticated/earnings")({
     { name: "description", content: "Your crew earnings from bookings and network gigs." },
     { property: "og:title", content: "Earnings · Book a Crew" },
     { property: "og:description", content: "Your crew earnings from bookings and network gigs." },
+    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
   ] }),
   component: EarningsPage,
 });
