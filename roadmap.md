@@ -1,5 +1,5 @@
 # Roadmap
-- [ ] Despia bridge: install SDK, pencil/check-in feedback, themed status bar, focused tests
+- [x] Despia bridge: installed SDK, pencil/check-in feedback, themed status bar; 4 tests and browser bridge check pass (physical-device testing requires Despia build)
 - [x] Shrink homepage logo 20%
 - [x] AI Brief Matcher (crew + kit) using MemoryBank
 - [x] Production Retrospective (Review tab, AI lessons-learned)
