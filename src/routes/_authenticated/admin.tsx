@@ -313,6 +313,13 @@ function useInv() {
   return (...keys: string[][]) => keys.forEach((k) => qc.invalidateQueries({ queryKey: k }));
 }
 
+const ROLE_BADGE: Record<string, string> = {
+  producer: "bg-primary/10 text-primary",
+  admin: "bg-destructive/10 text-destructive",
+  crew: "bg-success/15 text-success",
+  client: "bg-muted text-muted-foreground",
+};
+
 function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
   const inv = useInv();
   const [showImport, setShowImport] = useState(false);
@@ -332,7 +339,6 @@ function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
   // Producers can hand out producer/crew/client roles but never grant or remove admin — that stays Super Admin-only.
   const ALL_ROLES = ["producer", "crew", "client", "admin"] as const;
   const ROLES: readonly (typeof ALL_ROLES)[number][] = canManageAdmins ? ALL_ROLES : ALL_ROLES.filter((r) => r !== "admin");
-  const [addingRole, setAddingRole] = useState<Record<string, string>>({});
 
   async function toggleSuspend(id: string, suspended: boolean) {
     const { error } = await supabase.from("profiles").update({ suspended: !suspended }).eq("id", id);
@@ -340,13 +346,10 @@ function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
     toast.success(!suspended ? "User suspended" : "User reactivated");
     inv(["admin-users"]);
   }
-  async function addRole(userId: string) {
-    const role = addingRole[userId] as (typeof ALL_ROLES)[number] | undefined;
-    if (!role) return;
+  async function addRole(userId: string, role: (typeof ALL_ROLES)[number]) {
     const { error } = await supabase.from("user_roles").insert({ user_id: userId, role });
     if (error) { toast.error(friendlyError(error)); return; }
     toast.success("Role added");
-    setAddingRole((prev) => ({ ...prev, [userId]: "" }));
     inv(["admin-users"]);
   }
   async function removeRole(userId: string, role: string) {
@@ -371,21 +374,24 @@ function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
               <td className="px-4 py-2 font-medium">{first || "—"}</td>
               <td className="px-4 font-medium">{last || "—"}</td>
               <td className="px-4 text-muted-foreground">{u.email}</td>
-              <td className="px-4">
+              <td className="px-4 py-2.5">
                 <div className="flex flex-wrap items-center gap-1.5">
                   {u.roles.map((r) => (
-                    <span key={r} className="inline-flex items-center gap-1 rounded-sm bg-muted px-1.5 py-0.5 text-xs">
+                    <span key={r} className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium capitalize ${ROLE_BADGE[r] ?? "bg-muted text-muted-foreground"}`}>
                       {r}
                       {(canManageAdmins || r !== "admin") && (
-                        <button onClick={() => removeRole(u.id, r)} aria-label={`Remove ${r} role`} className="text-muted-foreground hover:text-destructive">×</button>
+                        <button onClick={() => removeRole(u.id, r)} aria-label={`Remove ${r} role`} className="-mr-0.5 text-current opacity-60 hover:opacity-100">×</button>
                       )}
                     </span>
                   ))}
-                  <select className={`${invField} py-0.5 text-xs`} value={addingRole[u.id] ?? ""} onChange={(e) => setAddingRole((prev) => ({ ...prev, [u.id]: e.target.value }))}>
-                    <option value="">+ role</option>
-                    {ROLES.filter((r) => !u.roles.includes(r)).map((r) => <option key={r} value={r}>{r}</option>)}
-                  </select>
-                  {addingRole[u.id] && <button onClick={() => addRole(u.id)} className="text-xs text-primary hover:underline">Add</button>}
+                  {ROLES.filter((r) => !u.roles.includes(r)).length > 0 && (
+                    <select value="" onChange={(e) => { if (e.target.value) addRole(u.id, e.target.value as (typeof ROLES)[number]); }}
+                      aria-label={`Add a role to ${u.full_name || u.email}`}
+                      className="rounded-full border border-dashed border-border bg-transparent px-2.5 py-1 text-xs font-medium text-muted-foreground hover:border-primary hover:text-primary">
+                      <option value="">+ Role</option>
+                      {ROLES.filter((r) => !u.roles.includes(r)).map((r) => <option key={r} value={r} className="bg-background text-foreground capitalize">{r}</option>)}
+                    </select>
+                  )}
                 </div>
               </td>
               <td className="px-4">{u.suspended ? <Badge>Declined</Badge> : <Badge>Confirmed</Badge>}</td>
