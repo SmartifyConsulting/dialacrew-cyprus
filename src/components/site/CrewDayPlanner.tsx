@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeftRight, Copy, Plus, Sparkles, Trash2, UserPlus } from "lucide-react";
+import { ArrowLeftRight, Copy, Pencil, Plus, Sparkles, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { supabase } from "@/integrations/supabase/client";
@@ -359,20 +359,87 @@ function useScenarioCountsByDay(p: Production, shootDays: string[]) {
   });
 }
 
-// One row of the cost summary matrix: mounts the same pure data hooks DayTable uses, just to read
+// One column of the summary matrix: a Sandbox's total for this day, who's allocated to it (for the
+// tooltip), which roles are still open, and how to pencil a candidate into one of them.
+type SummaryCol = {
+  total: number; names: string[]; openRoles: string[];
+  candidatesFor: (role: string) => Candidate[];
+  assign: (role: string, candidateId: string) => Promise<void> | void;
+};
+
+// One row of the summary matrix: mounts the same pure data hooks DayTable uses, just to read
 // totals, so the matrix stays accurate even for days whose section is currently collapsed.
 function DaySummaryRow({ p, date, dayIndex, roleList, maxCols }: {
   p: Production; date: string; dayIndex: number; roleList: string[]; maxCols: number;
 }) {
   const req = useCrewRequiredDay(p, date, roleList);
   const sc = useScenarios(p, date, roleList);
-  const cells: (number | null)[] = [req.dayTotal, ...sc.scenarios.map((s) => sc.totalFor(s))];
-  while (cells.length < maxCols) cells.push(null);
+  const [pencilFor, setPencilFor] = useState<number | null>(null);
+  const [pencilRole, setPencilRole] = useState<string | null>(null);
+
+  const s1Candidates = (role: string, matches: CrewRequiredMatch[]): Candidate[] =>
+    req.candidatesFor(role, matches).map((c) => ({ id: c.id, name: c.name, role: c.role, dayRate: c.dayRate }));
+  const scCandidates = (s: Scenario, role: string): Candidate[] =>
+    sc.candidatesFor(s, role).map((c) => ({ id: c.id, name: c.name, role: c.role, dayRate: c.dayRate }));
+
+  const s1Col: SummaryCol = {
+    total: req.dayTotal,
+    names: roleList.flatMap((r) => req.byRole(r).map((m) => `${m.name} — ${r}`)),
+    openRoles: roleList.filter((r) => !req.isConfirmed(r) && req.byRole(r).length === 0),
+    candidatesFor: (role) => s1Candidates(role, req.byRole(role)),
+    assign: async (role, id) => { await req.pencil(role, id, [], true); },
+  };
+  const scCols: SummaryCol[] = sc.scenarios.map((s) => ({
+    total: sc.totalFor(s),
+    names: roleList.map((r) => { const c = sc.assignedForRole(s, r); return c ? `${c.name} — ${r}` : null; }).filter((x): x is string => !!x),
+    openRoles: roleList.filter((r) => !sc.assignedForRole(s, r)),
+    candidatesFor: (role) => scCandidates(s, role),
+    assign: async (role, id) => { await sc.selectForRole(s, role, id, null); },
+  }));
+  const cols: (SummaryCol | null)[] = [s1Col, ...scCols];
+  while (cols.length < maxCols) cols.push(null);
+
+  function closePencil() { setPencilFor(null); setPencilRole(null); }
+
   return (
     <tr className="border-t border-border">
       <td className="px-3 py-2 font-medium">Day {dayIndex + 1} · {dayLabel(date)}</td>
-      {cells.map((c, i) => (
-        <td key={i} className="px-3 py-2 text-right tabular-nums">{c == null ? "—" : fmtMoney(c, p.currency)}</td>
+      {cols.map((col, i) => (
+        <td key={i} className="px-3 py-2 text-right tabular-nums">
+          {col == null ? "—" : (
+            <div className="relative inline-flex items-center justify-end gap-1.5">
+              <span title={col.names.length ? col.names.join("\n") : "No crew allocated yet"}>{fmtMoney(col.total, p.currency)}</span>
+              <button type="button" onClick={() => { setPencilFor(pencilFor === i ? null : i); setPencilRole(null); }}
+                title="Pencil crew in from here" aria-label={`Pencil crew into Sandbox ${i + 1} for this day`}
+                className="inline-flex items-center justify-center rounded-sm border border-primary p-1 text-primary">
+                <Pencil className="h-3 w-3" />
+              </button>
+              {pencilFor === i && (
+                <div className="absolute right-0 top-full z-20 mt-1 w-56 max-h-72 space-y-1 overflow-y-auto rounded-sm border border-border bg-card p-2 text-left shadow-md">
+                  {pencilRole == null ? (
+                    col.openRoles.length === 0
+                      ? <p className="p-1 text-xs text-muted-foreground">Every role is filled.</p>
+                      : col.openRoles.map((role) => (
+                        <button key={role} type="button" onClick={() => setPencilRole(role)} className="block w-full rounded-sm px-2 py-1.5 text-left text-xs hover:bg-muted">{role}</button>
+                      ))
+                  ) : (
+                    <>
+                      <button type="button" onClick={() => setPencilRole(null)} className="mb-1 text-[11px] text-muted-foreground hover:text-primary">← {pencilRole}</button>
+                      {col.candidatesFor(pencilRole).length === 0 && <p className="p-1 text-xs text-muted-foreground">No available crew for this role.</p>}
+                      {col.candidatesFor(pencilRole).map((c) => (
+                        <div key={c.id} className="flex items-center justify-between gap-2 rounded-sm border border-border px-2 py-1.5 text-xs">
+                          <span className="min-w-0 truncate">{c.name} · {fmtMoney(c.dayRate, p.currency)}</span>
+                          <button type="button" onClick={async () => { await col.assign(pencilRole, c.id); closePencil(); }}
+                            className="shrink-0 rounded-sm bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground">Select</button>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </td>
       ))}
     </tr>
   );
@@ -481,7 +548,7 @@ export function CrewDayPlanner({ p }: { p: Production }) {
       </div>
       <section className="rounded-sm border border-border bg-card">
         <div className="border-b border-primary bg-primary px-4 py-2.5 text-primary-foreground">
-          <span className="font-display text-sm font-semibold uppercase tracking-wide">Cost summary</span>
+          <span className="font-display text-sm font-semibold uppercase tracking-wide">Sandbox Summary</span>
           <span className="ml-2 text-xs font-normal opacity-90">Sandbox 1 is the real pencilled crew; the rest are options</span>
         </div>
         <div className="overflow-x-auto">
