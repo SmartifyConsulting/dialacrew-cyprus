@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Copy, Plus, Trash2 } from "lucide-react";
+import { ArrowLeftRight, Copy, Plus, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { supabase } from "@/integrations/supabase/client";
@@ -133,8 +133,10 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
                       </span>
                       <span className="w-16 shrink-0 text-right text-xs tabular-nums text-muted-foreground">{matches.map((m) => zar(m.rate)).join(", ")}</span>
                       <div className="relative shrink-0">
-                        <button onClick={() => setPickKey(pickKey === s1Key ? null : s1Key)} className="inline-flex items-center rounded-sm bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground">
-                          {matches.length === 0 ? "Find" : "Swap"}
+                        <button onClick={() => setPickKey(pickKey === s1Key ? null : s1Key)} title={matches.length === 0 ? "Find" : "Swap"}
+                          aria-label={matches.length === 0 ? `Find crew for ${role}` : `Swap crew for ${role}`}
+                          className="inline-flex items-center justify-center rounded-sm bg-primary p-1.5 text-primary-foreground">
+                          {matches.length === 0 ? <UserPlus className="h-3.5 w-3.5" /> : <ArrowLeftRight className="h-3.5 w-3.5" />}
                         </button>
                         {pickKey === s1Key && (
                           <CandidatePopover currency={p.currency} candidates={s1Candidates(role, matches)}
@@ -160,8 +162,10 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
                         </span>
                         <span className="w-16 shrink-0 text-right text-xs tabular-nums text-muted-foreground">{assigned ? zar(assigned.dayRate) : ""}</span>
                         <div className="relative shrink-0">
-                          <button onClick={() => setPickKey(pickKey === key ? null : key)} className="inline-flex items-center rounded-sm bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground">
-                            {assigned ? "Swap" : "Find"}
+                          <button onClick={() => setPickKey(pickKey === key ? null : key)} title={assigned ? "Swap" : "Find"}
+                            aria-label={assigned ? `Swap crew for ${role}` : `Find crew for ${role}`}
+                            className="inline-flex items-center justify-center rounded-sm bg-primary p-1.5 text-primary-foreground">
+                            {assigned ? <ArrowLeftRight className="h-3.5 w-3.5" /> : <UserPlus className="h-3.5 w-3.5" />}
                           </button>
                           {pickKey === key && (
                             <CandidatePopover currency={p.currency} candidates={scCandidates(s, role, assigned?.id)}
