@@ -1888,6 +1888,84 @@ export type Database = {
           },
         ]
       }
+      native_push_devices: {
+        Row: {
+          alias: string
+          created_at: string
+          enabled: boolean
+          id: string
+          user_id: string
+        }
+        Insert: {
+          alias?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          user_id: string
+        }
+        Update: {
+          alias?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      native_push_outbox: {
+        Row: {
+          attempts: number
+          claimed_at: string | null
+          created_at: string
+          device_id: string
+          dispatch_token: string
+          error: string | null
+          id: string
+          notification_id: string
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          attempts?: number
+          claimed_at?: string | null
+          created_at?: string
+          device_id: string
+          dispatch_token?: string
+          error?: string | null
+          id?: string
+          notification_id: string
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          attempts?: number
+          claimed_at?: string | null
+          created_at?: string
+          device_id?: string
+          dispatch_token?: string
+          error?: string | null
+          id?: string
+          notification_id?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "native_push_outbox_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "native_push_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "native_push_outbox_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_acknowledgement_audit: {
         Row: {
           activity_type: string
@@ -1942,6 +2020,7 @@ export type Database = {
           acknowledged_by: string | null
           body: string
           created_at: string
+          event_kind: string | null
           id: string
           production_id: string | null
           read: boolean
@@ -1953,6 +2032,7 @@ export type Database = {
           acknowledged_by?: string | null
           body?: string
           created_at?: string
+          event_kind?: string | null
           id?: string
           production_id?: string | null
           read?: boolean
@@ -1964,6 +2044,7 @@ export type Database = {
           acknowledged_by?: string | null
           body?: string
           created_at?: string
+          event_kind?: string | null
           id?: string
           production_id?: string | null
           read?: boolean
@@ -3283,6 +3364,10 @@ export type Database = {
         Args: { p_booking_id: string; p_terms_version: string }
         Returns: undefined
       }
+      claim_native_push: {
+        Args: { p_id: string; p_token: string }
+        Returns: Json
+      }
       company_should_auto_admin: {
         Args: { _company: string }
         Returns: boolean
@@ -3374,12 +3459,14 @@ export type Database = {
           role: string
         }[]
       }
+      register_native_push_device: { Args: never; Returns: Json }
       release_payment: { Args: { _booking: string }; Returns: string }
       report_booking_no_show: {
         Args: { p_booking_id: string }
         Returns: string
       }
       report_gig_no_show: { Args: { _gig: string }; Returns: number }
+      revoke_native_push_device: { Args: { p_id: string }; Returns: undefined }
       secure_gig: { Args: { _gig: string }; Returns: undefined }
       secure_gig_paid: {
         Args: { _gig: string; _user: string }
