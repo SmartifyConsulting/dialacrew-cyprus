@@ -89,35 +89,6 @@ export type Database = {
           },
         ]
       }
-      booking_day_exclusions: {
-        Row: {
-          booking_id: string
-          created_at: string
-          excluded_date: string
-          id: string
-        }
-        Insert: {
-          booking_id: string
-          created_at?: string
-          excluded_date: string
-          id?: string
-        }
-        Update: {
-          booking_id?: string
-          created_at?: string
-          excluded_date?: string
-          id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "booking_day_exclusions_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       booking_terms_acceptances: {
         Row: {
           accepted_at: string
@@ -859,24 +830,6 @@ export type Database = {
         }
         Relationships: []
       }
-      production_types: {
-        Row: {
-          created_at: string
-          id: string
-          name: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          name: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string
-        }
-        Relationships: []
-      }
       crew_invoice_settings: {
         Row: {
           accent_color: string
@@ -888,10 +841,6 @@ export type Database = {
           invoice_prefix: string
           logo_url: string
           tax_number: string
-          vat_registered: boolean
-          vat_rate: number
-          tax_country: string
-          customer_tax_number: string
           updated_at: string
         }
         Insert: {
@@ -904,10 +853,6 @@ export type Database = {
           invoice_prefix?: string
           logo_url?: string
           tax_number?: string
-          vat_registered?: boolean
-          vat_rate?: number
-          tax_country?: string
-          customer_tax_number?: string
           updated_at?: string
         }
         Update: {
@@ -920,10 +865,6 @@ export type Database = {
           invoice_prefix?: string
           logo_url?: string
           tax_number?: string
-          vat_registered?: boolean
-          vat_rate?: number
-          tax_country?: string
-          customer_tax_number?: string
           updated_at?: string
         }
         Relationships: [
@@ -1023,6 +964,41 @@ export type Database = {
         }
         Relationships: []
       }
+      crew_rate_cards: {
+        Row: {
+          crew_id: string
+          daily_rate: number
+          discounted_daily_rate: boolean | null
+          hourly_rate: number
+          standard_day_hours: number
+          updated_at: string
+        }
+        Insert: {
+          crew_id: string
+          daily_rate: number
+          discounted_daily_rate?: boolean | null
+          hourly_rate: number
+          standard_day_hours?: number
+          updated_at?: string
+        }
+        Update: {
+          crew_id?: string
+          daily_rate?: number
+          discounted_daily_rate?: boolean | null
+          hourly_rate?: number
+          standard_day_hours?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crew_rate_cards_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: true
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crew_reviews: {
         Row: {
           comment: string
@@ -1085,6 +1061,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      default_crew_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: string
+          sort_order?: number
+        }
+        Relationships: []
       }
       disputes: {
         Row: {
@@ -1316,6 +1313,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "inventory_checkouts_checked_out_crew_id_fkey"
+            columns: ["checked_out_crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "inventory_checkouts_item_id_fkey"
             columns: ["item_id"]
             isOneToOne: false
@@ -1361,131 +1365,10 @@ export type Database = {
         }
         Relationships: []
       }
-      gig_negotiations: {
-        Row: {
-          agreed_rate: number | null
-          booking_id: string
-          created_at: string
-          crew_id: string
-          id: string
-          latest_by: string
-          latest_rate: number
-          production_id: string
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          agreed_rate?: number | null
-          booking_id: string
-          created_at?: string
-          crew_id: string
-          id?: string
-          latest_by: string
-          latest_rate: number
-          production_id: string
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          agreed_rate?: number | null
-          booking_id?: string
-          created_at?: string
-          crew_id?: string
-          id?: string
-          latest_by?: string
-          latest_rate?: number
-          production_id?: string
-          status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "gig_negotiations_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gig_negotiations_crew_id_fkey"
-            columns: ["crew_id"]
-            isOneToOne: false
-            referencedRelation: "crew_members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gig_negotiations_production_id_fkey"
-            columns: ["production_id"]
-            isOneToOne: false
-            referencedRelation: "productions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      crew_no_shows: {
-        Row: {
-          booking_id: string
-          crew_id: string
-          expires_at: string
-          id: string
-          occurred_on: string
-          production_id: string
-          replacement_booking_id: string | null
-          reported_at: string
-          reported_by: string
-        }
-        Insert: {
-          booking_id: string
-          crew_id: string
-          expires_at: string
-          id?: string
-          occurred_on: string
-          production_id: string
-          replacement_booking_id?: string | null
-          reported_at?: string
-          reported_by: string
-        }
-        Update: {
-          booking_id?: string
-          crew_id?: string
-          expires_at?: string
-          id?: string
-          occurred_on?: string
-          production_id?: string
-          replacement_booking_id?: string | null
-          reported_at?: string
-          reported_by?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "crew_no_shows_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: true
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "crew_no_shows_crew_id_fkey"
-            columns: ["crew_id"]
-            isOneToOne: false
-            referencedRelation: "crew_members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "crew_no_shows_production_id_fkey"
-            columns: ["production_id"]
-            isOneToOne: false
-            referencedRelation: "productions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       invoices: {
         Row: {
           booking_id: string
           created_at: string
-          crew_confirmed_at: string | null
-          crew_confirmed_by: string | null
           crew_id: string
           day_rate: number
           days: number
@@ -1501,16 +1384,10 @@ export type Database = {
           total: number
           vat_amount: number
           vat_rate: number
-          wrap_calculated_at: string | null
-          wrap_fee: number
-          wrap_hourly_rate: number
-          wrap_minutes: number
         }
         Insert: {
           booking_id: string
           created_at?: string
-          crew_confirmed_at?: string | null
-          crew_confirmed_by?: string | null
           crew_id: string
           day_rate?: number
           days?: number
@@ -1526,16 +1403,10 @@ export type Database = {
           total?: number
           vat_amount?: number
           vat_rate?: number
-          wrap_calculated_at?: string | null
-          wrap_fee?: number
-          wrap_hourly_rate?: number
-          wrap_minutes?: number
         }
         Update: {
           booking_id?: string
           created_at?: string
-          crew_confirmed_at?: string | null
-          crew_confirmed_by?: string | null
           crew_id?: string
           day_rate?: number
           days?: number
@@ -1551,10 +1422,6 @@ export type Database = {
           total?: number
           vat_amount?: number
           vat_rate?: number
-          wrap_calculated_at?: string | null
-          wrap_fee?: number
-          wrap_hourly_rate?: number
-          wrap_minutes?: number
         }
         Relationships: [
           {
@@ -2106,6 +1973,38 @@ export type Database = {
           },
         ]
       }
+      production_crew_roles: {
+        Row: {
+          created_at: string
+          id: string
+          production_id: string
+          role: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          production_id: string
+          role: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          production_id?: string
+          role?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_crew_roles_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_document_items: {
         Row: {
           created_at: string
@@ -2313,59 +2212,6 @@ export type Database = {
           },
         ]
       }
-      default_crew_roles: {
-        Row: {
-          created_at: string
-          id: string
-          role: string
-          sort_order: number
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          role: string
-          sort_order?: number
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          role?: string
-          sort_order?: number
-        }
-        Relationships: []
-      }
-      production_crew_roles: {
-        Row: {
-          created_at: string
-          id: string
-          production_id: string
-          role: string
-          sort_order: number
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          production_id: string
-          role: string
-          sort_order?: number
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          production_id?: string
-          role?: string
-          sort_order?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "production_crew_roles_production_id_fkey"
-            columns: ["production_id"]
-            isOneToOne: false
-            referencedRelation: "productions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       production_retrospectives: {
         Row: {
           client: string
@@ -2451,6 +2297,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      production_types: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
       productions: {
         Row: {
@@ -3209,6 +3073,7 @@ export type Database = {
       }
       email_domain_of: { Args: { _email: string }; Returns: string }
       expire_pencils: { Args: never; Returns: undefined }
+      flag_due_equipment_today: { Args: never; Returns: undefined }
       generate_invoice: { Args: { _booking: string }; Returns: string }
       get_invite: {
         Args: { _token: string }
