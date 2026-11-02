@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { NativePushControls } from "@/components/NativePush";
 
 export function NotificationBell({ userId, requireAcknowledgement = false }: { userId: string; requireAcknowledgement?: boolean }) {
   const qc = useQueryClient();
@@ -81,11 +82,12 @@ export function NotificationBell({ userId, requireAcknowledgement = false }: { u
               {list.length > 0 && <button onClick={clearAll} className="text-muted-foreground hover:text-destructive">Clear all</button>}
             </div>
           </div>
+          <NativePushControls userId={userId} />
           <div className="max-h-96 overflow-auto">
             {list.length === 0 && <p className="p-4 text-sm text-muted-foreground">Nothing yet.</p>}
             {list.map((n) => (
               <div key={n.id} className={`group relative border-b border-border hover:bg-muted ${n.read ? "opacity-60" : ""}`}>
-                <Link to="/productions/$id" params={{ id: n.production_id ?? "" }} onClick={() => setOpen(false)} className="block px-3 py-2 pr-8 text-sm">
+                <Link to={n.production_id ? "/productions/$id" : "/gigs"} params={n.production_id ? { id: n.production_id } : {}} onClick={() => setOpen(false)} className="block px-3 py-2 pr-8 text-sm">
                   <div className="font-bold">{n.title}</div>
                   <div className="line-clamp-2 text-xs text-muted-foreground">{n.body}</div>
                 </Link>

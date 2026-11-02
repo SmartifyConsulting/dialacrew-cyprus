@@ -25,6 +25,7 @@ export const Route = createFileRoute("/_authenticated/productions/")({
       { name: "description", content: "Create productions from a client brief and manage every shoot." },
       { property: "og:title", content: "Productions — Book a Crew" },
       { property: "og:description", content: "Create and manage productions." },
+      { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Productions,

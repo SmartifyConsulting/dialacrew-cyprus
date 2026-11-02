@@ -5,7 +5,13 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Page } from "@/components/AppShell";
 
-export const Route = createFileRoute("/_authenticated/invoices/$id")({ component: InvoiceDetail });
+export const Route = createFileRoute("/_authenticated/invoices/$id")({
+  head: () => ({ meta: [
+    { title: "Invoice details — Book a Crew" }, { name: "description", content: "Review, confirm and print your Book a Crew invoice." },
+    { property: "og:title", content: "Invoice details — Book a Crew" }, { property: "og:description", content: "Your booking invoice details and final approval." },
+    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
+  ] }), component: InvoiceDetail,
+});
 
 function InvoiceDetail() {
  const { id } = Route.useParams();

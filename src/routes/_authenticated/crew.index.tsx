@@ -89,6 +89,7 @@ export const Route = createFileRoute("/_authenticated/crew/")({
       { name: "description", content: "Search professional film and commercial crew by role, department, location and availability." },
       { property: "og:title", content: "Crew Directory — Book a Crew" },
       { property: "og:description", content: "Find and pencil the right crew directly." },
+      { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
     ],
   }),
   component: CrewPage,

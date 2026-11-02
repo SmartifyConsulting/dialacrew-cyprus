@@ -184,6 +184,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
       { name: "description", content: "Active productions, bookings, approvals, attendance and secured funds at a glance." },
       { property: "og:title", content: "Producer Dashboard — Book a Crew" },
       { property: "og:description", content: "Your production operations in one view." },
+      { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
     ],
   }),
   component: DashboardRouter,

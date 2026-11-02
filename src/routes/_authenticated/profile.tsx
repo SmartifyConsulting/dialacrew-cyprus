@@ -1,4 +1,4 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -9,6 +9,7 @@ import { useCompany, useCompanyInvites, useRole, useSession } from "@/lib/auth";
 import { useMyCrewId, uploadFile } from "@/lib/site";
 import { Avatar } from "@/components/site/SiteTabs";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   validateSearch: (s: Record<string, unknown>): { tab?: string } => (typeof s["tab"] === "string" ? { tab: s["tab"] } : {}),
@@ -196,7 +197,7 @@ function CompanyPanel({ userId }: { userId: string | undefined }) {
   }
 
   return (
-    <Page open title={company.data.companies?.name ? `${company.data.companies.name} Settings` : "Company Settings"}>
+    <Page open title={company.data.companies?.name ? `${company.data.companies.name} Settings` : "Company Settings"} actions={<Button variant="outline" asChild><Link to="/mobile-setup">Mobile store setup</Link></Button>}>
       <div className="mb-5"><AvatarCard userId={userId} /></div>
       <div className="grid gap-5 lg:grid-cols-2">
         <Panel title="Your role">

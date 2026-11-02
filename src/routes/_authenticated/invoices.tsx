@@ -5,7 +5,13 @@ import { CrewInvoiceSettings } from "@/components/CrewInvoiceSettings";
 import { useMyCrewId } from "@/lib/site";
 import { supabase } from "@/integrations/supabase/client";
 
-export const Route = createFileRoute("/_authenticated/invoices")({ component: InvoicesPage });
+export const Route = createFileRoute("/_authenticated/invoices")({
+  head: () => ({ meta: [
+    { title: "My invoices — Book a Crew" }, { name: "description", content: "Review and issue your Book a Crew booking invoices." },
+    { property: "og:title", content: "My invoices — Book a Crew" }, { property: "og:description", content: "Crew draft and issued invoices." },
+    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
+  ] }), component: InvoicesPage,
+});
 
 function InvoicesPage() {
   const crewId = useMyCrewId(true).data;
