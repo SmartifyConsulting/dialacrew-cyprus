@@ -67,11 +67,17 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-sm">
+      <table className="w-full table-fixed border-collapse text-sm">
+        <colgroup>
+          {/* Role column + Scenario 1 + every Sandbox scenario + Add Scenario, all equal width. */}
+          {Array.from({ length: 3 + sc.scenarios.length }).map((_, i) => (
+            <col key={i} style={{ width: `${100 / (3 + sc.scenarios.length)}%` }} />
+          ))}
+        </colgroup>
         <thead>
           <tr className="border-b border-border">
             <th className="min-w-[13rem] px-3 py-2 text-left"><span className="font-display text-sm font-semibold uppercase tracking-wide text-primary">Crew Required</span></th>
-            <th className="min-w-[17rem] px-3 py-2 text-left">
+            <th className="min-w-[17rem] border-l-2 border-border px-3 py-2 text-left">
               <div className="flex items-center gap-2">
                 <span className="flex-1 font-display text-sm font-semibold uppercase tracking-wide text-primary">Scenario 1</span>
                 <select className="shrink-0 rounded-sm bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground" value=""
@@ -114,7 +120,7 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
                     <button onClick={() => removeRole(role)} aria-label={`Remove ${role}`} className="shrink-0 font-bold text-destructive">−</button>
                   </div>
                 </td>
-                <td className="px-3 py-2.5 align-top">
+                <td className="border-l-2 border-border px-3 py-2.5 align-top">
                   {req.isConfirmed(role) ? <span className="text-xs text-success">Confirmed</span> : (
                     <div className="flex items-start gap-2">
                       <span className="min-w-0 flex-1 text-xs text-muted-foreground">
@@ -180,7 +186,7 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
                 <button onClick={addRole} className="shrink-0 rounded-sm border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary hover:text-primary">+ Add role</button>
               </div>
             </td>
-            <td className="px-3 py-3 align-top text-xs"><span className="text-muted-foreground">Total:</span> <b>{fmtMoney(req.dayTotal, p.currency)}</b></td>
+            <td className="border-l-2 border-border px-3 py-3 align-top text-xs"><span className="text-muted-foreground">Total:</span> <b>{fmtMoney(req.dayTotal, p.currency)}</b></td>
             {sc.scenarios.map((s) => (
               <td key={s.id} className="space-y-2 px-3 py-3 align-top">
                 <div className="text-xs"><span className="text-muted-foreground">Total:</span> <b>{fmtMoney(sc.totalFor(s), p.currency)}</b></div>
