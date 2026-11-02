@@ -80,7 +80,7 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
             <th className="min-w-[17rem] border-l-2 border-border px-3 py-2 text-left">
               <div className="flex items-center gap-2">
                 <span className="flex-1 font-display text-sm font-semibold uppercase tracking-wide text-primary">Scenario 1</span>
-                <select className="shrink-0 rounded-sm bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground" value=""
+                <select className="w-28 shrink-0 rounded-sm bg-primary px-1.5 py-1 text-[10px] font-semibold text-primary-foreground" value=""
                   onChange={(e) => { const g = sc.crewMixes.find((x) => x.id === e.target.value); if (g) applyMixToS1(g); }} aria-label="Select Crew Mix for Scenario 1">
                   <option value="" disabled>Select Crew Mix</option>
                   {sc.crewMixes.length === 0 && <option value="" disabled>No crew mixes saved yet</option>}
@@ -89,11 +89,11 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
               </div>
             </th>
             {sc.scenarios.map((s) => (
-              <th key={s.id} className="min-w-[17rem] px-3 py-2 text-left">
+              <th key={s.id} className="min-w-[17rem] border-l-2 border-border px-3 py-2 text-left">
                 <div className="flex items-center gap-2">
                   <input defaultValue={s.name} onBlur={(e) => sc.renameScenario(s, e.target.value)} maxLength={80} aria-label="Scenario name"
                     className="min-w-0 flex-1 bg-transparent font-display text-sm font-semibold uppercase tracking-wide text-primary outline-none" />
-                  <select className="shrink-0 rounded-sm bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground" value=""
+                  <select className="w-28 shrink-0 rounded-sm bg-primary px-1.5 py-1 text-[10px] font-semibold text-primary-foreground" value=""
                     onChange={(e) => { const g = sc.crewMixes.find((x) => x.id === e.target.value); if (g) sc.applyGroupToScenario(s, g); }} aria-label={`Select Crew Mix for ${s.name}`}>
                     <option value="" disabled>Select Crew Mix</option>
                     {sc.crewMixes.length === 0 && <option value="" disabled>No crew mixes saved yet</option>}
@@ -148,7 +148,7 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
                   const assigned = sc.assignedForRole(s, role);
                   const key = `${s.id}:${role}`;
                   return (
-                    <td key={s.id} className="px-3 py-2.5 align-top">
+                    <td key={s.id} className="border-l-2 border-border px-3 py-2.5 align-top">
                       <div className="flex items-start gap-2">
                         <span className="min-w-0 flex-1 text-xs text-muted-foreground">
                           {assigned ? (
@@ -188,7 +188,7 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
             </td>
             <td className="border-l-2 border-border px-3 py-3 align-top text-xs"><span className="text-muted-foreground">Total:</span> <b>{fmtMoney(req.dayTotal, p.currency)}</b></td>
             {sc.scenarios.map((s) => (
-              <td key={s.id} className="space-y-2 px-3 py-3 align-top">
+              <td key={s.id} className="space-y-2 border-l-2 border-border px-3 py-3 align-top">
                 <div className="text-xs"><span className="text-muted-foreground">Total:</span> <b>{fmtMoney(sc.totalFor(s), p.currency)}</b></div>
                 <button onClick={() => sc.commit(s)} disabled={sc.committing} className={`${ghost} w-full justify-center`}>Pencil this scenario</button>
               </td>
