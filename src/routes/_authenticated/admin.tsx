@@ -159,7 +159,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 const ADMIN_GROUPS = [
-  { name: "People & Organisations", tabs: ["Users", "Crew Type", "Curated Crew", "Companies", "Subscriptions"] },
+  { name: "People & Organisations", tabs: ["Users", "Crew", "Companies", "Subscriptions"] },
   { name: "Operations", tabs: ["Bookings", "Gigs"] },
   { name: "Equipment", tabs: ["Equipment"] },
   { name: "Finance", tabs: ["Payments", "Invoices", "Gig Fees"] },
@@ -173,7 +173,7 @@ const ADMIN_GROUPS = [
 // with the raw Crew roster swapped for Crew Types — producers group crew into reusable, typed
 // templates rather than editing crew records directly.
 const PRODUCER_ADMIN_GROUPS = [
-  { name: "People & Organisations", tabs: ["Users", "Crew Type", "Curated Crew"] },
+  { name: "People & Organisations", tabs: ["Users", "Crew"] },
   { name: "Operations", tabs: ["Bookings"] },
   { name: "Finance", tabs: ["Payments", "Invoices", "Gig Fees"] },
   { name: "Disputes", tabs: ["Disputes"] },
@@ -238,8 +238,7 @@ function AdminPage() {
         ))}
       </nav>
       {tab === "Users" && <UsersTab canManageAdmins={isSuperAdmin} />}
-      {tab === "Crew Type" && <CrewTypeSizesTab />}
-      {tab === "Curated Crew" && <CrewTypesTab />}
+      {tab === "Crew" && <CrewTab />}
       {tab === "Companies" && <CompaniesTab />}
       {tab === "Bookings" && <BookingsTab />}
       {tab === "Gigs" && <GigsTab />}
@@ -453,6 +452,25 @@ function DefaultCrewRolesPanel() {
 // a production type) instead of editing raw crew records — picked from Find Crew's Select Crew Type.
 // Crew Type: producer-managed tiers (Small/Medium/Large/Extra-Large seeded by default, but fully
 // CRUD — create, rename, delete, and manage membership). Applied at the day level on a production's Crew tab.
+const CREW_SUBTABS = ["Crew Type", "Curated Crew"] as const;
+
+// Crew: wraps the two crew-grouping screens as sub-tabs instead of two top-level Admin tabs.
+function CrewTab() {
+  const [subTab, setSubTab] = useState<(typeof CREW_SUBTABS)[number]>("Crew Type");
+  return (
+    <div className="space-y-4">
+      <nav className="flex gap-1 overflow-x-auto">
+        {CREW_SUBTABS.map((t) => (
+          <button key={t} onClick={() => setSubTab(t)}
+            className={`whitespace-nowrap rounded-sm px-3 py-1.5 text-xs font-semibold ${subTab === t ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>{t}</button>
+        ))}
+      </nav>
+      {subTab === "Crew Type" && <CrewTypeSizesTab />}
+      {subTab === "Curated Crew" && <CrewTypesTab />}
+    </div>
+  );
+}
+
 function CrewTypeSizesTab() {
   const allGroups = useCrewGroups().data ?? [];
   const tiers = allGroups.filter((g) => g.sizeTier);
