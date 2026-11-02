@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeftRight, Copy, Plus, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
@@ -208,6 +208,42 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
   );
 }
 
+// How many sandboxes exist for each shoot day, so the summary matrix knows how many columns to
+// draw before any day section has been expanded (DayTable/useScenarios only run while open).
+function useScenarioCountsByDay(p: Production, shootDays: string[]) {
+  return useQuery({
+    queryKey: ["scenario-counts", p.id, shootDays],
+    queryFn: async () => {
+      if (!shootDays.length) return {} as Record<string, number>;
+      const keys = shootDays.map((d) => scenarioKey(p.id, d));
+      const { data, error } = await supabase.from("brief_matches").select("client").in("client", keys);
+      if (error) throw error;
+      const counts: Record<string, number> = {};
+      for (const row of data ?? []) counts[row.client] = (counts[row.client] ?? 0) + 1;
+      return shootDays.reduce((acc, d) => { acc[d] = counts[scenarioKey(p.id, d)] ?? 0; return acc; }, {} as Record<string, number>);
+    },
+  });
+}
+
+// One row of the cost summary matrix: mounts the same pure data hooks DayTable uses, just to read
+// totals, so the matrix stays accurate even for days whose section is currently collapsed.
+function DaySummaryRow({ p, date, dayIndex, roleList, maxCols }: {
+  p: Production; date: string; dayIndex: number; roleList: string[]; maxCols: number;
+}) {
+  const req = useCrewRequiredDay(p, date, roleList);
+  const sc = useScenarios(p, date, roleList);
+  const cells: (number | null)[] = [req.dayTotal, ...sc.scenarios.map((s) => sc.totalFor(s))];
+  while (cells.length < maxCols) cells.push(null);
+  return (
+    <tr className="border-t border-border">
+      <td className="px-3 py-2 font-medium">Day {dayIndex + 1} · {dayLabel(date)}</td>
+      {cells.map((c, i) => (
+        <td key={i} className="px-3 py-2 text-right tabular-nums">{c == null ? "—" : fmtMoney(c, p.currency)}</td>
+      ))}
+    </tr>
+  );
+}
+
 // Crew Required + Sandbox, one independent workspace per shoot day. A producer fills each day on
 // its own (crew can differ day to day); Copy to: carries one day's pencils and scenarios across
 // to whichever other days are ticked, instead of starting from scratch every time.
@@ -296,6 +332,9 @@ export function CrewDayPlanner({ p }: { p: Production }) {
     finally { setCopying(null); setCopyOpenFor(null); }
   }
 
+  const scenarioCounts = useScenarioCountsByDay(p, shootDays).data ?? {};
+  const maxCols = 1 + Math.max(0, ...Object.values(scenarioCounts));
+
   if (shootDays.length === 0) {
     return <p className="rounded-sm border border-dashed border-border p-4 text-sm text-muted-foreground">Set this production's start date (or add a location with a date) to start planning crew by shoot day.</p>;
   }
@@ -306,6 +345,29 @@ export function CrewDayPlanner({ p }: { p: Production }) {
         <span className="text-muted-foreground">Pencilled across the whole production:</span> <b>{fmtMoney(totalPencilled, p.currency)}</b>{" "}
         <span className={variance < 0 ? "text-destructive" : "text-success"}>({variance < 0 ? `${fmtMoney(-variance, p.currency)} over` : `${fmtMoney(variance, p.currency)} under`} budget of {fmtMoney(p.budget, p.currency)})</span>
       </div>
+      <section className="rounded-sm border border-border bg-card">
+        <div className="border-b border-primary bg-primary px-4 py-2.5 text-primary-foreground">
+          <span className="font-display text-sm font-semibold uppercase tracking-wide">Cost summary</span>
+          <span className="ml-2 text-xs font-normal opacity-90">Sandbox 1 is the real pencilled crew; the rest are options</span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-left text-[11px] text-muted-foreground">
+              <tr>
+                <th className="px-3 py-2">Day</th>
+                {Array.from({ length: maxCols }).map((_, i) => (
+                  <th key={i} className="px-3 py-2 text-right">{i === 0 ? "Sandbox 1" : `Sandbox ${i + 1}`}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {shootDays.map((day, i) => (
+                <DaySummaryRow key={day} p={p} date={day} dayIndex={i} roleList={roles.roleList} maxCols={maxCols} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
       {shootDays.map((day, i) => {
         const dayTotal = productionBookings.filter((b) => b.bookingDate === day).reduce((sum, b) => sum + costOf(b), 0);
         const otherDays = shootDays.filter((d) => d !== day);
