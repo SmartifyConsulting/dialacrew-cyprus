@@ -67,7 +67,7 @@ function BottomNav({ items }: { items: NavItem[] }) {
         {items.map((n) => (
           <li key={n.label} className="flex-1">
             <Link to={n.to} className={`flex flex-col items-center gap-1 py-5 font-sans text-sm font-medium text-nav-foreground/80`} activeProps={{ className: "!text-nav-foreground font-semibold" }}>
-              <n.icon className="h-8 w-8" />{n.label}
+              <n.icon className="h-[1.6rem] w-[1.6rem]" />{n.label}
             </Link>
           </li>
         ))}
@@ -123,7 +123,7 @@ export function TopNav() {
       <header className={`sticky top-0 z-30 ${signedIn ? "md:pl-60" : ""}`}>
         <div className={signedIn ? "bg-nav text-nav-foreground md:hidden" : "bg-nav text-nav-foreground"}>
           <div className={`flex items-center gap-4 px-4 py-8 ${signedIn ? "" : "mx-auto max-w-7xl"}`}>
-            {signedIn && <Link to="/dashboard" className="shrink-0"><img src={logo.url} alt="Book a Crew" className="h-20 w-auto" /></Link>}
+            {signedIn && <Link to="/dashboard" className="shrink-0"><img src={logo.url} alt="Book a Crew" className="h-[7.5rem] w-auto" /></Link>}
             <div className="ml-auto flex items-center gap-3">
               {signedIn && <button onClick={signOut} className="rounded-sm border border-nav-foreground/30 px-3 py-1 font-display text-xs font-semibold text-nav-foreground">Sign out</button>}
             </div>
