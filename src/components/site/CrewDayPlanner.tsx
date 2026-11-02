@@ -82,9 +82,9 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
                 <span className="flex-1 font-display text-sm font-semibold uppercase tracking-wide text-primary">Scenario 1</span>
                 <select className="w-28 shrink-0 rounded-sm bg-primary px-1.5 py-1 text-[10px] font-semibold text-primary-foreground" value=""
                   onChange={(e) => { const g = sc.crewMixes.find((x) => x.id === e.target.value); if (g) applyMixToS1(g); }} aria-label="Select Crew Mix for Scenario 1">
-                  <option value="" disabled>Select Crew Mix</option>
-                  {sc.crewMixes.length === 0 && <option value="" disabled>No crew mixes saved yet</option>}
-                  {sc.crewMixes.map((g) => <option key={g.id} value={g.id}>{g.name} ({g.memberIds.length}){g.productionType ? ` · ${g.productionType}` : ""}</option>)}
+                  <option value="" disabled className="bg-background text-foreground">Select Crew Mix</option>
+                  {sc.crewMixes.length === 0 && <option value="" disabled className="bg-background text-foreground">No crew mixes saved yet</option>}
+                  {sc.crewMixes.map((g) => <option key={g.id} value={g.id} className="bg-background text-foreground">{g.name} ({g.memberIds.length}){g.productionType ? ` · ${g.productionType}` : ""}</option>)}
                 </select>
               </div>
             </th>
@@ -95,9 +95,9 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
                     className="min-w-0 flex-1 bg-transparent font-display text-sm font-semibold uppercase tracking-wide text-primary outline-none" />
                   <select className="w-28 shrink-0 rounded-sm bg-primary px-1.5 py-1 text-[10px] font-semibold text-primary-foreground" value=""
                     onChange={(e) => { const g = sc.crewMixes.find((x) => x.id === e.target.value); if (g) sc.applyGroupToScenario(s, g); }} aria-label={`Select Crew Mix for ${s.name}`}>
-                    <option value="" disabled>Select Crew Mix</option>
-                    {sc.crewMixes.length === 0 && <option value="" disabled>No crew mixes saved yet</option>}
-                    {sc.crewMixes.map((g) => <option key={g.id} value={g.id}>{g.name} ({g.memberIds.length}){g.productionType ? ` · ${g.productionType}` : ""}</option>)}
+                    <option value="" disabled className="bg-background text-foreground">Select Crew Mix</option>
+                    {sc.crewMixes.length === 0 && <option value="" disabled className="bg-background text-foreground">No crew mixes saved yet</option>}
+                    {sc.crewMixes.map((g) => <option key={g.id} value={g.id} className="bg-background text-foreground">{g.name} ({g.memberIds.length}){g.productionType ? ` · ${g.productionType}` : ""}</option>)}
                   </select>
                   <button onClick={() => sc.deleteScenario(s.id)} aria-label={`Delete ${s.name}`} className="shrink-0 text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
                 </div>
@@ -320,8 +320,8 @@ export function CrewDayPlanner({ p }: { p: Production }) {
                 <select disabled={sizeTypes.length === 0} value=""
                   onChange={(e) => { const g = sizeTypes.find((x) => x.id === e.target.value); if (g) applySizeType(day, g); }}
                   className="rounded-sm border border-white bg-transparent px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40" aria-label="Select Crew Type">
-                  <option value="" disabled>Select Crew Type</option>
-                  {sizeTypes.map((g) => <option key={g.id} value={g.id}>{g.name} ({g.memberIds.length})</option>)}
+                  <option value="" disabled className="bg-background text-foreground">Select Crew Type</option>
+                  {sizeTypes.map((g) => <option key={g.id} value={g.id} className="bg-background text-foreground">{g.name} ({g.memberIds.length})</option>)}
                 </select>
                 {shootDays.length > 1 && (
                   <div className="relative">
