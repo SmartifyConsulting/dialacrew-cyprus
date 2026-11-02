@@ -31,6 +31,7 @@ export async function syncNativeAppearance(): Promise<void> {
     ctx.fillStyle = token;
     ctx.fillRect(0, 0, 1, 1);
     const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+    if (r === undefined || g === undefined || b === undefined) return;
     const light = (r * 299 + g * 587 + b * 114) / 1000 > 150;
     await nativeCommand(`statusbarcolor://{${r}, ${g}, ${b}}`);
     await nativeCommand(`statusbartextcolor://{${light ? "black" : "white"}}`);
