@@ -28,7 +28,7 @@ export async function nativePushStatus(): Promise<NativePushStatus> {
   try {
     const { default: despia } = await import("despia-native");
     const result = await despia("checkNativePushPermissions://", ["nativePushEnabled"]);
-    return result.nativePushEnabled === true ? "enabled" : "disabled";
+    return result["nativePushEnabled"] === true ? "enabled" : "disabled";
   } catch { return "unavailable"; }
 }
 
@@ -48,8 +48,8 @@ export async function enableNativePush(userId: string): Promise<NativePushStatus
   if (!device) {
     const { data, error } = await supabase.rpc("register_native_push_device");
     if (error) throw error;
-    if (!data || typeof data !== "object" || Array.isArray(data) || typeof data.id !== "string" || typeof data.alias !== "string") throw new Error("Device registration failed");
-    device = { id: data.id, alias: data.alias, userId };
+    if (!data || typeof data !== "object" || Array.isArray(data) || typeof data["id"] !== "string" || typeof data["alias"] !== "string") throw new Error("Device registration failed");
+    device = { id: data["id"], alias: data["alias"], userId };
     try { localStorage.setItem(storageKey, JSON.stringify(device)); }
     catch {
       await supabase.rpc("revoke_native_push_device", { p_id: device.id });
