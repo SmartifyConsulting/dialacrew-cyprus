@@ -28,6 +28,7 @@ import { Route as AuthenticatedEarningsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedGigsRouteImport } from './routes/_authenticated/gigs'
 import { Route as AuthenticatedInvoicesRouteImport } from './routes/_authenticated/invoices'
 import { Route as AuthenticatedMemoryRouteImport } from './routes/_authenticated/memory'
+import { Route as AuthenticatedMobileSetupRouteImport } from './routes/_authenticated/mobile-setup'
 import { Route as AuthenticatedPaymentsRouteImport } from './routes/_authenticated/payments'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedCrewIndexRouteImport } from './routes/_authenticated/crew.index'
@@ -132,6 +133,12 @@ const AuthenticatedMemoryRoute = AuthenticatedMemoryRouteImport.update({
   path: '/memory',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMobileSetupRoute =
+  AuthenticatedMobileSetupRouteImport.update({
+    id: '/mobile-setup',
+    path: '/mobile-setup',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPaymentsRoute = AuthenticatedPaymentsRouteImport.update({
   id: '/payments',
   path: '/payments',
@@ -199,6 +206,7 @@ export interface FileRoutesByFullPath {
   '/gigs': typeof AuthenticatedGigsRoute
   '/invoices': typeof AuthenticatedInvoicesRouteWithChildren
   '/memory': typeof AuthenticatedMemoryRoute
+  '/mobile-setup': typeof AuthenticatedMobileSetupRoute
   '/payments': typeof AuthenticatedPaymentsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/crew/$id': typeof AuthenticatedCrewIdRoute
@@ -228,6 +236,7 @@ export interface FileRoutesByTo {
   '/gigs': typeof AuthenticatedGigsRoute
   '/invoices': typeof AuthenticatedInvoicesRouteWithChildren
   '/memory': typeof AuthenticatedMemoryRoute
+  '/mobile-setup': typeof AuthenticatedMobileSetupRoute
   '/payments': typeof AuthenticatedPaymentsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/crew/$id': typeof AuthenticatedCrewIdRoute
@@ -259,6 +268,7 @@ export interface FileRoutesById {
   '/_authenticated/gigs': typeof AuthenticatedGigsRoute
   '/_authenticated/invoices': typeof AuthenticatedInvoicesRouteWithChildren
   '/_authenticated/memory': typeof AuthenticatedMemoryRoute
+  '/_authenticated/mobile-setup': typeof AuthenticatedMobileSetupRoute
   '/_authenticated/payments': typeof AuthenticatedPaymentsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/crew/$id': typeof AuthenticatedCrewIdRoute
@@ -290,6 +300,7 @@ export interface FileRouteTypes {
     | '/gigs'
     | '/invoices'
     | '/memory'
+    | '/mobile-setup'
     | '/payments'
     | '/profile'
     | '/crew/$id'
@@ -319,6 +330,7 @@ export interface FileRouteTypes {
     | '/gigs'
     | '/invoices'
     | '/memory'
+    | '/mobile-setup'
     | '/payments'
     | '/profile'
     | '/crew/$id'
@@ -349,6 +361,7 @@ export interface FileRouteTypes {
     | '/_authenticated/gigs'
     | '/_authenticated/invoices'
     | '/_authenticated/memory'
+    | '/_authenticated/mobile-setup'
     | '/_authenticated/payments'
     | '/_authenticated/profile'
     | '/_authenticated/crew/$id'
@@ -512,6 +525,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMemoryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/mobile-setup': {
+      id: '/_authenticated/mobile-setup'
+      path: '/mobile-setup'
+      fullPath: '/mobile-setup'
+      preLoaderRoute: typeof AuthenticatedMobileSetupRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/payments': {
       id: '/_authenticated/payments'
       path: '/payments'
@@ -599,6 +619,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedGigsRoute: typeof AuthenticatedGigsRoute
   AuthenticatedInvoicesRoute: typeof AuthenticatedInvoicesRouteWithChildren
   AuthenticatedMemoryRoute: typeof AuthenticatedMemoryRoute
+  AuthenticatedMobileSetupRoute: typeof AuthenticatedMobileSetupRoute
   AuthenticatedPaymentsRoute: typeof AuthenticatedPaymentsRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedCrewIdRoute: typeof AuthenticatedCrewIdRoute
@@ -615,6 +636,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedGigsRoute: AuthenticatedGigsRoute,
   AuthenticatedInvoicesRoute: AuthenticatedInvoicesRouteWithChildren,
   AuthenticatedMemoryRoute: AuthenticatedMemoryRoute,
+  AuthenticatedMobileSetupRoute: AuthenticatedMobileSetupRoute,
   AuthenticatedPaymentsRoute: AuthenticatedPaymentsRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedCrewIdRoute: AuthenticatedCrewIdRoute,
