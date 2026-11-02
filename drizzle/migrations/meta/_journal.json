@@ -127,6 +127,13 @@
       "when": 1793605157706,
       "tag": "0017_apply_missing_crew_invoice_vat",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793617684209,
+      "tag": "0018_native_push_alerts",
+      "breakpoints": true
     }
   ]
 }

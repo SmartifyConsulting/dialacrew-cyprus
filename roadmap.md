@@ -1,4 +1,8 @@
 # Roadmap
+- [x] Despia setup screen, proposed identifiers, signing/store checklist and three downloadable logo icons
+- [x] Native push: Firebase + OneSignal connected; opt-in aliases, secure dispatch and gig/schedule/booking triggers; 14 tests pass
+- [ ] Store binaries and real-device push testing — needs client Apple/Google/Despia accounts, reserved IDs and APNs/Firebase configuration in OneSignal
+- [x] Despia bridge: installed SDK, pencil/check-in feedback, themed status bar; 4 tests and browser bridge check pass (physical-device testing requires Despia build)
 - [x] Shrink homepage logo 20%
 - [x] AI Brief Matcher (crew + kit) using MemoryBank
 - [x] Production Retrospective (Review tab, AI lessons-learned)

@@ -153,7 +153,13 @@ function ImportTab() {
 }
 
 export const Route = createFileRoute("/_authenticated/admin")({
-  head: () => ({ meta: [{ title: "Admin — Book a Crew" }] }),
+  head: () => ({ meta: [
+    { title: "Admin — Book a Crew" },
+    { name: "description", content: "Manage Book a Crew people, bookings and platform operations." },
+    { property: "og:title", content: "Admin — Book a Crew" },
+    { property: "og:description", content: "Book a Crew platform administration and production oversight." },
+    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
+  ] }),
   validateSearch: (search: Record<string, unknown>) => ({ tab: typeof search["tab"] === "string" ? (search["tab"] as string) : undefined }),
   component: AdminPage,
 });

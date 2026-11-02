@@ -15,6 +15,7 @@ import { ConfirmDialogHost } from "@/components/ConfirmDialog";
 import { supabase } from "@/integrations/supabase/client";
 import appCss from "../styles.css?url";
 import { reportAppError } from "../lib/error-reporting";
+import { isDespiaRuntime, syncNativeAppearance } from "@/lib/native";
 
 function NotFoundComponent() {
   return (
@@ -117,6 +118,13 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+  useEffect(() => {
+    if (!isDespiaRuntime()) return;
+    void syncNativeAppearance();
+    const observer = new MutationObserver(() => { void syncNativeAppearance(); });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "data-theme"] });
+    return () => observer.disconnect();
+  }, []);
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;

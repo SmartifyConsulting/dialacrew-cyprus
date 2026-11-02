@@ -8,6 +8,8 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { PaymentCelebration } from "@/components/PaymentCelebration";
 import { useSignedUrl } from "@/lib/site";
 import logo from "@/assets/bookacrew-sa-logo.png.asset.json";
+import { NativePushSession } from "@/components/NativePush";
+import { disableNativePush } from "@/lib/native-push";
 
 function useMyProfile(userId: string | undefined) {
   return useQuery({
@@ -89,6 +91,7 @@ export function TopNav() {
   const items = baseItems.map((n) => (isTeam && n.to === "/profile" && companyName ? { ...n, label: `${companyName} Settings` } : n));
 
   async function signOut() {
+    try { await disableNativePush(); } catch { return void window.alert("Could not stop job alerts. Please retry sign out while connected."); }
     await queryClient.cancelQueries();
     queryClient.clear();
     await supabase.auth.signOut();
@@ -98,6 +101,7 @@ export function TopNav() {
   const signedIn = ready && session;
   return (
     <>
+      {signedIn && <NativePushSession userId={session.user.id} />}
       {signedIn && (
         <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col bg-nav text-nav-foreground md:flex" aria-label="Main menu">
           <Link to="/dashboard" className="flex justify-center px-5 py-5"><img src={logo.url} alt="Book a Crew" className="h-[173px] w-auto" /></Link>

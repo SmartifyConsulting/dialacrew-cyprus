@@ -23,12 +23,12 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
-import { Route as AuthenticatedChecklistTemplatesRouteImport } from './routes/_authenticated/checklist-templates'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedEarningsRouteImport } from './routes/_authenticated/earnings'
 import { Route as AuthenticatedGigsRouteImport } from './routes/_authenticated/gigs'
 import { Route as AuthenticatedInvoicesRouteImport } from './routes/_authenticated/invoices'
 import { Route as AuthenticatedMemoryRouteImport } from './routes/_authenticated/memory'
+import { Route as AuthenticatedMobileSetupRouteImport } from './routes/_authenticated/mobile-setup'
 import { Route as AuthenticatedPaymentsRouteImport } from './routes/_authenticated/payments'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedCrewIndexRouteImport } from './routes/_authenticated/crew.index'
@@ -36,6 +36,7 @@ import { Route as AuthenticatedCrewIdRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedInvoicesIdRouteImport } from './routes/_authenticated/invoices.$id'
 import { Route as AuthenticatedProductionsIndexRouteImport } from './routes/_authenticated/productions.index'
 import { Route as AuthenticatedProductionsIdRouteImport } from './routes/_authenticated/productions.$id'
+import { Route as ApiPublicNativePushRouteImport } from './routes/api/public/native-push'
 import { Route as ApiPublicCalendarTokenRouteImport } from './routes/api/public/calendar.$token'
 
 const IndexRoute = IndexRouteImport.update({
@@ -107,12 +108,6 @@ const AuthenticatedCalendarRoute = AuthenticatedCalendarRouteImport.update({
   path: '/calendar',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedChecklistTemplatesRoute =
-  AuthenticatedChecklistTemplatesRouteImport.update({
-    id: '/checklist-templates',
-    path: '/checklist-templates',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -138,6 +133,12 @@ const AuthenticatedMemoryRoute = AuthenticatedMemoryRouteImport.update({
   path: '/memory',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMobileSetupRoute =
+  AuthenticatedMobileSetupRouteImport.update({
+    id: '/mobile-setup',
+    path: '/mobile-setup',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPaymentsRoute = AuthenticatedPaymentsRouteImport.update({
   id: '/payments',
   path: '/payments',
@@ -175,6 +176,11 @@ const AuthenticatedProductionsIdRoute =
     path: '/productions/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicNativePushRoute = ApiPublicNativePushRouteImport.update({
+  id: '/api/public/native-push',
+  path: '/api/public/native-push',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicCalendarTokenRoute = ApiPublicCalendarTokenRouteImport.update({
   id: '/api/public/calendar/$token',
   path: '/api/public/calendar/$token',
@@ -195,17 +201,18 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/calendar': typeof AuthenticatedCalendarRoute
-  '/checklist-templates': typeof AuthenticatedChecklistTemplatesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/earnings': typeof AuthenticatedEarningsRoute
   '/gigs': typeof AuthenticatedGigsRoute
   '/invoices': typeof AuthenticatedInvoicesRouteWithChildren
   '/memory': typeof AuthenticatedMemoryRoute
+  '/mobile-setup': typeof AuthenticatedMobileSetupRoute
   '/payments': typeof AuthenticatedPaymentsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/crew/$id': typeof AuthenticatedCrewIdRoute
   '/invoices/$id': typeof AuthenticatedInvoicesIdRoute
   '/productions/$id': typeof AuthenticatedProductionsIdRoute
+  '/api/public/native-push': typeof ApiPublicNativePushRoute
   '/crew/': typeof AuthenticatedCrewIndexRoute
   '/productions/': typeof AuthenticatedProductionsIndexRoute
   '/api/public/calendar/$token': typeof ApiPublicCalendarTokenRoute
@@ -224,17 +231,18 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/calendar': typeof AuthenticatedCalendarRoute
-  '/checklist-templates': typeof AuthenticatedChecklistTemplatesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/earnings': typeof AuthenticatedEarningsRoute
   '/gigs': typeof AuthenticatedGigsRoute
   '/invoices': typeof AuthenticatedInvoicesRouteWithChildren
   '/memory': typeof AuthenticatedMemoryRoute
+  '/mobile-setup': typeof AuthenticatedMobileSetupRoute
   '/payments': typeof AuthenticatedPaymentsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/crew/$id': typeof AuthenticatedCrewIdRoute
   '/invoices/$id': typeof AuthenticatedInvoicesIdRoute
   '/productions/$id': typeof AuthenticatedProductionsIdRoute
+  '/api/public/native-push': typeof ApiPublicNativePushRoute
   '/crew': typeof AuthenticatedCrewIndexRoute
   '/productions': typeof AuthenticatedProductionsIndexRoute
   '/api/public/calendar/$token': typeof ApiPublicCalendarTokenRoute
@@ -255,17 +263,18 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
-  '/_authenticated/checklist-templates': typeof AuthenticatedChecklistTemplatesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/earnings': typeof AuthenticatedEarningsRoute
   '/_authenticated/gigs': typeof AuthenticatedGigsRoute
   '/_authenticated/invoices': typeof AuthenticatedInvoicesRouteWithChildren
   '/_authenticated/memory': typeof AuthenticatedMemoryRoute
+  '/_authenticated/mobile-setup': typeof AuthenticatedMobileSetupRoute
   '/_authenticated/payments': typeof AuthenticatedPaymentsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/crew/$id': typeof AuthenticatedCrewIdRoute
   '/_authenticated/invoices/$id': typeof AuthenticatedInvoicesIdRoute
   '/_authenticated/productions/$id': typeof AuthenticatedProductionsIdRoute
+  '/api/public/native-push': typeof ApiPublicNativePushRoute
   '/_authenticated/crew/': typeof AuthenticatedCrewIndexRoute
   '/_authenticated/productions/': typeof AuthenticatedProductionsIndexRoute
   '/api/public/calendar/$token': typeof ApiPublicCalendarTokenRoute
@@ -286,17 +295,18 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin'
     | '/calendar'
-    | '/checklist-templates'
     | '/dashboard'
     | '/earnings'
     | '/gigs'
     | '/invoices'
     | '/memory'
+    | '/mobile-setup'
     | '/payments'
     | '/profile'
     | '/crew/$id'
     | '/invoices/$id'
     | '/productions/$id'
+    | '/api/public/native-push'
     | '/crew/'
     | '/productions/'
     | '/api/public/calendar/$token'
@@ -315,17 +325,18 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin'
     | '/calendar'
-    | '/checklist-templates'
     | '/dashboard'
     | '/earnings'
     | '/gigs'
     | '/invoices'
     | '/memory'
+    | '/mobile-setup'
     | '/payments'
     | '/profile'
     | '/crew/$id'
     | '/invoices/$id'
     | '/productions/$id'
+    | '/api/public/native-push'
     | '/crew'
     | '/productions'
     | '/api/public/calendar/$token'
@@ -345,17 +356,18 @@ export interface FileRouteTypes {
     | '/terms'
     | '/_authenticated/admin'
     | '/_authenticated/calendar'
-    | '/_authenticated/checklist-templates'
     | '/_authenticated/dashboard'
     | '/_authenticated/earnings'
     | '/_authenticated/gigs'
     | '/_authenticated/invoices'
     | '/_authenticated/memory'
+    | '/_authenticated/mobile-setup'
     | '/_authenticated/payments'
     | '/_authenticated/profile'
     | '/_authenticated/crew/$id'
     | '/_authenticated/invoices/$id'
     | '/_authenticated/productions/$id'
+    | '/api/public/native-push'
     | '/_authenticated/crew/'
     | '/_authenticated/productions/'
     | '/api/public/calendar/$token'
@@ -374,6 +386,7 @@ export interface RootRouteChildren {
   RatesRoute: typeof RatesRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermsRoute: typeof TermsRoute
+  ApiPublicNativePushRoute: typeof ApiPublicNativePushRoute
   ApiPublicCalendarTokenRoute: typeof ApiPublicCalendarTokenRoute
 }
 
@@ -477,13 +490,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCalendarRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/checklist-templates': {
-      id: '/_authenticated/checklist-templates'
-      path: '/checklist-templates'
-      fullPath: '/checklist-templates'
-      preLoaderRoute: typeof AuthenticatedChecklistTemplatesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -517,6 +523,13 @@ declare module '@tanstack/react-router' {
       path: '/memory'
       fullPath: '/memory'
       preLoaderRoute: typeof AuthenticatedMemoryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/mobile-setup': {
+      id: '/_authenticated/mobile-setup'
+      path: '/mobile-setup'
+      fullPath: '/mobile-setup'
+      preLoaderRoute: typeof AuthenticatedMobileSetupRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/payments': {
@@ -568,6 +581,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProductionsIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/native-push': {
+      id: '/api/public/native-push'
+      path: '/api/public/native-push'
+      fullPath: '/api/public/native-push'
+      preLoaderRoute: typeof ApiPublicNativePushRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/calendar/$token': {
       id: '/api/public/calendar/$token'
       path: '/api/public/calendar/$token'
@@ -594,12 +614,12 @@ const AuthenticatedInvoicesRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
-  AuthenticatedChecklistTemplatesRoute: typeof AuthenticatedChecklistTemplatesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEarningsRoute: typeof AuthenticatedEarningsRoute
   AuthenticatedGigsRoute: typeof AuthenticatedGigsRoute
   AuthenticatedInvoicesRoute: typeof AuthenticatedInvoicesRouteWithChildren
   AuthenticatedMemoryRoute: typeof AuthenticatedMemoryRoute
+  AuthenticatedMobileSetupRoute: typeof AuthenticatedMobileSetupRoute
   AuthenticatedPaymentsRoute: typeof AuthenticatedPaymentsRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedCrewIdRoute: typeof AuthenticatedCrewIdRoute
@@ -611,12 +631,12 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
-  AuthenticatedChecklistTemplatesRoute: AuthenticatedChecklistTemplatesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEarningsRoute: AuthenticatedEarningsRoute,
   AuthenticatedGigsRoute: AuthenticatedGigsRoute,
   AuthenticatedInvoicesRoute: AuthenticatedInvoicesRouteWithChildren,
   AuthenticatedMemoryRoute: AuthenticatedMemoryRoute,
+  AuthenticatedMobileSetupRoute: AuthenticatedMobileSetupRoute,
   AuthenticatedPaymentsRoute: AuthenticatedPaymentsRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedCrewIdRoute: AuthenticatedCrewIdRoute,
@@ -641,6 +661,7 @@ const rootRouteChildren: RootRouteChildren = {
   RatesRoute: RatesRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   TermsRoute: TermsRoute,
+  ApiPublicNativePushRoute: ApiPublicNativePushRoute,
   ApiPublicCalendarTokenRoute: ApiPublicCalendarTokenRoute,
 }
 export const routeTree = rootRouteImport
