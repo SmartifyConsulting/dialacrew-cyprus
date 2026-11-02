@@ -16,7 +16,7 @@ export function NotificationBell({ userId, requireAcknowledgement = false }: { u
     },
   });
   useEffect(() => {
-    const ch = supabase.channel(`notif-${userId}`)
+    const ch = supabase.channel(`notif-${userId}-${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
         () => qc.invalidateQueries({ queryKey: ["notifications", userId] }))
       .subscribe();

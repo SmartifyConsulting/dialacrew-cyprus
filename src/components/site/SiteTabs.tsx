@@ -1281,7 +1281,7 @@ export function PostsTab({ p, userId, myName, isProducer }: Ctx) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const ch = supabase.channel(`posts-${p.id}`)
+    const ch = supabase.channel(`posts-${p.id}-${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "site_posts", filter: `production_id=eq.${p.id}` }, () => inv(["posts", p.id]))
       .subscribe();
     return () => { supabase.removeChannel(ch); };
@@ -1383,7 +1383,7 @@ export function MessagesTab({ p, userId, myName }: Ctx & { bookings: Booking[]; 
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    const ch = supabase.channel(`messages-${p.id}`)
+    const ch = supabase.channel(`messages-${p.id}-${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `production_id=eq.${p.id}` }, () => inv(["messages", p.id, bookingId]))
       .subscribe();
     return () => { supabase.removeChannel(ch); };

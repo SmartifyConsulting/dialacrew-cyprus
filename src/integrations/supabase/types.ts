@@ -859,24 +859,6 @@ export type Database = {
         }
         Relationships: []
       }
-      production_types: {
-        Row: {
-          created_at: string
-          id: string
-          name: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          name: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string
-        }
-        Relationships: []
-      }
       crew_invoice_settings: {
         Row: {
           accent_color: string
@@ -884,15 +866,15 @@ export type Database = {
           business_address: string
           business_name: string
           crew_id: string
+          customer_tax_number: string
           footer_text: string
           invoice_prefix: string
           logo_url: string
-          tax_number: string
-          vat_registered: boolean
-          vat_rate: number
           tax_country: string
-          customer_tax_number: string
+          tax_number: string
           updated_at: string
+          vat_rate: number
+          vat_registered: boolean
         }
         Insert: {
           accent_color?: string
@@ -900,15 +882,15 @@ export type Database = {
           business_address?: string
           business_name?: string
           crew_id: string
+          customer_tax_number?: string
           footer_text?: string
           invoice_prefix?: string
           logo_url?: string
-          tax_number?: string
-          vat_registered?: boolean
-          vat_rate?: number
           tax_country?: string
-          customer_tax_number?: string
+          tax_number?: string
           updated_at?: string
+          vat_rate?: number
+          vat_registered?: boolean
         }
         Update: {
           accent_color?: string
@@ -916,15 +898,15 @@ export type Database = {
           business_address?: string
           business_name?: string
           crew_id?: string
+          customer_tax_number?: string
           footer_text?: string
           invoice_prefix?: string
           logo_url?: string
-          tax_number?: string
-          vat_registered?: boolean
-          vat_rate?: number
           tax_country?: string
-          customer_tax_number?: string
+          tax_number?: string
           updated_at?: string
+          vat_rate?: number
+          vat_registered?: boolean
         }
         Relationships: [
           {
@@ -1023,6 +1005,106 @@ export type Database = {
         }
         Relationships: []
       }
+      crew_no_shows: {
+        Row: {
+          booking_id: string
+          crew_id: string
+          expires_at: string
+          id: string
+          occurred_on: string
+          production_id: string
+          replacement_booking_id: string | null
+          reported_at: string
+          reported_by: string
+        }
+        Insert: {
+          booking_id: string
+          crew_id: string
+          expires_at: string
+          id?: string
+          occurred_on: string
+          production_id: string
+          replacement_booking_id?: string | null
+          reported_at?: string
+          reported_by: string
+        }
+        Update: {
+          booking_id?: string
+          crew_id?: string
+          expires_at?: string
+          id?: string
+          occurred_on?: string
+          production_id?: string
+          replacement_booking_id?: string | null
+          reported_at?: string
+          reported_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crew_no_shows_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crew_no_shows_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crew_no_shows_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crew_no_shows_replacement_booking_id_fkey"
+            columns: ["replacement_booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crew_rate_cards: {
+        Row: {
+          crew_id: string
+          daily_rate: number
+          discounted_daily_rate: boolean | null
+          hourly_rate: number
+          standard_day_hours: number
+          updated_at: string
+        }
+        Insert: {
+          crew_id: string
+          daily_rate: number
+          discounted_daily_rate?: boolean | null
+          hourly_rate: number
+          standard_day_hours?: number
+          updated_at?: string
+        }
+        Update: {
+          crew_id?: string
+          daily_rate?: number
+          discounted_daily_rate?: boolean | null
+          hourly_rate?: number
+          standard_day_hours?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crew_rate_cards_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: true
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crew_reviews: {
         Row: {
           comment: string
@@ -1085,6 +1167,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      default_crew_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: string
+          sort_order?: number
+        }
+        Relationships: []
       }
       disputes: {
         Row: {
@@ -1227,6 +1330,118 @@ export type Database = {
           },
         ]
       }
+      gig_negotiation_events: {
+        Row: {
+          action: string
+          actor_id: string
+          actor_role: string
+          id: string
+          negotiation_id: string
+          occurred_at: string
+          offered_rate: number
+          production_id: string
+          usual_rate: number | null
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          actor_role: string
+          id?: string
+          negotiation_id: string
+          occurred_at?: string
+          offered_rate: number
+          production_id: string
+          usual_rate?: number | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          actor_role?: string
+          id?: string
+          negotiation_id?: string
+          occurred_at?: string
+          offered_rate?: number
+          production_id?: string
+          usual_rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gig_negotiation_events_negotiation_id_fkey"
+            columns: ["negotiation_id"]
+            isOneToOne: false
+            referencedRelation: "gig_negotiations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gig_negotiation_events_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gig_negotiations: {
+        Row: {
+          agreed_rate: number | null
+          booking_id: string
+          created_at: string
+          crew_id: string
+          id: string
+          latest_by: string
+          latest_rate: number
+          production_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          agreed_rate?: number | null
+          booking_id: string
+          created_at?: string
+          crew_id: string
+          id?: string
+          latest_by: string
+          latest_rate: number
+          production_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          agreed_rate?: number | null
+          booking_id?: string
+          created_at?: string
+          crew_id?: string
+          id?: string
+          latest_by?: string
+          latest_rate?: number
+          production_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gig_negotiations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gig_negotiations_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gig_negotiations_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gig_penalties: {
         Row: {
           amount: number
@@ -1316,6 +1531,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "inventory_checkouts_checked_out_crew_id_fkey"
+            columns: ["checked_out_crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "inventory_checkouts_item_id_fkey"
             columns: ["item_id"]
             isOneToOne: false
@@ -1360,125 +1582,6 @@ export type Database = {
           total_count?: number
         }
         Relationships: []
-      }
-      gig_negotiations: {
-        Row: {
-          agreed_rate: number | null
-          booking_id: string
-          created_at: string
-          crew_id: string
-          id: string
-          latest_by: string
-          latest_rate: number
-          production_id: string
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          agreed_rate?: number | null
-          booking_id: string
-          created_at?: string
-          crew_id: string
-          id?: string
-          latest_by: string
-          latest_rate: number
-          production_id: string
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          agreed_rate?: number | null
-          booking_id?: string
-          created_at?: string
-          crew_id?: string
-          id?: string
-          latest_by?: string
-          latest_rate?: number
-          production_id?: string
-          status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "gig_negotiations_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gig_negotiations_crew_id_fkey"
-            columns: ["crew_id"]
-            isOneToOne: false
-            referencedRelation: "crew_members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gig_negotiations_production_id_fkey"
-            columns: ["production_id"]
-            isOneToOne: false
-            referencedRelation: "productions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      crew_no_shows: {
-        Row: {
-          booking_id: string
-          crew_id: string
-          expires_at: string
-          id: string
-          occurred_on: string
-          production_id: string
-          replacement_booking_id: string | null
-          reported_at: string
-          reported_by: string
-        }
-        Insert: {
-          booking_id: string
-          crew_id: string
-          expires_at: string
-          id?: string
-          occurred_on: string
-          production_id: string
-          replacement_booking_id?: string | null
-          reported_at?: string
-          reported_by: string
-        }
-        Update: {
-          booking_id?: string
-          crew_id?: string
-          expires_at?: string
-          id?: string
-          occurred_on?: string
-          production_id?: string
-          replacement_booking_id?: string | null
-          reported_at?: string
-          reported_by?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "crew_no_shows_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: true
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "crew_no_shows_crew_id_fkey"
-            columns: ["crew_id"]
-            isOneToOne: false
-            referencedRelation: "crew_members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "crew_no_shows_production_id_fkey"
-            columns: ["production_id"]
-            isOneToOne: false
-            referencedRelation: "productions"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       invoices: {
         Row: {
@@ -2106,6 +2209,38 @@ export type Database = {
           },
         ]
       }
+      production_crew_roles: {
+        Row: {
+          created_at: string
+          id: string
+          production_id: string
+          role: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          production_id: string
+          role: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          production_id?: string
+          role?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_crew_roles_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_document_items: {
         Row: {
           created_at: string
@@ -2313,59 +2448,6 @@ export type Database = {
           },
         ]
       }
-      default_crew_roles: {
-        Row: {
-          created_at: string
-          id: string
-          role: string
-          sort_order: number
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          role: string
-          sort_order?: number
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          role?: string
-          sort_order?: number
-        }
-        Relationships: []
-      }
-      production_crew_roles: {
-        Row: {
-          created_at: string
-          id: string
-          production_id: string
-          role: string
-          sort_order: number
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          production_id: string
-          role: string
-          sort_order?: number
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          production_id?: string
-          role?: string
-          sort_order?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "production_crew_roles_production_id_fkey"
-            columns: ["production_id"]
-            isOneToOne: false
-            referencedRelation: "productions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       production_retrospectives: {
         Row: {
           client: string
@@ -2451,6 +2533,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      production_types: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
       productions: {
         Row: {
@@ -3202,6 +3302,10 @@ export type Database = {
         Args: { p_production_id: string }
         Returns: undefined
       }
+      confirm_final_crew_invoice: {
+        Args: { p_acknowledge_wrap: boolean; p_invoice_id: string }
+        Returns: undefined
+      }
       crew_on_time_pct: { Args: { _crew_id: string }; Returns: number }
       decide_join_request: {
         Args: { _approve: boolean; _request: string }
@@ -3209,6 +3313,7 @@ export type Database = {
       }
       email_domain_of: { Args: { _email: string }; Returns: string }
       expire_pencils: { Args: never; Returns: undefined }
+      flag_due_equipment_today: { Args: never; Returns: undefined }
       generate_invoice: { Args: { _booking: string }; Returns: string }
       get_invite: {
         Args: { _token: string }
@@ -3218,6 +3323,16 @@ export type Database = {
           email: string
           valid: boolean
         }[]
+      }
+      gig_negotiate: {
+        Args: {
+          p_ack_below_usual?: boolean
+          p_action: string
+          p_booking_id: string
+          p_crew_id: string
+          p_rate?: number
+        }
+        Returns: string
       }
       gig_setting: { Args: { _default: number; _key: string }; Returns: number }
       has_role: {
@@ -3260,6 +3375,10 @@ export type Database = {
         }[]
       }
       release_payment: { Args: { _booking: string }; Returns: string }
+      report_booking_no_show: {
+        Args: { p_booking_id: string }
+        Returns: string
+      }
       report_gig_no_show: { Args: { _gig: string }; Returns: number }
       secure_gig: { Args: { _gig: string }; Returns: undefined }
       secure_gig_paid: {

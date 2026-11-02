@@ -33,7 +33,7 @@ export function PaymentCelebration() {
   }, [q.data, crewId]);
   useEffect(() => {
     if (!crewId) return;
-    const channel = supabase.channel(`crew-payment-${crewId}`).on("postgres_changes", { event: "UPDATE", schema: "public", table: "invoices", filter: `crew_id=eq.${crewId}` }, () => { void qc.invalidateQueries({ queryKey: ["crew-paid-invoices", crewId] }); }).subscribe();
+    const channel = supabase.channel(`crew-payment-${crewId}-${Math.random().toString(36).slice(2)}`).on("postgres_changes", { event: "UPDATE", schema: "public", table: "invoices", filter: `crew_id=eq.${crewId}` }, () => { void qc.invalidateQueries({ queryKey: ["crew-paid-invoices", crewId] }); }).subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [crewId, qc]);
   if (!celebration) return null;
