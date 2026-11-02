@@ -866,11 +866,15 @@ export type Database = {
           business_address: string
           business_name: string
           crew_id: string
+          customer_tax_number: string
           footer_text: string
           invoice_prefix: string
           logo_url: string
+          tax_country: string
           tax_number: string
           updated_at: string
+          vat_rate: number
+          vat_registered: boolean
         }
         Insert: {
           accent_color?: string
@@ -878,11 +882,15 @@ export type Database = {
           business_address?: string
           business_name?: string
           crew_id: string
+          customer_tax_number?: string
           footer_text?: string
           invoice_prefix?: string
           logo_url?: string
+          tax_country?: string
           tax_number?: string
           updated_at?: string
+          vat_rate?: number
+          vat_registered?: boolean
         }
         Update: {
           accent_color?: string
@@ -890,11 +898,15 @@ export type Database = {
           business_address?: string
           business_name?: string
           crew_id?: string
+          customer_tax_number?: string
           footer_text?: string
           invoice_prefix?: string
           logo_url?: string
+          tax_country?: string
           tax_number?: string
           updated_at?: string
+          vat_rate?: number
+          vat_registered?: boolean
         }
         Relationships: [
           {

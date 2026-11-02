@@ -120,6 +120,13 @@
       "when": 1793605134541,
       "tag": "0016_apply_missing_noshow_negotiation_wrap_exclusions",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793605157706,
+      "tag": "0017_apply_missing_crew_invoice_vat",
+      "breakpoints": true
     }
   ]
 }
