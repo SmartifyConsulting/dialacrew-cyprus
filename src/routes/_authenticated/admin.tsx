@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { inviteCrewMembers } from "@/lib/invite.functions";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
@@ -587,13 +588,14 @@ function CrewTypesTab() {
   }
 
   return (
-    <div className="space-y-5">
-    <DefaultCrewRolesPanel />
-    <Panel title={`Curated Crew (${groups.length})`} right={!adding && (
-      <button onClick={() => setAdding(true)} className="text-xs font-semibold text-primary hover:underline">+ Add crew mix</button>
-    )}>
+    <div className="space-y-4">
+      <DefaultCrewRolesPanel />
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-sm font-semibold uppercase tracking-wide text-primary">Curated Crew ({groups.length})</h2>
+        {!adding && <button onClick={() => setAdding(true)} className="text-xs font-semibold text-primary hover:underline">+ Add crew mix</button>}
+      </div>
       {adding && (
-        <div className="flex flex-wrap items-end gap-2 border-b border-border p-4">
+        <div className="flex flex-wrap items-end gap-2 rounded-sm border border-border bg-card p-4">
           <label className="text-xs"><span className="block text-muted-foreground">Name</span>
             <input className={`${invField} min-w-40`} value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g. Commercial B-Unit" /></label>
           <label className="text-xs"><span className="block text-muted-foreground">Production type (optional)</span>
@@ -614,23 +616,26 @@ function CrewTypesTab() {
           <button onClick={() => { setAdding(false); setNewName(""); setNewType(""); }} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold">Cancel</button>
         </div>
       )}
-      <ul className="divide-y divide-border text-sm">
-        {groups.length === 0 && <li className="p-4 text-xs text-muted-foreground">No crew mixes yet — add one above.</li>}
-        {groups.map((g) => (
-          <li key={g.id}>
-            <div className="flex items-center justify-between gap-3 px-4 py-2.5">
-              <button onClick={() => setExpanded(expanded === g.id ? null : g.id)} className="flex-1 text-left font-medium hover:text-primary">
-                {g.name} <span className="font-normal text-muted-foreground">({g.memberIds.length}){g.productionType ? ` · ${g.productionType}` : ""}</span>
+      {groups.length === 0 && <p className="rounded-sm border border-dashed border-border p-4 text-xs text-muted-foreground">No crew mixes yet — add one above.</p>}
+      {groups.map((g) => {
+        const isOpen = expanded === g.id;
+        return (
+          <section key={g.id} className="rounded-sm border border-border bg-card">
+            <div className="flex items-center justify-between gap-2 border-b border-primary bg-primary px-4 py-2.5 text-primary-foreground">
+              <button type="button" onClick={() => setExpanded(isOpen ? null : g.id)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+                <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${isOpen ? "" : "-rotate-90"}`} />
+                <span className="truncate font-display text-sm font-semibold uppercase tracking-wide">{g.name}</span>
+                <span className="shrink-0 text-xs font-normal opacity-90">({g.memberIds.length}){g.productionType ? ` · ${g.productionType}` : ""}</span>
               </button>
-              <button onClick={() => deleteGroup.mutate(g.id)} className="shrink-0 text-xs text-destructive hover:underline">Delete</button>
+              <button onClick={() => deleteGroup.mutate(g.id)} className="shrink-0 text-xs font-semibold text-primary-foreground/80 hover:text-white">Delete</button>
             </div>
-            {expanded === g.id && (
-              <div className="space-y-2 border-t border-border bg-muted/20 px-4 py-3">
-                {g.name === "Default Crew Type" && (
+            {isOpen && (
+              <div className="space-y-2 px-4 py-3">
+                {g.name === "Default Crew" && (
                   <p className="text-xs text-muted-foreground">Add crew covering the roles listed in Default above.</p>
                 )}
                 {g.memberIds.length === 0 && <p className="text-xs text-muted-foreground">No crew members added yet.</p>}
-                <ul className="divide-y divide-border rounded-sm border border-border bg-card">
+                <ul className="divide-y divide-border rounded-sm border border-border">
                   {g.memberIds.map((id) => {
                     const c = crew.find((x) => x.id === id);
                     return (
@@ -650,10 +655,9 @@ function CrewTypesTab() {
                 </div>
               </div>
             )}
-          </li>
-        ))}
-      </ul>
-    </Panel>
+          </section>
+        );
+      })}
     </div>
   );
 }
