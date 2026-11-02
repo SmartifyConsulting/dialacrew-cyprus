@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Despia bridge: install SDK, pencil/check-in feedback, themed status bar, focused tests
 - [x] Shrink homepage logo 20%
 - [x] AI Brief Matcher (crew + kit) using MemoryBank
 - [x] Production Retrospective (Review tab, AI lessons-learned)
