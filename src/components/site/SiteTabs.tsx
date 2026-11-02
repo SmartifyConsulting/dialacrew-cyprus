@@ -7,6 +7,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
+import { nativeFeedback } from "@/lib/native";
 import { Camera, Check, CheckCircle2, Circle, Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Download, FileText, GripVertical, ImageUp, LogIn, LogOut, MapPin, Mic, Minus, Paperclip, Pencil, Plus, Sparkles, Star, Sun, Trash2, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GigNegotiation } from "@/components/GigNegotiation";
@@ -1487,6 +1488,7 @@ export function RegisterTab({ p, isProducer, userId, myName, myCrewId }: Ctx) {
       if (!isOnline()) toast.warning(`${kind === "in" ? "Check-in" : "Check-out"} saved offline — will sync when you're back online.`);
       else if (kind === "in" && d != null && !isOnSite(d, radius)) toast.warning(`Checked in, but you are ${d}m from the site.`);
       else toast.success(kind === "in" ? "Checked in" : "Checked out");
+      void nativeFeedback(kind === "in" && d != null && !isOnSite(d, radius) ? "warning" : "success");
     } catch (e) { toast.error(friendlyError(e)); }
     setBusy(false);
   }

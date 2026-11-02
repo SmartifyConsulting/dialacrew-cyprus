@@ -1,5 +1,7 @@
 ## Architecture rules
 
+- Despia enhancements use the lazy browser-only bridge in `src/lib/native.ts`, gated by the runtime user agent; failures never block saved job actions and status bar colors derive from theme tokens.
+
 - Roles live in `user_roles` (enum `app_role`) checked via `has_role()`; never on `profiles` — prevents privilege escalation.
 - Signed-in menus come from one `navByRole` map in AppShell, shown as the desktop top bar and the phone bottom bar — one menu definition per role.
 - Production crew scenarios are sandbox rows in `brief_matches` keyed `scenario:<productionId>`; committing pencils that group and deletes the others — no extra table needed.
