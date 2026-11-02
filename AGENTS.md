@@ -1,6 +1,7 @@
 ## Architecture rules
 
 - Despia enhancements use the lazy browser-only bridge in `src/lib/native.ts`, gated by the runtime user agent; failures never block saved job actions and status bar colors derive from theme tokens.
+- Native pushes use opt-in opaque per-device aliases, trusted notification triggers and a capability-gated outbox; revocation before sign-out prevents account-switch leaks, and OneSignal manages native FCM/APNs tokens because Despia exposes no documented raw-token bridge.
 
 - Roles live in `user_roles` (enum `app_role`) checked via `has_role()`; never on `profiles` — prevents privilege escalation.
 - Signed-in menus come from one `navByRole` map in AppShell, shown as the desktop top bar and the phone bottom bar — one menu definition per role.

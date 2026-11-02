@@ -35,6 +35,7 @@ import { Route as AuthenticatedCrewIdRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedInvoicesIdRouteImport } from './routes/_authenticated/invoices.$id'
 import { Route as AuthenticatedProductionsIndexRouteImport } from './routes/_authenticated/productions.index'
 import { Route as AuthenticatedProductionsIdRouteImport } from './routes/_authenticated/productions.$id'
+import { Route as ApiPublicNativePushRouteImport } from './routes/api/public/native-push'
 import { Route as ApiPublicCalendarTokenRouteImport } from './routes/api/public/calendar.$token'
 
 const IndexRoute = IndexRouteImport.update({
@@ -168,6 +169,11 @@ const AuthenticatedProductionsIdRoute =
     path: '/productions/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicNativePushRoute = ApiPublicNativePushRouteImport.update({
+  id: '/api/public/native-push',
+  path: '/api/public/native-push',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicCalendarTokenRoute = ApiPublicCalendarTokenRouteImport.update({
   id: '/api/public/calendar/$token',
   path: '/api/public/calendar/$token',
@@ -198,6 +204,7 @@ export interface FileRoutesByFullPath {
   '/crew/$id': typeof AuthenticatedCrewIdRoute
   '/invoices/$id': typeof AuthenticatedInvoicesIdRoute
   '/productions/$id': typeof AuthenticatedProductionsIdRoute
+  '/api/public/native-push': typeof ApiPublicNativePushRoute
   '/crew/': typeof AuthenticatedCrewIndexRoute
   '/productions/': typeof AuthenticatedProductionsIndexRoute
   '/api/public/calendar/$token': typeof ApiPublicCalendarTokenRoute
@@ -226,6 +233,7 @@ export interface FileRoutesByTo {
   '/crew/$id': typeof AuthenticatedCrewIdRoute
   '/invoices/$id': typeof AuthenticatedInvoicesIdRoute
   '/productions/$id': typeof AuthenticatedProductionsIdRoute
+  '/api/public/native-push': typeof ApiPublicNativePushRoute
   '/crew': typeof AuthenticatedCrewIndexRoute
   '/productions': typeof AuthenticatedProductionsIndexRoute
   '/api/public/calendar/$token': typeof ApiPublicCalendarTokenRoute
@@ -256,6 +264,7 @@ export interface FileRoutesById {
   '/_authenticated/crew/$id': typeof AuthenticatedCrewIdRoute
   '/_authenticated/invoices/$id': typeof AuthenticatedInvoicesIdRoute
   '/_authenticated/productions/$id': typeof AuthenticatedProductionsIdRoute
+  '/api/public/native-push': typeof ApiPublicNativePushRoute
   '/_authenticated/crew/': typeof AuthenticatedCrewIndexRoute
   '/_authenticated/productions/': typeof AuthenticatedProductionsIndexRoute
   '/api/public/calendar/$token': typeof ApiPublicCalendarTokenRoute
@@ -286,6 +295,7 @@ export interface FileRouteTypes {
     | '/crew/$id'
     | '/invoices/$id'
     | '/productions/$id'
+    | '/api/public/native-push'
     | '/crew/'
     | '/productions/'
     | '/api/public/calendar/$token'
@@ -314,6 +324,7 @@ export interface FileRouteTypes {
     | '/crew/$id'
     | '/invoices/$id'
     | '/productions/$id'
+    | '/api/public/native-push'
     | '/crew'
     | '/productions'
     | '/api/public/calendar/$token'
@@ -343,6 +354,7 @@ export interface FileRouteTypes {
     | '/_authenticated/crew/$id'
     | '/_authenticated/invoices/$id'
     | '/_authenticated/productions/$id'
+    | '/api/public/native-push'
     | '/_authenticated/crew/'
     | '/_authenticated/productions/'
     | '/api/public/calendar/$token'
@@ -361,6 +373,7 @@ export interface RootRouteChildren {
   RatesRoute: typeof RatesRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermsRoute: typeof TermsRoute
+  ApiPublicNativePushRoute: typeof ApiPublicNativePushRoute
   ApiPublicCalendarTokenRoute: typeof ApiPublicCalendarTokenRoute
 }
 
@@ -548,6 +561,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProductionsIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/native-push': {
+      id: '/api/public/native-push'
+      path: '/api/public/native-push'
+      fullPath: '/api/public/native-push'
+      preLoaderRoute: typeof ApiPublicNativePushRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/calendar/$token': {
       id: '/api/public/calendar/$token'
       path: '/api/public/calendar/$token'
@@ -619,6 +639,7 @@ const rootRouteChildren: RootRouteChildren = {
   RatesRoute: RatesRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   TermsRoute: TermsRoute,
+  ApiPublicNativePushRoute: ApiPublicNativePushRoute,
   ApiPublicCalendarTokenRoute: ApiPublicCalendarTokenRoute,
 }
 export const routeTree = rootRouteImport
