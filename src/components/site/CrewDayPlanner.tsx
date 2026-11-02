@@ -4,7 +4,7 @@ import { Copy, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { supabase } from "@/integrations/supabase/client";
-import { Panel } from "@/components/AppShell";
+import { ChevronDown } from "lucide-react";
 import { useBookings, useCrewGroups } from "@/lib/db";
 import { useLocationPoints } from "@/lib/site";
 import { fmtMoney, zar, type Production } from "@/lib/demo-data";
@@ -51,13 +51,37 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
   const scCandidates = (s: Scenario, role: string, excludeId?: string): Candidate[] =>
     sc.candidatesFor(s, role, excludeId).map((c) => ({ id: c.id, name: c.name, role: c.role, dayRate: c.dayRate }));
 
+  // Select Crew Mix on Scenario 1 pencils each available member of that mix into whichever open role they fit.
+  async function applyMixToS1(group: { name: string; memberIds: string[] }) {
+    let count = 0;
+    for (const id of group.memberIds) {
+      const candidate = req.crew.find((c) => c.id === id);
+      if (!candidate) continue;
+      const role = roleList.find((r) => !req.isConfirmed(r) && req.byRole(r).length === 0 && crewFitsRole(candidate, r));
+      if (!role) continue;
+      await req.pencil(role, id, [], true);
+      count++;
+    }
+    toast.success(count ? `${group.name}: pencilled ${count} role${count === 1 ? "" : "s"}` : `${group.name}: no matching open roles`);
+  }
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-border">
             <th className="min-w-[13rem] px-3 py-2 text-left"><span className="font-display text-sm font-semibold uppercase tracking-wide text-primary">Crew Required</span></th>
-            <th className="min-w-[16rem] px-3 py-2 text-left"><span className="font-display text-sm font-semibold uppercase tracking-wide text-primary">Scenario 1</span></th>
+            <th className="min-w-[17rem] px-3 py-2 text-left">
+              <div className="flex items-center gap-2">
+                <span className="flex-1 font-display text-sm font-semibold uppercase tracking-wide text-primary">Scenario 1</span>
+                <select className="shrink-0 rounded-sm bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground" value=""
+                  onChange={(e) => { const g = sc.crewMixes.find((x) => x.id === e.target.value); if (g) applyMixToS1(g); }} aria-label="Select Crew Mix for Scenario 1">
+                  <option value="" disabled>Select Crew Mix</option>
+                  {sc.crewMixes.length === 0 && <option value="" disabled>No crew mixes saved yet</option>}
+                  {sc.crewMixes.map((g) => <option key={g.id} value={g.id}>{g.name} ({g.memberIds.length}){g.productionType ? ` · ${g.productionType}` : ""}</option>)}
+                </select>
+              </div>
+            </th>
             {sc.scenarios.map((s) => (
               <th key={s.id} className="min-w-[17rem] px-3 py-2 text-left">
                 <div className="flex items-center gap-2">
@@ -95,11 +119,13 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
                     <div className="flex items-start gap-2">
                       <span className="min-w-0 flex-1 text-xs text-muted-foreground">
                         {matches.length === 0 ? "Unassigned" : matches.map((m) => (
-                          <span key={m.id} className="mr-2 inline-flex items-center gap-1">
-                            {m.name} · {zar(m.rate)} <button onClick={() => req.cancelPencil(m.id, m.name)} aria-label={`Cancel ${m.name} for ${role}`} className="hover:text-destructive">✕</button>
+                          <span key={m.id} className="mr-3 inline-flex items-center gap-1">
+                            <button onClick={() => req.cancelPencil(m.id, m.name)} aria-label={`Remove ${m.name} from ${role}`} className="font-bold text-muted-foreground hover:text-destructive">−</button>
+                            <span className="truncate">{m.name}</span>
                           </span>
                         ))}
                       </span>
+                      <span className="w-16 shrink-0 text-right text-xs tabular-nums text-muted-foreground">{matches.map((m) => zar(m.rate)).join(", ")}</span>
                       <div className="relative shrink-0">
                         <button onClick={() => setPickKey(pickKey === s1Key ? null : s1Key)} className="inline-flex items-center rounded-sm bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground">
                           {matches.length === 0 ? "Find" : "Swap"}
@@ -118,8 +144,15 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
                   return (
                     <td key={s.id} className="px-3 py-2.5 align-top">
                       <div className="flex items-start gap-2">
-                        <span className="min-w-0 flex-1 text-xs text-muted-foreground">{assigned ? <>{assigned.name} · {zar(assigned.dayRate)}</> : "Unassigned"}</span>
-                        {assigned && <button onClick={() => sc.removeFromScenario(s, assigned.id, assigned.name)} aria-label={`Remove ${assigned.name} from ${role}`} className="shrink-0 text-muted-foreground hover:text-destructive">✕</button>}
+                        <span className="min-w-0 flex-1 text-xs text-muted-foreground">
+                          {assigned ? (
+                            <span className="inline-flex items-center gap-1">
+                              <button onClick={() => sc.removeFromScenario(s, assigned.id, assigned.name)} aria-label={`Remove ${assigned.name} from ${role}`} className="font-bold text-muted-foreground hover:text-destructive">−</button>
+                              <span className="truncate">{assigned.name}</span>
+                            </span>
+                          ) : "Unassigned"}
+                        </span>
+                        <span className="w-16 shrink-0 text-right text-xs tabular-nums text-muted-foreground">{assigned ? zar(assigned.dayRate) : ""}</span>
                         <div className="relative shrink-0">
                           <button onClick={() => setPickKey(pickKey === key ? null : key)} className="inline-flex items-center rounded-sm bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground">
                             {assigned ? "Swap" : "Find"}
@@ -175,6 +208,7 @@ export function CrewDayPlanner({ p }: { p: Production }) {
   const [copying, setCopying] = useState<string | null>(null);
   const [copyOpenFor, setCopyOpenFor] = useState<string | null>(null);
   const [copyTargets, setCopyTargets] = useState<Set<string>>(new Set());
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
   const days = Math.max(1, p.days || 1);
   const shootDays = useMemo(() => {
@@ -262,22 +296,31 @@ export function CrewDayPlanner({ p }: { p: Production }) {
       {shootDays.map((day, i) => {
         const dayTotal = productionBookings.filter((b) => b.bookingDate === day).reduce((sum, b) => sum + costOf(b), 0);
         const otherDays = shootDays.filter((d) => d !== day);
+        const isCollapsed = collapsed.has(day) !== (i === 0); // day 0 open by default, rest collapsed
+        const toggleDay = () => setCollapsed((prev) => { const n = new Set(prev); if (n.has(day)) n.delete(day); else n.add(day); return n; });
         return (
-          <Panel key={day} title={`Day ${i + 1} · ${dayLabel(day)}`} collapsible defaultCollapsed={i > 0}
-            badge={<span className="text-xs font-normal text-muted-foreground">{fmtMoney(dayTotal, p.currency)} pencilled</span>}
-            right={
+          <section key={day} className="rounded-sm border border-border bg-card">
+            <div className="flex items-center justify-between gap-2 border-b border-primary bg-primary px-4 py-2.5 text-primary-foreground">
+              <button type="button" onClick={toggleDay} className="flex min-w-0 items-center gap-2">
+                <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${isCollapsed ? "-rotate-90" : ""}`} />
+                <span className="truncate font-display text-sm font-semibold uppercase tracking-wide">Day {i + 1} · {dayLabel(day)}</span>
+                <span className="shrink-0 text-xs font-normal opacity-90">{fmtMoney(dayTotal, p.currency)} pencilled</span>
+              </button>
               <div className="flex items-center gap-2">
                 <select disabled={sizeTypes.length === 0} value=""
                   onChange={(e) => { const g = sizeTypes.find((x) => x.id === e.target.value); if (g) applySizeType(day, g); }}
-                  className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40" aria-label="Select Crew Type">
+                  className="rounded-sm border border-white/40 bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40" aria-label="Select Crew Type">
                   <option value="" disabled>Select Crew Type</option>
                   {sizeTypes.map((g) => <option key={g.id} value={g.id}>{g.name} ({g.memberIds.length})</option>)}
                 </select>
                 {shootDays.length > 1 && (
                   <div className="relative">
-                    <button disabled={copying === day} onClick={() => openCopy(day)} className={ghost}><Copy className="h-3 w-3" /> Copy to…</button>
+                    <button disabled={copying === day} onClick={() => openCopy(day)}
+                      className="inline-flex items-center gap-1 rounded-sm border border-white/40 px-2 py-1 text-xs text-primary-foreground hover:bg-white/10 disabled:opacity-50">
+                      <Copy className="h-3 w-3" /> Copy to…
+                    </button>
                     {copyOpenFor === day && (
-                      <div className="absolute right-0 top-full z-20 mt-1 w-60 rounded-sm border border-border bg-card p-3 shadow-md">
+                      <div className="absolute right-0 top-full z-20 mt-1 w-60 rounded-sm border border-border bg-card p-3 text-foreground shadow-md">
                         <label className="flex items-center gap-2 border-b border-border pb-2 text-xs font-semibold">
                           <input type="checkbox" checked={copyTargets.size === otherDays.length} onChange={() => toggleSelectAll(otherDays)} className="accent-primary" />
                           Select all
@@ -301,9 +344,11 @@ export function CrewDayPlanner({ p }: { p: Production }) {
                   </div>
                 )}
               </div>
-            }>
-            <DayTable p={p} date={day} roleList={roles.roleList} newRole={roles.newRole} setNewRole={roles.setNewRole} addRole={roles.addRole} removeRole={roles.removeRole} />
-          </Panel>
+            </div>
+            {!isCollapsed && (
+              <DayTable p={p} date={day} roleList={roles.roleList} newRole={roles.newRole} setNewRole={roles.setNewRole} addRole={roles.addRole} removeRole={roles.removeRole} />
+            )}
+          </section>
         );
       })}
     </div>

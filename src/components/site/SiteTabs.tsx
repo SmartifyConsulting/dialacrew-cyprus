@@ -664,7 +664,7 @@ export function useCrewRequiredDay(p: Pick<Ctx, "p">["p"], date: string, roleLis
   const extras = bookings.filter((b) => !roleList.some((r) => r.toLowerCase() === b.role.trim().toLowerCase()) && !CONFIRMED_BOOKING_STATUSES.includes(b.status));
   const dayTotal = bookings.reduce((sum, b) => sum + Number(b.crew_rate ?? 0), 0);
 
-  return { byRole, isConfirmed, candidatesFor, pencil, cancelPencil, extras, dayTotal, currency: p.currency };
+  return { byRole, isConfirmed, candidatesFor, pencil, cancelPencil, extras, dayTotal, currency: p.currency, crew };
 }
 
 /* ---------------- Custom checklists (producers add checklists + items, e.g. "Wardrobe checklist") ---------------- */
