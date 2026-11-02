@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Search } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 import { friendlyError } from "@/lib/errors";
 import { supabase } from "@/integrations/supabase/client";
 import { Panel } from "@/components/AppShell";
@@ -37,11 +37,14 @@ export function EquipmentAdmin() {
   const [draft, setDraft] = useState(blankItem);
   const [checkoutFor, setCheckoutFor] = useState<EquipmentItem | null>(null);
   const [search, setSearch] = useState("");
+  const [openCategories, setOpenCategories] = useState<Set<string>>(new Set());
+  const toggleCategory = (c: string) => setOpenCategories((prev) => { const n = new Set(prev); if (n.has(c)) n.delete(c); else n.add(c); return n; });
 
   const outNow = (itemId: string) => checkouts.filter((c) => c.item_id === itemId && !c.returned_at);
   const qtyOut = (itemId: string) => outNow(itemId).reduce((sum, c) => sum + c.quantity, 0);
   const shown = items.filter((it) => !search.trim() || `${it.name} ${it.category}`.toLowerCase().includes(search.trim().toLowerCase()));
   const overdueCount = checkouts.filter(isOverdue).length;
+  const categoriesShown = EQUIPMENT_CATEGORIES.filter((c) => shown.some((it) => it.category === c));
 
   async function addItem() {
     if (!newItem.name.trim()) { toast.error("Name the item first"); return; }
@@ -91,71 +94,85 @@ export function EquipmentAdmin() {
         </div>
       </Panel>
 
-      <Panel title={`Our equipment (${items.length} item${items.length === 1 ? "" : "s"})`}
-        right={
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <input className={`${field} w-44 pl-7`} placeholder="Search equipment" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search equipment" />
-          </div>
-        }>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="text-left text-[11px] text-muted-foreground">
-              <tr><th className="px-4 py-2">Item</th><th className="px-4">Category</th><th className="px-4">Owned</th><th className="px-4">Out</th><th className="px-4">Free</th><th className="px-4">Action</th></tr>
-            </thead>
-            <tbody>
-              {shown.map((it) => {
-                const out = qtyOut(it.id);
-                if (editingId === it.id) {
-                  return (
-                    <tr key={it.id} className="border-t border-border">
-                      <td className="px-4 py-2"><input className={`${field} w-full`} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} aria-label="Item name" />
-                        <input className={`${field} mt-1 w-full`} placeholder="Serial/Asset ID" value={draft.serial_code} onChange={(e) => setDraft({ ...draft, serial_code: e.target.value })} aria-label="Serial/Asset ID" />
-                        <input className={`${field} mt-1 w-full`} placeholder="Notes" value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} aria-label="Notes" /></td>
-                      <td className="px-4">
-                        <select className={field} value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })} aria-label="Category">
-                          {EQUIPMENT_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-                        </select>
-                      </td>
-                      <td className="px-4"><input type="number" min="1" className={`${field} w-20`} value={draft.total_count} onChange={(e) => setDraft({ ...draft, total_count: e.target.value })} aria-label="How many we own" /></td>
-                      <td className="px-4">{out}</td>
-                      <td className="px-4">{(Number(draft.total_count) || 0) - out}</td>
-                      <td className="px-4"><div className="flex gap-3">
-                        <button onClick={() => saveEdit(it.id)} className="text-xs font-semibold text-primary hover:underline">Save</button>
-                        <button onClick={() => setEditingId(null)} className="text-xs text-muted-foreground hover:underline">Cancel</button>
-                      </div></td>
-                    </tr>
-                  );
-                }
-                return (
-                  <tr key={it.id} className="border-t border-border align-top">
-                    <td className="px-4 py-2">
-                      <div className="font-medium">{it.name}</div>
-                      {it.serial_code && <div className="text-xs text-muted-foreground">Serial/Asset ID: {it.serial_code}</div>}
-                      {it.notes && <div className="text-xs text-muted-foreground">{it.notes}</div>}
-                      {outNow(it.id).map((c) => (
-                        <div key={c.id} className={`mt-0.5 text-xs ${isOverdue(c) ? "font-semibold text-destructive" : "text-muted-foreground"}`}>
-                          {checkoutLine(c)}{isOverdue(c) ? " · OVERDUE" : ""}
-                        </div>
-                      ))}
-                    </td>
-                    <td className="px-4 py-2">{it.category}</td>
-                    <td className="px-4 py-2">{it.total_count}</td>
-                    <td className="px-4 py-2">{out}</td>
-                    <td className={`px-4 py-2 font-semibold ${it.total_count - out > 0 ? "text-success" : "text-destructive"}`}>{it.total_count - out}</td>
-                    <td className="px-4 py-2"><div className="flex gap-3 whitespace-nowrap">
-                      <button disabled={it.total_count - out <= 0} onClick={() => setCheckoutFor(it)} className="text-xs font-semibold text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline">Check out</button>
-                      <button onClick={() => startEdit(it)} className="text-xs text-primary hover:underline">Edit</button>
-                      <button onClick={() => removeItem(it)} className="text-xs text-destructive hover:underline">Delete</button>
-                    </div></td>
-                  </tr>
-                );
-              })}
-              {shown.length === 0 && <tr><td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">{items.length === 0 ? "No equipment yet. Add the first item above." : `Nothing matches "${search}".`}</td></tr>}
-            </tbody>
-          </table>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="font-display text-sm font-semibold uppercase tracking-wide text-primary">Our equipment ({items.length} item{items.length === 1 ? "" : "s"})</h2>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <input className={`${field} w-44 pl-7`} placeholder="Search equipment" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search equipment" />
         </div>
-      </Panel>
+      </div>
+      {shown.length === 0 && (
+        <p className="rounded-sm border border-dashed border-border p-4 text-sm text-muted-foreground">{items.length === 0 ? "No equipment yet. Add the first item above." : `Nothing matches "${search}".`}</p>
+      )}
+      {categoriesShown.map((category) => {
+        const catItems = shown.filter((it) => it.category === category);
+        const isOpen = openCategories.has(category);
+        return (
+          <section key={category} className="rounded-sm border border-border bg-card">
+            <button type="button" onClick={() => toggleCategory(category)}
+              className="flex w-full items-center gap-2 border-b border-primary bg-primary px-4 py-2.5 text-left text-primary-foreground">
+              <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${isOpen ? "" : "-rotate-90"}`} />
+              <span className="font-display text-sm font-semibold uppercase tracking-wide">{category}</span>
+              <span className="text-xs font-normal opacity-90">({catItems.length} item{catItems.length === 1 ? "" : "s"})</span>
+            </button>
+            {isOpen && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="text-left text-[11px] text-muted-foreground">
+                    <tr><th className="px-4 py-2">Item</th><th className="px-4">Owned</th><th className="px-4">Out</th><th className="px-4">Free</th><th className="px-4">Action</th></tr>
+                  </thead>
+                  <tbody>
+                    {catItems.map((it) => {
+                      const out = qtyOut(it.id);
+                      if (editingId === it.id) {
+                        return (
+                          <tr key={it.id} className="border-t border-border">
+                            <td className="px-4 py-2"><input className={`${field} w-full`} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} aria-label="Item name" />
+                              <input className={`${field} mt-1 w-full`} placeholder="Serial/Asset ID" value={draft.serial_code} onChange={(e) => setDraft({ ...draft, serial_code: e.target.value })} aria-label="Serial/Asset ID" />
+                              <input className={`${field} mt-1 w-full`} placeholder="Notes" value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} aria-label="Notes" />
+                              <select className={`${field} mt-1`} value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })} aria-label="Category">
+                                {EQUIPMENT_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+                              </select></td>
+                            <td className="px-4"><input type="number" min="1" className={`${field} w-20`} value={draft.total_count} onChange={(e) => setDraft({ ...draft, total_count: e.target.value })} aria-label="How many we own" /></td>
+                            <td className="px-4">{out}</td>
+                            <td className="px-4">{(Number(draft.total_count) || 0) - out}</td>
+                            <td className="px-4"><div className="flex gap-3">
+                              <button onClick={() => saveEdit(it.id)} className="text-xs font-semibold text-primary hover:underline">Save</button>
+                              <button onClick={() => setEditingId(null)} className="text-xs text-muted-foreground hover:underline">Cancel</button>
+                            </div></td>
+                          </tr>
+                        );
+                      }
+                      return (
+                        <tr key={it.id} className="border-t border-border align-top">
+                          <td className="px-4 py-2">
+                            <div className="font-medium">{it.name}</div>
+                            {it.serial_code && <div className="text-xs text-muted-foreground">Serial/Asset ID: {it.serial_code}</div>}
+                            {it.notes && <div className="text-xs text-muted-foreground">{it.notes}</div>}
+                            {outNow(it.id).map((c) => (
+                              <div key={c.id} className={`mt-0.5 text-xs ${isOverdue(c) ? "font-semibold text-destructive" : "text-muted-foreground"}`}>
+                                {checkoutLine(c)}{isOverdue(c) ? " · OVERDUE" : ""}
+                              </div>
+                            ))}
+                          </td>
+                          <td className="px-4 py-2">{it.total_count}</td>
+                          <td className="px-4 py-2">{out}</td>
+                          <td className={`px-4 py-2 font-semibold ${it.total_count - out > 0 ? "text-success" : "text-destructive"}`}>{it.total_count - out}</td>
+                          <td className="px-4 py-2"><div className="flex gap-3 whitespace-nowrap">
+                            <button disabled={it.total_count - out <= 0} onClick={() => setCheckoutFor(it)} className="text-xs font-semibold text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline">Check out</button>
+                            <button onClick={() => startEdit(it)} className="text-xs text-primary hover:underline">Edit</button>
+                            <button onClick={() => removeItem(it)} className="text-xs text-destructive hover:underline">Delete</button>
+                          </div></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        );
+      })}
 
       <Panel title="Library card" right={overdueCount > 0 ? <span className="text-xs font-semibold text-destructive">{overdueCount} overdue</span> : undefined}>
         <div className="overflow-x-auto">
