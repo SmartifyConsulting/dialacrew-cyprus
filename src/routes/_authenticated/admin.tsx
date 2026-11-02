@@ -444,17 +444,22 @@ function DefaultCrewRolesPanel() {
 
 // Crew Types: producers group crew members into named, reusable templates (optionally tagged to
 // a production type) instead of editing raw crew records — picked from Find Crew's Select Crew Type.
-const SIZE_TIERS = ["Small", "Medium", "Large", "Extra-Large"] as const;
-
-// Crew Type: the 4 fixed size tiers, seeded via migration. Membership only — no creating or
-// deleting tiers, just who's in each one. Applied at the day level on a production's Crew tab.
+// Crew Type: producer-managed tiers (Small/Medium/Large/Extra-Large seeded by default, but fully
+// CRUD — create, rename, delete, and manage membership). Applied at the day level on a production's Crew tab.
 function CrewTypeSizesTab() {
   const allGroups = useCrewGroups().data ?? [];
+  const tiers = allGroups.filter((g) => g.sizeTier);
   const crew = useCrew().data ?? [];
+  const createGroup = useCreateCrewGroup();
+  const deleteGroup = useDeleteCrewGroup();
   const addMember = useAddCrewGroupMember();
   const removeMember = useRemoveCrewGroupMember();
+  const inv = useInv();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [memberPick, setMemberPick] = useState<Record<string, string>>({});
+  const [adding, setAdding] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [renaming, setRenaming] = useState<string | null>(null);
 
   async function addCrewToGroup(groupId: string) {
     const crewId = memberPick[groupId];
@@ -462,44 +467,75 @@ function CrewTypeSizesTab() {
     try { await addMember.mutateAsync({ groupId, crewId }); setMemberPick((prev) => ({ ...prev, [groupId]: "" })); }
     catch (e) { toast.error(friendlyError(e)); }
   }
+  async function createTier() {
+    if (!newName.trim()) { toast.error("Name this crew type"); return; }
+    try {
+      await createGroup.mutateAsync({ name: newName.trim(), crewIds: [], sizeTier: newName.trim() });
+      toast.success(`"${newName.trim()}" created`);
+      setNewName(""); setAdding(false);
+    } catch (e) { toast.error(friendlyError(e)); }
+  }
+  async function renameTier(g: { id: string; name: string }, name: string) {
+    const clean = name.trim();
+    if (!clean || clean === g.name) { setRenaming(null); return; }
+    const { error } = await supabase.from("crew_groups").update({ name: clean, size_tier: clean }).eq("id", g.id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success("Renamed"); setRenaming(null); inv(["crew-groups"]);
+  }
 
   return (
-    <Panel title="Crew Type">
+    <Panel title={`Crew Type (${tiers.length})`} right={!adding && (
+      <button onClick={() => setAdding(true)} className="text-xs font-semibold text-primary hover:underline">+ Add crew type</button>
+    )}>
+      {adding && (
+        <div className="flex flex-wrap items-end gap-2 border-b border-border p-4">
+          <label className="text-xs"><span className="block text-muted-foreground">Name</span>
+            <input autoFocus className={`${invField} min-w-40`} value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g. Skeleton Crew" /></label>
+          <button onClick={createTier} className={btn}>Create</button>
+          <button onClick={() => { setAdding(false); setNewName(""); }} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold">Cancel</button>
+        </div>
+      )}
       <ul className="divide-y divide-border text-sm">
-        {SIZE_TIERS.map((tier) => {
-          const g = allGroups.find((x) => x.sizeTier === tier);
-          if (!g) return <li key={tier} className="p-4 text-xs text-muted-foreground">{tier} — not seeded yet. Run the latest migration.</li>;
-          return (
-            <li key={g.id}>
-              <button onClick={() => setExpanded(expanded === g.id ? null : g.id)} className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left font-medium hover:text-primary">
-                {tier} <span className="font-normal text-muted-foreground">({g.memberIds.length})</span>
-              </button>
-              {expanded === g.id && (
-                <div className="space-y-2 border-t border-border bg-muted/20 px-4 py-3">
-                  {g.memberIds.length === 0 && <p className="text-xs text-muted-foreground">No crew members added yet.</p>}
-                  <ul className="divide-y divide-border rounded-sm border border-border bg-card">
-                    {g.memberIds.map((id) => {
-                      const c = crew.find((x) => x.id === id);
-                      return (
-                        <li key={id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
-                          <span className="min-w-0 truncate">{c?.name ?? "Unknown"}{c?.role && <span className="text-xs text-muted-foreground"> · {c.role}</span>}</span>
-                          <button onClick={() => removeMember.mutate({ groupId: g.id, crewId: id })} aria-label={`Remove ${c?.name ?? "member"}`} className="shrink-0 text-xs text-muted-foreground hover:text-destructive">Remove</button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                  <div className="flex items-center gap-2">
-                    <select className={`${invField} min-w-48`} value={memberPick[g.id] ?? ""} onChange={(e) => setMemberPick((prev) => ({ ...prev, [g.id]: e.target.value }))}>
-                      <option value="">+ Add a user to this tier…</option>
-                      {crew.filter((c) => !g.memberIds.includes(c.id)).map((c) => <option key={c.id} value={c.id}>{c.name} · {c.role}</option>)}
-                    </select>
-                    <button onClick={() => addCrewToGroup(g.id)} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary hover:text-primary">Add</button>
-                  </div>
-                </div>
+        {tiers.length === 0 && <li className="p-4 text-xs text-muted-foreground">No crew types yet — add one above.</li>}
+        {tiers.map((g) => (
+          <li key={g.id}>
+            <div className="flex items-center justify-between gap-3 px-4 py-2.5">
+              {renaming === g.id ? (
+                <input autoFocus defaultValue={g.name} onBlur={(e) => renameTier(g, e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()} className={`${invField} flex-1`} />
+              ) : (
+                <button onClick={() => setExpanded(expanded === g.id ? null : g.id)} className="flex-1 text-left font-medium hover:text-primary">
+                  {g.name} <span className="font-normal text-muted-foreground">({g.memberIds.length})</span>
+                </button>
               )}
-            </li>
-          );
-        })}
+              <button onClick={() => setRenaming(renaming === g.id ? null : g.id)} className="shrink-0 text-xs text-primary hover:underline">Rename</button>
+              <button onClick={() => deleteGroup.mutate(g.id)} className="shrink-0 text-xs text-destructive hover:underline">Delete</button>
+            </div>
+            {expanded === g.id && (
+              <div className="space-y-2 border-t border-border bg-muted/20 px-4 py-3">
+                {g.memberIds.length === 0 && <p className="text-xs text-muted-foreground">No crew members added yet.</p>}
+                <ul className="divide-y divide-border rounded-sm border border-border bg-card">
+                  {g.memberIds.map((id) => {
+                    const c = crew.find((x) => x.id === id);
+                    return (
+                      <li key={id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                        <span className="min-w-0 truncate">{c?.name ?? "Unknown"}{c?.role && <span className="text-xs text-muted-foreground"> · {c.role}</span>}</span>
+                        <button onClick={() => removeMember.mutate({ groupId: g.id, crewId: id })} aria-label={`Remove ${c?.name ?? "member"}`} className="shrink-0 text-xs text-muted-foreground hover:text-destructive">Remove</button>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <div className="flex items-center gap-2">
+                  <select className={`${invField} min-w-48`} value={memberPick[g.id] ?? ""} onChange={(e) => setMemberPick((prev) => ({ ...prev, [g.id]: e.target.value }))}>
+                    <option value="">+ Add a user to this tier…</option>
+                    {crew.filter((c) => !g.memberIds.includes(c.id)).map((c) => <option key={c.id} value={c.id}>{c.name} · {c.role}</option>)}
+                  </select>
+                  <button onClick={() => addCrewToGroup(g.id)} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary hover:text-primary">Add</button>
+                </div>
+              </div>
+            )}
+          </li>
+        ))}
       </ul>
     </Panel>
   );

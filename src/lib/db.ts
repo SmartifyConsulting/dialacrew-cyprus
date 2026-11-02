@@ -74,8 +74,8 @@ export const useCrewGroups = () => useQuery({
 export const useCreateCrewGroup = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (f: { name: string; crewIds: string[]; productionType?: string | null }) => {
-      const { data, error } = await supabase.from("crew_groups").insert({ name: f.name, production_type: f.productionType || null }).select("id").single();
+    mutationFn: async (f: { name: string; crewIds: string[]; productionType?: string | null; sizeTier?: string | null }) => {
+      const { data, error } = await supabase.from("crew_groups").insert({ name: f.name, production_type: f.productionType || null, size_tier: f.sizeTier || null }).select("id").single();
       if (error) throw error;
       if (f.crewIds.length) {
         const { error: memErr } = await supabase.from("crew_group_members").insert(f.crewIds.map((crew_id) => ({ group_id: data.id, crew_id })));

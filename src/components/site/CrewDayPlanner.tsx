@@ -111,7 +111,7 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
                 <td className="px-3 py-2.5 align-top">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-medium">{role}</span>
-                    <button onClick={() => removeRole(role)} aria-label={`Remove ${role}`} className="shrink-0 text-muted-foreground hover:text-destructive">✕</button>
+                    <button onClick={() => removeRole(role)} aria-label={`Remove ${role}`} className="shrink-0 font-bold text-destructive">−</button>
                   </div>
                 </td>
                 <td className="px-3 py-2.5 align-top">
@@ -120,8 +120,8 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
                       <span className="min-w-0 flex-1 text-xs text-muted-foreground">
                         {matches.length === 0 ? "Unassigned" : matches.map((m) => (
                           <span key={m.id} className="mr-3 inline-flex items-center gap-1">
-                            <button onClick={() => req.cancelPencil(m.id, m.name)} aria-label={`Remove ${m.name} from ${role}`} className="font-bold text-muted-foreground hover:text-destructive">−</button>
                             <span className="truncate">{m.name}</span>
+                            <button onClick={() => req.cancelPencil(m.id, m.name)} aria-label={`Remove ${m.name} from ${role}`} className="font-bold text-destructive">−</button>
                           </span>
                         ))}
                       </span>
@@ -147,8 +147,8 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
                         <span className="min-w-0 flex-1 text-xs text-muted-foreground">
                           {assigned ? (
                             <span className="inline-flex items-center gap-1">
-                              <button onClick={() => sc.removeFromScenario(s, assigned.id, assigned.name)} aria-label={`Remove ${assigned.name} from ${role}`} className="font-bold text-muted-foreground hover:text-destructive">−</button>
                               <span className="truncate">{assigned.name}</span>
+                              <button onClick={() => sc.removeFromScenario(s, assigned.id, assigned.name)} aria-label={`Remove ${assigned.name} from ${role}`} className="font-bold text-destructive">−</button>
                             </span>
                           ) : "Unassigned"}
                         </span>
@@ -309,7 +309,7 @@ export function CrewDayPlanner({ p }: { p: Production }) {
               <div className="flex items-center gap-2">
                 <select disabled={sizeTypes.length === 0} value=""
                   onChange={(e) => { const g = sizeTypes.find((x) => x.id === e.target.value); if (g) applySizeType(day, g); }}
-                  className="rounded-sm border border-white/40 bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40" aria-label="Select Crew Type">
+                  className="rounded-sm border border-white bg-transparent px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40" aria-label="Select Crew Type">
                   <option value="" disabled>Select Crew Type</option>
                   {sizeTypes.map((g) => <option key={g.id} value={g.id}>{g.name} ({g.memberIds.length})</option>)}
                 </select>
