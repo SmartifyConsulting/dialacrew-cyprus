@@ -2,7 +2,6 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { PasswordInput, fieldClass, labelClass, submitClass } from "@/components/PasswordInput";
 import { mapAuthError, passwordChecks, usePlatformSetting } from "@/lib/auth";
 import { SERVICE_SKILLS } from "@/lib/skills";
@@ -114,8 +113,8 @@ export function AuthForm() {
 
   async function google() {
     setError("");
-    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/auth" });
-    if (result.error) fail(result.error);
+    const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin + "/auth" } });
+    if (error) fail(error);
   }
 
   return (

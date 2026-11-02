@@ -1,23 +1,20 @@
-// Server-only helper: streamed, schema-constrained JSON from the AI Gateway (Responses API).
-const URL_ = "https://ai.gateway.lovable.dev/v1/responses";
-export const AI_MODEL = "openai/gpt-6-astra";
+// Server-only helper: streamed, schema-constrained JSON from OpenAI's Responses API.
+const URL_ = "https://api.openai.com/v1/responses";
+export const AI_MODEL = "gpt-4.1-mini";
 
 export async function aiJson<T>(opts: { name: string; schema: Record<string, unknown>; instructions: string; input: string }): Promise<T> {
-  const key = process.env["LOVABLE_API_KEY"];
+  const key = process.env["OPENAI_API_KEY"];
   if (!key) throw new Error("AI is not configured.");
   const res = await fetch(URL_, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${key}`,
-      "Lovable-API-Key": key,
-      "X-Lovable-AIG-SDK": "fetch",
     },
     body: JSON.stringify({
       model: AI_MODEL,
       instructions: opts.instructions,
       input: opts.input,
-      reasoning: { effort: "low" },
       store: false,
       stream: true,
       text: { format: { type: "json_schema", name: opts.name, strict: true, schema: opts.schema } },
@@ -26,9 +23,8 @@ export async function aiJson<T>(opts: { name: string; schema: Record<string, unk
   if (!res.ok || !res.body) {
     const t = await res.text().catch(() => "");
     console.error("AI gateway error", res.status, t);
-    if (res.status === 402) throw new Error("AI credits have run out — top up in Settings → Plans & credits.");
+    if (res.status === 402 || res.status === 403) throw new Error("AI access is unavailable — check the OpenAI account's billing and access.");
     if (res.status === 429) throw new Error("Too many AI requests — try again in a minute.");
-    if (res.status === 403) throw new Error("AI access is blocked for this workspace.");
     throw new Error("The AI could not complete this request.");
   }
   const reader = res.body.getReader();
