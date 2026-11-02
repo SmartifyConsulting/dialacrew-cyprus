@@ -98,7 +98,7 @@ function PaymentsPage() {
             <Panel key={p.id} title={p.name} right={
               <div className="flex items-center gap-2">
                 {pool && <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">Escrow: {POOL[pool.status] ?? pool.status}</span>}
-                {!pool && <button disabled={busy === p.id} onClick={() => doFund(p.id)} className="rounded-xl bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-50">Fund production escrow</button>}
+                {!pool && <button disabled={busy === p.id} onClick={() => doFund(p.id)} className="rounded-xl bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-50">Manage Payouts</button>}
                 {pool && open.length > 0 && <button disabled={busy === p.id} onClick={() => doRelease(p.id, ids)} className="rounded-xl bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-50">Release {ids.length} selected</button>}
               </div>
             }>
