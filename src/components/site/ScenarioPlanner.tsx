@@ -132,7 +132,7 @@ export function useScenarios(p: Production, date: string, roleList: string[]) {
   }
   async function createScenario() {
     const nextNum = (scenarios.data?.length ?? 0) + 2;
-    const { error } = await supabase.from("brief_matches").insert({ client: scenarioKey(p.id, date), brief: `Scenario ${nextNum}`, result: { selByDay: blankSelByDay(), total: 0 } });
+    const { error } = await supabase.from("brief_matches").insert({ client: scenarioKey(p.id, date), brief: `Sandbox ${nextNum}`, result: { selByDay: blankSelByDay(), total: 0 } });
     if (error) { toast.error(friendlyError(error)); return; }
     qc.invalidateQueries({ queryKey: ["scenarios", p.id, date] });
   }

@@ -79,9 +79,9 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
             <th className="min-w-[13rem] px-3 py-2 text-left"><span className="font-display text-sm font-semibold uppercase tracking-wide text-primary">Crew Required</span></th>
             <th className="min-w-[17rem] border-l-2 border-border px-3 py-2 text-left">
               <div className="flex items-center gap-2">
-                <span className="flex-1 font-display text-sm font-semibold uppercase tracking-wide text-primary">Scenario 1</span>
+                <span className="flex-1 font-display text-sm font-semibold uppercase tracking-wide text-primary">Sandbox 1</span>
                 <select className="w-28 shrink-0 rounded-sm bg-primary px-1.5 py-1 text-[10px] font-semibold text-primary-foreground" value=""
-                  onChange={(e) => { const g = sc.crewMixes.find((x) => x.id === e.target.value); if (g) applyMixToS1(g); }} aria-label="Select Crew Mix for Scenario 1">
+                  onChange={(e) => { const g = sc.crewMixes.find((x) => x.id === e.target.value); if (g) applyMixToS1(g); }} aria-label="Select Crew Mix for Sandbox 1">
                   <option value="" disabled className="bg-background text-foreground">Select Crew Mix</option>
                   {sc.crewMixes.length === 0 && <option value="" disabled className="bg-background text-foreground">No crew mixes saved yet</option>}
                   {sc.crewMixes.map((g) => <option key={g.id} value={g.id} className="bg-background text-foreground">{g.name} ({g.memberIds.length}){g.productionType ? ` · ${g.productionType}` : ""}</option>)}
@@ -104,7 +104,7 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
               </th>
             ))}
             <th className="min-w-[11rem] px-3 py-2 text-left">
-              <button onClick={sc.createScenario} className={ghost}><Plus className="h-3.5 w-3.5" /> Add Scenario {sc.scenarios.length + 2}</button>
+              <button onClick={sc.createScenario} className={ghost}><Plus className="h-3.5 w-3.5" /> Add Sandbox {sc.scenarios.length + 2}</button>
             </th>
           </tr>
         </thead>
@@ -190,11 +190,14 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
                 <button onClick={addRole} className="shrink-0 rounded-sm border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary hover:text-primary">+ Add role</button>
               </div>
             </td>
-            <td className="border-l-2 border-border px-3 py-3 align-top text-xs"><span className="text-muted-foreground">Total:</span> <b>{fmtMoney(req.dayTotal, p.currency)}</b></td>
+            <td className="space-y-2 border-l-2 border-border px-3 py-3 align-top">
+              <div className="text-xs"><span className="text-muted-foreground">Total:</span> <b>{fmtMoney(req.dayTotal, p.currency)}</b></div>
+              <button onClick={() => toast.success("Crew Required is already pencilled — Find/Swap updates it instantly.")} className={`${ghost} w-full justify-center`}>Pencil this Crew</button>
+            </td>
             {sc.scenarios.map((s) => (
               <td key={s.id} className="space-y-2 border-l-2 border-border px-3 py-3 align-top">
                 <div className="text-xs"><span className="text-muted-foreground">Total:</span> <b>{fmtMoney(sc.totalFor(s), p.currency)}</b></div>
-                <button onClick={() => sc.commit(s)} disabled={sc.committing} className={`${ghost} w-full justify-center`}>Pencil this scenario</button>
+                <button onClick={() => sc.commit(s)} disabled={sc.committing} className={`${ghost} w-full justify-center`}>Pencil this Crew</button>
               </td>
             ))}
             <td />
