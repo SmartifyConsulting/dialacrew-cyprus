@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8" /><title>Completing sign in...</title></head>
+<body>
+<p>Completing sign in...</p>
+<script>
+  (function () {
+    var params = new URLSearchParams(location.search)
+    var scheme = params.get('deeplink_scheme')
+    if (!scheme) return
+
+    var hash = new URLSearchParams(location.hash.slice(1))
+    var accessToken = hash.get('access_token')
+    var refreshToken = hash.get('refresh_token') || ''
+    var error = hash.get('error') || params.get('error')
+
+    // oauth/ tells Despia to close the in-app browser and navigate the WebView to /auth
+    location.href = accessToken
+      ? scheme + '://oauth/auth?access_token=' + encodeURIComponent(accessToken) + '&refresh_token=' + encodeURIComponent(refreshToken)
+      : scheme + '://oauth/auth?error=' + encodeURIComponent(error || 'no_access_token')
+  })()
+</script>
+</body>
+</html>

@@ -7,6 +7,10 @@ import { mapAuthError, passwordChecks, usePlatformSetting } from "@/lib/auth";
 import { SERVICE_SKILLS } from "@/lib/skills";
 import { COUNTRIES } from "@/lib/countries";
 
+function isDespia() {
+  return typeof navigator !== "undefined" && navigator.userAgent.toLowerCase().includes("despia");
+}
+
 /** Sign-in / sign-up card shared by the home page and /auth. */
 export function AuthForm() {
   const navigate = useNavigate();
@@ -47,6 +51,7 @@ export function AuthForm() {
     const { data } = supabase.auth.onAuthStateChange((e, s) => { if (e === "SIGNED_IN" && s) navigate({ to: "/dashboard", replace: true }); });
     return () => data.subscription.unsubscribe();
   }, [navigate]);
+
 
   useEffect(() => {
     if (wait <= 0) return;
@@ -111,8 +116,34 @@ export function AuthForm() {
     } catch (err) { fail(err); } finally { setBusy(false); }
   }
 
+  // Picks up the access/refresh token Despia's native-callback.html hands back after a Google sign-in.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const accessToken = params.get("access_token");
+    if (!accessToken) {
+      const oauthError = params.get("error");
+      if (oauthError) fail(new Error(oauthError));
+      return;
+    }
+    const refreshToken = params.get("refresh_token") || "";
+    supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).then(({ error }) => {
+      if (error) fail(error);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function google() {
     setError("");
+    if (isDespia()) {
+      // Despia dashboard > Publish > Deeplink must be set to this exact scheme.
+      const scheme = "bookacrew";
+      const supabaseUrl = import.meta.env["VITE_SUPABASE_URL"] as string;
+      const redirectTo = `${window.location.origin}/native-callback.html?deeplink_scheme=${encodeURIComponent(scheme)}`;
+      const authorizeUrl = `${supabaseUrl}/auth/v1/authorize?${new URLSearchParams({ provider: "google", redirect_to: redirectTo })}`;
+      const { default: despia } = await import("despia-native");
+      despia(`oauth://?url=${encodeURIComponent(authorizeUrl)}`);
+      return;
+    }
     const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin + "/auth" } });
     if (error) fail(error);
   }
