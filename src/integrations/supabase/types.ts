@@ -89,6 +89,35 @@ export type Database = {
           },
         ]
       }
+      booking_day_exclusions: {
+        Row: {
+          booking_id: string
+          created_at: string
+          excluded_date: string
+          id: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          excluded_date: string
+          id?: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          excluded_date?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_day_exclusions_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_terms_acceptances: {
         Row: {
           accepted_at: string
@@ -964,6 +993,71 @@ export type Database = {
         }
         Relationships: []
       }
+      crew_no_shows: {
+        Row: {
+          booking_id: string
+          crew_id: string
+          expires_at: string
+          id: string
+          occurred_on: string
+          production_id: string
+          replacement_booking_id: string | null
+          reported_at: string
+          reported_by: string
+        }
+        Insert: {
+          booking_id: string
+          crew_id: string
+          expires_at: string
+          id?: string
+          occurred_on: string
+          production_id: string
+          replacement_booking_id?: string | null
+          reported_at?: string
+          reported_by: string
+        }
+        Update: {
+          booking_id?: string
+          crew_id?: string
+          expires_at?: string
+          id?: string
+          occurred_on?: string
+          production_id?: string
+          replacement_booking_id?: string | null
+          reported_at?: string
+          reported_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crew_no_shows_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crew_no_shows_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crew_no_shows_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crew_no_shows_replacement_booking_id_fkey"
+            columns: ["replacement_booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crew_rate_cards: {
         Row: {
           crew_id: string
@@ -1224,6 +1318,118 @@ export type Database = {
           },
         ]
       }
+      gig_negotiation_events: {
+        Row: {
+          action: string
+          actor_id: string
+          actor_role: string
+          id: string
+          negotiation_id: string
+          occurred_at: string
+          offered_rate: number
+          production_id: string
+          usual_rate: number | null
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          actor_role: string
+          id?: string
+          negotiation_id: string
+          occurred_at?: string
+          offered_rate: number
+          production_id: string
+          usual_rate?: number | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          actor_role?: string
+          id?: string
+          negotiation_id?: string
+          occurred_at?: string
+          offered_rate?: number
+          production_id?: string
+          usual_rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gig_negotiation_events_negotiation_id_fkey"
+            columns: ["negotiation_id"]
+            isOneToOne: false
+            referencedRelation: "gig_negotiations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gig_negotiation_events_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gig_negotiations: {
+        Row: {
+          agreed_rate: number | null
+          booking_id: string
+          created_at: string
+          crew_id: string
+          id: string
+          latest_by: string
+          latest_rate: number
+          production_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          agreed_rate?: number | null
+          booking_id: string
+          created_at?: string
+          crew_id: string
+          id?: string
+          latest_by: string
+          latest_rate: number
+          production_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          agreed_rate?: number | null
+          booking_id?: string
+          created_at?: string
+          crew_id?: string
+          id?: string
+          latest_by?: string
+          latest_rate?: number
+          production_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gig_negotiations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gig_negotiations_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gig_negotiations_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gig_penalties: {
         Row: {
           amount: number
@@ -1369,6 +1575,8 @@ export type Database = {
         Row: {
           booking_id: string
           created_at: string
+          crew_confirmed_at: string | null
+          crew_confirmed_by: string | null
           crew_id: string
           day_rate: number
           days: number
@@ -1384,10 +1592,16 @@ export type Database = {
           total: number
           vat_amount: number
           vat_rate: number
+          wrap_calculated_at: string | null
+          wrap_fee: number
+          wrap_hourly_rate: number
+          wrap_minutes: number
         }
         Insert: {
           booking_id: string
           created_at?: string
+          crew_confirmed_at?: string | null
+          crew_confirmed_by?: string | null
           crew_id: string
           day_rate?: number
           days?: number
@@ -1403,10 +1617,16 @@ export type Database = {
           total?: number
           vat_amount?: number
           vat_rate?: number
+          wrap_calculated_at?: string | null
+          wrap_fee?: number
+          wrap_hourly_rate?: number
+          wrap_minutes?: number
         }
         Update: {
           booking_id?: string
           created_at?: string
+          crew_confirmed_at?: string | null
+          crew_confirmed_by?: string | null
           crew_id?: string
           day_rate?: number
           days?: number
@@ -1422,6 +1642,10 @@ export type Database = {
           total?: number
           vat_amount?: number
           vat_rate?: number
+          wrap_calculated_at?: string | null
+          wrap_fee?: number
+          wrap_hourly_rate?: number
+          wrap_minutes?: number
         }
         Relationships: [
           {
@@ -3066,6 +3290,10 @@ export type Database = {
         Args: { p_production_id: string }
         Returns: undefined
       }
+      confirm_final_crew_invoice: {
+        Args: { p_acknowledge_wrap: boolean; p_invoice_id: string }
+        Returns: undefined
+      }
       crew_on_time_pct: { Args: { _crew_id: string }; Returns: number }
       decide_join_request: {
         Args: { _approve: boolean; _request: string }
@@ -3083,6 +3311,16 @@ export type Database = {
           email: string
           valid: boolean
         }[]
+      }
+      gig_negotiate: {
+        Args: {
+          p_ack_below_usual?: boolean
+          p_action: string
+          p_booking_id: string
+          p_crew_id: string
+          p_rate?: number
+        }
+        Returns: string
       }
       gig_setting: { Args: { _default: number; _key: string }; Returns: number }
       has_role: {
@@ -3125,6 +3363,10 @@ export type Database = {
         }[]
       }
       release_payment: { Args: { _booking: string }; Returns: string }
+      report_booking_no_show: {
+        Args: { p_booking_id: string }
+        Returns: string
+      }
       report_gig_no_show: { Args: { _gig: string }; Returns: number }
       secure_gig: { Args: { _gig: string }; Returns: undefined }
       secure_gig_paid: {
