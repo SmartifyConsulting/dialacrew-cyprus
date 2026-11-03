@@ -15,7 +15,7 @@ export function createAppI18n() {
   void instance.init({
     resources, lng: "en", fallbackLng: "en",
     supportedLngs: SUPPORTED_LANGUAGES.map(({ code }) => code),
-    initImmediate: false,
+    initAsync: false,
     interpolation: { escapeValue: false },
     react: { useSuspense: false },
   });
