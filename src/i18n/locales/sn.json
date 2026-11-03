@@ -1,0 +1,35 @@
+{
+  "common": {
+    "language": "Mutauro",
+    "changeLanguage": "Chinja mutauro",
+    "signOut": "Buda",
+    "save": "Chengetedza",
+    "cancel": "Kanzura",
+    "delete": "Bvisa",
+    "edit": "Gadziridza",
+    "add": "Wedzera",
+    "send": "Tumira",
+    "confirm": "Simbisa",
+    "close": "Vhara",
+    "search": "Tsvaga",
+    "loading": "Zvichirongedzwa...",
+    "settings": "Marongero",
+    "noData": "No data",
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "phone": "Phone",
+    "email": "Email",
+    "name": "Name",
+    "role": "Role",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "nav": {
+    "home": "Kumba",
+    "myProfile": "Pulofiri Yangu",
+    "admin": "Mutariri",
+    "profile": "Pulofiri Yangu",
+    "calendar": "Karenda"
+  }
+}

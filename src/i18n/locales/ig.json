@@ -1,0 +1,35 @@
+{
+  "common": {
+    "language": "Asụsụ",
+    "changeLanguage": "Gbanwee asụsụ",
+    "signOut": "Pụọ",
+    "save": "Chekwaa",
+    "cancel": "Kagbuo",
+    "delete": "Hichapụ",
+    "edit": "Dezie",
+    "add": "Tinye",
+    "send": "Zipu",
+    "confirm": "Kwado",
+    "close": "Mechie",
+    "search": "Chọọ",
+    "loading": "Na-ebugo...",
+    "settings": "Ntọala",
+    "noData": "No data",
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "phone": "Phone",
+    "email": "Email",
+    "name": "Name",
+    "role": "Role",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "nav": {
+    "home": "Ụlọ",
+    "myProfile": "Profaịlụ M",
+    "admin": "Onye Nchịkwa",
+    "profile": "Profaịlụ M",
+    "calendar": "Kalenda"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "common": {
+    "language": "언어",
+    "changeLanguage": "언어 변경",
+    "signOut": "로그아웃",
+    "save": "저장",
+    "cancel": "취소",
+    "delete": "삭제",
+    "edit": "편집",
+    "add": "추가",
+    "send": "보내기",
+    "confirm": "확인",
+    "close": "닫기",
+    "search": "검색",
+    "loading": "로딩 중...",
+    "settings": "설정",
+    "noData": "No data",
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "phone": "Phone",
+    "email": "Email",
+    "name": "Name",
+    "role": "Role",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "nav": {
+    "home": "홈",
+    "myProfile": "내 프로필",
+    "admin": "관리자",
+    "profile": "내 프로필",
+    "calendar": "캘린더"
+  }
+}

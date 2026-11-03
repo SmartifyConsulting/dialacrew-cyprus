@@ -1,0 +1,35 @@
+{
+  "common": {
+    "language": "言語",
+    "changeLanguage": "言語を変更",
+    "signOut": "サインアウト",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "edit": "編集",
+    "add": "追加",
+    "send": "送信",
+    "confirm": "確認",
+    "close": "閉じる",
+    "search": "検索",
+    "loading": "読み込み中...",
+    "settings": "設定",
+    "noData": "No data",
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "phone": "Phone",
+    "email": "Email",
+    "name": "Name",
+    "role": "Role",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "nav": {
+    "home": "ホーム",
+    "myProfile": "私のプロフィール",
+    "admin": "管理者",
+    "profile": "私のプロフィール",
+    "calendar": "カレンダー"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "common": {
+    "language": "Dil",
+    "changeLanguage": "Dili değiştir",
+    "signOut": "Çıkış",
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "delete": "Sil",
+    "edit": "Düzenle",
+    "add": "Ekle",
+    "send": "Gönder",
+    "confirm": "Onayla",
+    "close": "Kapat",
+    "search": "Ara",
+    "loading": "Yükleniyor...",
+    "settings": "Ayarlar",
+    "noData": "No data",
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "phone": "Phone",
+    "email": "Email",
+    "name": "Name",
+    "role": "Role",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "nav": {
+    "home": "Ana Sayfa",
+    "myProfile": "Profilim",
+    "admin": "Yönetici",
+    "profile": "Profilim",
+    "calendar": "Takvim"
+  }
+}

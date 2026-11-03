@@ -1,0 +1,35 @@
+{
+  "common": {
+    "language": "Taal",
+    "changeLanguage": "Wijzig taal",
+    "signOut": "Afmelden",
+    "save": "Opslaan",
+    "cancel": "Annuleren",
+    "delete": "Verwijderen",
+    "edit": "Bewerken",
+    "add": "Toevoegen",
+    "send": "Verzenden",
+    "confirm": "Bevestigen",
+    "close": "Sluiten",
+    "search": "Zoeken",
+    "loading": "Laden...",
+    "settings": "Instellingen",
+    "noData": "No data",
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "phone": "Phone",
+    "email": "Email",
+    "name": "Name",
+    "role": "Role",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "nav": {
+    "home": "Home",
+    "myProfile": "Mijn Profiel",
+    "admin": "Admin",
+    "profile": "Mijn Profiel",
+    "calendar": "Agenda"
+  }
+}
