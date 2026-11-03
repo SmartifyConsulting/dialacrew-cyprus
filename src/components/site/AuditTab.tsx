@@ -26,6 +26,7 @@ function locationFor(at: number, locations: { label: string; starts_at: string |
 }
 
 export function AuditTab({ p }: { p: { id: string } }) {
+  const { t, i18n } = useTranslation();
   const [search, setSearch] = useState("");
   const [filterDate, setFilterDate] = useState("");
   const [filterType, setFilterType] = useState("");
@@ -99,27 +100,27 @@ export function AuditTab({ p }: { p: { id: string } }) {
 
   return (
     <div className="space-y-4">
-      <Panel title="Audit trail — activity history">
+      <Panel title={t("audit.title")}>
         <div className="grid gap-3 p-4 sm:grid-cols-3">
-          <label className="text-xs font-semibold">Search name or activity
-            <input aria-label="Search audit trail" className="mt-1 w-full rounded border border-border bg-background px-3 py-2 text-sm" placeholder="Person, action, detail..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <label className="text-xs font-semibold">{t("audit.search")}
+            <input aria-label={t("audit.search")} className="mt-1 w-full rounded border border-border bg-background px-3 py-2 text-sm" placeholder={t("audit.placeholder")} value={search} onChange={(e) => setSearch(e.target.value)} />
           </label>
-          <label className="text-xs font-semibold">Date
-            <input type="date" aria-label="Filter audit by date" className="mt-1 w-full rounded border border-border bg-background px-3 py-2 text-sm" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
+          <label className="text-xs font-semibold">{t("productionList.columns.Date")}
+            <input type="date" aria-label={t("audit.dateFilter")} className="mt-1 w-full rounded border border-border bg-background px-3 py-2 text-sm" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
           </label>
-          <label className="text-xs font-semibold">Activity type
-            <select aria-label="Filter audit by activity" className="mt-1 w-full rounded border border-border bg-background px-3 py-2 text-sm" value={filterType} onChange={(e) => setFilterType(e.target.value)}>
-              <option value="">All activities</option>
+          <label className="text-xs font-semibold">{t("audit.type")}
+            <select aria-label={t("audit.typeFilter")} className="mt-1 w-full rounded border border-border bg-background px-3 py-2 text-sm" value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+              <option value="">{t("audit.all")}</option>
               {types.map((type) => <option key={type} value={type}>{type.replaceAll("_", " ")}</option>)}
             </select>
           </label>
         </div>
-        <p className="px-4 pb-3 text-xs text-muted-foreground">{filtered.length} of {events.length} recorded activities</p>
+        <p className="px-4 pb-3 text-xs text-muted-foreground">{t("audit.count", { shown: filtered.length, total: events.length })}</p>
       </Panel>
-      {days.length === 0 && <Panel title="No matching activity"><p className="p-4 text-sm text-muted-foreground">No audit records match these filters.</p></Panel>}
+      {days.length === 0 && <Panel title={t("audit.noMatch")}><p className="p-4 text-sm text-muted-foreground">{t("audit.empty")}</p></Panel>}
       {days.map((day, index) => (
         <details key={day} open={index === 0} className="overflow-hidden rounded-md border border-border bg-card">
-          <summary className="cursor-pointer px-4 py-3 font-semibold">{dayLabel(day)} <span className="ml-2 text-xs font-normal text-muted-foreground">({[...groups.get(day)!.values()].reduce((n, a) => n + a.length, 0)} activities)</span></summary>
+          <summary className="cursor-pointer px-4 py-3 font-semibold">{new Date(`${day}T12:00:00`).toLocaleDateString(i18n.language, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} <span className="ml-2 text-xs font-normal text-muted-foreground">({t("audit.activities", { count: [...groups.get(day)!.values()].reduce((total, entries) => total + entries.length, 0) })})</span></summary>
           <div className="divide-y divide-border">
             {[...groups.get(day)!.entries()].map(([loc, items]) => (
               <div key={loc} className="p-4">
@@ -127,11 +128,11 @@ export function AuditTab({ p }: { p: { id: string } }) {
                 <ul className="space-y-3 text-sm">
                   {items.map((e) => (
                     <li key={e.id} className="flex gap-3 border-b border-border/40 pb-2">
-                      <time dateTime={e.at} className="w-32 shrink-0 font-mono text-xs text-muted-foreground">{new Date(e.at).toLocaleString("en-ZA", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" })}</time>
+                      <time dateTime={e.at} className="w-32 shrink-0 font-mono text-xs text-muted-foreground">{new Date(e.at).toLocaleString(i18n.language, { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" })}</time>
                       <span className="min-w-0 flex-1">
                         <span className={`mb-1 block text-xs font-semibold ${auditColor(e)}`}>{activityOf(e).replaceAll("_", " ")}</span>
                         <span className="block">{e.text}</span>
-                        {e.actor && <span className="block text-xs text-muted-foreground">By {e.actor}</span>}
+                        {e.actor && <span className="block text-xs text-muted-foreground">{t("audit.by", { name: e.actor })}</span>}
                         {e.detail && <span className="block text-xs text-muted-foreground">{e.detail}</span>}
                       </span>
                     </li>
@@ -145,3 +146,4 @@ export function AuditTab({ p }: { p: { id: string } }) {
     </div>
   );
 }
+import { useTranslation } from "react-i18next";

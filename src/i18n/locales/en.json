@@ -1,4 +1,5 @@
 {
+  "audit": { "title": "Audit trail — activity history", "search": "Search name or activity", "placeholder": "Person, action, detail…", "dateFilter": "Filter audit by date", "type": "Activity type", "typeFilter": "Filter audit by activity", "all": "All activities", "count": "{{shown}} of {{total}} recorded activities", "noMatch": "No matching activity", "empty": "No audit records match these filters.", "activities": "{{count}} activities", "by": "By {{name}}" },
   "equipment": { "add": "Add equipment", "name": "Item name", "inventory": "Our equipment ({{count}} items)", "item": "Item", "owned": "Owned", "out": "Out", "free": "Free", "checkout": "Check out" },
   "tasks": { "new": "New task…", "unassigned": "Unassigned", "self": "Self", "add": "Add task", "empty": "No tasks yet.", "undo": "Mark not done", "makePrivate": "Make private", "share": "Post to the team", "public": "Public", "private": "Private", "delete": "Delete task" },
   "overview": { "client": "Client", "shoot": "Shoot", "tbc": "To be confirmed", "days": "{{count}} day(s)", "locations": "Locations", "recceDate": "Recce date" },
