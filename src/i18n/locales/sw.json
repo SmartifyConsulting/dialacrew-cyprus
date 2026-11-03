@@ -1,0 +1,35 @@
+{
+  "common": {
+    "language": "Lugha",
+    "changeLanguage": "Badilisha lugha",
+    "signOut": "Toka",
+    "save": "Hifadhi",
+    "cancel": "Ghairi",
+    "delete": "Futa",
+    "edit": "Hariri",
+    "add": "Ongeza",
+    "send": "Tuma",
+    "confirm": "Thibitisha",
+    "close": "Funga",
+    "search": "Tafuta",
+    "loading": "Inapakia...",
+    "settings": "Mipangilio",
+    "noData": "No data",
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "phone": "Phone",
+    "email": "Email",
+    "name": "Name",
+    "role": "Role",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "nav": {
+    "home": "Nyumbani",
+    "myProfile": "Wasifu Wangu",
+    "admin": "Msimamizi",
+    "profile": "Wasifu Wangu",
+    "calendar": "Kalenda"
+  }
+}

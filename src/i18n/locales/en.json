@@ -1,0 +1,43 @@
+{
+  "common": {
+    "language": "Language",
+    "changeLanguage": "Change language",
+    "signOut": "Sign Out",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "send": "Send",
+    "confirm": "Confirm",
+    "close": "Close",
+    "search": "Search",
+    "loading": "Loading...",
+    "settings": "Settings",
+    "noData": "No data",
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "phone": "Phone",
+    "email": "Email",
+    "name": "Name",
+    "role": "Role",
+    "status": "Status",
+    "actions": "Actions",
+    "saved": "Saved"
+  },
+  "nav": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "calendar": "Calendar",
+    "productions": "Productions",
+    "crew": "Crew",
+    "payments": "Payments",
+    "findGigs": "Find Gigs",
+    "earnings": "Earnings",
+    "invoices": "Invoices",
+    "profile": "Profile",
+    "myProfile": "My Profile",
+    "admin": "Admin"
+  }
+}

@@ -1,0 +1,30 @@
+export const SUPPORTED_LANGUAGES = [
+  { code: "en", name: "English" }, { code: "af", name: "Afrikaans" },
+  { code: "zu", name: "isiZulu" }, { code: "xh", name: "isiXhosa" },
+  { code: "sn", name: "Shona" }, { code: "sw", name: "Kiswahili" },
+  { code: "ha", name: "Hausa" }, { code: "ig", name: "Igbo" },
+  { code: "yo", name: "Yorùbá" }, { code: "ar", name: "العربية" },
+  { code: "he", name: "עברית" }, { code: "fr", name: "Français" },
+  { code: "de", name: "Deutsch" }, { code: "es", name: "Español" },
+  { code: "pt", name: "Português" }, { code: "it", name: "Italiano" },
+  { code: "nl", name: "Nederlands" }, { code: "el", name: "Ελληνικά" },
+  { code: "pl", name: "Polski" }, { code: "ru", name: "Русский" },
+  { code: "tr", name: "Türkçe" }, { code: "hi", name: "हिन्दी" },
+  { code: "zh", name: "中文" }, { code: "ja", name: "日本語" },
+  { code: "ko", name: "한국어" }, { code: "mr", name: "मराठी" },
+  { code: "ur", name: "اردو" }, { code: "te", name: "తెలుగు" },
+  { code: "ta", name: "தமிழ்" }, { code: "ml", name: "മലയാളം" },
+] as const;
+
+export type LanguageCode = (typeof SUPPORTED_LANGUAGES)[number]["code"];
+export const LANGUAGE_STORAGE_KEY = "bookacrew.language";
+
+export function normalizeLanguage(value: unknown): LanguageCode {
+  if (typeof value !== "string") return "en";
+  const base = value.toLowerCase().split(/[-_]/)[0];
+  return SUPPORTED_LANGUAGES.find((language) => language.code === base)?.code ?? "en";
+}
+
+export function languageDirection(code: string) {
+  return ["ar", "he", "ur"].includes(normalizeLanguage(code)) ? "rtl" : "ltr";
+}

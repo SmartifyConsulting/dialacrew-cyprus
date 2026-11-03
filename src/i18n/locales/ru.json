@@ -1,0 +1,35 @@
+{
+  "common": {
+    "language": "Язык",
+    "changeLanguage": "Изменить язык",
+    "signOut": "Выйти",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "delete": "Удалить",
+    "edit": "Изменить",
+    "add": "Добавить",
+    "send": "Отправить",
+    "confirm": "Подтвердить",
+    "close": "Закрыть",
+    "search": "Поиск",
+    "loading": "Загрузка...",
+    "settings": "Настройки",
+    "noData": "No data",
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "phone": "Phone",
+    "email": "Email",
+    "name": "Name",
+    "role": "Role",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "nav": {
+    "home": "Главная",
+    "myProfile": "Мой Профиль",
+    "admin": "Админ",
+    "profile": "Мой Профиль",
+    "calendar": "Календарь"
+  }
+}

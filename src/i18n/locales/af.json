@@ -1,0 +1,35 @@
+{
+  "common": {
+    "language": "Taal",
+    "changeLanguage": "Verander taal",
+    "signOut": "Teken Uit",
+    "save": "Stoor",
+    "cancel": "Kanselleer",
+    "delete": "Skrap",
+    "edit": "Wysig",
+    "add": "Voeg by",
+    "send": "Stuur",
+    "confirm": "Bevestig",
+    "close": "Sluit",
+    "search": "Soek",
+    "loading": "Laai...",
+    "settings": "Instellings",
+    "noData": "No data",
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "phone": "Phone",
+    "email": "Email",
+    "name": "Name",
+    "role": "Role",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "nav": {
+    "home": "Tuis",
+    "myProfile": "My Profiel",
+    "admin": "Admin",
+    "profile": "My Profiel",
+    "calendar": "Kalender"
+  }
+}

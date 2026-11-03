@@ -1,0 +1,35 @@
+{
+  "common": {
+    "language": "Ulimi",
+    "changeLanguage": "Shintsha ulimi",
+    "signOut": "Phuma",
+    "save": "Londoloza",
+    "cancel": "Khansela",
+    "delete": "Susa",
+    "edit": "Hlela",
+    "add": "Engeza",
+    "send": "Thumela",
+    "confirm": "Qinisekisa",
+    "close": "Vala",
+    "search": "Sesha",
+    "loading": "Iyalayisha...",
+    "settings": "Izilungiselelo",
+    "noData": "No data",
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "phone": "Phone",
+    "email": "Email",
+    "name": "Name",
+    "role": "Role",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "nav": {
+    "home": "Ikhaya",
+    "myProfile": "Iphrofayela Yami",
+    "admin": "Umlawuli",
+    "profile": "Iphrofayela Yami",
+    "calendar": "Ikhalenda"
+  }
+}

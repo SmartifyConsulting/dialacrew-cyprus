@@ -10,6 +10,14 @@ import { useSignedUrl } from "@/lib/site";
 import logo from "@/assets/bookacrew-sa-logo.png.asset.json";
 import { NativePushSession } from "@/components/NativePush";
 import { disableNativePush } from "@/lib/native-push";
+import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+
+const navKeys: Record<string, string> = {
+  Dashboard: "dashboard", Home: "home", Calendar: "calendar", Productions: "productions",
+  Crew: "crew", Payments: "payments", "Find Gigs": "findGigs", Earnings: "earnings",
+  Invoices: "invoices", Profile: "profile", "My Profile": "myProfile", Admin: "admin",
+};
 
 function useMyProfile(userId: string | undefined) {
   return useQuery({
@@ -63,13 +71,14 @@ export const navByRole: Record<string, NavItem[]> = {
 };
 
 function BottomNav({ items }: { items: NavItem[] }) {
+  const { t } = useTranslation();
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 bg-nav text-nav-foreground md:hidden" aria-label="Main menu">
       <ul className="flex">
         {items.map((n) => (
           <li key={n.label} className="flex-1">
             <Link to={n.to} className={`flex flex-col items-center gap-1 py-5 font-sans text-sm font-medium text-nav-foreground/80`} activeProps={{ className: "!text-nav-foreground font-semibold" }}>
-              <n.icon className="h-[1.6rem] w-[1.6rem]" />{n.label}
+              <n.icon className="h-[1.6rem] w-[1.6rem]" /><span className="max-w-full break-words text-center">{t(`nav.${navKeys[n.label]}`, { defaultValue: n.label })}</span>
             </Link>
           </li>
         ))}
@@ -79,6 +88,7 @@ function BottomNav({ items }: { items: NavItem[] }) {
 }
 
 export function TopNav() {
+  const { t } = useTranslation();
   const { session, ready } = useSession();
   const role = useRole(session?.user.id);
   const me = useMyProfile(session?.user.id);
@@ -108,10 +118,11 @@ export function TopNav() {
           <div className="flex items-center justify-end px-5">
             <NotificationBell userId={session.user.id} requireAcknowledgement={role.data === "crew"} />
           </div>
+          <div className="px-5 pb-3"><LanguageSwitcher className="w-full border-nav-foreground/30 text-nav-foreground" /></div>
           <nav className="flex flex-1 flex-col gap-1 px-3">
             {items.map((n) => (
               <Link key={n.label} to={n.to} className={`flex items-center gap-3 rounded-xl px-4 py-3 font-sans text-[15px] font-medium text-nav-foreground/85 transition-colors hover:bg-nav-foreground/10 hover:text-nav-foreground`} activeProps={{ className: "bg-nav-foreground/15 !text-nav-foreground font-semibold" }}>
-                <n.icon className="h-4 w-4" />{n.label}
+                <n.icon className="h-4 w-4 shrink-0" /><span className="min-w-0 break-words">{t(`nav.${navKeys[n.label]}`, { defaultValue: n.label })}</span>
               </Link>
             ))}
           </nav>
@@ -123,7 +134,7 @@ export function TopNav() {
                 <p className="truncate text-xs font-medium capitalize text-nav-foreground/60">{role.data ? `${role.data}` : ""}</p>
               </div>
             </Link>
-            <button onClick={signOut} className="mt-3 w-full rounded-xl border border-nav-foreground/30 px-3 py-2 font-sans text-sm font-medium text-nav-foreground hover:bg-nav-foreground/10">Sign out</button>
+            <button onClick={signOut} className="mt-3 w-full rounded-xl border border-nav-foreground/30 px-3 py-2 font-sans text-sm font-medium text-nav-foreground hover:bg-nav-foreground/10">{t("common.signOut")}</button>
           </div>
         </aside>
       )}
@@ -132,8 +143,9 @@ export function TopNav() {
           <div className={`flex items-center gap-4 px-4 py-8 ${signedIn ? "" : "mx-auto max-w-7xl"}`}>
             {signedIn && <Link to="/dashboard" className="shrink-0"><img src={logo.url} alt="Book a Crew" className="h-[7.5rem] w-auto" /></Link>}
             <div className="ml-auto flex items-center gap-3">
+              <LanguageSwitcher className="border-nav-foreground/30 text-nav-foreground" />
               {signedIn && <NotificationBell userId={session.user.id} requireAcknowledgement={role.data === "crew"} />}
-              {signedIn && <button onClick={signOut} className="rounded-sm border border-nav-foreground/30 px-3 py-1 font-display text-xs font-semibold text-nav-foreground">Sign out</button>}
+              {signedIn && <button onClick={signOut} className="rounded-sm border border-nav-foreground/30 px-3 py-1 font-display text-xs font-semibold text-nav-foreground">{t("common.signOut")}</button>}
             </div>
           </div>
         </div>

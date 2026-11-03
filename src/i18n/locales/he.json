@@ -1,0 +1,35 @@
+{
+  "common": {
+    "language": "שפה",
+    "changeLanguage": "שנה שפה",
+    "signOut": "התנתק",
+    "save": "שמור",
+    "cancel": "בטל",
+    "delete": "מחק",
+    "edit": "ערוך",
+    "add": "הוסף",
+    "send": "שלח",
+    "confirm": "אשר",
+    "close": "סגור",
+    "search": "חיפוש",
+    "loading": "טוען...",
+    "settings": "הגדרות",
+    "noData": "No data",
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "phone": "Phone",
+    "email": "Email",
+    "name": "Name",
+    "role": "Role",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "nav": {
+    "home": "בית",
+    "myProfile": "הפרופיל שלי",
+    "admin": "מנהל",
+    "profile": "הפרופיל שלי",
+    "calendar": "יומן"
+  }
+}

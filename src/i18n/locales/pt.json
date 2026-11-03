@@ -1,0 +1,35 @@
+{
+  "common": {
+    "language": "Idioma",
+    "changeLanguage": "Mudar idioma",
+    "signOut": "Sair",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "add": "Adicionar",
+    "send": "Enviar",
+    "confirm": "Confirmar",
+    "close": "Fechar",
+    "search": "Pesquisar",
+    "loading": "A carregar...",
+    "settings": "Definições",
+    "noData": "No data",
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "phone": "Phone",
+    "email": "Email",
+    "name": "Name",
+    "role": "Role",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "nav": {
+    "home": "Início",
+    "myProfile": "Meu Perfil",
+    "admin": "Admin",
+    "profile": "Meu Perfil",
+    "calendar": "Calendário"
+  }
+}

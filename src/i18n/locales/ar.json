@@ -1,0 +1,35 @@
+{
+  "common": {
+    "language": "اللغة",
+    "changeLanguage": "تغيير اللغة",
+    "signOut": "تسجيل الخروج",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "add": "إضافة",
+    "send": "إرسال",
+    "confirm": "تأكيد",
+    "close": "إغلاق",
+    "search": "بحث",
+    "loading": "جارٍ التحميل...",
+    "settings": "الإعدادات",
+    "noData": "No data",
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "phone": "Phone",
+    "email": "Email",
+    "name": "Name",
+    "role": "Role",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "myProfile": "ملفي الشخصي",
+    "admin": "المسؤول",
+    "profile": "ملفي الشخصي",
+    "calendar": "التقويم"
+  }
+}

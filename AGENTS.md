@@ -1,4 +1,5 @@
 ## Architecture rules
+- Localization uses a root-owned i18next instance with post-hydration browser detection, shared device-persistent selector and app-only JSON dictionaries; absent translations fall back to English to prevent SSR language leakage and medical copy reuse.
 
 - Despia enhancements use the lazy browser-only bridge in `src/lib/native.ts`, gated by the runtime user agent; failures never block saved job actions and status bar colors derive from theme tokens.
 - Native pushes use opt-in opaque per-device aliases, trusted notification triggers and a capability-gated outbox; revocation before sign-out prevents account-switch leaks, and OneSignal manages native FCM/APNs tokens because Despia exposes no documented raw-token bridge.

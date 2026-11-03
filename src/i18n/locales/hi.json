@@ -1,0 +1,35 @@
+{
+  "common": {
+    "language": "भाषा",
+    "changeLanguage": "भाषा बदलें",
+    "signOut": "साइन आउट",
+    "save": "सहेजें",
+    "cancel": "रद्द करें",
+    "delete": "हटाएं",
+    "edit": "संपादित करें",
+    "add": "जोड़ें",
+    "send": "भेजें",
+    "confirm": "पुष्टि करें",
+    "close": "बंद करें",
+    "search": "खोजें",
+    "loading": "लोड हो रहा है...",
+    "settings": "सेटिंग्स",
+    "noData": "No data",
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "phone": "Phone",
+    "email": "Email",
+    "name": "Name",
+    "role": "Role",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "nav": {
+    "home": "होम",
+    "myProfile": "मेरी प्रोफ़ाइल",
+    "admin": "एडमिन",
+    "profile": "मेरी प्रोफ़ाइल",
+    "calendar": "कैलेंडर"
+  }
+}

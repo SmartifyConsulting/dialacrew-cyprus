@@ -1,0 +1,35 @@
+{
+  "common": {
+    "language": "Γλώσσα",
+    "changeLanguage": "Αλλαγή γλώσσας",
+    "signOut": "Αποσύνδεση",
+    "save": "Αποθήκευση",
+    "cancel": "Ακύρωση",
+    "delete": "Διαγραφή",
+    "edit": "Επεξεργασία",
+    "add": "Προσθήκη",
+    "send": "Αποστολή",
+    "confirm": "Επιβεβαίωση",
+    "close": "Κλείσιμο",
+    "search": "Αναζήτηση",
+    "loading": "Φόρτωση...",
+    "settings": "Ρυθμίσεις",
+    "noData": "No data",
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "phone": "Phone",
+    "email": "Email",
+    "name": "Name",
+    "role": "Role",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "nav": {
+    "home": "Αρχική",
+    "myProfile": "Το Προφίλ μου",
+    "admin": "Διαχειριστής",
+    "profile": "Το Προφίλ μου",
+    "calendar": "Ημερολόγιο"
+  }
+}

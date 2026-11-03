@@ -6,6 +6,7 @@ import { friendlyError } from "@/lib/errors";
 import { Award, Briefcase, Camera, Eye, EyeOff, Lock, Mail, MapPin, Package, Phone, Plus, Star, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { CrewRateCard } from "@/components/CrewRateCard";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { CrewEmergencySettings } from "@/components/CrewEmergencyDetails";
 import { CrewPersonalChecklists } from "@/components/CrewPersonalChecklists";
 import { Page, Panel } from "@/components/AppShell";
@@ -94,7 +95,7 @@ function CrewProfile() {
   }
 
   return (
-    <Page open title="Profile">
+    <Page open title="Profile" actions={isOwnProfile ? <LanguageSwitcher /> : undefined}>
       <div className="mx-auto max-w-3xl rounded-sm border border-border bg-card">
         <div className="p-6">
           <div className="flex items-center gap-5">
