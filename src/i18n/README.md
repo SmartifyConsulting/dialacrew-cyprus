@@ -1,6 +1,6 @@
 # Book a Crew language foundation
 
-Based on Holarc Health's i18next / react-i18next architecture. Only generic common labels, home/profile/admin labels and the calendar label were copied; medical wording is excluded. No new non-English translations were generated. This is not a fully translated app.
+Based on Holarc Health's i18next / react-i18next architecture. Generic common labels, home/profile/admin labels and the calendar label were copied; medical wording is excluded. Greek and Hindi authentication/recovery drafts have now been added by the coding assistant and have NOT been reviewed by native speakers. This is not a fully translated app.
 
 ## Supply translations
 
@@ -20,7 +20,7 @@ Based on Holarc Health's i18next / react-i18next architecture. Only generic comm
 | --- | --- |
 | Shared navigation | Labels wired; copied translations for home, calendar, profile, admin and sign-out where available; Book a Crew-specific labels await translations |
 | Language picker | All 30 registered languages, persistent on this device; available before sign-in and on own profile/company settings |
-| Authentication / password recovery | Forgot-password form labels/status extracted to English dictionary; translations, metadata, shared errors, reset-password and sign-in/up still pending |
+| Authentication / password recovery | Sign-in controls, password visibility, password checks and reset/forgot-password controls extracted; Greek/Hindi drafts supplied, language review pending. Signup-specific fields, consent/legal copy, backend/shared errors, page metadata and other language dictionaries remain pending |
 | Dashboard / gigs / calendar | Screen bodies unchanged; need extraction and translations |
 | Crew directory / profile | Screen bodies unchanged except language picker; need extraction and translations |
 | Production workspace / tasks / recce / gear | Needs extraction and translations |

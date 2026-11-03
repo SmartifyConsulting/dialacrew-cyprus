@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TopNav } from "@/components/AppShell";
 import { PasswordInput, labelClass, submitClass } from "@/components/PasswordInput";
 import { mapAuthError, passwordChecks } from "@/lib/auth";
+import { useTranslation } from "react-i18next";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/reset-password")({
 });
 
 function Reset() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [ok, setOk] = useState<boolean | null>(null);
   const [password, setPassword] = useState("");
@@ -39,7 +41,7 @@ function Reset() {
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (checks.some((c) => !c.ok)) { setError("Your password doesn't meet the requirements."); return; }
+    if (checks.some((c) => !c.ok)) { setError(t("recovery.requirements")); return; }
     setBusy(true); setError("");
     const { error } = await supabase.auth.updateUser({ password });
     setBusy(false);
@@ -49,7 +51,7 @@ function Reset() {
       if (m.message.includes("expired")) navigate({ to: "/forgot-password" });
       return;
     }
-    toast.success("Password updated");
+    toast.success(t("recovery.updated"));
     navigate({ to: "/dashboard", replace: true });
   }
 
@@ -57,21 +59,21 @@ function Reset() {
     <div className="min-h-screen bg-background">
       <TopNav />
       <main className="mx-auto max-w-md px-4 py-12">
-        <h1 className="text-center font-script text-5xl text-primary">New password</h1>
+        <h1 className="text-center font-script text-5xl text-primary">{t("recovery.newPassword")}</h1>
         {ok === false ? (
           <p className="mt-6 rounded-sm border border-border bg-card p-6 text-center text-muted-foreground">
-            This reset link is invalid or has expired. <Link to="/forgot-password" className="text-primary underline">Request a new one</Link>.
+            {t("recovery.invalid")} <Link to="/forgot-password" className="text-primary underline">{t("recovery.request")}</Link>
           </p>
         ) : (
           <form onSubmit={submit} className="mt-6 space-y-4 rounded-sm border border-border bg-card p-6">
-            <div><label className={labelClass} htmlFor="password">New password</label>
+            <div><label className={labelClass} htmlFor="password">{t("recovery.newPassword")}</label>
               <PasswordInput id="password" required autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
               <ul className="mt-2 space-y-0.5 text-xs">
-                {checks.slice(0, 2).map((c) => <li key={c.id} className={c.ok ? "text-success" : "text-muted-foreground"}>{c.ok ? "✓" : "○"} {c.label}</li>)}
+                {checks.slice(0, 2).map((c) => <li key={c.id} className={c.ok ? "text-success" : "text-muted-foreground"}>{c.ok ? "✓" : "○"} {t(`auth.checks.${c.id}`, c.label)}</li>)}
               </ul>
             </div>
             <p aria-live="polite" className="min-h-5 text-sm text-destructive">{error}</p>
-            <button disabled={busy || ok !== true} className={submitClass}>{busy ? "Saving…" : "Update password"}</button>
+            <button disabled={busy || ok !== true} className={submitClass}>{busy ? t("recovery.saving") : t("recovery.update")}</button>
           </form>
         )}
       </main>

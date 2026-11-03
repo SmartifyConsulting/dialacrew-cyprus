@@ -3,6 +3,18 @@ import { createAppI18n } from "@/i18n";
 import { detectSupportedLanguage, languageDirection, languageScale, normalizeLanguage, SUPPORTED_LANGUAGES } from "@/i18n/languages";
 
 describe("borrowed language architecture", () => {
+  it("provides Greek and Hindi authentication drafts with working interpolation", async () => {
+    for (const language of ["el", "hi"]) {
+      const instance = createAppI18n();
+      await instance.changeLanguage(language);
+      for (const key of ["auth.signIn", "auth.showPassword", "recovery.newPassword", "recovery.update"]) {
+        expect(instance.getResource(language, "translation", key)).toBeTypeOf("string");
+        expect(instance.t(key)).not.toBe(key);
+      }
+      expect(instance.t("auth.retry", { seconds: 12 })).toContain("12");
+      expect(instance.t("recovery.sent", { email: "crew@example.com" })).toContain("crew@example.com");
+    }
+  });
   it("retains Holarc scaling with full-size defaults for new scripts", () => {
     expect(languageScale("el-GR")).toBe(0.94);
     expect(languageScale("ja")).toBe(1.02);

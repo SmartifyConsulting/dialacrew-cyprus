@@ -6,6 +6,7 @@ import { PasswordInput, fieldClass, labelClass, submitClass } from "@/components
 import { mapAuthError, passwordChecks, usePlatformSetting } from "@/lib/auth";
 import { SERVICE_SKILLS } from "@/lib/skills";
 import { COUNTRIES } from "@/lib/countries";
+import { useTranslation } from "react-i18next";
 
 function isDespia() {
   return typeof navigator !== "undefined" && navigator.userAgent.toLowerCase().includes("despia");
@@ -13,6 +14,7 @@ function isDespia() {
 
 /** Sign-in / sign-up card shared by the home page and /auth. */
 export function AuthForm() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const inviteToken = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("invite") : null;
   const [mode, setMode] = useState<"signin" | "signup">(inviteToken ? "signup" : "signin");
@@ -154,7 +156,7 @@ export function AuthForm() {
       {(["signin", "signup"] as const).map((m) => (
         <button key={m} type="button" onClick={() => { setMode(m); setError(""); }}
           className={`py-2 font-display text-sm font-semibold ${mode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}>
-          {m === "signin" ? "Sign in" : "Sign up"}
+          {m === "signin" ? t("auth.signIn") : t("auth.signUp")}
         </button>
       ))}
     </div>
@@ -240,13 +242,13 @@ export function AuthForm() {
           )}
         </>
       )}
-      <div><label className={labelClass} htmlFor="email">Email</label>
+      <div><label className={labelClass} htmlFor="email">{t("auth.email")}</label>
         <input id="email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className={fieldClass} /></div>
-      <div><label className={labelClass} htmlFor="password">Password</label>
+      <div><label className={labelClass} htmlFor="password">{t("auth.password")}</label>
         <PasswordInput id="password" ref={pwRef} required autoComplete={mode === "signin" ? "current-password" : "new-password"} value={password} onChange={(e) => setPassword(e.target.value)} />
         {mode === "signup" && (
           <ul className="mt-2 space-y-0.5 text-xs">
-            {checks.map((c) => <li key={c.id} className={c.ok ? "text-success" : "text-muted-foreground"}>{c.ok ? "✓" : "○"} {c.label}</li>)}
+            {checks.map((c) => <li key={c.id} className={c.ok ? "text-success" : "text-muted-foreground"}>{c.ok ? "✓" : "○"} {t(`auth.checks.${c.id}`, c.label)}</li>)}
           </ul>
         )}
       </div>
@@ -264,17 +266,17 @@ export function AuthForm() {
       )}
       <p aria-live="polite" className="min-h-5 text-sm text-destructive">{error}</p>
       <button type="submit" disabled={busy || wait > 0} className={submitClass}>
-        {wait > 0 ? `Try again in ${wait}s` : busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
+        {wait > 0 ? t("auth.retry", { seconds: wait }) : busy ? t("auth.wait") : mode === "signin" ? t("auth.signIn") : t("auth.create")}
       </button>
       {mode === "signin" && (
         <div className="text-center">
-          <Link to="/forgot-password" tabIndex={-1} className="text-sm text-muted-foreground underline hover:text-primary">Forgot password?</Link>
+          <Link to="/forgot-password" tabIndex={-1} className="text-sm text-muted-foreground underline hover:text-primary">{t("auth.forgot")}</Link>
         </div>
       )}
     </form>
 
     <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
-      <span className="h-px flex-1 bg-border" />or<span className="h-px flex-1 bg-border" />
+      <span className="h-px flex-1 bg-border" />{t("auth.or")}<span className="h-px flex-1 bg-border" />
     </div>
     <button type="button" onClick={google} className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card py-3 font-display text-sm font-semibold text-foreground shadow-sm hover:bg-muted">
       <svg viewBox="0 0 48 48" className="h-5 w-5" aria-hidden="true">
@@ -283,7 +285,7 @@ export function AuthForm() {
         <path fill="#4CAF50" d="M24 44c5.5 0 10.4-1.9 14.3-5.1l-6.6-5.6c-2 1.5-4.6 2.5-7.7 2.5-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.6 39.6 16.2 44 24 44z" />
         <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6.6 5.6C41.3 36.2 44 30.6 44 24c0-1.3-.1-2.7-.4-3.5z" />
       </svg>
-      Continue with Google
+      {t("auth.google")}
     </button>
     </div>
   );

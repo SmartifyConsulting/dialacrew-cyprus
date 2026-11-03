@@ -1,5 +1,16 @@
 {
+  "auth": {
+    "signIn": "Sign in", "signUp": "Sign up", "email": "Email", "password": "Password",
+    "create": "Create account", "wait": "Please wait…", "retry": "Try again in {{seconds}}s",
+    "forgot": "Forgot password?", "or": "or", "google": "Continue with Google",
+    "showPassword": "Show password", "hidePassword": "Hide password",
+    "checks": { "len": "At least 8 characters", "mix": "At least one letter and one number", "email": "Not the same as your email name" }
+  },
   "recovery": {
+    "requirements": "Your password doesn't meet the requirements.",
+    "updated": "Password updated", "newPassword": "New password",
+    "invalid": "This reset link is invalid or has expired.", "request": "Request a new one",
+    "saving": "Saving…", "update": "Update password",
     "forgot": "Forgot password",
     "sent": "If an account exists for {{email}}, a reset link is on its way. Check your inbox.",
     "sending": "Sending…",
