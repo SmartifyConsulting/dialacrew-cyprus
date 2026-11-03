@@ -1,4 +1,5 @@
 import { EVENT_CHIP, useCalendarEvents } from "@/lib/use-calendar-events";
+import { useTranslation } from "react-i18next";
 import type React from "react";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -209,6 +210,7 @@ function CalPop({ label, align, trigger, children }: { label: string; align: "le
 // Compact current-month grid: each day shows its weather, a coloured client chip per production shooting that day and a
 // task icon when tasks are due — a quick-glance version of the full /calendar page, not a replacement for it.
 function MiniCalendar({ productions, bookings }: { productions: Production[]; bookings: Booking[] }) {
+  const { t, i18n } = useTranslation();
   const today = new Date();
   const [month, setMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const shift = (n: number) => setMonth((m) => new Date(m.getFullYear(), m.getMonth() + n, 1));
@@ -220,7 +222,7 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
   for (const e of events) {
     const item: MiniCalItem = {
       id: e.uid, color: clientColor(e.client), client: e.client, name: e.title, kind: e.kind, isRecce: e.kind === "recce",
-      location: e.location, time: e.timeLabel + (conflicts.has(e.uid) ? " · overlaps another production" : ""), details: e.details,
+      location: e.location, time: e.timeLabel + (conflicts.has(e.uid) ? ` · ${t("dashboard.overlap")}` : ""), details: e.details,
     };
     byDay.set(e.day, [...(byDay.get(e.day) ?? []), item]);
     shoots.set(e.day, [...(shoots.get(e.day) ?? []), { id: e.productionId, lat: e.lat ?? null, lon: e.lon ?? null }]);
@@ -236,16 +238,16 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
   const { forecastFor, tasksByDay } = useCalendarExtras(shoots, isoDate(first), isoDate(new Date(month.getFullYear(), month.getMonth() + 1, 0)));
 
   return (
-    <Panel title="Calendar" right={<Link to="/calendar" className="text-xs font-semibold text-primary hover:underline">Open</Link>}>
-      <div className="flex flex-wrap items-center gap-2 px-3 pt-2 text-[10px] text-muted-foreground"><span className="rounded-sm bg-black px-1 py-0.5 font-semibold text-white">Recce Day</span><span className="rounded-sm bg-purple-700 px-1 py-0.5 font-semibold text-white">Gear check</span></div>
+    <Panel title={t("nav.calendar")} right={<Link to="/calendar" className="text-xs font-semibold text-primary hover:underline">{t("dashboard.open")}</Link>}>
+      <div className="flex flex-wrap items-center gap-2 px-3 pt-2 text-[10px] text-muted-foreground"><span className="rounded-sm bg-black px-1 py-0.5 font-semibold text-white">{t("dashboard.recce")}</span><span className="rounded-sm bg-purple-700 px-1 py-0.5 font-semibold text-white">{t("dashboard.gear")}</span></div>
       <div className="flex items-center justify-between px-3 pt-2">
-        <button type="button" aria-label="Previous month" onClick={() => shift(-1)} className="rounded-sm border border-border p-1 text-muted-foreground hover:text-foreground"><ChevronLeft className="h-3.5 w-3.5" /></button>
-        <span className="text-xs font-semibold">{month.toLocaleDateString("en-ZA", { month: "long", year: "numeric" })}</span>
-        <button type="button" aria-label="Next month" onClick={() => shift(1)} className="rounded-sm border border-border p-1 text-muted-foreground hover:text-foreground"><ChevronRight className="h-3.5 w-3.5" /></button>
+        <button type="button" aria-label={t("dashboard.previousMonth")} onClick={() => shift(-1)} className="rounded-sm border border-border p-1 text-muted-foreground hover:text-foreground"><ChevronLeft className="h-3.5 w-3.5" /></button>
+        <span className="text-xs font-semibold">{month.toLocaleDateString(i18n.language, { month: "long", year: "numeric" })}</span>
+        <button type="button" aria-label={t("dashboard.nextMonth")} onClick={() => shift(1)} className="rounded-sm border border-border p-1 text-muted-foreground hover:text-foreground"><ChevronRight className="h-3.5 w-3.5" /></button>
       </div>
       <div className="p-3">
         <div className="mb-1 grid grid-cols-7 text-center text-[10px] text-muted-foreground">
-          {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <div key={i}>{d}</div>)}
+          {Array.from({ length: 7 }, (_, index) => new Date(2024, 0, 1 + index).toLocaleDateString(i18n.language, { weekday: "short" })).map((day, index) => <div key={index}>{day}</div>)}
         </div>
         <div className="grid grid-cols-7 gap-1">
           {cells.map((d, i) => {
@@ -266,13 +268,13 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
                 <span className="flex min-h-3.5 max-w-full flex-wrap items-center justify-center gap-0.5">
                   {items.map((item) => (
                     <CalPop key={item.id} label={`${item.client} · ${item.name} · ${item.location} · ${item.time}`} align={align}
-                      trigger={<span className={`max-w-full truncate rounded-sm px-1 py-0.5 text-[9px] font-semibold leading-none ${item.kind === "shoot" ? item.color : EVENT_CHIP[item.kind]}`}>{item.kind === "recce" ? `Recce day${item.time.startsWith("Time TBC") ? "" : ` ${item.time.split(" · ")[0]}`}` : item.kind === "gear" ? "Gear check" : item.client}</span>}>
+                      trigger={<span className={`max-w-full truncate rounded-sm px-1 py-0.5 text-[9px] font-semibold leading-none ${item.kind === "shoot" ? item.color : EVENT_CHIP[item.kind]}`}>{item.kind === "recce" ? `${t("dashboard.recce")}${item.time.startsWith("Time TBC") ? "" : ` ${item.time.split(" · ")[0]}`}` : item.kind === "gear" ? t("dashboard.gear") : item.client}</span>}>
                       {item.client} · {item.name} · {item.location} · {item.time}
                       {item.details && <span className="mt-1 block whitespace-pre-line font-normal text-muted-foreground">{item.details}</span>}
                     </CalPop>
                   ))}
                   {dayTasks.length > 0 && (
-                    <CalPop label={`${dayTasks.length} task${dayTasks.length === 1 ? "" : "s"} due`} align={align}
+                    <CalPop label={t("dashboard.tasksDue", { count: dayTasks.length })} align={align}
                       trigger={<CheckSquare className={`h-3.5 w-3.5 ${dayTasks.every((t) => t.done) ? "text-success" : "text-primary"}`} />}>
                       <ul className="space-y-1">
                         {dayTasks.map((t) => (
@@ -295,6 +297,7 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
 }
 
 function Dashboard() {
+  const { t, i18n } = useTranslation();
   const { session } = useSession();
   const name = useMyName(session?.user.id).data ?? "";
   const first = name.includes("@") ? "" : name.split(" ")[0];
@@ -324,31 +327,31 @@ function Dashboard() {
   const [prodFilter, setProdFilter] = useState<"Active" | "Upcoming" | "Wrapped">("Active");
   const filteredProductions = productions.filter((p) => p.status === prodFilter);
   const hour = new Date().getHours();
-  const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const greet = t(hour < 12 ? "dashboard.morning" : hour < 18 ? "dashboard.afternoon" : "dashboard.evening");
   const kpis = [
-    { l: "Active productions", v: productions.filter((p) => p.status === "Active").length, s: `${productions.filter((p) => p.status === "Upcoming").length} upcoming` },
-    { l: kpiProduction ? `Crew confirmed · ${kpiProduction.name}` : "Crew confirmed", v: countFor("confirmed"), s: `${countFor("pencil")} on pencil` },
-    { l: "Action", v: pendingReqs.length + waitingCrew.length, s: `${pendingReqs.length} approvals` },
-    { l: "Budget Spent", v: `${budgetPct}%`, s: `${zar(secured)} of ${zar(totalBudget)}` },
+    { l: t("dashboard.activeProductions"), v: productions.filter((p) => p.status === "Active").length, s: t("dashboard.upcomingCount", { count: productions.filter((p) => p.status === "Upcoming").length }) },
+    { l: `${t("dashboard.crewConfirmed")}${kpiProduction ? ` · ${kpiProduction.name}` : ""}`, v: countFor("confirmed"), s: t("dashboard.pencilCount", { count: countFor("pencil") }) },
+    { l: t("dashboard.action"), v: pendingReqs.length + waitingCrew.length, s: t("dashboard.approvals", { count: pendingReqs.length }) },
+    { l: t("dashboard.budgetSpent"), v: `${budgetPct}%`, s: t("dashboard.budgetOf", { spent: zar(secured), total: zar(totalBudget) }) },
   ];
   const onSet = productions.find((p) => p.status === "Active");
   const today = onSet ? bookings.filter((b) => b.productionId === onSet.id) : [];
-  const dateLabel = new Date().toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const dateLabel = new Date().toLocaleDateString(i18n.language, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const activity = [
-    ...reqs.filter((r) => r.state !== "Pending").map((r) => ({ id: `r${r.id}`, before: `${r.kind} for `, crewId: crewIdByName(r.who), who: r.who, after: ` ${r.state.toLowerCase()}`, sub: r.production, client: clientByProdName(r.production), productionId: prodIdByName(r.production), at: r.createdAt })),
-    ...bookings.filter((b) => b.status === "confirmed").map((b) => ({ id: `b${b.id}`, before: "", crewId: b.crewId, who: crewName(b.crewId), after: ` confirmed as ${b.role}`, sub: prodName(b.productionId), client: clientByProdId(b.productionId), productionId: b.productionId as string | undefined, at: b.createdAt ?? "" })),
+    ...reqs.filter((r) => r.state !== "Pending").map((r) => ({ id: `r${r.id}`, before: t("dashboard.requestFor", { kind: t(`dashboard.kind.${r.kind}`, r.kind) }), crewId: crewIdByName(r.who), who: r.who, after: ` ${t(`dashboard.state.${r.state}`, r.state)}`, sub: r.production, client: clientByProdName(r.production), productionId: prodIdByName(r.production), at: r.createdAt })),
+    ...bookings.filter((b) => b.status === "confirmed").map((b) => ({ id: `b${b.id}`, before: "", crewId: b.crewId, who: crewName(b.crewId), after: t("dashboard.confirmedAs", { role: b.role }), sub: prodName(b.productionId), client: clientByProdId(b.productionId), productionId: b.productionId as string | undefined, at: b.createdAt ?? "" })),
   ].sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, 8);
   const activityStamp = (iso: string) => {
     if (!iso) return "";
     const d = new Date(iso);
     const sameDay = d.toDateString() === new Date().toDateString();
-    const time = d.toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" });
-    return sameDay ? time : `${d.toLocaleDateString("en-ZA", { day: "numeric", month: "short" })} · ${time}`;
+    const time = d.toLocaleTimeString(i18n.language, { hour: "2-digit", minute: "2-digit" });
+    return sameDay ? time : `${d.toLocaleDateString(i18n.language, { day: "numeric", month: "short" })} · ${time}`;
   };
 
   return (
     <Page title={`${greet}${first ? `, ${first}` : ""}`} subtitle={dateLabel}
-      actions={<Link to="/productions" search={{ new: true }} className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm">+ New production</Link>}>
+      actions={<Link to="/productions" search={{ new: true }} className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm">+ {t("dashboard.newProduction")}</Link>}>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {kpis.map((k) => (
           <div key={k.l} className="rounded-xl border border-border bg-card p-4 shadow-sm">
@@ -363,18 +366,18 @@ function Dashboard() {
         <div className="space-y-5 lg:col-span-2">
           <MiniCalendar productions={productions} bookings={bookings} />
 
-          <Panel title="Productions" right={
+          <Panel title={t("nav.productions")} right={
             <div className="flex gap-1">
               {(["Active", "Upcoming", "Wrapped"] as const).map((s) => (
                 <button key={s} onClick={() => setProdFilter(s)}
                   className={`rounded-md px-2.5 py-1 text-xs font-semibold ${prodFilter === s ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}>
-                  {s}
+                  {t(`dashboard.productionState.${s}`)}
                 </button>
               ))}
             </div>
           }>
             <div className="grid gap-3 p-4">
-              {filteredProductions.length === 0 && <p className="text-sm text-muted-foreground">No {prodFilter.toLowerCase()} productions.</p>}
+              {filteredProductions.length === 0 && <p className="text-sm text-muted-foreground">{t(`dashboard.emptyProductions.${prodFilter}`)}</p>}
               {filteredProductions.map((p) => {
                 const pct = p.crewNeeded ? Math.min(100, Math.round((p.crewBooked / p.crewNeeded) * 100)) : 0;
                 return (
@@ -384,9 +387,9 @@ function Dashboard() {
                         <div className="truncate font-semibold group-hover:text-primary">{p.name}</div>
                         <div className="mt-1 flex items-center gap-2"><ClientBadge name={p.client} /><span className="truncate text-xs text-muted-foreground">{p.date}</span></div>
                       </div>
-                      <Badge>{p.status}</Badge>
+                      <Badge>{t(`dashboard.productionState.${p.status}`, p.status)}</Badge>
                     </div>
-                    <div className="mt-3 flex justify-between text-xs text-muted-foreground"><span>Crew {p.crewBooked}/{p.crewNeeded}</span><span>{fmtMoney(p.budget, p.currency)}</span></div>
+                    <div className="mt-3 flex justify-between text-xs text-muted-foreground"><span>{t("nav.crew")} {p.crewBooked}/{p.crewNeeded}</span><span>{fmtMoney(p.budget, p.currency)}</span></div>
                     <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} /></div>
                   </Link>
                 );
@@ -394,9 +397,9 @@ function Dashboard() {
             </div>
           </Panel>
 
-          <Panel title={<>On set today{onSet && <> · {onSet.name}</>}</>}>
+          <Panel title={<>{t("dashboard.onSet")}{onSet && <> · {onSet.name}</>}</>}>
             <ul className="divide-y divide-border text-sm">
-              {today.length === 0 && <li className="p-4 text-muted-foreground">Nobody on set today.</li>}
+              {today.length === 0 && <li className="p-4 text-muted-foreground">{t("dashboard.nobodyOnSet")}</li>}
               {today.map((b) => (
                 <li key={b.id} className="flex items-center gap-3 px-4 py-2.5">
                   <span className="flex-1 font-medium"><CrewLink id={b.crewId} /> <span className="font-normal text-muted-foreground">· {b.role}</span></span>
@@ -409,18 +412,18 @@ function Dashboard() {
         </div>
 
         <div className="space-y-5">
-          <Panel title="Action" right={<span className="text-xs text-muted-foreground">{pendingReqs.length + waitingCrew.length} open</span>}>
+          <Panel title={t("dashboard.action")} right={<span className="text-xs text-muted-foreground">{t("dashboard.openCount", { count: pendingReqs.length + waitingCrew.length })}</span>}>
             <ul className="divide-y divide-border">
-              {pendingReqs.length + waitingCrew.length === 0 && <li className="p-4 text-sm text-muted-foreground">All caught up.</li>}
+              {pendingReqs.length + waitingCrew.length === 0 && <li className="p-4 text-sm text-muted-foreground">{t("dashboard.caughtUp")}</li>}
               {pendingReqs.map((r) => (
                 <li key={r.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm"><span className="font-semibold text-primary">{r.kind}</span> · {r.detail}</div>
+                    <div className="truncate text-sm"><span className="font-semibold text-primary">{t(`dashboard.kind.${r.kind}`, r.kind)}</span> · {r.detail}</div>
                     <div className="flex flex-wrap items-center gap-1 truncate text-xs text-muted-foreground"><NameLink id={crewIdByName(r.who)} name={r.who} /> · {clientByProdName(r.production) && <ClientLink productionId={prodIdByName(r.production)} name={clientByProdName(r.production)!} />} {r.production} · {zar(r.amount)}</div>
                   </div>
                   <div className="flex shrink-0 gap-2">
-                    <button onClick={() => setState.mutate({ id: r.id, state: "Approved" })} className="rounded-md bg-success px-3 py-1.5 text-xs font-semibold text-white">Approve</button>
-                    <button onClick={() => setState.mutate({ id: r.id, state: "Declined" })} className="rounded-md bg-[#DC143C] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#DC143C]/90">Decline</button>
+                    <button onClick={() => setState.mutate({ id: r.id, state: "Approved" })} className="rounded-md bg-success px-3 py-1.5 text-xs font-semibold text-white">{t("dashboard.approve")}</button>
+                    <button onClick={() => setState.mutate({ id: r.id, state: "Declined" })} className="rounded-md bg-[#DC143C] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#DC143C]/90">{t("dashboard.decline")}</button>
                   </div>
                 </li>
               ))}
@@ -428,19 +431,19 @@ function Dashboard() {
                 <li key={b.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
                   <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-success/20 text-success"><Check className="h-3.5 w-3.5" /></span>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium"><CrewLink id={b.crewId} /> accepted your {b.pencilPriority === 2 ? "2nd" : "1st"} pencil</div>
+                    <div className="truncate text-sm font-medium"><CrewLink id={b.crewId} />{t("dashboard.acceptedPencil", { priority: b.pencilPriority === 2 ? 2 : 1 })}</div>
                     <div className="flex flex-wrap items-center gap-1 truncate text-xs text-muted-foreground">
-                      {clientByProdId(b.productionId) && <ClientLink productionId={b.productionId} name={clientByProdId(b.productionId)!} />} {prodName(b.productionId)} · {b.role}{b.bookingDate ? ` · ${b.bookingDate}` : ""} · {zar(b.crewRate)} a day
+                      {clientByProdId(b.productionId) && <ClientLink productionId={b.productionId} name={clientByProdId(b.productionId)!} />} {prodName(b.productionId)} · {b.role}{b.bookingDate ? ` · ${b.bookingDate}` : ""} · {zar(b.crewRate)} {t("gigs.perDay")}
                     </div>
                   </div>
-                  <button onClick={() => respondToBooking.mutate({ id: b.id, status: "confirmed" })} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Confirm booking</button>
+                  <button onClick={() => respondToBooking.mutate({ id: b.id, status: "confirmed" })} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">{t("dashboard.confirmBooking")}</button>
                 </li>
               ))}
             </ul>
           </Panel>
-          <Panel title="Live activity" right={<span className="text-xs text-muted-foreground">Across web and mobile</span>}>
+          <Panel title={t("dashboard.liveActivity")} right={<span className="text-xs text-muted-foreground">{t("dashboard.webMobile")}</span>}>
             <ul className="divide-y divide-border text-sm">
-              {activity.length === 0 && <li className="p-4 text-muted-foreground">No activity yet.</li>}
+              {activity.length === 0 && <li className="p-4 text-muted-foreground">{t("dashboard.noActivity")}</li>}
               {activity.map((a) => (
                 <li key={a.id} className="flex gap-3 px-4 py-2.5">
                   <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />

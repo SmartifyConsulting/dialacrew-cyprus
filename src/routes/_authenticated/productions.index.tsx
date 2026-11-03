@@ -16,6 +16,7 @@ import { ProductionAvatar } from "@/components/site/ProductionCover";
 import { ImageCropDialog } from "@/components/site/ImageCropDialog";
 import { AmPmTimePicker } from "@/components/site/SiteTabs";
 import { confirmDialog } from "@/components/ConfirmDialog";
+import { useTranslation } from "react-i18next";
 
 export const Route = createFileRoute("/_authenticated/productions/")({
   validateSearch: (s: Record<string, unknown>): { new?: boolean } => (s["new"] ? { new: true } : {}),
@@ -145,6 +146,7 @@ function ClientPicker({ clients, value, onChange, onClientsChanged }: { clients:
 }
 
 function Productions() {
+  const { t } = useTranslation();
   const list = useProductions().data ?? [];
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -298,8 +300,8 @@ function Productions() {
   };
 
   return (
-    <Page open title="Productions" subtitle="Start from the client brief, then break it down into crew and resources."
-      actions={isProducer ? <button onClick={openNew} className="rounded-sm bg-primary px-4 py-2 font-display text-sm font-semibold text-primary-foreground">+ New production</button> : undefined}>
+    <Page open title={t("nav.productions")} subtitle={t("productionList.subtitle")}
+      actions={isProducer ? <button onClick={openNew} className="rounded-sm bg-primary px-4 py-2 font-display text-sm font-semibold text-primary-foreground">+ {t("dashboard.newProduction")}</button> : undefined}>
       <ImageCropDialog file={cropSource} onCancel={() => setCropSource(null)} onDone={applyCrop} />
       {open && isProducer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={closeModal}>
@@ -389,7 +391,7 @@ function Productions() {
       )}
       <div className="relative mb-4 max-w-sm">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <input className={`${field} pl-9`} placeholder="Search by Job ID or name" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <input className={`${field} pl-9`} placeholder={t("productionList.search")} value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
       <div className="grid gap-3 md:hidden">
         {filteredList.length === 0 && <p className="text-sm text-muted-foreground">No productions match "{search}".</p>}
@@ -403,7 +405,7 @@ function Productions() {
                 <div className="mt-1 flex items-center gap-2"><ClientBadge name={p.client} /><span className="text-xs text-muted-foreground">{p.type}</span></div>
               </Link>
               <div className="flex shrink-0 items-center gap-2">
-                <Badge>{p.status}</Badge>
+                <Badge>{t(`productionList.status.${p.status}`, p.status)}</Badge>
                 {isProducer && (
                   <>
                     <button onClick={() => openEdit(p)} className="text-muted-foreground hover:text-primary" aria-label={`Edit ${p.name}`}><Pencil className="h-4 w-4" /></button>
@@ -419,10 +421,10 @@ function Productions() {
           </div>
         ))}
       </div>
-      <div className="hidden md:block"><Panel title="All productions">
+      <div className="hidden md:block"><Panel title={t("productionList.all")}>
         <table className="w-full text-sm">
           <thead className="text-left text-[11px] text-muted-foreground">
-            <tr>{["Production", "Job ID", "Type", "Location", "Date", "Days", "Budget", "Status", ""].map((h) => <th key={h} className="px-4 py-2 font-medium">{h}</th>)}</tr>
+            <tr>{["Production", "Job ID", "Type", "Location", "Date", "Days", "Budget", "Status", ""].map((h) => <th key={h} className="px-4 py-2 font-medium">{h ? t(`productionList.columns.${h}`) : ""}</th>)}</tr>
           </thead>
           <tbody>
             {filteredList.length === 0 && <tr><td colSpan={9} className="px-4 py-6 text-center text-muted-foreground">No productions match "{search}".</td></tr>}
@@ -440,7 +442,7 @@ function Productions() {
                 <td className="px-4 text-muted-foreground">{p.date}</td>
                 <td className="px-4">{p.days}</td>
                 <td className="px-4">{fmtMoney(p.budget, p.currency)}</td>
-                <td className="px-4"><Badge>{p.status}</Badge></td>
+                <td className="px-4"><Badge>{t(`productionList.status.${p.status}`, p.status)}</Badge></td>
                 <td className="px-4">
                   {isProducer && (
                     <div className="flex items-center gap-2">

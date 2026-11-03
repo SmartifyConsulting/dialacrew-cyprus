@@ -1,4 +1,30 @@
 {
+  "productionList": {
+    "subtitle": "Start from the client brief, then break it down into crew and resources.", "search": "Search by Job ID or name", "all": "All productions",
+    "columns": { "Production": "Production", "Job ID": "Job ID", "Type": "Type", "Location": "Location", "Date": "Date", "Days": "Days", "Budget": "Budget", "Status": "Status" },
+    "status": { "Active": "Active", "Upcoming": "Upcoming", "Wrapped": "Wrapped", "Completed": "Completed", "Draft": "Draft" }
+  },
+  "calendar": {
+    "subtitle": "Shoot days, weather and tasks, month by month.", "overlap": "overlap", "timeTbc": "Time to be confirmed",
+    "done": "Done", "todo": "To do", "download": "Download .ics (one-off copy)",
+    "hideSubscription": "Hide subscription", "subscribe": "Subscribe in Google / Outlook"
+  },
+  "dashboard": {
+    "morning": "Good morning", "afternoon": "Good afternoon", "evening": "Good evening",
+    "newProduction": "New production", "activeProductions": "Active productions",
+    "upcomingCount": "{{count}} upcoming", "crewConfirmed": "Crew confirmed", "pencilCount": "{{count}} on pencil",
+    "action": "Action", "approvals": "{{count}} approvals", "budgetSpent": "Budget spent", "budgetOf": "{{spent}} of {{total}}",
+    "open": "Open", "openCount": "{{count}} open", "recce": "Recce day", "gear": "Gear check",
+    "previousMonth": "Previous month", "nextMonth": "Next month", "overlap": "overlaps another production",
+    "tasksDue": "{{count}} tasks due", "productionState": { "Active": "Active", "Upcoming": "Upcoming", "Wrapped": "Wrapped" },
+    "emptyProductions": { "Active": "No active productions.", "Upcoming": "No upcoming productions.", "Wrapped": "No wrapped productions." },
+    "onSet": "On set today", "nobodyOnSet": "Nobody on set today.", "caughtUp": "All caught up.",
+    "approve": "Approve", "decline": "Decline", "confirmBooking": "Confirm booking",
+    "acceptedPencil": " accepted your priority {{priority}} pencil", "liveActivity": "Live activity",
+    "webMobile": "Across web and mobile", "noActivity": "No activity yet.", "confirmedAs": " confirmed as {{role}}",
+    "requestFor": "{{kind}} for ", "kind": { "Equipment": "Equipment", "Overtime": "Overtime", "Expense": "Expense", "Transport": "Transport", "Leave": "Leave" },
+    "state": { "Approved": "approved", "Declined": "declined", "Pending": "pending" }
+  },
   "gigs": {
     "subtitle": "Search open gigs, or grab one posted by the community", "open": "Open gigs",
     "community": "Community gigs", "post": "Post a gig",

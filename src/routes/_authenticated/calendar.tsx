@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CheckSquare, ChevronLeft, ChevronRight, Square } from "lucide-react";
 import { Page, clientColor } from "@/components/AppShell";
 import { useSession } from "@/lib/auth";
@@ -28,6 +29,7 @@ const iso = isoDay;
 type DayItem = { id: string; key: string; productionId: string; name: string; client: string; location: string; crew: number; lat: number | null; lon: number | null; kind: "shoot" | "recce" | "gear"; time: string; details?: string | undefined; clash: boolean };
 
 function CalendarPage() {
+  const { t: translate, i18n } = useTranslation();
   const { session } = useSession();
   const { events, conflicts, isCrewOnly, crewCount } = useCalendarEvents();
   const [month, setMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
@@ -60,16 +62,16 @@ function CalendarPage() {
   const { forecastFor, tasksByDay } = useCalendarExtras(byDay, monthStart, monthEnd);
 
   return (
-    <Page title="Calendar" subtitle="Shoot days, weather and tasks, month by month." open>
+    <Page title={translate("nav.calendar")} subtitle={translate("calendar.subtitle")} open>
       <div className="mb-4 flex items-center gap-3">
-        <button aria-label="Previous month" onClick={() => shift(-1)} className="rounded-xl border border-border bg-card p-2"><ChevronLeft className="h-4 w-4" /></button>
-        <h2 className="min-w-48 text-center text-xl">{month.toLocaleDateString("en-ZA", { month: "long", year: "numeric" })}</h2>
-        <button aria-label="Next month" onClick={() => shift(1)} className="rounded-xl border border-border bg-card p-2"><ChevronRight className="h-4 w-4" /></button>
+        <button aria-label={translate("dashboard.previousMonth")} onClick={() => shift(-1)} className="rounded-xl border border-border bg-card p-2"><ChevronLeft className="h-4 w-4" /></button>
+        <h2 className="min-w-48 text-center text-xl">{month.toLocaleDateString(i18n.language, { month: "long", year: "numeric" })}</h2>
+        <button aria-label={translate("dashboard.nextMonth")} onClick={() => shift(1)} className="rounded-xl border border-border bg-card p-2"><ChevronRight className="h-4 w-4" /></button>
       </div>
       <CalendarExport events={events} userId={session?.user.id} />
-      <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><span className="inline-block rounded-md bg-black px-2 py-1 font-semibold text-white">Recce Day</span><span className="inline-block rounded-md bg-purple-700 px-2 py-1 font-semibold text-white">Gear check</span><span className="ml-2 font-semibold text-destructive">overlap</span><span>clashes with another production</span></div>
+      <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><span className="inline-block rounded-md bg-black px-2 py-1 font-semibold text-white">{translate("dashboard.recce")}</span><span className="inline-block rounded-md bg-purple-700 px-2 py-1 font-semibold text-white">{translate("dashboard.gear")}</span><span className="ml-2 font-semibold text-destructive">{translate("calendar.overlap")}</span><span>{translate("dashboard.overlap")}</span></div>
       <div className="grid grid-cols-7 gap-px overflow-hidden rounded-xl border border-border bg-border">
-        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+        {Array.from({ length: 7 }, (_, index) => new Date(2024, 0, 1 + index).toLocaleDateString(i18n.language, { weekday: "short" })).map((d) => (
           <div key={d} className="bg-muted px-2 py-2 text-center text-xs font-medium text-muted-foreground">{d}</div>
         ))}
         {cells.map((d, i) => {
@@ -89,20 +91,20 @@ function CalendarPage() {
               {items.map((it) => (
                 <Link key={it.key} to="/productions/$id" params={{ id: it.productionId }} title={`${it.name} · ${it.time} · ${it.location}${it.details ? `\n${it.details}` : ""}${it.clash ? "\nOverlaps another production" : ""}`}
                   className={`mb-1 block rounded-xl px-1.5 py-0.5 text-xs font-medium hover:opacity-90 ${it.kind === "shoot" ? clientColor(it.client) : EVENT_CHIP[it.kind]} ${it.clash ? "ring-2 ring-destructive" : ""}`}>
-                  <span className="block truncate">{it.name}{it.crew && it.kind === "shoot" ? ` · ${it.crew} crew` : ""}</span>
-                  <span className="block truncate text-[10px] font-semibold">{it.time}{it.clash ? " · overlap" : ""}</span>
+                  <span className="block truncate">{it.kind === "recce" ? translate("dashboard.recce") : it.kind === "gear" ? translate("dashboard.gear") : it.name}{it.crew && it.kind === "shoot" ? ` · ${it.crew} ${translate("nav.crew")}` : ""}</span>
+                  <span className="block truncate text-[10px] font-semibold">{it.time === "Time TBC" ? translate("calendar.timeTbc") : it.time}{it.clash ? ` · ${translate("calendar.overlap")}` : ""}</span>
                   {it.location && <span className="block truncate text-[10px] font-normal opacity-90">{it.location}</span>}
                 </Link>
               ))}
               {dayTasks.length > 0 && (
                 <div className="mt-1 flex flex-wrap gap-1">
                   {dayTasks.map((t) => (
-                    <button key={t.id} type="button" onClick={() => setOpenTask(openTask === t.id ? null : t.id)} aria-label={`${t.done ? "Done" : "To do"}: ${t.title}`}
+                    <button key={t.id} type="button" onClick={() => setOpenTask(openTask === t.id ? null : t.id)} aria-label={`${translate(t.done ? "calendar.done" : "calendar.todo")}: ${t.title}`}
                       className={`relative inline-flex h-7 w-7 items-center justify-center rounded-md ${t.done ? "bg-success/20 text-success" : "bg-primary/20 text-primary"}`}>
                       {t.done ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
                       {openTask === t.id && (
                         <span className="absolute left-0 top-full z-10 mt-1 w-48 rounded-md border border-border bg-card p-2 text-left text-xs text-foreground shadow-lg">
-                          <span className="block font-semibold text-muted-foreground">{t.done ? "Done" : "To do"}</span>
+                          <span className="block font-semibold text-muted-foreground">{translate(t.done ? "calendar.done" : "calendar.todo")}</span>
                           {t.title}
                         </span>
                       )}

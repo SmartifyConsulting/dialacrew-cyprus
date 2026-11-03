@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Copy, Download, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
@@ -15,6 +16,7 @@ function downloadBlob(blob: Blob, filename: string) {
 
 /** One-off .ics download plus a private subscription link for Google Calendar / Outlook (read-only, refreshed by them). */
 export function CalendarExport({ events, userId }: { events: CalEvent[]; userId: string | undefined }) {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const token = useQuery({
@@ -43,10 +45,10 @@ export function CalendarExport({ events, userId }: { events: CalEvent[]; userId:
       <div className="flex flex-wrap items-center gap-2">
         <button onClick={() => downloadBlob(new Blob([toICS(events)], { type: "text/calendar;charset=utf-8" }), "book-a-crew.ics")}
           className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted">
-          <Download className="h-3.5 w-3.5" /> Download .ics (one-off copy)
+          <Download className="h-3.5 w-3.5" /> {t("calendar.download")}
         </button>
         <button onClick={() => setOpen(!open)} className="rounded-md border border-primary px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10">
-          {open ? "Hide subscription" : "Subscribe in Google / Outlook"}
+          {open ? t("calendar.hideSubscription") : t("calendar.subscribe")}
         </button>
       </div>
       {open && (

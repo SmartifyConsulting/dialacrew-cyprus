@@ -23,7 +23,8 @@ Greek correction: all currently extracted English dictionary keys now have disti
 | Shared navigation | All role navigation labels and recognized navigation page headings have Greek drafts; other languages still have gaps |
 | Language picker | All 30 registered languages, persistent on this device; available before sign-in and on own profile/company settings |
 | Authentication / password recovery | Sign-in, recovery, signup field labels/help and consent controls have Greek drafts. Service/country options, invitation copy, backend/shared errors, linked legal documents and metadata remain pending. Hindi covers sign-in/recovery only |
-| Dashboard / gigs / calendar | Gig headings, empty state, urgency, payment units and core actions have Greek drafts. Gig posting form, agreements, confirmations, FindGigsTab, dashboard and calendar bodies remain pending |
+| Dashboard / gigs / calendar | Producer dashboard greeting, metrics, production filters/empty states, action buttons/activity scaffolding and mini-calendar labels/date locale wired with Greek drafts. Full calendar headings/legend/weekdays/month and primary export controls wired. Weather text, event details, role names, subscription help and crew/client dashboard variants remain pending. Gig posting form, agreements, confirmations and FindGigsTab remain pending |
+| Production list / workspace | List subtitle/search/table headers/status labels wired with Greek drafts. Production types, modal controls, workspace tabs/overview/feed guidelines and other workspace controls remain pending |
 | Crew directory / profile | Screen bodies unchanged except language picker; need extraction and translations |
 | Production workspace / tasks / recce / gear | Needs extraction and translations |
 | Earnings / invoices / payments | Needs extraction and translations |
@@ -32,3 +33,7 @@ Greek correction: all currently extracted English dictionary keys now have disti
 | User-generated briefs / posts / bios | Gig descriptions, crew experience/bios, production feed posts and message bodies wired for machine translation; remaining notes/transcripts/tasks pending; runtime translation unverified |
 
 Review full layouts for long translations and RTL when those dictionaries are supplied; fixed left sidebar geometry has not been redesigned.
+
+## All-language acceptance status
+
+The same screen-level requirements apply to every registered language. No language is currently certified complete or visually verified. English is the source. Greek has drafts for every extracted source key, not every visible screen string. Hindi has partial authentication drafts. The other 27 languages have only the earlier partial dictionaries (five are empty). Dates/weekdays on the dashboard and calendar follow the active locale for all registered languages; that is not evidence of translated UI copy. Backend automatic content-translation failures require runtime diagnostics and cannot be diagnosed from the fallback message alone.
