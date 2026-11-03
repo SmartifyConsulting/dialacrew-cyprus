@@ -133,7 +133,7 @@ function CrewProfile() {
                 {m.skills.length ? <div className="flex flex-wrap gap-2">{m.skills.map((s) => <span key={s} className="rounded-sm bg-primary/15 px-2 py-1 text-xs text-primary">{s}</span>)}</div> : <p className="text-sm text-muted-foreground">No skills added yet</p>}
               </section>
               <section className="border-t border-border pt-5"><h3 className="mb-2 flex items-center gap-2 font-semibold"><Briefcase className="h-4 w-4" /> Experience</h3>
-                <p className="whitespace-pre-wrap text-sm text-muted-foreground">{m.experience_notes || m.bio || "No experience added yet"}</p>
+                <div className="text-sm text-muted-foreground">{m.experience_notes || m.bio ? <AutoTranslatedText text={m.experience_notes || m.bio} /> : "No experience added yet"}</div>
               </section>
               <section className="grid grid-cols-2 gap-4 border-t border-border pt-5 sm:grid-cols-5">
                 {[[String(productionsBooked), "Productions booked"], [String(done), "Projects completed"], [String(m.team_led), "Team members led"], [`${m.safety_record}%`, "Safety record"], [onTimePct.data != null ? `${onTimePct.data}%` : "—", "On-time"]].map(([v, l]) => (
@@ -548,3 +548,4 @@ function ReviewsTab({ crewId }: { crewId: string }) {
     </div>
   );
 }
+import { AutoTranslatedText } from "@/components/AutoTranslatedText";

@@ -164,7 +164,7 @@ function GigsPage() {
                   <p className="mt-2 text-sm">{g.event_date}{g.end_date ? ` – ${g.end_date}` : ""} · call {String(g.call_time).slice(0, 5)}</p>
                   <p className="text-sm">{g.venue}, {g.country}</p>
                   {g.kit_required && <p className="text-sm text-muted-foreground">Equipment: {g.kit_required}</p>}
-                  <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{g.description}</p>
+                  <div className="mt-2 text-sm text-muted-foreground"><AutoTranslatedText text={g.description} /></div>
                   <p className="mt-3 text-xl font-bold text-foreground">{rand(g.amount)} <span className="text-sm font-normal text-muted-foreground">{g.pay_type === "fixed" ? "fixed" : "per day"}</span></p>
                   <p className="text-xs text-muted-foreground">Posted by {g.poster_name} · expires {new Date(g.expires_at).toLocaleString("en-ZA")}</p>
                   {isCrew && <button onClick={() => secure(g)} className="mt-3 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Secure for {rand(g.secure_fee)}</button>}
@@ -202,3 +202,4 @@ function GigsPage() {
     </Page>
   );
 }
+import { AutoTranslatedText } from "@/components/AutoTranslatedText";

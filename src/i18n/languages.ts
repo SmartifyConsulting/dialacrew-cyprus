@@ -28,3 +28,13 @@ export function normalizeLanguage(value: unknown): LanguageCode {
 export function languageDirection(code: string) {
   return ["ar", "he", "ur"].includes(normalizeLanguage(code)) ? "rtl" : "ltr";
 }
+
+export function detectSupportedLanguage(values: unknown): LanguageCode {
+  const candidates = Array.isArray(values) ? values : [values];
+  for (const candidate of candidates) {
+    if (typeof candidate !== "string") continue;
+    const base = candidate.toLowerCase().split(/[-_]/)[0];
+    if (SUPPORTED_LANGUAGES.some((language) => language.code === base)) return normalizeLanguage(candidate);
+  }
+  return "en";
+}
