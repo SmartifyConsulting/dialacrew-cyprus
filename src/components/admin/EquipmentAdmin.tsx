@@ -25,6 +25,7 @@ const addDays = (ymd: string, n: number) => {
 
 // The production company's own equipment, run like a library: stock, who has each item, for which production, and when it is due back.
 export function EquipmentAdmin() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const items = useEquipmentItems().data ?? [];
   const checkouts = useEquipmentCheckouts().data ?? [];
@@ -81,21 +82,21 @@ export function EquipmentAdmin() {
 
   return (
     <div className="space-y-5">
-      <Panel title="Add equipment">
+      <Panel title={t("equipment.add")}>
         <div className="flex flex-wrap items-end gap-2 p-4">
-          <input placeholder="Item name" className={`${field} min-w-48 flex-1`} value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} />
+          <input placeholder={t("equipment.name")} className={`${field} min-w-48 flex-1`} value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} />
           <select className={field} value={newItem.category} onChange={(e) => setNewItem({ ...newItem, category: e.target.value })} aria-label="Category">
             {EQUIPMENT_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
           </select>
           <input type="number" min="1" className={`${field} w-24`} placeholder="How many" value={newItem.total_count} onChange={(e) => setNewItem({ ...newItem, total_count: e.target.value })} aria-label="How many we own" />
           <input placeholder="Serial/Asset ID" className={`${field} w-32`} value={newItem.serial_code} onChange={(e) => setNewItem({ ...newItem, serial_code: e.target.value })} />
           <input placeholder="Notes (condition…)" className={`${field} min-w-48`} value={newItem.notes} onChange={(e) => setNewItem({ ...newItem, notes: e.target.value })} />
-          <button onClick={addItem} className={addBtn}>Add equipment</button>
+          <button onClick={addItem} className={addBtn}>{t("equipment.add")}</button>
         </div>
       </Panel>
 
       <div className="flex items-center justify-between gap-2">
-        <h2 className="font-display text-sm font-semibold uppercase tracking-wide text-primary">Our equipment ({items.length} item{items.length === 1 ? "" : "s"})</h2>
+        <h2 className="font-display text-sm font-semibold uppercase tracking-wide text-primary">{t("equipment.inventory", { count: items.length })}</h2>
         <div className="relative">
           <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <input className={`${field} w-44 pl-7`} placeholder="Search equipment" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search equipment" />
@@ -119,7 +120,7 @@ export function EquipmentAdmin() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="text-left text-[11px] text-muted-foreground">
-                    <tr><th className="px-4 py-2">Item</th><th className="px-4">Owned</th><th className="px-4">Out</th><th className="px-4">Free</th><th className="px-4">Action</th></tr>
+                    <tr><th className="px-4 py-2">{t("equipment.item")}</th><th className="px-4">{t("equipment.owned")}</th><th className="px-4">{t("equipment.out")}</th><th className="px-4">{t("equipment.free")}</th><th className="px-4">{t("common.actions")}</th></tr>
                   </thead>
                   <tbody>
                     {catItems.map((it) => {
@@ -159,7 +160,7 @@ export function EquipmentAdmin() {
                           <td className="px-4 py-2">{out}</td>
                           <td className={`px-4 py-2 font-semibold ${it.total_count - out > 0 ? "text-success" : "text-destructive"}`}>{it.total_count - out}</td>
                           <td className="px-4 py-2"><div className="flex gap-3 whitespace-nowrap">
-                            <button disabled={it.total_count - out <= 0} onClick={() => setCheckoutFor(it)} className="text-xs font-semibold text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline">Check out</button>
+                            <button disabled={it.total_count - out <= 0} onClick={() => setCheckoutFor(it)} className="text-xs font-semibold text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline">{t("equipment.checkout")}</button>
                             <button onClick={() => startEdit(it)} className="text-xs text-primary hover:underline">Edit</button>
                             <button onClick={() => removeItem(it)} className="text-xs text-destructive hover:underline">Delete</button>
                           </div></td>
@@ -276,3 +277,4 @@ function CheckoutDialog({ item, free, onClose, onDone }: { item: EquipmentItem; 
     </Dialog>
   );
 }
+import { useTranslation } from "react-i18next";

@@ -1006,10 +1006,10 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
         </div>
       </Panel>
 
-      <Panel title={t("overview.locations")}>
+      <Panel title={t("overview.locations", "Locations")}>
         <LocationPoints p={p} isProducer={isProducer} myCrewId={myCrewId} />
       </Panel>
-      <Panel title={t("overview.recceDate")}>
+      <Panel title={t("overview.recceDate", "Recce date")}>
         <div className="space-y-1 p-4">
           {p.recceDate && <p className="font-semibold text-foreground">Production recce · {dayLabel(`${p.recceDate}T00:00:00`)}</p>}
           {(() => {
@@ -1557,6 +1557,7 @@ export function RegisterTab({ p, isProducer, userId, myName, myCrewId }: Ctx) {
 
 /* ---------------- Tasks ---------------- */
 export function TasksTab({ p, userId }: Ctx) {
+  const { t: translate } = useTranslation();
   const tasks = useTasks(p.id).data ?? [];
   const members = useSiteMembers(p.id).data ?? [];
   const inv = useInvalidate();
@@ -1579,25 +1580,25 @@ export function TasksTab({ p, userId }: Ctx) {
   async function toggle(id: string, done: boolean) { await supabase.from("site_tasks").update({ done }).eq("id", id); inv(["tasks", p.id]); }
   async function remove(id: string) { const { error } = await supabase.from("site_tasks").delete().eq("id", id); if (error) toast.error(friendlyError(error)); inv(["tasks", p.id]); }
   return (
-    <Panel title="Tasks">
+    <Panel title={translate("workspace.tabs.Tasks")}>
       <div className="flex flex-wrap gap-2 border-b border-border p-4">
-        <input className={`${input} min-w-56 flex-1`} placeholder="New task…" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} onKeyDown={(e) => e.key === "Enter" && add()} />
-        <select className={input} value={f.crew} onChange={(e) => setF({ ...f, crew: e.target.value })}><option value="">Unassigned</option>{members.map((m) => <option key={m.crew_id} value={m.crew_id}>{m.user_id === userId ? "Self" : m.name}</option>)}</select>
+        <input className={`${input} min-w-56 flex-1`} placeholder={translate("tasks.new")} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} onKeyDown={(e) => e.key === "Enter" && add()} />
+        <select className={input} value={f.crew} onChange={(e) => setF({ ...f, crew: e.target.value })}><option value="">{translate("tasks.unassigned")}</option>{members.map((m) => <option key={m.crew_id} value={m.crew_id}>{m.user_id === userId ? translate("tasks.self") : m.name}</option>)}</select>
         <input type="date" className={input} value={f.due} onChange={(e) => setF({ ...f, due: e.target.value })} />
-        <button onClick={add} className={btn}>Add task</button>
+        <button onClick={add} className={btn}>{translate("tasks.add")}</button>
       </div>
       <ul className="divide-y divide-border">
-        {tasks.length === 0 && <li className="p-4 text-sm text-muted-foreground">No tasks yet.</li>}
+        {tasks.length === 0 && <li className="p-4 text-sm text-muted-foreground">{translate("tasks.empty")}</li>}
         {tasks.map((t) => (
           <li key={t.id} className="flex items-center gap-3 px-4 py-2.5">
-            <button aria-label={t.done ? "Mark not done" : "Mark done"} onClick={() => toggle(t.id, !t.done)}>{t.done ? <CheckCircle2 className="h-5 w-5 text-success" /> : <Circle className="h-5 w-5 text-muted-foreground" />}</button>
+            <button aria-label={translate(t.done ? "tasks.undo" : "gigs.done")} onClick={() => toggle(t.id, !t.done)}>{t.done ? <CheckCircle2 className="h-5 w-5 text-success" /> : <Circle className="h-5 w-5 text-muted-foreground" />}</button>
             <span className={`flex-1 text-sm ${t.done ? "text-muted-foreground line-through" : ""}`}>{t.title}</span>
-            <button onClick={() => togglePublic(t.id, !t.is_public)} aria-label={t.is_public ? "Make private" : "Post to the team"}
+            <button onClick={() => togglePublic(t.id, !t.is_public)} aria-label={translate(t.is_public ? "tasks.makePrivate" : "tasks.share")}
               className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${t.is_public ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground"}`}>
-              {t.is_public ? "Public" : "Private"}
+              {translate(t.is_public ? "tasks.public" : "tasks.private")}
             </button>
             <span className="text-xs text-muted-foreground">{assigneeLabel(t.assigned_crew_id)}{t.due_date ? ` · due ${t.due_date}` : ""}</span>
-            <button aria-label="Delete task" onClick={() => remove(t.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
+            <button aria-label={translate("tasks.delete")} onClick={() => remove(t.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
           </li>
         ))}
       </ul>

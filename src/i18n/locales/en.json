@@ -1,4 +1,6 @@
 {
+  "equipment": { "add": "Add equipment", "name": "Item name", "inventory": "Our equipment ({{count}} items)", "item": "Item", "owned": "Owned", "out": "Out", "free": "Free", "checkout": "Check out" },
+  "tasks": { "new": "New task…", "unassigned": "Unassigned", "self": "Self", "add": "Add task", "empty": "No tasks yet.", "undo": "Mark not done", "makePrivate": "Make private", "share": "Post to the team", "public": "Public", "private": "Private", "delete": "Delete task" },
   "overview": { "client": "Client", "shoot": "Shoot", "tbc": "To be confirmed", "days": "{{count}} day(s)", "locations": "Locations", "recceDate": "Recce date" },
   "guidelines": {
     "title": "Guidelines", "show": "Show guidelines", "hide": "Hide guidelines", "hidden": "Guidelines are hidden from the job.",
