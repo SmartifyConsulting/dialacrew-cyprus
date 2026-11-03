@@ -994,22 +994,22 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
             <p className="whitespace-pre-wrap">{p.summary || "No summary yet."}</p>
           )}
           <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground [&>dt]:font-bold [&>dt]:text-foreground">
-            <dt>Job ID</dt><dd className="text-foreground">{p.jobId || "—"}</dd>
-            <dt>Client</dt><dd className="text-foreground">{p.client}</dd>
-            <dt>Type</dt><dd className="text-foreground">{p.type}</dd>
-            <dt>Shoot</dt><dd className="text-foreground">{p.date || "TBC"} · {p.days} day(s)</dd>
-            <dt>Recce</dt><dd className="text-foreground">{p.recceDate ? dayLabel(`${p.recceDate}T00:00:00`) : "TBC"}</dd>
-            <dt>Gear check</dt><dd className="text-foreground">{p.gearPickupDate ? dayLabel(`${p.gearPickupDate}T00:00:00`) : "TBC"}</dd>
-            <dt>Crew</dt><dd className="text-foreground">{p.crewBooked} / {p.crewNeeded}</dd>
-            {isProducer && <><dt>Budget</dt><dd className="text-foreground">{fmtMoney(p.budget, p.currency)}</dd></>}
+            <dt>{t("productionList.columns.Job ID")}</dt><dd className="text-foreground">{p.jobId || "—"}</dd>
+            <dt>{t("overview.client")}</dt><dd className="text-foreground">{p.client}</dd>
+            <dt>{t("productionList.columns.Type")}</dt><dd className="text-foreground">{p.type}</dd>
+            <dt>{t("overview.shoot")}</dt><dd className="text-foreground">{p.date || t("overview.tbc")} · {t("overview.days", { count: p.days })}</dd>
+            <dt>{t("dashboard.recce")}</dt><dd className="text-foreground">{p.recceDate ? dayLabel(`${p.recceDate}T00:00:00`) : t("overview.tbc")}</dd>
+            <dt>{t("dashboard.gear")}</dt><dd className="text-foreground">{p.gearPickupDate ? dayLabel(`${p.gearPickupDate}T00:00:00`) : t("overview.tbc")}</dd>
+            <dt>{t("nav.crew")}</dt><dd className="text-foreground">{p.crewBooked} / {p.crewNeeded}</dd>
+            {isProducer && <><dt>{t("productionList.columns.Budget")}</dt><dd className="text-foreground">{fmtMoney(p.budget, p.currency)}</dd></>}
           </dl>
         </div>
       </Panel>
 
-      <Panel title="Locations">
+      <Panel title={t("overview.locations")}>
         <LocationPoints p={p} isProducer={isProducer} myCrewId={myCrewId} />
       </Panel>
-      <Panel title="Recce Date">
+      <Panel title={t("overview.recceDate")}>
         <div className="space-y-1 p-4">
           {p.recceDate && <p className="font-semibold text-foreground">Production recce · {dayLabel(`${p.recceDate}T00:00:00`)}</p>}
           {(() => {

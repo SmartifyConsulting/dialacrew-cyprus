@@ -1,4 +1,10 @@
 {
+  "overview": { "client": "Client", "shoot": "Shoot", "tbc": "To be confirmed", "days": "{{count}} day(s)", "locations": "Locations", "recceDate": "Recce date" },
+  "guidelines": {
+    "title": "Guidelines", "show": "Show guidelines", "hide": "Hide guidelines", "hidden": "Guidelines are hidden from the job.",
+    "saved": "Guidelines saved", "save": "Save guidelines", "placeholder": "e.g. Tag the production in every photo. Keep posts about the work.",
+    "defaults": "• Keep posts about the work — wrap, call times, kit, location changes.\n• Tag the production in any photos you share.\n• No confidential client info, scripts, or unreleased footage.\n• Be respectful — posts are visible to everyone on this job."
+  },
   "workspace": {
     "closing": "Closing…", "complete": "Mark completed", "collapse": "Collapse", "overview": "Overview", "summary": "Production summary",
     "share": "Share an update with everyone on this job…", "audio": "Audio", "camera": "Camera", "attach": "Attach", "post": "Post", "posting": "Posting…",

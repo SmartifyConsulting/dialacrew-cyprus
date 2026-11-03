@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { AutoTranslatedText } from "@/components/AutoTranslatedText";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
@@ -18,6 +20,7 @@ const DEFAULT_GUIDELINES = [
 
 // Guidelines for posts on a job. Only admins can write them; producers can hide them from the job.
 export function Guidelines({ p, isProducer }: { p: Production; isProducer: boolean }) {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const { session } = useSession();
   const isAdmin = useRole(session?.user.id).data === "admin";
@@ -30,7 +33,7 @@ export function Guidelines({ p, isProducer }: { p: Production; isProducer: boole
     const { error } = await supabase.from("productions").update({ post_rules: text.trim() }).eq("id", p.id);
     setBusy(false);
     if (error) { toast.error(friendlyError(error)); return; }
-    toast.success("Guidelines saved");
+    toast.success(t("guidelines.saved"));
     setEditing(false);
     qc.invalidateQueries({ queryKey: ["productions"] });
   }
@@ -45,14 +48,14 @@ export function Guidelines({ p, isProducer }: { p: Production; isProducer: boole
 
   const hideToggle = isProducer && (
     <button onClick={() => setHidden(!p.postRulesHidden)} className="text-xs font-semibold text-muted-foreground hover:text-foreground">
-      {p.postRulesHidden ? "Show guidelines" : "Hide guidelines"}
+      {p.postRulesHidden ? t("guidelines.show") : t("guidelines.hide")}
     </button>
   );
 
   if (p.postRulesHidden) {
     return (
       <div className="flex items-center justify-between rounded-sm border border-dashed border-border bg-card px-4 py-3">
-        <span className="text-xs text-muted-foreground">Guidelines are hidden from the job.</span>
+        <span className="text-xs text-muted-foreground">{t("guidelines.hidden")}</span>
         {hideToggle}
       </div>
     );
@@ -61,11 +64,11 @@ export function Guidelines({ p, isProducer }: { p: Production; isProducer: boole
   if (editing && isAdmin) {
     return (
       <div className="space-y-2 rounded-sm border border-primary/40 bg-primary/5 p-4">
-        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Guidelines</div>
-        <textarea rows={5} className={`${input} w-full`} placeholder="e.g. Tag the production in every photo. Keep posts about the work." value={text} onChange={(e) => setText(e.target.value)} />
+        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("guidelines.title")}</div>
+        <textarea rows={5} className={`${input} w-full`} placeholder={t("guidelines.placeholder")} value={text} onChange={(e) => setText(e.target.value)} />
         <div className="flex gap-2">
-          <button disabled={busy} onClick={save} className={btn}>{busy ? "Saving…" : "Save guidelines"}</button>
-          <button onClick={() => setEditing(false)} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold">Cancel</button>
+          <button disabled={busy} onClick={save} className={btn}>{busy ? t("recovery.saving") : t("guidelines.save")}</button>
+          <button onClick={() => setEditing(false)} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold">{t("common.cancel")}</button>
         </div>
       </div>
     );
@@ -74,13 +77,13 @@ export function Guidelines({ p, isProducer }: { p: Production; isProducer: boole
   return (
     <div className="rounded-sm border border-border bg-card p-4">
       <div className="flex items-center justify-between gap-3">
-        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Guidelines</div>
+        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("guidelines.title")}</div>
         <div className="flex items-center gap-3">
-          {isAdmin && <button onClick={() => { setText(p.postRules || DEFAULT_GUIDELINES); setEditing(true); }} className="text-xs font-semibold text-primary hover:underline">Edit</button>}
+          {isAdmin && <button onClick={() => { setText(p.postRules || DEFAULT_GUIDELINES); setEditing(true); }} className="text-xs font-semibold text-primary hover:underline">{t("common.edit")}</button>}
           {hideToggle}
         </div>
       </div>
-      <p className="mt-2 whitespace-pre-wrap text-sm">{p.postRules || DEFAULT_GUIDELINES}</p>
+      <div className="mt-2 whitespace-pre-wrap text-sm">{p.postRules && p.postRules !== DEFAULT_GUIDELINES ? <AutoTranslatedText text={p.postRules} /> : t("guidelines.defaults")}</div>
     </div>
   );
 }
