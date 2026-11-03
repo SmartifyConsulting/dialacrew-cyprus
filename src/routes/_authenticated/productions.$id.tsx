@@ -40,6 +40,7 @@ const MANAGER_TABS = ["Posts", "Crew", "Checklists", "Tasks", "Documents", "Phot
 type Tab = (typeof MANAGER_TABS)[number];
 
 function ProductionSite() {
+  const { t: translate } = useTranslation();
   const { id } = Route.useParams();
   const { session } = useSession();
   const userId = session?.user.id ?? "";
@@ -80,8 +81,8 @@ function ProductionSite() {
 
   const actions = (
     <div className="flex items-center gap-2">
-      <Badge>{p.status}</Badge>
-      {isProducer && !closed && <button type="button" disabled={closing} onClick={completeJob} className="rounded border border-primary px-3 py-1.5 text-xs font-semibold text-primary disabled:opacity-50">{closing ? "Closing…" : "Mark Completed"}</button>}
+      <Badge>{translate(`productionList.status.${p.status}`, p.status)}</Badge>
+      {isProducer && !closed && <button type="button" disabled={closing} onClick={completeJob} className="rounded border border-primary px-3 py-1.5 text-xs font-semibold text-primary disabled:opacity-50">{closing ? translate("workspace.closing") : translate("workspace.complete")}</button>}
     </div>
   );
 
@@ -97,7 +98,7 @@ function ProductionSite() {
         </button>
         <aside className={`space-y-5 lg:sticky lg:top-28 lg:self-start ${asideOpen ? "" : "lg:hidden"}`}>
           <button onClick={() => setAsideOpen(false)} className="hidden items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-primary lg:flex">
-            <ChevronLeft className="h-4 w-4" /> Collapse
+            <ChevronLeft className="h-4 w-4" /> {translate("workspace.collapse")}
           </button>
           {myCrewId && <CrewOvertimePanel productionId={p.id} crewId={myCrewId} rate={rates[myCrewId] ?? 0} date={p.date || null} />}
           <fieldset disabled={closed} className="min-w-0"><OverviewTab {...ctx} /></fieldset>
@@ -107,7 +108,7 @@ function ProductionSite() {
           <nav className="mb-4 flex w-full gap-1 overflow-x-auto rounded-sm border border-border bg-card">
             {tabs.map((t) => (
               <button key={t} onClick={() => setTab(t)}
-                className={`whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-semibold ${tab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>{t}</button>
+                className={`whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-semibold ${tab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>{translate(`workspace.tabs.${t}`)}</button>
             ))}
           </nav>
           <fieldset disabled={closed} className="min-w-0 w-full [&>*]:w-full">
@@ -132,3 +133,4 @@ function ProductionSite() {
     </Page>
   );
 }
+import { useTranslation } from "react-i18next";

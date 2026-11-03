@@ -920,6 +920,7 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
 
 /* ---------------- Overview ---------------- */
 export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
+  const { t } = useTranslation();
   const inv = useInvalidate();
   const locationPoints = useLocationPoints(p.id).data ?? [];
   const overviewBookings = useBookings().data ?? [];
@@ -979,13 +980,13 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
 
   return (
     <div className="space-y-5">
-      <Panel title="Overview" right={isProducer && saveState !== "idle" ? (
+      <Panel title={t("workspace.overview")} right={isProducer && saveState !== "idle" ? (
         <span className="text-xs text-muted-foreground">{saveState === "saving" ? "Saving…" : "Saved"}</span>
       ) : undefined}>
         <div className="space-y-3 p-4 text-sm">
           {isProducer ? (
             <>
-            <label className="block"><span className="text-xs text-muted-foreground">Production summary</span>
+            <label className="block"><span className="text-xs text-muted-foreground">{t("workspace.summary")}</span>
               <textarea rows={4} className={`${input} mt-1 w-full`} value={f.summary} onChange={(e) => update({ summary: e.target.value })} /></label>
               <div className="flex justify-end"><PolishDescription text={f.summary} name={p.name} type={p.type} client={p.client} onPolished={(v) => update({ summary: v })} /></div>
             </>
@@ -1272,6 +1273,7 @@ export function Avatar({ name, path, size = 36 }: { name: string; path?: string 
 
 /* ---------------- Posts ---------------- */
 export function PostsTab({ p, userId, myName, isProducer }: Ctx) {
+  const { t, i18n } = useTranslation();
   const posts = usePosts(p.id);
   const inv = useInvalidate();
   const [body, setBody] = useState("");
@@ -1328,28 +1330,28 @@ export function PostsTab({ p, userId, myName, isProducer }: Ctx) {
     <div className="w-full space-y-4">
       <Guidelines p={p} isProducer={isProducer} />
       <div className="rounded-sm border border-border bg-card p-4">
-        <textarea rows={3} className={`${input} w-full`} placeholder="Share an update with everyone on this job…" value={body} onChange={(e) => setBody(e.target.value)} />
+        <textarea rows={3} className={`${input} w-full`} placeholder={t("workspace.share")} value={body} onChange={(e) => setBody(e.target.value)} />
         {recording && <div className="mt-2"><AudioRecorder onCancel={() => setRecording(false)} onDone={(blob, transcript) => { setRecording(false); setAudio({ blob, transcript }); if (transcript) setBody((b) => (b ? `${b}\n${transcript}` : transcript)); }} /></div>}
         {audio && !recording && <div className="mt-2 flex items-center gap-2 text-xs text-primary"><Mic className="h-3 w-3" /> Voice note attached{audio.transcript ? " and transcribed" : ""} <button className="text-muted-foreground underline" onClick={() => setAudio(null)}>remove</button></div>}
         {files.length > 0 && <div className="mt-2 flex flex-wrap gap-2">{files.map((f, i) => <span key={i} className="rounded-sm bg-muted px-2 py-1 text-xs">{f.name} <button onClick={() => setFiles(files.filter((_, j) => j !== i))}>×</button></span>)}</div>}
         <div className="mt-3 flex items-center gap-2">
-          <button onClick={() => setRecording(true)} disabled={recording} className="inline-flex items-center gap-1 rounded-sm border border-border px-3 py-2 text-xs hover:border-primary"><Mic className="h-4 w-4" /> Audio</button>
+          <button onClick={() => setRecording(true)} disabled={recording} className="inline-flex items-center gap-1 rounded-sm border border-border px-3 py-2 text-xs hover:border-primary"><Mic className="h-4 w-4" /> {t("workspace.audio")}</button>
           <label className="inline-flex cursor-pointer items-center gap-1 rounded-sm border border-border px-3 py-2 text-xs hover:border-primary">
-            <Camera className="h-4 w-4" /> Camera
+            <Camera className="h-4 w-4" /> {t("workspace.camera")}
             <input type="file" accept="image/*" capture="environment" hidden onChange={(e) => { setFiles([...files, ...Array.from(e.target.files ?? [])]); e.target.value = ""; }} />
           </label>
-          <button onClick={() => fileRef.current?.click()} className="inline-flex items-center gap-1 rounded-sm border border-border px-3 py-2 text-xs hover:border-primary"><Paperclip className="h-4 w-4" /> Attach</button>
+          <button onClick={() => fileRef.current?.click()} className="inline-flex items-center gap-1 rounded-sm border border-border px-3 py-2 text-xs hover:border-primary"><Paperclip className="h-4 w-4" /> {t("workspace.attach")}</button>
           <input ref={fileRef} type="file" multiple hidden onChange={(e) => { setFiles([...files, ...Array.from(e.target.files ?? [])]); e.target.value = ""; }} />
-          <button onClick={submit} disabled={busy || recording} className={`${btn} ml-auto`}>{busy ? "Posting…" : "Post"}</button>
+          <button onClick={submit} disabled={busy || recording} className={`${btn} ml-auto`}>{busy ? t("workspace.posting") : t("workspace.post")}</button>
         </div>
       </div>
-      {posts.data?.length === 0 && <p className="text-center text-sm text-muted-foreground">No posts yet. Start the conversation.</p>}
+      {posts.data?.length === 0 && <p className="text-center text-sm text-muted-foreground">{t("workspace.noPosts")}</p>}
       {posts.data?.map((post) => (
         <article key={post.id} className="rounded-sm border border-border bg-card p-4">
           <header className="mb-2 flex items-center gap-3">
             <Avatar name={post.author_name || "?"} />
-            <div className="flex-1"><div className="text-sm font-semibold">{post.author_name || "Team member"}</div><div className="text-xs text-muted-foreground">{when(post.created_at)}</div></div>
-            {(post.author_id === userId || isProducer) && <button aria-label="Delete post" onClick={() => remove(post.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>}
+            <div className="flex-1"><div className="text-sm font-semibold">{post.author_name || t("workspace.teamMember")}</div><div className="text-xs text-muted-foreground">{new Date(post.created_at).toLocaleString(i18n.language)}</div></div>
+            {(post.author_id === userId || isProducer) && <button aria-label={t("workspace.deletePost")} onClick={() => remove(post.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>}
           </header>
           {post.body && <div className="text-sm"><AutoTranslatedText text={post.body} /></div>}
           {post.audio_path && <AudioPlayer path={post.audio_path} />}
@@ -1735,3 +1737,4 @@ function ProductionSchedule({ p, isProducer }: { p: Ctx["p"]; isProducer: boolea
   );
 }
 import { AutoTranslatedText } from "@/components/AutoTranslatedText";
+import { useTranslation } from "react-i18next";
