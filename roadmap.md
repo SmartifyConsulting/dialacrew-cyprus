@@ -1,5 +1,5 @@
 # Roadmap
-- [ ] Borrow Holarc localization architecture, dictionaries and Indian placeholders; add persistent language selectors and verify fallback/RTL without AI translation
+- [x] Borrow Holarc localization architecture, generic dictionaries and Indian placeholders; device-persistent selectors, English fallback and RTL verified; 6 tests and build pass; remaining screen coverage documented in src/i18n/README.md
 - [x] Despia setup screen, proposed identifiers, signing/store checklist and three downloadable logo icons
 - [x] Native push: Firebase + OneSignal connected; opt-in aliases, secure dispatch and gig/schedule/booking triggers; 14 tests pass
 - [ ] Store binaries and real-device push testing — needs client Apple/Google/Despia accounts, reserved IDs and APNs/Firebase configuration in OneSignal
