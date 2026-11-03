@@ -30,7 +30,8 @@ function PhotoThumb({ photo }: { photo: Photo }) {
 function PhotoGrid({ items, renderControls, canDelete, onDelete }: {
   items: Photo[]; renderControls: (photo: Photo) => ReactNode; canDelete: (photo: Photo) => boolean; onDelete: (id: string) => void;
 }) {
-  if (items.length === 0) return <p className="p-4 text-sm text-muted-foreground">No photos here yet.</p>;
+  const { t } = useTranslation();
+  if (items.length === 0) return <p className="p-4 text-sm text-muted-foreground">{t("photos.empty")}</p>;
   return (
     <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 md:grid-cols-4">
       {items.map((ph) => (
@@ -50,6 +51,7 @@ function PhotoGrid({ items, renderControls, canDelete, onDelete }: {
 }
 
 export function PhotosTab({ p, userId, isProducer }: { p: { id: string }; userId: string; isProducer: boolean }) {
+  const { t } = useTranslation();
   const inv = useInvalidate();
   const groups = (useQuery({
     queryKey: ["site-photo-groups", p.id],
@@ -131,30 +133,30 @@ export function PhotosTab({ p, userId, isProducer }: { p: { id: string }; userId
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-2">
         <select className={`${input} py-2 text-xs`} value={uploadLocation} onChange={(e) => setUploadLocation(e.target.value)} aria-label="Location for new photos">
-          <option value="">No location</option>
+          <option value="">{t("photos.noLocation")}</option>
           {locations.map((l, i) => <option key={l.id} value={l.id}>Location {i + 1} · {l.label}</option>)}
         </select>
         <label className={`${btn} inline-flex cursor-pointer items-center gap-1.5 ${busy ? "opacity-60" : ""}`}>
-          <Camera className="h-4 w-4" /> Take photo
+          <Camera className="h-4 w-4" /> {t("photos.take")}
           <input type="file" accept="image/*" capture="environment" hidden disabled={busy} onChange={(e) => { upload(e.target.files); e.target.value = ""; }} />
         </label>
         <label className={`${btn} inline-flex cursor-pointer items-center gap-1.5 ${busy ? "opacity-60" : ""}`}>
-          <ImageUp className="h-4 w-4" /> {busy ? "Uploading…" : "Upload photos"}
+          <ImageUp className="h-4 w-4" /> {busy ? t("files.uploading") : t("photos.upload")}
           <input type="file" accept="image/*" multiple hidden disabled={busy} onChange={(e) => { upload(e.target.files); e.target.value = ""; }} />
         </label>
         <div className="ml-auto inline-flex rounded-sm border border-border text-xs font-semibold">
-          <button onClick={() => setView("collections")} className={`px-3 py-2 ${view === "collections" ? "bg-primary text-primary-foreground" : ""}`}>Collections</button>
-          <button onClick={() => setView("locations")} className={`px-3 py-2 ${view === "locations" ? "bg-primary text-primary-foreground" : ""}`}>Locations</button>
+          <button onClick={() => setView("collections")} className={`px-3 py-2 ${view === "collections" ? "bg-primary text-primary-foreground" : ""}`}>{t("photos.collections")}</button>
+          <button onClick={() => setView("locations")} className={`px-3 py-2 ${view === "locations" ? "bg-primary text-primary-foreground" : ""}`}>{t("overview.locations")}</button>
         </div>
       </div>
 
       {view === "collections" ? (
         <>
-          <Panel title="New collection">
+          <Panel title={t("photos.new")}>
             <div className="flex flex-wrap gap-2 p-4">
-              <input className={`${input} min-w-56 flex-1`} placeholder="Collection name, e.g. Day 1 — Location 2" value={name} onChange={(e) => setName(e.target.value)} />
+              <input className={`${input} min-w-56 flex-1`} placeholder={t("photos.name")} value={name} onChange={(e) => setName(e.target.value)} />
               <input type="date" className={input} value={date} onChange={(e) => setDate(e.target.value)} aria-label="Collection date" />
-              <button onClick={createGroup} className={btn}>Create collection</button>
+              <button onClick={createGroup} className={btn}>{t("photos.create")}</button>
             </div>
           </Panel>
 
@@ -183,7 +185,7 @@ export function PhotosTab({ p, userId, isProducer }: { p: { id: string }; userId
             );
           })}
 
-          <Panel title={`Unsorted (${unsorted.length})`}>
+          <Panel title={t("photos.unsorted", { count: unsorted.length })}>
             <PhotoGrid items={unsorted} canDelete={canDelete} onDelete={removePhoto} renderControls={(ph) => (
               <select className={`${input} w-full py-1 text-xs`} value="" aria-label="Move photo to collection"
                 onChange={(e) => updatePhoto(ph.id, { group_id: e.target.value || null })}>
@@ -224,3 +226,4 @@ export function PhotosTab({ p, userId, isProducer }: { p: { id: string }; userId
     </div>
   );
 }
+import { useTranslation } from "react-i18next";
