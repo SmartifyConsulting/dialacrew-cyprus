@@ -19,6 +19,16 @@ export const SUPPORTED_LANGUAGES = [
 export type LanguageCode = (typeof SUPPORTED_LANGUAGES)[number]["code"];
 export const LANGUAGE_STORAGE_KEY = "bookacrew.language";
 
+const LANGUAGE_SCALES: Partial<Record<LanguageCode, number>> = {
+  de: 0.94, nl: 0.94, ru: 0.94, el: 0.94, pl: 0.94, tr: 0.94, fr: 0.94, pt: 0.94, it: 0.94,
+  ha: 0.96, ig: 0.96, yo: 0.96, sw: 0.96, sn: 0.96, zu: 0.96, xh: 0.96, af: 0.96,
+  zh: 1.02, ja: 1.02, ko: 1.02,
+};
+
+export function languageScale(code: string): number {
+  return LANGUAGE_SCALES[normalizeLanguage(code)] ?? 1;
+}
+
 export function normalizeLanguage(value: unknown): LanguageCode {
   if (typeof value !== "string") return "en";
   const base = value.toLowerCase().split(/[-_]/)[0];

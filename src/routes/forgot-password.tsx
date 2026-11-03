@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TopNav } from "@/components/AppShell";
 import { fieldClass, labelClass, submitClass } from "@/components/PasswordInput";
 import { mapAuthError } from "@/lib/auth";
+import { useTranslation } from "react-i18next";
 
 export const Route = createFileRoute("/forgot-password")({
   head: () => ({
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/forgot-password")({
 });
 
 function Forgot() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
@@ -39,18 +41,18 @@ function Forgot() {
     <div className="min-h-screen bg-background">
       <TopNav />
       <main className="mx-auto max-w-md px-4 py-12">
-        <h1 className="text-center font-script text-5xl text-primary">Forgot password</h1>
+        <h1 className="text-center font-script text-5xl text-primary">{t("recovery.forgot")}</h1>
         {sent ? (
-          <p className="mt-6 rounded-sm border border-border bg-card p-6 text-center text-muted-foreground">If an account exists for {email}, a reset link is on its way. Check your inbox.</p>
+          <p className="mt-6 rounded-sm border border-border bg-card p-6 text-center text-muted-foreground">{t("recovery.sent", { email })}</p>
         ) : (
           <form onSubmit={submit} className="mt-6 space-y-4 rounded-sm border border-border bg-card p-6">
-            <div><label className={labelClass} htmlFor="email">Email</label>
+            <div><label className={labelClass} htmlFor="email">{t("common.email")}</label>
               <input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={fieldClass} /></div>
             <p aria-live="polite" className="min-h-5 text-sm text-destructive">{error}</p>
-            <button disabled={busy} className={submitClass}>{busy ? "Sending…" : "Send reset link"}</button>
+            <button disabled={busy} className={submitClass}>{busy ? t("recovery.sending") : t("recovery.send")}</button>
           </form>
         )}
-        <p className="mt-4 text-center"><Link to="/auth" className="text-sm text-muted-foreground underline hover:text-primary">Back to sign in</Link></p>
+        <p className="mt-4 text-center"><Link to="/auth" className="text-sm text-muted-foreground underline hover:text-primary">{t("recovery.back")}</Link></p>
       </main>
     </div>
   );

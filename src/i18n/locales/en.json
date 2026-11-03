@@ -1,4 +1,16 @@
 {
+  "recovery": {
+    "forgot": "Forgot password",
+    "sent": "If an account exists for {{email}}, a reset link is on its way. Check your inbox.",
+    "sending": "Sending…",
+    "send": "Send reset link",
+    "back": "Back to sign in"
+  },
+  "content": {
+    "showTranslation": "Show translation",
+    "showOriginal": "Machine translated · Show original",
+    "unavailable": "Translation unavailable · Showing original"
+  },
   "common": {
     "language": "Language",
     "changeLanguage": "Change language",

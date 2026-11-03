@@ -2763,6 +2763,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          preferred_language: string | null
           avatar_url: string | null
           country: string | null
           created_at: string
@@ -2778,6 +2779,7 @@ export type Database = {
           whatsapp_number: string | null
         }
         Insert: {
+          preferred_language?: string | null
           avatar_url?: string | null
           country?: string | null
           created_at?: string
@@ -2793,6 +2795,7 @@ export type Database = {
           whatsapp_number?: string | null
         }
         Update: {
+          preferred_language?: string | null
           avatar_url?: string | null
           country?: string | null
           created_at?: string

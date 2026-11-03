@@ -2,7 +2,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import { I18nextProvider } from "react-i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 import { createAppI18n } from "./index";
-import { LANGUAGE_STORAGE_KEY, languageDirection, normalizeLanguage, detectSupportedLanguage } from "./languages";
+import { AccountLanguage } from "./AccountLanguage";
+import { LANGUAGE_STORAGE_KEY, languageDirection, languageScale, normalizeLanguage, detectSupportedLanguage } from "./languages";
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [instance] = useState(createAppI18n);
@@ -11,6 +12,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       const code = normalizeLanguage(language);
       document.documentElement.lang = code;
       document.documentElement.dir = languageDirection(code);
+      document.documentElement.style.setProperty("--lang-scale", String(languageScale(code)));
       try { localStorage.setItem(LANGUAGE_STORAGE_KEY, code); } catch { /* Private browsing may disable storage. */ }
     };
     const detector = new LanguageDetector();
@@ -22,5 +24,5 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     apply(code);
     return () => { instance.off("languageChanged", apply); };
   }, [instance]);
-  return <I18nextProvider i18n={instance}>{children}</I18nextProvider>;
+  return <I18nextProvider i18n={instance}><AccountLanguage />{children}</I18nextProvider>;
 }

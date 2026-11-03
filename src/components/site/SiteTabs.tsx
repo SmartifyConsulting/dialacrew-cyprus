@@ -1351,7 +1351,7 @@ export function PostsTab({ p, userId, myName, isProducer }: Ctx) {
             <div className="flex-1"><div className="text-sm font-semibold">{post.author_name || "Team member"}</div><div className="text-xs text-muted-foreground">{when(post.created_at)}</div></div>
             {(post.author_id === userId || isProducer) && <button aria-label="Delete post" onClick={() => remove(post.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>}
           </header>
-          {post.body && <p className="whitespace-pre-wrap text-sm">{post.body}</p>}
+          {post.body && <div className="text-sm"><AutoTranslatedText text={post.body} /></div>}
           {post.audio_path && <AudioPlayer path={post.audio_path} />}
           {post.transcript && post.transcript !== post.body && <p className="mt-2 rounded-sm bg-muted p-2 text-xs italic text-muted-foreground">Transcript: {post.transcript}</p>}
           {Array.isArray(post.attachments) && post.attachments.length > 0 && (
@@ -1409,7 +1409,7 @@ export function MessagesTab({ p, userId, myName }: Ctx & { bookings: Booking[]; 
         {(messages.data ?? []).map((m) => (
           <div key={m.id} className={`rounded-sm p-2 text-sm ${m.sender_id === userId ? "ml-auto max-w-[80%] bg-primary/15" : "max-w-[80%] bg-muted"}`}>
             <div className="text-xs font-semibold">{m.sender_name}</div>
-            <div className="whitespace-pre-wrap">{m.body}</div>
+            <AutoTranslatedText text={m.body} />
             <div className="text-[10px] text-muted-foreground">{when(m.created_at)}</div>
           </div>
         ))}
@@ -1734,3 +1734,4 @@ function ProductionSchedule({ p, isProducer }: { p: Ctx["p"]; isProducer: boolea
     </>
   );
 }
+import { AutoTranslatedText } from "@/components/AutoTranslatedText";

@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { createAppI18n } from "@/i18n";
-import { detectSupportedLanguage, languageDirection, normalizeLanguage, SUPPORTED_LANGUAGES } from "@/i18n/languages";
+import { detectSupportedLanguage, languageDirection, languageScale, normalizeLanguage, SUPPORTED_LANGUAGES } from "@/i18n/languages";
 
 describe("borrowed language architecture", () => {
+  it("retains Holarc scaling with full-size defaults for new scripts", () => {
+    expect(languageScale("el-GR")).toBe(0.94);
+    expect(languageScale("ja")).toBe(1.02);
+    for (const code of ["hi", "mr", "ur", "te", "ta", "ml"]) expect(languageScale(code)).toBe(1);
+  });
   it("honors saved preferences and skips unsupported browser languages", () => {
     expect(detectSupportedLanguage(["ur-PK", "el-GR"])).toBe("ur");
     expect(detectSupportedLanguage(["unsupported", "el-GR"])).toBe("el");
