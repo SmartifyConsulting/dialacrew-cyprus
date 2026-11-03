@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import appCss from "../styles.css?url";
 import { reportAppError } from "../lib/error-reporting";
 import { isDespiaRuntime, syncNativeAppearance } from "@/lib/native";
+import { LanguageProvider } from "@/i18n/LanguageProvider";
 
 function NotFoundComponent() {
   return (
@@ -136,10 +137,12 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <LanguageProvider>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <ConfirmDialogHost />
       <Toaster closeButton={false} toastOptions={{ classNames: { toast: "!bg-[#4169E1] !border-[#4169E1] !text-white", title: "!text-white", description: "!text-white/90", icon: "!text-white" } }} />
+      </LanguageProvider>
     </QueryClientProvider>
   );
 }
