@@ -16,12 +16,14 @@ Based on Holarc Health's i18next / react-i18next architecture. Generic common la
 
 ## Current coverage audit
 
+Greek correction: all currently extracted English dictionary keys now have distinct Greek values with matching interpolation variables, enforced by a test. This measures dictionary coverage only, not full screen coverage or linguistic accuracy. New Greek copy remains an assistant-authored draft requiring native-speaker review, especially consent and payment terminology.
+
 | Surface | Current coverage |
 | --- | --- |
-| Shared navigation | Labels wired; copied translations for home, calendar, profile, admin and sign-out where available; Book a Crew-specific labels await translations |
+| Shared navigation | All role navigation labels and recognized navigation page headings have Greek drafts; other languages still have gaps |
 | Language picker | All 30 registered languages, persistent on this device; available before sign-in and on own profile/company settings |
-| Authentication / password recovery | Sign-in controls, password visibility, password checks and reset/forgot-password controls extracted; Greek/Hindi drafts supplied, language review pending. Signup-specific fields, consent/legal copy, backend/shared errors, page metadata and other language dictionaries remain pending |
-| Dashboard / gigs / calendar | Screen bodies unchanged; need extraction and translations |
+| Authentication / password recovery | Sign-in, recovery, signup field labels/help and consent controls have Greek drafts. Service/country options, invitation copy, backend/shared errors, linked legal documents and metadata remain pending. Hindi covers sign-in/recovery only |
+| Dashboard / gigs / calendar | Gig headings, empty state, urgency, payment units and core actions have Greek drafts. Gig posting form, agreements, confirmations, FindGigsTab, dashboard and calendar bodies remain pending |
 | Crew directory / profile | Screen bodies unchanged except language picker; need extraction and translations |
 | Production workspace / tasks / recce / gear | Needs extraction and translations |
 | Earnings / invoices / payments | Needs extraction and translations |

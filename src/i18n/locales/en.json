@@ -1,4 +1,24 @@
 {
+  "gigs": {
+    "subtitle": "Search open gigs, or grab one posted by the community", "open": "Open gigs",
+    "community": "Community gigs", "post": "Post a gig",
+    "communityHelp": "Crew post gigs to the whole community. First to secure it gets it.",
+    "empty": "No open community gigs right now.", "urgent": "Urgent", "fixed": "fixed", "perDay": "per day",
+    "secure": "Secure for {{amount}}", "secured": "Gigs I've secured", "withdraw": "Withdraw",
+    "posted": "Gigs I've posted", "done": "Mark done", "noShow": "Report no-show"
+  },
+  "signup": {
+    "identity": "I am", "crew": "Crew member", "producer": "Producer",
+    "producerSetup": "Producer accounts are set up by an existing producer.",
+    "firstName": "First name", "lastName": "Last name", "countryCode": "Country code",
+    "company": "Company name", "country": "Country you produce in",
+    "currency": "New productions are priced in this country's currency.",
+    "services": "Which services do you offer? (pick as many as apply)",
+    "customService": "Service not listed? Add your own.", "yourService": "Your service", "remove": "Remove {{service}}",
+    "social": "Yes, Book a Crew may feature me on its social media in my country (optional).",
+    "consentBefore": "I agree to the", "terms": "Terms & Conditions",
+    "consentAfter": "and Privacy Policy, and (for crew) confirm I'm registering as an independent contractor, not an employee of Book a Crew."
+  },
   "auth": {
     "signIn": "Sign in", "signUp": "Sign up", "email": "Email", "password": "Password",
     "create": "Create account", "wait": "Please wait…", "retry": "Try again in {{seconds}}s",

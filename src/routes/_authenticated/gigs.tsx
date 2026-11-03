@@ -35,6 +35,7 @@ type Gig = Database["public"]["Tables"]["community_gigs"]["Row"];
 const empty = { title: "", role: "", department: "", description: "", event_date: "", end_date: "", call_time: "", venue: "", country: "South Africa", kit_required: "", pay_type: "day_rate", amount: "", contact_phone: "", expires_at: "" };
 
 function GigsPage() {
+  const { t } = useTranslation();
   const crewId = useMyCrewId(true).data;
   const { session } = useSession();
   const uid = session?.user.id;
@@ -112,15 +113,15 @@ function GigsPage() {
 
   const isCrew = role === "crew";
   return (
-    <Page open title="Find Gigs" subtitle="Search open gigs, or grab one posted by the community">
-      <Panel title="Open gigs"><div className="p-4"><FindGigsTab canClaim={!!crewId} /></div></Panel>
+    <Page open title={t("nav.findGigs")} subtitle={t("gigs.subtitle")}>
+      <Panel title={t("gigs.open")}><div className="p-4"><FindGigsTab canClaim={!!crewId} /></div></Panel>
 
       <div className="mt-8">
-        <Panel title="Community gigs" right={isCrew && (
-          <button onClick={() => setShowForm((s) => !s)} className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">{showForm ? "Close" : "Post a gig"}</button>
+        <Panel title={t("gigs.community")} right={isCrew && (
+          <button onClick={() => setShowForm((s) => !s)} className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">{showForm ? t("common.close") : t("gigs.post")}</button>
         )}>
           <div className="p-4">
-            <p className="text-sm text-muted-foreground">Crew post gigs to the whole community. First to secure it gets it.</p>
+            <p className="text-sm text-muted-foreground">{t("gigs.communityHelp")}</p>
 
             {showForm && (
               <div className="mt-4 rounded-xl border border-border p-4">
@@ -144,7 +145,7 @@ function GigsPage() {
               </div>
             )}
 
-            <h4 className="mt-6 text-sm font-semibold uppercase tracking-wide text-primary">Find a gig</h4>
+            <h4 className="mt-6 text-sm font-semibold uppercase tracking-wide text-primary">{t("nav.findGigs")}</h4>
             {isCrew && (
               <label className="my-4 flex items-start gap-2 rounded-xl border border-border bg-card p-3 text-sm">
                 <input type="checkbox" className="mt-1" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
@@ -153,45 +154,45 @@ function GigsPage() {
             )}
 
             <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {open.length === 0 && <p className="text-muted-foreground">No open community gigs right now.</p>}
+              {open.length === 0 && <p className="text-muted-foreground">{t("gigs.empty")}</p>}
               {open.map((g) => (
                 <div key={g.id} className="flex flex-col rounded-xl border border-border bg-card p-4">
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="text-lg font-semibold text-foreground">{g.title}</h3>
-                    {isUrgent(g.event_date, g.call_time) && <span className="rounded-full bg-destructive px-2 py-0.5 text-xs font-bold text-destructive-foreground">Urgent</span>}
+                    {isUrgent(g.event_date, g.call_time) && <span className="rounded-full bg-destructive px-2 py-0.5 text-xs font-bold text-destructive-foreground">{t("gigs.urgent")}</span>}
                   </div>
                   <p className="text-sm text-muted-foreground">{g.role} · {g.department}</p>
                   <p className="mt-2 text-sm">{g.event_date}{g.end_date ? ` – ${g.end_date}` : ""} · call {String(g.call_time).slice(0, 5)}</p>
                   <p className="text-sm">{g.venue}, {g.country}</p>
                   {g.kit_required && <p className="text-sm text-muted-foreground">Equipment: {g.kit_required}</p>}
                   <div className="mt-2 text-sm text-muted-foreground"><AutoTranslatedText text={g.description} /></div>
-                  <p className="mt-3 text-xl font-bold text-foreground">{rand(g.amount)} <span className="text-sm font-normal text-muted-foreground">{g.pay_type === "fixed" ? "fixed" : "per day"}</span></p>
+                  <p className="mt-3 text-xl font-bold text-foreground">{rand(g.amount)} <span className="text-sm font-normal text-muted-foreground">{g.pay_type === "fixed" ? t("gigs.fixed") : t("gigs.perDay")}</span></p>
                   <p className="text-xs text-muted-foreground">Posted by {g.poster_name} · expires {new Date(g.expires_at).toLocaleString("en-ZA")}</p>
-                  {isCrew && <button onClick={() => secure(g)} className="mt-3 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Secure for {rand(g.secure_fee)}</button>}
+                  {isCrew && <button onClick={() => secure(g)} className="mt-3 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">{t("gigs.secure", { amount: rand(g.secure_fee) })}</button>}
                 </div>
               ))}
             </div>
 
             {secured.length > 0 && (
               <div className="mt-8">
-                <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-primary">Gigs I've secured</h4>
+                <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-primary">{t("gigs.secured")}</h4>
                 <div className="divide-y divide-border rounded-xl border border-border">{secured.map((g) => (
                   <div key={g.id} className="flex flex-wrap items-center gap-3 p-3">
                     <div className="flex-1"><p className="font-semibold">{g.title}</p><p className="text-sm text-muted-foreground">{g.event_date} · {g.venue} · contact {g.contact_phone}</p></div>
-                    <button onClick={() => withdraw(g)} className="rounded-xl border border-border px-3 py-1.5 text-sm">Withdraw</button>
+                    <button onClick={() => withdraw(g)} className="rounded-xl border border-border px-3 py-1.5 text-sm">{t("gigs.withdraw")}</button>
                   </div>))}</div>
               </div>
             )}
 
             {mine.length > 0 && (
               <div className="mt-8">
-                <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-primary">Gigs I've posted</h4>
+                <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-primary">{t("gigs.posted")}</h4>
                 <div className="divide-y divide-border rounded-xl border border-border">{mine.map((g) => (
                   <div key={g.id} className="flex flex-wrap items-center gap-3 p-3">
                     <div className="flex-1"><p className="font-semibold">{g.title}</p><p className="text-sm text-muted-foreground">{g.event_date} · {g.status === "secured" ? `Secured by ${g.secured_name}` : g.status}{Number(g.penalty_amount) > 0 ? ` · penalty ${rand(g.penalty_amount)}` : ""}</p></div>
                     {g.status === "secured" && <>
-                      <button onClick={() => act("complete_gig", g)} className="rounded-xl bg-primary px-3 py-1.5 text-sm text-primary-foreground">Mark done</button>
-                      <button onClick={() => act("report_gig_no_show", g)} className="rounded-xl border border-destructive px-3 py-1.5 text-sm text-destructive">Report no-show</button>
+                      <button onClick={() => act("complete_gig", g)} className="rounded-xl bg-primary px-3 py-1.5 text-sm text-primary-foreground">{t("gigs.done")}</button>
+                      <button onClick={() => act("report_gig_no_show", g)} className="rounded-xl border border-destructive px-3 py-1.5 text-sm text-destructive">{t("gigs.noShow")}</button>
                     </>}
                   </div>))}</div>
               </div>
@@ -203,3 +204,4 @@ function GigsPage() {
   );
 }
 import { AutoTranslatedText } from "@/components/AutoTranslatedText";
+import { useTranslation } from "react-i18next";

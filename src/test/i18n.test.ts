@@ -1,8 +1,25 @@
 import { describe, expect, it } from "vitest";
 import { createAppI18n } from "@/i18n";
+import english from "@/i18n/locales/en.json";
 import { detectSupportedLanguage, languageDirection, languageScale, normalizeLanguage, SUPPORTED_LANGUAGES } from "@/i18n/languages";
 
 describe("borrowed language architecture", () => {
+  it("provides Greek strings for every extracted English dictionary key", () => {
+    const instance = createAppI18n();
+    const verify = (value: Record<string, unknown>, prefix = "") => {
+      for (const [key, entry] of Object.entries(value)) {
+        const path = prefix ? `${prefix}.${key}` : key;
+        if (typeof entry === "string") {
+          const translated = instance.getResource("el", "translation", path);
+          expect(translated, path).toBeTypeOf("string");
+          expect(translated, path).not.toBe(entry);
+          const variables = (text: string) => [...text.matchAll(/{{\s*(\w+)\s*}}/g)].map((match) => match[1]).sort();
+          expect(variables(translated), path).toEqual(variables(entry));
+        } else verify(entry as Record<string, unknown>, path);
+      }
+    };
+    verify(english);
+  });
   it("provides Greek and Hindi authentication drafts with working interpolation", async () => {
     for (const language of ["el", "hi"]) {
       const instance = createAppI18n();
