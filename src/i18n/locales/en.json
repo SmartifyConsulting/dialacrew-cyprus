@@ -1,4 +1,11 @@
 {
+  "roles": { "Directors": "Directors", "Director": "Director", "Sound": "Sound", "Key Grip": "Key Grip", "Gaffer": "Gaffer", "Make Up": "Make Up", "Make Up Artist": "Make Up Artist", "DOP": "Director of photography", "DIT": "Digital imaging technician" },
+  "payments": {
+    "subtitle": "One escrow pool per production. Release everyone's pay in one click at wrap.", "funded": "Escrow created for {{amount}} — fund it on Escrow.com", "pick": "Tick at least one crew member.", "released": "Released pay for {{count}} crew", "empty": "No payments yet.", "escrow": "Escrow", "manage": "Manage payouts", "release": "Release {{count}} selected", "include": "Include {{name}}", "days_one": "{{count}} day", "days_other": "{{count}} days", "approved": "Job approved",
+    "labels": { "Total committed": "Total committed", "Held in escrow": "Held in escrow", "Awaiting approval": "Awaiting approval", "Paid out": "Paid out" },
+    "pool": { "awaiting_funds": "Awaiting funds", "in_escrow": "Funded", "partially_released": "Partly paid out", "released": "All paid out" },
+    "stage": { "Booked": "Booked", "On set": "On set", "Awaiting approval": "Awaiting approval", "Payment due": "Payment due", "Ready to release": "Ready to release", "Paid": "Paid" }
+  },
   "statuses": { "confirmed": "Confirmed", "cancelled": "Cancelled", "completed": "Completed", "draft": "Draft", "paid": "Paid", "pending": "Pending", "sent": "Sent", "approved": "Approved", "Approved": "Approved", "Declined": "Declined", "Pending": "Pending", "awaiting_crew_confirmation": "Pending confirmation", "in_progress": "In progress", "awaiting_review": "Awaiting review", "payment_released": "Payment released", "disputed": "Disputed", "pencil": "Confirmed" },
   "budget": { "Budget": "Budget", "Running cost": "Running cost", "Client billing": "Client billing", "Margin": "Margin", "Budget left": "Budget left", "breakdown": "Cost breakdown", "provider": "Provider", "crewRate": "Crew rate", "assets": "Assets", "providerTotal": "Provider total", "clientCharge": "Client charge", "invoice": "Invoice attachment", "unfilled": "Unfilled" },
   "files": { "upload": "Upload", "uploading": "Uploading…", "checklist": "Document checklist ({{uploaded}}/{{total}} on file)", "load": "Load a saved checklist…", "general": "General documents ({{count}})", "empty": "No other documents yet." },
