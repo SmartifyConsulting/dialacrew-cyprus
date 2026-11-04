@@ -225,7 +225,8 @@ const statusLabel: Record<string, string> = {
 };
 
 export function Badge({ children }: { children: string }) {
-  return <span className={`inline-block rounded-sm px-2 py-0.5 text-xs font-semibold ${tone[children] ?? "bg-muted text-muted-foreground"}`}>{statusLabel[children] ?? children}</span>;
+  const { t } = useTranslation();
+  return <span className={`inline-block rounded-sm px-2 py-0.5 text-xs font-semibold ${tone[children] ?? "bg-muted text-muted-foreground"}`}>{t(`statuses.${children}`, statusLabel[children] ?? children)}</span>;
 }
 
 // Fixed palette so each client name always lands on the same color — makes client identity scannable at a glance.

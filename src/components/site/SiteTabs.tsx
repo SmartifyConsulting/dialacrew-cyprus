@@ -1611,6 +1611,7 @@ export function TasksTab({ p, userId }: Ctx) {
 
 /* ---------------- Commercials (producer only) ---------------- */
 export function CommercialsTab({ p, bookings, crewNames, requests }: Ctx & { bookings: Booking[]; crewNames: Record<string, string>; requests: { production: string; amount: number; state: string; kind: string; detail: string }[] }) {
+  const { t } = useTranslation();
   const selected = useBookingAssets(true).data ?? [];
   const invoices = useQuery({ queryKey: ["production-invoices", p.id], queryFn: async () => {
     const { data, error } = await supabase.from("invoices").select("id, booking_id, invoice_number, status, total").eq("production_id", p.id);
@@ -1631,20 +1632,20 @@ export function CommercialsTab({ p, bookings, crewNames, requests }: Ctx & { boo
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-border bg-border md:grid-cols-5">
         {([["Budget", fmtMoney(p.budget, p.currency)], ["Running cost", fmtMoney(running, p.currency)], ["Client billing", fmtMoney(billing, p.currency)], ["Margin", fmtMoney(billing - running, p.currency)], ["Budget left", fmtMoney(p.budget - running, p.currency)]]
         ).map(([l, v]) => (
-          <div key={l} className="bg-card px-4 py-3"><div className="text-[11px] text-muted-foreground">{l}</div><div className="font-display text-2xl font-semibold">{v}</div></div>
+          <div key={l} className="bg-card px-4 py-3"><div className="text-[11px] text-muted-foreground">{t(`budget.${l}`)}</div><div className="font-display text-2xl font-semibold">{v}</div></div>
         ))}
       </div>
-      <Panel title="Cost breakdown">
+      <Panel title={t("budget.breakdown")}>
         <table className="w-full text-sm">
           <thead className="text-left text-[11px] text-muted-foreground"><tr>
-            <th className="px-4 py-2">Role</th><th className="px-4">Provider</th><th className="px-4">Days</th>
-            <th className="px-4">Crew rate</th><th className="px-4">Assets</th><th className="px-4">Provider total</th>
-            <th className="px-4">Client charge</th><th className="px-4">Invoice attachment</th><th className="px-4">Status</th></tr></thead>
+            <th className="px-4 py-2">{t("common.role")}</th><th className="px-4">{t("budget.provider")}</th><th className="px-4">{t("productionList.columns.Days")}</th>
+            <th className="px-4">{t("budget.crewRate")}</th><th className="px-4">{t("budget.assets")}</th><th className="px-4">{t("budget.providerTotal")}</th>
+            <th className="px-4">{t("budget.clientCharge")}</th><th className="px-4">{t("budget.invoice")}</th><th className="px-4">{t("common.status")}</th></tr></thead>
           <tbody>
             {rows.map(({ b, assets, cost, charge }) => (
               <tr key={b.id} className="border-t border-border">
                 <td className="px-4 py-2.5 font-medium">{b.role}</td>
-                <td className="px-4">{b.crewId ? <Link to="/crew/$id" params={{ id: b.crewId }} className="hover:text-primary">{crewNames[b.crewId] ?? "Open"}</Link> : "Open"}</td>
+                <td className="px-4">{b.crewId ? <Link to="/crew/$id" params={{ id: b.crewId }} className="hover:text-primary">{crewNames[b.crewId] ?? t("budget.unfilled")}</Link> : t("budget.unfilled")}</td>
                 <td className="px-4">{b.days}</td>
                 <td className="px-4 text-muted-foreground">{zar(b.crewRate)}</td><td className="px-4">{zar(assets)}</td><td className="px-4 font-semibold">{zar(cost)}</td>
                 <td className="px-4">{zar(charge)}</td><td className="px-4">{invoices.filter((i) => i.booking_id === b.id).map((i) => <div key={i.id} className="text-xs"><Link to="/invoices/$id" params={{ id: i.id }} className="font-semibold text-primary underline">{i.invoice_number}</Link> <Badge>{i.status}</Badge></div>)}</td><td className="px-4"><Badge>{b.status}</Badge></td>
