@@ -4,6 +4,18 @@ import english from "@/i18n/locales/en.json";
 import { detectSupportedLanguage, languageDirection, languageScale, normalizeLanguage, SUPPORTED_LANGUAGES } from "@/i18n/languages";
 
 describe("borrowed language architecture", () => {
+  it("resolves literal screen translation keys in Greek", () => {
+    const sources = import.meta.glob<string>(["../components/**/*.tsx", "../routes/**/*.tsx"], { query: "?raw", import: "default", eager: true });
+    const instance = createAppI18n();
+    for (const [filename, source] of Object.entries(sources)) {
+      for (const match of source.matchAll(/\b(?:t|translate)\(\s*["']([^"']+)["']/g)) {
+        const key = match[1]!;
+        const direct = instance.getResource("el", "translation", key);
+        const plural = ["one", "other"].every((suffix) => typeof instance.getResource("el", "translation", `${key}_${suffix}`) === "string");
+        expect(typeof direct === "string" || plural, `${filename}: ${key}`).toBe(true);
+      }
+    }
+  });
   it("provides Greek strings for every extracted English dictionary key", () => {
     const instance = createAppI18n();
     const verify = (value: Record<string, unknown>, prefix = "") => {

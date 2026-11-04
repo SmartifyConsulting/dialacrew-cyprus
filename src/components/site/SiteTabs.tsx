@@ -198,6 +198,7 @@ const WEATHER_ICONS: Record<number, typeof Sun> = {
 };
 
 function DayWeather({ lat, lon, date }: { lat: number; lon: number; date: string }) {
+  const { t } = useTranslation();
   const forecast = useQuery({
     queryKey: ["weather", lat, lon, date],
     queryFn: async () => {
@@ -215,8 +216,8 @@ function DayWeather({ lat, lon, date }: { lat: number; lon: number; date: string
     staleTime: 3 * 60 * 60 * 1000,
     retry: false,
   });
-  if (forecast.isPending) return <p className="text-xs text-muted-foreground">Checking the forecast…</p>;
-  if (forecast.isError || !forecast.data) return <p className="text-xs text-muted-foreground">No forecast for this date yet (forecasts run up to 16 days ahead).</p>;
+  if (forecast.isPending) return <p className="text-xs text-muted-foreground">{t("locationsUi.checking")}</p>;
+  if (forecast.isError || !forecast.data) return <p className="text-xs text-muted-foreground">{t("locationsUi.noForecast")}</p>;
   const w = forecast.data;
   const Icon = WEATHER_ICONS[w.code] ?? Cloud;
   return (
@@ -254,6 +255,8 @@ function DayWeatherIcon({ lat, lon, date }: { lat: number; lon: number; date: st
 }
 
 function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer" | "myCrewId">) {
+  const { t, i18n } = useTranslation();
+  const localDay = (value: string) => new Date(value).toLocaleDateString(i18n.language, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
   const inv = useInvalidate();
   const bookings = useBookings().data ?? [];
   const canSeeExactAddress = isProducer || bookings.some((booking) => booking.productionId === p.id && booking.crewId === myCrewId && ["confirmed", "in_progress", "awaiting_review", "payment_released", "completed"].includes(booking.status));
@@ -391,11 +394,11 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
     <div>
       {isProducer && !adding && points.length === 0 && (
         <div className="flex justify-end px-4 pt-4">
-          <button onClick={startAdd} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> Add Location</button>
+          <button onClick={startAdd} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> {t("reviewText.addLocation")}</button>
         </div>
       )}
       <ul className="space-y-3 p-3 text-sm">
-        {points.length === 0 && <li className="p-4 text-muted-foreground">No locations yet.</li>}
+        {points.length === 0 && <li className="p-4 text-muted-foreground">{t("locationsUi.empty")}</li>}
         {points.map((pt, i) => (
           <li key={pt.id}
             draggable={isProducer && points.length > 1}
@@ -410,14 +413,14 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
                 <NumberedPin n={i + 1} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 text-sm font-bold text-foreground">
-                    <span>Shoot Day {i + 1}: {canSeeExactAddress ? (pt.label || "Location TBC") : areaOnly(pt.address || pt.label || "", p.location)}</span>
+                    <span>{t("locationsUi.shootDay", { number: i + 1 })}: {canSeeExactAddress ? (pt.label || t("overview.tbc")) : areaOnly(pt.address || pt.label || "", p.location)}</span>
                     {pt.starts_at && pt.latitude != null && pt.longitude != null && <DayWeatherIcon lat={pt.latitude} lon={pt.longitude} date={localYmd(pt.starts_at)} />}
                   </div>
-                  <div className="text-sm font-semibold text-foreground">{pt.starts_at ? dayLabel(pt.starts_at) : "Date TBC"}</div>
-                  <div className="text-xs text-muted-foreground">{pt.starts_at ? timeRange(pt.starts_at, pt.ends_at) : "Time TBC"}</div>
+                  <div className="text-sm font-semibold text-foreground">{pt.starts_at ? localDay(pt.starts_at) : t("overview.tbc")}</div>
+                  <div className="text-xs text-muted-foreground">{pt.starts_at ? timeRange(pt.starts_at, pt.ends_at) : t("calendar.timeTbc")}</div>
                   {isProducer && (
                     <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-                      <span className="block font-semibold text-foreground">Recce date</span>
+                      <span className="block font-semibold text-foreground">{t("overview.recceDate")}</span>
                       <input
                         type="date"
                         aria-label={`Recce date for Shoot Day ${i + 1}`}
@@ -443,27 +446,27 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
               ) : <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><MapPin className="h-3.5 w-3.5 text-primary" /> {pt.label || p.location} · Exact address shared after booking confirmation.</p>}
               {(pt.recce_date || pt.starts_at) && (
                 <div className="space-y-1 rounded-md bg-muted/30 px-2.5 py-2">
-                  <p className="text-xs font-semibold text-foreground">Weather forecast</p>
+                  <p className="text-xs font-semibold text-foreground">{t("locationsUi.forecast")}</p>
                   {pt.recce_date && (
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground">Recce · {dayLabel(`${pt.recce_date}T00:00:00`)}</p>
+                      <p className="text-xs font-medium text-muted-foreground">{t("dashboard.recce")} · {localDay(`${pt.recce_date}T00:00:00`)}</p>
                       {pt.latitude != null && pt.longitude != null
                         ? <DayWeather lat={pt.latitude} lon={pt.longitude} date={pt.recce_date} />
-                        : <p className="text-xs text-muted-foreground">Add a map location to see the recce forecast.</p>}
+                        : <p className="text-xs text-muted-foreground">{t("locationsUi.addMap")}</p>}
                     </div>
                   )}
                   {pt.starts_at && (
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground">Shoot · {dayLabel(pt.starts_at)}</p>
+                      <p className="text-xs font-medium text-muted-foreground">{t("overview.shoot")} · {localDay(pt.starts_at)}</p>
                       {pt.latitude != null && pt.longitude != null
                         ? <DayWeather lat={pt.latitude} lon={pt.longitude} date={localYmd(pt.starts_at)} />
-                        : <p className="text-xs text-muted-foreground">Add a map location to see the shoot-day forecast.</p>}
+                        : <p className="text-xs text-muted-foreground">{t("locationsUi.addMap")}</p>}
                     </div>
                   )}
                 </div>
               )}
               <details className="group rounded-lg border border-border/70">
-                <summary className="cursor-pointer select-none px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/40">Photos · Fees · Risks <span className="font-normal text-muted-foreground">(expand)</span></summary>
+                <summary className="cursor-pointer select-none px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/40">{t("locationsUi.details")}</summary>
                 <div className="space-y-3 border-t border-border px-3 py-3">
                   <LocationPhotos p={p} locationId={pt.id} isProducer={isProducer} />
                   {isProducer && <LocationFee p={p} locationId={pt.id} />}
@@ -486,12 +489,12 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
             <NumberedPin n={editingId ? points.findIndex((pt) => pt.id === editingId) + 1 : points.length + 1} />
             <span className="text-sm font-bold text-foreground">{editingId ? `Edit location` : `Location ${points.length + 1}`}</span>
           </div>
-          <AddressAutocomplete className={`${input} w-full`} placeholder="Address — start typing to search" value={lf.address}
+          <AddressAutocomplete className={`${input} w-full`} placeholder={t("locationsUi.address")} value={lf.address}
             onChange={(v) => setLf({ ...lf, address: v })}
             onSelect={(s) => setLf({ ...lf, label: s.place, address: s.exactAddress, latitude: s.lat, longitude: s.lon })} />
           <div className="space-y-3">
             <div className="grid gap-2 sm:grid-cols-2">
-              <label className="block min-w-0"><span className="text-xs text-muted-foreground">Shoot starts · Date & time</span>
+              <label className="block min-w-0"><span className="text-xs text-muted-foreground">{t("locationsUi.starts")}</span>
                 <input type="datetime-local" className={`${input} mt-1 w-full min-w-0`} value={lf.startsAt}
                   onChange={(e) => {
                     const startsAt = e.target.value;
@@ -500,11 +503,11 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
                     const recceDate = !lf.recceDate && startDay ? addDays(startDay, -1) : lf.recceDate;
                     setLf({ ...lf, startsAt, endsAt, recceDate });
                   }} /></label>
-              <label className="block min-w-0"><span className="text-xs text-muted-foreground">Shoot ends · Date & time</span>
+              <label className="block min-w-0"><span className="text-xs text-muted-foreground">{t("locationsUi.ends")}</span>
                 <input type="datetime-local" className={`${input} mt-1 w-full min-w-0`} value={lf.endsAt} onChange={(e) => setLf({ ...lf, endsAt: e.target.value })} /></label>
             </div>
             <div className="space-y-1.5">
-              <label className="block min-w-0"><span className="text-xs text-muted-foreground">Recce date</span>
+              <label className="block min-w-0"><span className="text-xs text-muted-foreground">{t("overview.recceDate")}</span>
                 <input type="date" className={`${input} mt-1 w-full min-w-0`} value={lf.recceDate} onChange={(e) => setLf({ ...lf, recceDate: e.target.value })} /></label>
               <div className="flex items-center gap-2">
                 <AmPmTimePicker label="Recce start time" placeholder="Select start time" value={lf.recceStart} onChange={(value) => setLf({ ...lf, recceStart: value, recceEnd: !lf.recceEnd && value ? addHoursToHHMM(value, 3) : lf.recceEnd })} />
@@ -513,14 +516,14 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
             </div>
           </div>
           <div className="flex gap-2">
-            <button disabled={busy} onClick={savePoint} className={btn}>{busy ? "Saving…" : editingId ? "Update location" : "Save location"}</button>
-            <button onClick={cancelForm} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold">Cancel</button>
+            <button disabled={busy} onClick={savePoint} className={btn}>{busy ? t("recovery.saving") : t("locationsUi.save")}</button>
+            <button onClick={cancelForm} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold">{t("common.cancel")}</button>
           </div>
         </div>
       )}
       {isProducer && !adding && points.length > 0 && (
         <div className="flex justify-end px-4 pb-4">
-          <button onClick={startAdd} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> Add Location</button>
+          <button onClick={startAdd} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> {t("reviewText.addLocation")}</button>
         </div>
       )}
       {isProducer && <div className="border-t border-border p-3"><ProjectWideRisks p={p} /></div>}
