@@ -703,6 +703,7 @@ function ChecklistItemPhotoThumb({ photo, index, count, canEdit, onDelete, onMov
 }
 
 export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
+  const { t } = useTranslation();
   const inv = useInvalidate();
   const checklists = (useChecklists(p.id).data ?? []) as Array<{ id: string; title: string; production_checklist_items: ChecklistItem[] }>;
   const members = useSiteMembers(p.id).data ?? [];
@@ -814,9 +815,9 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
   const doneCount = checklists.reduce((n, c) => n + c.production_checklist_items.filter((i) => i.done).length, 0);
   return (
     <div className="space-y-4">
-      {isProducer && <><div className="text-right"><Link to="/admin" search={{ tab: "Templates" }} className="text-sm font-semibold text-primary underline">Manage checklist templates</Link></div><ChecklistTemplateManager audience="producer" targetId={p.id} /></>}
+      {isProducer && <><div className="text-right"><Link to="/admin" search={{ tab: "Templates" }} className="text-sm font-semibold text-primary underline">{t("checklists.manage")}</Link></div><ChecklistTemplateManager audience="producer" targetId={p.id} /></>}
       <div role="tablist" aria-label="Checklist progress" className="flex gap-2 border-b border-border">
-        {(["Checklist", "Done"] as const).map((tab) => <button key={tab} role="tab" aria-selected={view === tab} onClick={() => setView(tab)} className={`border-b-2 px-4 py-2 text-sm font-semibold ${view === tab ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}>{tab} ({tab === "Checklist" ? pendingCount : doneCount})</button>)}
+        {(["Checklist", "Done"] as const).map((tab) => <button key={tab} role="tab" aria-selected={view === tab} onClick={() => setView(tab)} className={`border-b-2 px-4 py-2 text-sm font-semibold ${view === tab ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}>{t(tab === "Checklist" ? "checklists.pending" : "calendar.done")} ({tab === "Checklist" ? pendingCount : doneCount})</button>)}
       </div>
       <div className="grid items-start gap-5 md:grid-cols-2">
       {checklists.map((c) => {
@@ -825,10 +826,10 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
         <Panel key={c.id} title={c.title} collapsible defaultCollapsed
           badge={notDone > 0 ? <span className="rounded-full bg-destructive px-2 py-0.5 text-xs font-bold text-white">{notDone}</span> : undefined}
           right={isProducer && (
-          <div className="flex items-center gap-3"><button onClick={() => saveChecklistAsTemplate(c)} className="text-xs font-semibold text-primary underline">Save as template</button><button onClick={() => removeChecklist(c.id)} className="text-muted-foreground hover:text-destructive" aria-label={`Remove ${c.title}`}><Trash2 className="h-3.5 w-3.5" /></button></div>
+          <div className="flex items-center gap-3"><button onClick={() => saveChecklistAsTemplate(c)} className="text-xs font-semibold text-primary underline">{t("checklists.saveAs")}</button><button onClick={() => removeChecklist(c.id)} className="text-muted-foreground hover:text-destructive" aria-label={t("signup.remove", { service: c.title })}><Trash2 className="h-3.5 w-3.5" /></button></div>
         )}>
           <ul className="divide-y divide-border text-sm">
-            {c.production_checklist_items.filter((i) => i.done === (view === "Done")).length === 0 && <li className="p-4 text-muted-foreground">{view === "Done" ? "Nothing completed yet." : "All items completed."}</li>}
+            {c.production_checklist_items.filter((i) => i.done === (view === "Done")).length === 0 && <li className="p-4 text-muted-foreground">{t(view === "Done" ? "checklists.noneDone" : "checklists.allDone")}</li>}
             {c.production_checklist_items.filter((item) => item.done === (view === "Done")).map((item) => (
               <li key={item.id} className="px-4 py-2.5">
                 <div className="flex items-center gap-3">
@@ -847,7 +848,7 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
                     <>
                       <select aria-label={`Assign ${item.label}`} value={item.assigned_to ?? ""} onChange={(e) => assignItem(item.id, e.target.value)}
                         className="shrink-0 rounded-sm border border-input bg-background px-1.5 py-1 text-[11px] max-w-24">
-                        <option value="">Unassigned</option>
+                        <option value="">{t("tasks.unassigned")}</option>
                         {members.filter((m) => crewRelevantToChecklist(m, c.title)).map((m) => <option key={m.crew_id} value={m.crew_id}>{m.name}</option>)}
                       </select>
                       {item.assigned_to && (
@@ -904,14 +905,14 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
       {isProducer && view === "Checklist" && (
         addingList ? (
           <div className="flex gap-2 rounded-sm border border-border bg-card p-3">
-            <input autoFocus className={`${input} flex-1`} placeholder="Checklist name, e.g. Wardrobe checklist"
+            <input autoFocus className={`${input} flex-1`} placeholder={t("templates.name")}
               value={newTitle} onChange={(e) => setNewTitle(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") addChecklist(); if (e.key === "Escape") { setAddingList(false); setNewTitle(""); } }} />
-            <button onClick={addChecklist} className={btn}>Add</button>
-            <button onClick={() => { setAddingList(false); setNewTitle(""); }} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold">Cancel</button>
+            <button onClick={addChecklist} className={btn}>{t("common.add")}</button>
+            <button onClick={() => { setAddingList(false); setNewTitle(""); }} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold">{t("common.cancel")}</button>
           </div>
         ) : (
-          <button onClick={() => setAddingList(true)} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> Add checklist</button>
+          <button onClick={() => setAddingList(true)} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> {t("templates.addChecklist")}</button>
         )
       )}
     </div>

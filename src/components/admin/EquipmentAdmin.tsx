@@ -88,9 +88,9 @@ export function EquipmentAdmin() {
           <select className={field} value={newItem.category} onChange={(e) => setNewItem({ ...newItem, category: e.target.value })} aria-label="Category">
             {EQUIPMENT_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
           </select>
-          <input type="number" min="1" className={`${field} w-24`} placeholder="How many" value={newItem.total_count} onChange={(e) => setNewItem({ ...newItem, total_count: e.target.value })} aria-label="How many we own" />
-          <input placeholder="Serial/Asset ID" className={`${field} w-32`} value={newItem.serial_code} onChange={(e) => setNewItem({ ...newItem, serial_code: e.target.value })} />
-          <input placeholder="Notes (condition…)" className={`${field} min-w-48`} value={newItem.notes} onChange={(e) => setNewItem({ ...newItem, notes: e.target.value })} />
+          <input type="number" min="1" className={`${field} w-24`} placeholder={t("checkout.quantity")} value={newItem.total_count} onChange={(e) => setNewItem({ ...newItem, total_count: e.target.value })} aria-label={t("equipment.owned")} />
+          <input placeholder={t("checkout.serial")} className={`${field} w-32`} value={newItem.serial_code} onChange={(e) => setNewItem({ ...newItem, serial_code: e.target.value })} />
+          <input placeholder={t("checkout.notes")} className={`${field} min-w-48`} value={newItem.notes} onChange={(e) => setNewItem({ ...newItem, notes: e.target.value })} />
           <button onClick={addItem} className={addBtn}>{t("equipment.add")}</button>
         </div>
       </Panel>
@@ -99,7 +99,7 @@ export function EquipmentAdmin() {
         <h2 className="font-display text-sm font-semibold uppercase tracking-wide text-primary">{t("equipment.inventory", { count: items.length })}</h2>
         <div className="relative">
           <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <input className={`${field} w-44 pl-7`} placeholder="Search equipment" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search equipment" />
+          <input className={`${field} w-44 pl-7`} placeholder={t("checkout.search")} value={search} onChange={(e) => setSearch(e.target.value)} aria-label={t("checkout.search")} />
         </div>
       </div>
       {shown.length === 0 && (
@@ -138,8 +138,8 @@ export function EquipmentAdmin() {
                             <td className="px-4">{out}</td>
                             <td className="px-4">{(Number(draft.total_count) || 0) - out}</td>
                             <td className="px-4"><div className="flex gap-3">
-                              <button onClick={() => saveEdit(it.id)} className="text-xs font-semibold text-primary hover:underline">Save</button>
-                              <button onClick={() => setEditingId(null)} className="text-xs text-muted-foreground hover:underline">Cancel</button>
+                              <button onClick={() => saveEdit(it.id)} className="text-xs font-semibold text-primary hover:underline">{t("common.save")}</button>
+                              <button onClick={() => setEditingId(null)} className="text-xs text-muted-foreground hover:underline">{t("common.cancel")}</button>
                             </div></td>
                           </tr>
                         );
@@ -161,8 +161,8 @@ export function EquipmentAdmin() {
                           <td className={`px-4 py-2 font-semibold ${it.total_count - out > 0 ? "text-success" : "text-destructive"}`}>{it.total_count - out}</td>
                           <td className="px-4 py-2"><div className="flex gap-3 whitespace-nowrap">
                             <button disabled={it.total_count - out <= 0} onClick={() => setCheckoutFor(it)} className="text-xs font-semibold text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline">{t("equipment.checkout")}</button>
-                            <button onClick={() => startEdit(it)} className="text-xs text-primary hover:underline">Edit</button>
-                            <button onClick={() => removeItem(it)} className="text-xs text-destructive hover:underline">Delete</button>
+                            <button onClick={() => startEdit(it)} className="text-xs text-primary hover:underline">{t("common.edit")}</button>
+                            <button onClick={() => removeItem(it)} className="text-xs text-destructive hover:underline">{t("common.delete")}</button>
                           </div></td>
                         </tr>
                       );
@@ -212,6 +212,7 @@ export function EquipmentAdmin() {
 }
 
 function CheckoutDialog({ item, free, onClose, onDone }: { item: EquipmentItem; free: number; onClose: () => void; onDone: () => void }) {
+  const { t } = useTranslation();
   const productions = useProductions().data ?? [];
   const crew = useCrew().data ?? [];
   const [f, setF] = useState({ quantity: "1", who: "", productionId: "", outAt: todayYmd(), dueAt: "" });
@@ -226,10 +227,10 @@ function CheckoutDialog({ item, free, onClose, onDone }: { item: EquipmentItem; 
 
   async function submit() {
     const quantity = Math.floor(Number(f.quantity));
-    if (!f.who.trim()) { toast.error("Say who is taking it"); return; }
-    if (!quantity || quantity < 1 || quantity > free) { toast.error(`Choose between 1 and ${free}`); return; }
-    if (!f.dueAt) { toast.error("Set the date it is due back"); return; }
-    if (f.dueAt < f.outAt) { toast.error("The return date can't be before the day it goes out"); return; }
+    if (!f.who.trim()) { toast.error(t("checkout.whoRequired")); return; }
+    if (!quantity || quantity < 1 || quantity > free) { toast.error(t("checkout.quantityError", { maximum: free })); return; }
+    if (!f.dueAt) { toast.error(t("checkout.dueRequired")); return; }
+    if (f.dueAt < f.outAt) { toast.error(t("checkout.dateError")); return; }
     setBusy(true);
     // If the name matches a known crew member, link them so the due-back notification can reach them directly.
     const matchedCrew = crew.find((c) => c.name.trim().toLowerCase() === f.who.trim().toLowerCase());
@@ -239,7 +240,7 @@ function CheckoutDialog({ item, free, onClose, onDone }: { item: EquipmentItem; 
     });
     setBusy(false);
     if (error) { toast.error(friendlyError(error)); return; }
-    toast.success(`${item.name} checked out to ${f.who.trim()}`);
+    toast.success(t("checkout.success", { item: item.name, name: f.who.trim() }));
     onDone();
     onClose();
   }
@@ -248,30 +249,30 @@ function CheckoutDialog({ item, free, onClose, onDone }: { item: EquipmentItem; 
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Check out {item.name}</DialogTitle>
-          <DialogDescription>{free} of {item.total_count} free to check out.</DialogDescription>
+          <DialogTitle>{t("checkout.title", { item: item.name })}</DialogTitle>
+          <DialogDescription>{t("checkout.availability", { free, total: item.total_count })}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-3">
-          <label className="block"><span className="text-xs text-muted-foreground">Who is taking it</span>
-            <input list="equipment-who" className={`${field} mt-1 w-full`} placeholder="Name of the person" value={f.who} onChange={(e) => setF({ ...f, who: e.target.value })} />
+          <label className="block"><span className="text-xs text-muted-foreground">{t("checkout.who")}</span>
+            <input list="equipment-who" className={`${field} mt-1 w-full`} placeholder={t("checkout.person")} value={f.who} onChange={(e) => setF({ ...f, who: e.target.value })} />
             <datalist id="equipment-who">{crew.map((c) => <option key={c.id} value={c.name} />)}</datalist></label>
-          <label className="block"><span className="text-xs text-muted-foreground">Which production it is for</span>
+          <label className="block"><span className="text-xs text-muted-foreground">{t("checkout.production")}</span>
             <select className={`${field} mt-1 w-full`} value={f.productionId} onChange={(e) => chooseProduction(e.target.value)}>
-              <option value="">No production</option>
+              <option value="">{t("checkout.noProduction")}</option>
               {[...productions].sort((a, b) => a.name.localeCompare(b.name)).map((p) => <option key={p.id} value={p.id}>{p.name}{p.date ? ` · ${p.date}` : ""}</option>)}
             </select></label>
           <div className="grid grid-cols-3 gap-3">
-            <label className="block"><span className="text-xs text-muted-foreground">How many</span>
+            <label className="block"><span className="text-xs text-muted-foreground">{t("checkout.quantity")}</span>
               <input type="number" min="1" max={free} className={`${field} mt-1 w-full`} value={f.quantity} onChange={(e) => setF({ ...f, quantity: e.target.value })} /></label>
-            <label className="col-span-2 block"><span className="text-xs text-muted-foreground">Goes out on</span>
+            <label className="col-span-2 block"><span className="text-xs text-muted-foreground">{t("checkout.outDate")}</span>
               <input type="date" className={`${field} mt-1 w-full`} value={f.outAt} onChange={(e) => setF({ ...f, outAt: e.target.value })} /></label>
           </div>
-          <label className="block"><span className="text-xs text-muted-foreground">Due back on</span>
+          <label className="block"><span className="text-xs text-muted-foreground">{t("checkout.dueDate")}</span>
             <input type="date" min={f.outAt} className={`${field} mt-1 w-full`} value={f.dueAt} onChange={(e) => setF({ ...f, dueAt: e.target.value })} /></label>
         </div>
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="button" onClick={submit} disabled={busy}>{busy ? "Saving…" : "Check out"}</Button>
+          <Button type="button" variant="outline" onClick={onClose}>{t("common.cancel")}</Button>
+          <Button type="button" onClick={submit} disabled={busy}>{busy ? t("recovery.saving") : t("equipment.checkout")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
