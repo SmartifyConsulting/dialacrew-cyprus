@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, X } from "lucide-react";
@@ -6,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { NativePushControls } from "@/components/NativePush";
 
 export function NotificationBell({ userId, requireAcknowledgement = false }: { userId: string; requireAcknowledgement?: boolean }) {
+  const { t, i18n } = useTranslation();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const q = useQuery({
@@ -60,38 +62,38 @@ export function NotificationBell({ userId, requireAcknowledgement = false }: { u
     <div className="relative">
       {current && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
         <section role="alertdialog" aria-modal="true" aria-labelledby="notification-title" className="w-full max-w-md rounded-lg border border-border bg-card p-6 text-card-foreground shadow-2xl">
-          <p className="mb-2 text-xs font-semibold uppercase text-primary">Crew notification — acknowledgement required</p>
+          <p className="mb-2 text-xs font-semibold uppercase text-primary">{t("notifications.required")}</p>
           <h2 id="notification-title" className="mb-3 text-xl font-bold">{current.title}</h2>
           <p className="mb-4 whitespace-pre-wrap text-sm">{current.body}</p>
-          <p className="mb-4 text-xs text-muted-foreground">Sent {new Date(current.created_at).toLocaleString("en-ZA")}. Your acknowledgement is recorded in the audit trail.</p>
+          <p className="mb-4 text-xs text-muted-foreground">{t("notifications.sent", { date: new Date(current.created_at).toLocaleString(i18n.language) })}</p>
           {ackError && <p role="alert" className="mb-3 text-sm text-destructive">{ackError}</p>}
-          <button disabled={ackBusy} onClick={acknowledge} className="w-full rounded-md bg-primary px-4 py-3 font-semibold text-primary-foreground disabled:opacity-50">{ackBusy ? "Recording..." : "OK, Acknowledge"}</button>
-          {pending.length > 1 && <p className="mt-3 text-center text-xs text-muted-foreground">{pending.length - 1} more awaiting acknowledgement</p>}
+          <button disabled={ackBusy} onClick={acknowledge} className="w-full rounded-md bg-primary px-4 py-3 font-semibold text-primary-foreground disabled:opacity-50">{ackBusy ? t("notifications.recording") : t("notifications.acknowledge")}</button>
+          {pending.length > 1 && <p className="mt-3 text-center text-xs text-muted-foreground">{t("notifications.remaining", { count: pending.length - 1 })}</p>}
         </section>
       </div>}
-      <button aria-label="Notifications" onClick={() => setOpen(!open)} className="relative grid h-9 w-9 place-items-center rounded-full hover:bg-primary-foreground/10">
+      <button aria-label={t("notifications.title")} onClick={() => setOpen(!open)} className="relative grid h-9 w-9 place-items-center rounded-full hover:bg-primary-foreground/10">
         <Bell className="h-5 w-5" />
         {unread > 0 && <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">{unread}</span>}
       </button>
       {open && (
         <div className="absolute right-0 top-11 z-40 w-80 rounded-sm border border-border bg-card text-card-foreground shadow-lg">
           <div className="flex items-center justify-between border-b border-border px-3 py-2 text-xs">
-            <span className="text-sm font-bold text-primary">Notifications</span>
+            <span className="text-sm font-bold text-primary">{t("notifications.title")}</span>
             <div className="flex items-center gap-3">
-              {unread > 0 && !requireAcknowledgement && <button onClick={markAll} className="text-muted-foreground hover:text-foreground">Mark all read</button>}
-              {list.length > 0 && <button onClick={clearAll} className="text-muted-foreground hover:text-destructive">Clear all</button>}
+              {unread > 0 && !requireAcknowledgement && <button onClick={markAll} className="text-muted-foreground hover:text-foreground">{t("notifications.markRead")}</button>}
+              {list.length > 0 && <button onClick={clearAll} className="text-muted-foreground hover:text-destructive">{t("notifications.clearAll")}</button>}
             </div>
           </div>
           <NativePushControls userId={userId} />
           <div className="max-h-96 overflow-auto">
-            {list.length === 0 && <p className="p-4 text-sm text-muted-foreground">Nothing yet.</p>}
+            {list.length === 0 && <p className="p-4 text-sm text-muted-foreground">{t("notifications.empty")}</p>}
             {list.map((n) => (
               <div key={n.id} className={`group relative border-b border-border hover:bg-muted ${n.read ? "opacity-60" : ""}`}>
                 <Link to={n.production_id ? "/productions/$id" : "/gigs"} params={n.production_id ? { id: n.production_id } : {}} onClick={() => setOpen(false)} className="block px-3 py-2 pr-8 text-sm">
                   <div className="font-bold">{n.title}</div>
                   <div className="line-clamp-2 text-xs text-muted-foreground">{n.body}</div>
                 </Link>
-                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); clearOne(n.id); }} aria-label="Clear notification"
+                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); clearOne(n.id); }} aria-label={t("notifications.clear")}
                   className="absolute right-2 top-2 rounded-full p-1 text-muted-foreground hover:bg-background hover:text-destructive">
                   <X className="h-3.5 w-3.5" />
                 </button>

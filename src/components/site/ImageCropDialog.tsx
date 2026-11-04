@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -11,6 +12,7 @@ type Offset = { x: number; y: number };
 
 // Drag a picture around and zoom it inside a rounded square; "Use this picture" saves exactly what is inside the square.
 export function ImageCropDialog({ file, onCancel, onDone }: { file: File | null; onCancel: () => void; onDone: (cropped: File) => void }) {
+  const { t } = useTranslation();
   const [url, setUrl] = useState<string | null>(null);
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
   const [zoom, setZoom] = useState(1);
@@ -50,7 +52,7 @@ export function ImageCropDialog({ file, onCancel, onDone }: { file: File | null;
     ctx.fillRect(0, 0, OUT, OUT);
     ctx.drawImage(img, -left / scale, -top / scale, VIEW / scale, VIEW / scale, 0, 0, OUT, OUT);
     canvas.toBlob((blob) => {
-      if (!blob) { toast.error("Couldn't save the cropped picture. Try another one."); return; }
+      if (!blob) { toast.error(t("crop.saveError")); return; }
       onDone(new File([blob], `${file.name.replace(/\.[^.]+$/, "") || "cover"}.jpg`, { type: "image/jpeg" }));
     }, "image/jpeg", 0.9);
   }
@@ -59,8 +61,8 @@ export function ImageCropDialog({ file, onCancel, onDone }: { file: File | null;
     <Dialog open={!!file} onOpenChange={(o) => { if (!o) onCancel(); }}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>Crop picture</DialogTitle>
-          <DialogDescription>Drag the picture to move it, and use the slider to zoom.</DialogDescription>
+          <DialogTitle>{t("crop.title")}</DialogTitle>
+          <DialogDescription>{t("crop.help")}</DialogDescription>
         </DialogHeader>
         <div
           className="relative mx-auto cursor-grab touch-none select-none overflow-hidden rounded-2xl border border-border bg-muted active:cursor-grabbing"
@@ -80,7 +82,7 @@ export function ImageCropDialog({ file, onCancel, onDone }: { file: File | null;
             <img
               ref={imgRef} src={url} alt="" draggable={false}
               onLoad={(e) => setSize({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
-              onError={() => { toast.error("That picture can't be opened. Try a JPG or PNG."); onCancel(); }}
+              onError={() => { toast.error(t("crop.openError")); onCancel(); }}
               className="pointer-events-none absolute left-1/2 top-1/2 max-w-none"
               style={size
                 ? { width: size.w * scale, height: size.h * scale, transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))` }
@@ -88,10 +90,10 @@ export function ImageCropDialog({ file, onCancel, onDone }: { file: File | null;
             />
           )}
         </div>
-        <Slider min={1} max={4} step={0.01} value={[zoom]} onValueChange={(v) => changeZoom(v[0] ?? 1)} aria-label="Zoom" />
+        <Slider min={1} max={4} step={0.01} value={[zoom]} onValueChange={(v) => changeZoom(v[0] ?? 1)} aria-label={t("crop.zoom")} />
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
-          <Button type="button" onClick={save} disabled={!size}>Use this picture</Button>
+          <Button type="button" variant="outline" onClick={onCancel}>{t("common.cancel")}</Button>
+          <Button type="button" onClick={save} disabled={!size}>{t("crop.use")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

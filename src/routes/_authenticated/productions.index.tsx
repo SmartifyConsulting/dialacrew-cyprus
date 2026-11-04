@@ -39,6 +39,7 @@ type ClientRow = { id: string; name: string; company: string };
 
 // Dropdown to pick an existing client, add a new one inline, or bulk-import a CSV of clients.
 function ClientPicker({ clients, value, onChange, onClientsChanged }: { clients: ClientRow[]; value: string; onChange: (company: string) => void; onClientsChanged: () => void }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState(false);
@@ -101,13 +102,13 @@ function ClientPicker({ clients, value, onChange, onClientsChanged }: { clients:
   return (
     <div className="relative">
       <button type="button" onClick={() => setOpen(!open)} className={`${field} flex items-center justify-between text-left`}>
-        <span className={value ? "" : "text-muted-foreground"}>{value || "Select client *"}</span>
+        <span className={value ? "" : "text-muted-foreground"}>{value || t("clientPicker.select")}</span>
         <span className="text-muted-foreground">▾</span>
       </button>
       {open && (
         <div className="absolute z-20 mt-1 w-full rounded-sm border border-border bg-card shadow-md">
           <div className="p-2">
-            <input autoFocus className={field} placeholder="Search clients…" value={query} onChange={(e) => setQuery(e.target.value)} />
+            <input autoFocus className={field} placeholder={t("clientPicker.search")} value={query} onChange={(e) => setQuery(e.target.value)} />
           </div>
           <ul className="max-h-48 overflow-y-auto">
             {filtered.map((c) => (
@@ -117,21 +118,21 @@ function ClientPicker({ clients, value, onChange, onClientsChanged }: { clients:
                 </button>
               </li>
             ))}
-            {filtered.length === 0 && <li className="px-3 py-2 text-sm text-muted-foreground">No clients found.</li>}
+            {filtered.length === 0 && <li className="px-3 py-2 text-sm text-muted-foreground">{t("clientPicker.empty")}</li>}
           </ul>
           <div className="border-t border-border p-2">
             {adding ? (
               <div className="space-y-2">
-                <input className={field} placeholder="Company name *" value={newClient.company} onChange={(e) => setNewClient({ ...newClient, company: e.target.value })} />
-                <input className={field} placeholder="Contact name" value={newClient.name} onChange={(e) => setNewClient({ ...newClient, name: e.target.value })} />
+                <input className={field} placeholder={t("clientPicker.company")} value={newClient.company} onChange={(e) => setNewClient({ ...newClient, company: e.target.value })} />
+                <input className={field} placeholder={t("clientPicker.contact")} value={newClient.name} onChange={(e) => setNewClient({ ...newClient, name: e.target.value })} />
                 <div className="flex gap-2">
-                  <button type="button" disabled={busy} onClick={addClient} className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-60">{busy ? "Saving…" : "Save client"}</button>
-                  <button type="button" onClick={() => setAdding(false)} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold">Cancel</button>
+                  <button type="button" disabled={busy} onClick={addClient} className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-60">{busy ? t("recovery.saving") : t("clientPicker.save")}</button>
+                  <button type="button" onClick={() => setAdding(false)} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold">{t("common.cancel")}</button>
                 </div>
               </div>
             ) : (
               <div className="flex items-center justify-between gap-2">
-                <button type="button" onClick={() => setAdding(true)} className="text-xs font-semibold text-primary hover:underline">+ Add new client</button>
+                <button type="button" onClick={() => setAdding(true)} className="text-xs font-semibold text-primary hover:underline">+ {t("clientPicker.add")}</button>
                 <button type="button" onClick={() => fileRef.current?.click()} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
                   <Upload className="h-3.5 w-3.5" /> Upload clients (csv or xls)
                 </button>
@@ -318,8 +319,8 @@ function Productions() {
             <div className="rounded-sm border border-border p-4">
               <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("productionModal.info")}</h3>
               <div className="mb-4 flex items-center gap-4">
-                <label className="group relative grid h-20 w-20 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-xl border border-dashed border-border bg-muted hover:border-primary" aria-label="Add a cover picture">
-                  {coverPreview ?? editingCoverUrl ? <img src={coverPreview ?? editingCoverUrl ?? ""} alt="Cover preview" className="h-full w-full object-cover" /> : <span className="px-2 text-center text-[10px] font-semibold text-muted-foreground">Add cover</span>}
+                <label className="group relative grid h-20 w-20 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-xl border border-dashed border-border bg-muted hover:border-primary" aria-label={t("modalDetails.addCover")}>
+                  {coverPreview ?? editingCoverUrl ? <img src={coverPreview ?? editingCoverUrl ?? ""} alt={t("modalDetails.coverPreview")} className="h-full w-full object-cover" /> : <span className="px-2 text-center text-[10px] font-semibold text-muted-foreground">{t("modalDetails.addCover")}</span>}
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => { pickCover(e.target.files?.[0]); e.target.value = ""; }} />
                 </label>
                 <p className="text-xs text-muted-foreground">{t("productionModal.coverHelp")}</p>
@@ -369,7 +370,7 @@ function Productions() {
                     <div className="flex-1 rounded-sm border border-border bg-muted/30 px-3 py-2 text-sm font-semibold">
                       {new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" }).format(f.budget * (1 + (Number((f as any).vatRate ?? 15) || 0) / 100))}
                     </div>
-                    <input aria-label="VAT / tax rate percentage" className="w-16 rounded-sm border border-input bg-background px-2 py-2 text-sm" type="number" min={0} max={100} step="0.01"
+                    <input aria-label={t("modalDetails.taxRate")} className="w-16 rounded-sm border border-input bg-background px-2 py-2 text-sm" type="number" min={0} max={100} step="0.01"
                       value={(f as any).vatRate ?? 15} onChange={(e) => setF({ ...f, vatRate: Number(e.target.value) } as typeof f)} />
                     <span className="text-xs text-muted-foreground">%</span>
                   </div>
@@ -402,7 +403,7 @@ function Productions() {
               <Link to="/productions/$id" params={{ id: p.id }} className="min-w-0 flex-1">
                 <div className="truncate font-semibold text-primary underline-offset-2 hover:underline">{p.name}</div>
                 {p.jobId && <div className="text-xs text-muted-foreground">Job ID: {p.jobId}</div>}
-                <div className="mt-1 flex items-center gap-2"><ClientBadge name={p.client} /><span className="text-xs text-muted-foreground">{p.type}</span></div>
+                <div className="mt-1 flex items-center gap-2"><ClientBadge name={p.client} /><span className="text-xs text-muted-foreground">{t(`productionTypes.${p.type}`, p.type)}</span></div>
               </Link>
               <div className="flex shrink-0 items-center gap-2">
                 <Badge>{t(`productionList.status.${p.status}`, p.status)}</Badge>
@@ -437,7 +438,7 @@ function Productions() {
                   </div>
                 </td>
                 <td className="px-4 text-muted-foreground">{p.jobId ?? "—"}</td>
-                <td className="px-4">{p.type}</td>
+                <td className="px-4">{t(`productionTypes.${p.type}`, p.type)}</td>
                 <td className="px-4 text-muted-foreground">{p.location}</td>
                 <td className="px-4 text-muted-foreground">{p.date}</td>
                 <td className="px-4">{p.days}</td>

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronDown } from "lucide-react";
 import { inviteCrewMembers } from "@/lib/invite.functions";
 import { toast } from "sonner";
@@ -200,6 +201,7 @@ function PlaceholderTab({ name }: { name: string }) {
 }
 
 function AdminPage() {
+  const { t: translate } = useTranslation();
   const { session } = useSession();
   const role = useRole(session?.user.id);
   const isSuperAdmin = role.data === "admin";
@@ -230,17 +232,17 @@ function AdminPage() {
   }
 
   return (
-    <Page open title="Admin" subtitle={isSuperAdmin ? "Platform operations and oversight" : "Production and crew operations"}>
+    <Page open title={translate("nav.admin")} subtitle={translate(isSuperAdmin ? "adminNav.platformSubtitle" : "adminNav.producerSubtitle")}>
       <nav className="mb-1 flex gap-1 overflow-x-auto border-b border-border">
         {groups.map((g) => (
           <button key={g.name} onClick={() => selectGroup(g)}
-            className={`whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-semibold ${group === g.name ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>{g.name}</button>
+            className={`whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-semibold ${group === g.name ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>{translate(`adminNav.labels.${g.name}`)}</button>
         ))}
       </nav>
       <nav className="mb-5 flex gap-1 overflow-x-auto">
         {activeGroup.tabs.map((t) => (
           <button key={t} onClick={() => setTab(t)}
-            className={`whitespace-nowrap rounded-sm px-3 py-1.5 text-xs font-semibold ${tab === t ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>{t}</button>
+            className={`whitespace-nowrap rounded-sm px-3 py-1.5 text-xs font-semibold ${tab === t ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>{translate(`adminNav.labels.${t}`)}</button>
         ))}
       </nav>
       {tab === "Users" && <UsersTab canManageAdmins={isSuperAdmin} />}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 // A styled, in-app replacement for window.confirm / window.prompt, whose native browser chrome
 // ("An embedded page at ... says") looks broken and untrustworthy inside the app. Call confirmDialog()
@@ -32,6 +33,7 @@ export function promptDialog(message: string, defaultValueOrOptions?: string | P
 }
 
 export function ConfirmDialogHost() {
+  const { t } = useTranslation();
   const [state, setLocalState] = useState<DialogState>(null);
   const [value, setValue] = useState("");
 
@@ -65,13 +67,13 @@ export function ConfirmDialogHost() {
         )}
         <div className="mt-4 flex justify-end gap-2">
           <button autoFocus={!isPrompt} onClick={() => close(isPrompt ? null : false)} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold hover:bg-muted">
-            {state.options.cancelLabel ?? "Cancel"}
+            {state.options.cancelLabel ?? t("common.cancel")}
           </button>
           <button
             onClick={() => close(isPrompt ? value : true)}
             className={`rounded-sm px-3 py-2 text-xs font-semibold text-white ${!isPrompt && (state.options as ConfirmOptions).destructive ? "bg-destructive hover:bg-destructive/90" : "bg-primary hover:bg-primary/90"}`}
           >
-            {state.options.confirmLabel ?? "OK"}
+            {state.options.confirmLabel ?? t("common.confirm")}
           </button>
         </div>
       </div>
