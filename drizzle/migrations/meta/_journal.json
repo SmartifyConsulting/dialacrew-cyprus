@@ -134,6 +134,13 @@
       "when": 1793617684209,
       "tag": "0018_native_push_alerts",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793909963314,
+      "tag": "0019_migration",
+      "breakpoints": true
     }
   ]
 }
