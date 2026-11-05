@@ -22,7 +22,7 @@ export function useCountryLogos() {
 export function useCountryLogo(kind: "nav" | "signup", country: string | null | undefined) {
   const logos = useCountryLogos();
   const fallback = kind === "nav" ? navFallback.url : signupFallback.url;
-  return logos[countryCode(country)]?.[kind] || logos.ZA?.[kind] || fallback;
+  return logos[countryCode(country)]?.[kind] || logos["ZA"]?.[kind] || fallback;
 }
 
 /** Signup visitors: ?country=CY, otherwise the browser's region, otherwise South Africa. */
