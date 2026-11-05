@@ -138,7 +138,7 @@ export function TopNav() {
       {signedIn && (
         <div className="fixed right-6 top-4 z-40 hidden items-center gap-3 text-foreground md:flex">
           <LanguageSwitcher compact className="border-border bg-card text-foreground shadow-sm" />
-          <div className="grid h-10 w-10 place-items-center rounded-full border border-border bg-card shadow-sm"><NotificationBell userId={session.user.id} requireAcknowledgement={role.data === "crew"} />
+          <div className="grid h-10 w-10 place-items-center rounded-full border border-border bg-card shadow-sm"><NotificationBell userId={session.user.id} requireAcknowledgement={role.data === "crew"} /></div>
         </div>
       )}
       <header className={`sticky top-0 z-30 ${signedIn ? "md:pl-60" : ""}`}>
