@@ -175,7 +175,8 @@ const ADMIN_GROUPS = [
   { name: "Reviews", tabs: ["Reviews"] },
   { name: "Engagement", tabs: ["Social Spotlights"] },
   { name: "Documents", tabs: ["Document Checklists", "Templates"] },
-  { name: "Platform Management", tabs: ["Countries", "Configuration", "System Settings", "Audit Log"] },
+  { name: "Countries", tabs: ["Countries"] },
+  { name: "Platform Management", tabs: ["Configuration", "System Settings", "Audit Log"] },
 ] as const;
 // Producers get everything Super Admin has, except Platform Management (super-admin only) and
 // with the raw Crew roster swapped for Crew Types — producers group crew into reusable, typed
