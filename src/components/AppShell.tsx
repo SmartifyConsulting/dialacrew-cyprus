@@ -7,7 +7,7 @@ import { useCompany, useRole, useSession } from "@/lib/auth";
 import { NotificationBell } from "@/components/NotificationBell";
 import { PaymentCelebration } from "@/components/PaymentCelebration";
 import { useSignedUrl } from "@/lib/site";
-import logo from "@/assets/bookacrew-sa-logo.png.asset.json";
+import { useCountryLogo } from "@/lib/country-logos";
 import { NativePushSession } from "@/components/NativePush";
 import { disableNativePush } from "@/lib/native-push";
 import { useTranslation } from "react-i18next";
@@ -23,7 +23,7 @@ function useMyProfile(userId: string | undefined) {
   return useQuery({
     queryKey: ["nav-avatar", userId], enabled: !!userId,
     queryFn: async () => {
-      const { data, error } = await supabase.from("profiles").select("full_name, email, avatar_url").eq("id", userId!).maybeSingle();
+      const { data, error } = await supabase.from("profiles").select("full_name, email, avatar_url, country").eq("id", userId!).maybeSingle();
       if (error) throw error;
       return data;
     },
@@ -108,13 +108,14 @@ export function TopNav() {
     navigate({ to: "/", replace: true });
   }
 
+  const navLogo = useCountryLogo("nav", me.data?.country);
   const signedIn = ready && session;
   return (
     <>
       {signedIn && <NativePushSession userId={session.user.id} />}
       {signedIn && (
         <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col bg-nav text-nav-foreground md:flex" aria-label="Main menu">
-          <Link to="/dashboard" className="flex justify-center px-5 py-5"><img src={logo.url} alt="Book a Crew" className="h-[173px] w-auto" /></Link>
+          <Link to="/dashboard" className="flex justify-center px-5 py-5"><img src={navLogo} alt="Book a Crew" className="h-[173px] w-auto max-w-full rounded-lg object-contain" /></Link>
           <div className="flex items-center justify-end px-5">
             <NotificationBell userId={session.user.id} requireAcknowledgement={role.data === "crew"} />
           </div>
@@ -141,7 +142,7 @@ export function TopNav() {
       <header className={`sticky top-0 z-30 ${signedIn ? "md:pl-60" : ""}`}>
         <div className={signedIn ? "bg-nav text-nav-foreground md:hidden" : "bg-nav text-nav-foreground"}>
           <div className={`flex items-center gap-4 px-4 py-8 ${signedIn ? "" : "mx-auto max-w-7xl"}`}>
-            {signedIn && <Link to="/dashboard" className="shrink-0"><img src={logo.url} alt="Book a Crew" className="h-[7.5rem] w-auto" /></Link>}
+            {signedIn && <Link to="/dashboard" className="shrink-0"><img src={navLogo} alt="Book a Crew" className="h-[7.5rem] w-auto rounded-lg object-contain" /></Link>}
             <div className="ml-auto flex items-center gap-3">
               <LanguageSwitcher className="border-nav-foreground/30 text-nav-foreground" />
               {signedIn && <NotificationBell userId={session.user.id} requireAcknowledgement={role.data === "crew"} />}
