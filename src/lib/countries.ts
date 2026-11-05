@@ -8,6 +8,7 @@ export const COUNTRIES = [
   { code: "ZW", name: "Zimbabwe", currency: "USD" },
   { code: "KE", name: "Kenya", currency: "KES" },
   { code: "NG", name: "Nigeria", currency: "NGN" },
+  { code: "IN", name: "India", currency: "INR" },
   { code: "AU", name: "Australia", currency: "AUD" },
   { code: "DE", name: "Germany", currency: "EUR" },
   { code: "FR", name: "France", currency: "EUR" },
