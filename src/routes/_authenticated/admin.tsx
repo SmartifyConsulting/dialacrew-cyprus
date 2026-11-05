@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { zar } from "@/lib/demo-data";
 import { DocumentChecklistsAdmin } from "@/components/admin/DocumentChecklistsAdmin";
 import { EquipmentAdmin } from "@/components/admin/EquipmentAdmin";
+import { CountriesAdmin } from "@/components/admin/CountriesAdmin";
 import { ChecklistTemplateManager } from "@/components/ChecklistTemplateManager";
 import { confirmDialog, promptDialog } from "@/components/ConfirmDialog";
 import { useAddCrewGroupMember, useCreateCrewGroup, useCreateProductionType, useCrew, useCrewGroups, useDeleteCrewGroup, useProductionTypes, useRemoveCrewGroupMember } from "@/lib/db";
@@ -174,7 +175,7 @@ const ADMIN_GROUPS = [
   { name: "Reviews", tabs: ["Reviews"] },
   { name: "Engagement", tabs: ["Social Spotlights"] },
   { name: "Documents", tabs: ["Document Checklists", "Templates"] },
-  { name: "Platform Management", tabs: ["Configuration", "System Settings", "Audit Log"] },
+  { name: "Platform Management", tabs: ["Countries", "Configuration", "System Settings", "Audit Log"] },
 ] as const;
 // Producers get everything Super Admin has, except Platform Management (super-admin only) and
 // with the raw Crew roster swapped for Crew Types — producers group crew into reusable, typed
@@ -260,6 +261,7 @@ function AdminPage() {
       {tab === "Social Spotlights" && <SpotlightTab />}
       {tab === "Document Checklists" && <DocumentChecklistsAdmin />}
       {tab === "Templates" && <ChecklistTemplateManager audience="producer" />}
+      {tab === "Countries" && <CountriesAdmin />}
       {tab === "Audit Log" && <AuditLogTab />}
       {tab === "Configuration" && <PlaceholderTab name="Configuration" />}
       {tab === "System Settings" && <PlaceholderTab name="System Settings" />}
