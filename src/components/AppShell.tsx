@@ -136,9 +136,9 @@ export function TopNav() {
         </aside>
       )}
       {signedIn && (
-        <div className="fixed right-6 top-4 z-40 hidden items-center gap-2 rounded-full border border-border bg-card p-1 text-foreground shadow-sm md:flex">
-          <LanguageSwitcher compact className="border-0 bg-transparent text-foreground shadow-none" />
-          <NotificationBell userId={session.user.id} requireAcknowledgement={role.data === "crew"} />
+        <div className="fixed right-6 top-4 z-40 hidden items-center gap-3 text-foreground md:flex">
+          <LanguageSwitcher compact className="border-border bg-card text-foreground shadow-sm" />
+          <div className="grid h-10 w-10 place-items-center rounded-full border border-border bg-card shadow-sm"><NotificationBell userId={session.user.id} requireAcknowledgement={role.data === "crew"} />
         </div>
       )}
       <header className={`sticky top-0 z-30 ${signedIn ? "md:pl-60" : ""}`}>
