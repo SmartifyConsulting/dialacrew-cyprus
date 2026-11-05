@@ -19,19 +19,37 @@ export function useCountryLogos() {
   return (q.data ?? {}) as CountryLogos;
 }
 
-export function useCountryLogo(kind: "nav" | "signup", country: string | null | undefined) {
-  const logos = useCountryLogos();
-  const fallback = kind === "nav" ? navFallback.url : signupFallback.url;
-  return logos[countryCode(country)]?.[kind] || logos["ZA"]?.[kind] || fallback;
+/** Country implied by the site address, e.g. cyprus.bookacrew.film → CY. */
+export function countryFromHost(host: string | null | undefined): string | null {
+  const h = (host ?? "").toLowerCase();
+  if (h.startsWith("cyprus.") || h.startsWith("dialacrew-cyprus.")) return "CY";
+  if (h.startsWith("nigeria.")) return "NG";
+  if (h.startsWith("india.")) return "IN";
+  return null;
 }
 
-/** Signup visitors: ?country=CY, otherwise the browser's region, otherwise South Africa. */
+function useHostCountry() {
+  const [code, setCode] = useState<string | null>(null);
+  useEffect(() => setCode(countryFromHost(window.location.hostname)), []);
+  return code;
+}
+
+export function useCountryLogo(kind: "nav" | "signup", country: string | null | undefined) {
+  const logos = useCountryLogos();
+  const hostCountry = useHostCountry();
+  const fallback = kind === "nav" ? navFallback.url : signupFallback.url;
+  const code = hostCountry ?? countryCode(country);
+  return logos[code]?.[kind] || logos["ZA"]?.[kind] || fallback;
+}
+
+/** Signup visitors: site address, then ?country=CY, then the browser's region, otherwise South Africa. */
 export function useVisitorCountry() {
   const [code, setCode] = useState("ZA");
   useEffect(() => {
+    const host = countryFromHost(window.location.hostname);
     const param = new URLSearchParams(window.location.search).get("country");
     const region = navigator.language.split("-")[1];
-    setCode(countryCode(param || region));
+    setCode(host ?? countryCode(param || region));
   }, []);
   return code;
 }
