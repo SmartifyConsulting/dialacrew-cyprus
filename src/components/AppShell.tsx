@@ -119,7 +119,6 @@ export function TopNav() {
           <div className="flex items-center justify-end px-5">
             <NotificationBell userId={session.user.id} requireAcknowledgement={role.data === "crew"} />
           </div>
-          <div className="px-5 pb-3"><LanguageSwitcher className="w-full border-nav-foreground/30 text-nav-foreground" /></div>
           <nav className="flex flex-1 flex-col gap-1 px-3">
             {items.map((n) => (
               <Link key={n.label} to={n.to} className={`flex items-center gap-3 rounded-xl px-4 py-3 font-sans text-[15px] font-medium text-nav-foreground/85 transition-colors hover:bg-nav-foreground/10 hover:text-nav-foreground`} activeProps={{ className: "bg-nav-foreground/15 !text-nav-foreground font-semibold" }}>
@@ -139,12 +138,17 @@ export function TopNav() {
           </div>
         </aside>
       )}
+      {signedIn && (
+        <div className="fixed right-6 top-4 z-40 hidden md:block">
+          <LanguageSwitcher compact className="border-border bg-card text-foreground shadow-sm" />
+        </div>
+      )}
       <header className={`sticky top-0 z-30 ${signedIn ? "md:pl-60" : ""}`}>
         <div className={signedIn ? "bg-nav text-nav-foreground md:hidden" : "bg-nav text-nav-foreground"}>
           <div className={`flex items-center gap-4 px-4 py-8 ${signedIn ? "" : "mx-auto max-w-7xl"}`}>
             {signedIn && <Link to="/dashboard" className="shrink-0"><img src={navLogo} alt="Book a Crew" className="h-[7.5rem] w-auto rounded-lg object-contain" /></Link>}
             <div className="ml-auto flex items-center gap-3">
-              <LanguageSwitcher className="border-nav-foreground/30 text-nav-foreground" />
+              <LanguageSwitcher compact className="border-nav-foreground/30 bg-transparent text-nav-foreground" />
               {signedIn && <NotificationBell userId={session.user.id} requireAcknowledgement={role.data === "crew"} />}
               {signedIn && <button onClick={signOut} className="rounded-sm border border-nav-foreground/30 px-3 py-1 font-display text-xs font-semibold text-nav-foreground">{t("common.signOut")}</button>}
             </div>

@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { SUPPORTED_LANGUAGES, normalizeLanguage, languageDirection } from "@/i18n/languages";
 import { cn } from "@/lib/utils";
 
-export function LanguageSwitcher({ className }: { className?: string }) {
+export function LanguageSwitcher({ className, compact }: { className?: string; compact?: boolean }) {
   const { i18n, t } = useTranslation();
   const { session } = useSession();
   const [saving, setSaving] = useState(false);
@@ -26,9 +26,15 @@ export function LanguageSwitcher({ className }: { className?: string }) {
   const code = normalizeLanguage(i18n.language);
   return (
     <div><Select disabled={saving} value={code} onValueChange={(value) => { void pick(value); }} dir={languageDirection(code)}>
+      {compact ? (
+        <SelectTrigger aria-label={t("common.changeLanguage")} title={t("common.changeLanguage")} className={cn("h-10 w-auto gap-1.5 rounded-full px-3 [&>svg:last-child]:hidden", className)}>
+          <Globe aria-hidden="true" className="h-5 w-5 shrink-0" /><span className="text-xs font-semibold uppercase">{code}</span>
+        </SelectTrigger>
+      ) : (
       <SelectTrigger aria-label={t("common.changeLanguage")} className={cn("w-40 max-w-full gap-2", className)}>
         <Globe aria-hidden="true" className="h-4 w-4 shrink-0" /><SelectValue />
       </SelectTrigger>
+      )}
       <SelectContent>
         {SUPPORTED_LANGUAGES.map((language) => (
           <SelectItem key={language.code} value={language.code}><span lang={language.code} dir="auto">{language.name}</span></SelectItem>
