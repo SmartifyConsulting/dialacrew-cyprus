@@ -17,7 +17,7 @@ type Photo = { id: string; path: string; group_id: string | null; location_id: s
 
 // Every production starts with these three albums so photos have somewhere sensible to land
 // before a producer organises them further.
-const DEFAULT_ALBUMS = ["Locations", "Mood Board", "Storyboard/Previs"] as const;
+const DEFAULT_ALBUMS = ["Locations", "Mood Board", "Previs"] as const;
 
 const dateLabel = (iso: string) => new Date(iso).toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
 const timeLabel = (iso: string) => new Date(iso).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" });
