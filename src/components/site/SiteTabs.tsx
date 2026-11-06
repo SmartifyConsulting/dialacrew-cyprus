@@ -403,8 +403,8 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
           <button onClick={startAdd} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> {t("reviewText.addLocation")}</button>
         </div>
       )}
-      <ul className="space-y-3 p-3 text-sm">
-        {points.length === 0 && <li className="p-4 text-muted-foreground">{t("locationsUi.empty")}</li>}
+      <ul className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3 p-3 text-sm">
+        {points.length === 0 && <li className="col-span-full p-4 text-muted-foreground">{t("locationsUi.empty")}</li>}
         {points.map((pt, i) => (
           <li key={pt.id}
             draggable={isProducer && points.length > 1}

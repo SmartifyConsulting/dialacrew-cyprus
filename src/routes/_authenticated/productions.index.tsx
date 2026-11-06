@@ -4,7 +4,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { useEffect, useRef, useState } from "react";
-import { Copy, Pencil, Search, Trash2, Upload } from "lucide-react";
+import { Camera, Clapperboard, Copy, Film, Megaphone, Pencil, Search, Trash2, Tv, Upload } from "lucide-react";
 import { Badge, ClientBadge, Page, Panel } from "@/components/AppShell";
 import { fmtMoney } from "@/lib/demo-data";
 import { useProductions, useProductionTypes, useCreateProductionType } from "@/lib/db";
@@ -34,7 +34,22 @@ export const Route = createFileRoute("/_authenticated/productions/")({
 
 const field = "w-full rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
 const labelCls = "block text-xs font-medium text-muted-foreground";
-const createdLabel = (iso?: string) => iso ? new Date(iso).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" }) : "—";
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+// DD MON YYYY everywhere on this list, e.g. "06 Nov 2026". Plain YYYY-MM-DD dates are read as-is so they never shift a day.
+const fmtDate = (v?: string | null) => {
+  if (!v) return "—";
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v);
+  if (m && v.length <= 10) return `${m[3]} ${MONTHS[Number(m[2]) - 1]} ${m[1]}`;
+  const d = new Date(v);
+  return isNaN(+d) ? v : `${String(d.getDate()).padStart(2, "0")} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+};
+const createdLabel = (iso?: string) => fmtDate(iso);
+const TYPE_ICONS: Record<string, typeof Film> = { Commercial: Megaphone, Film: Clapperboard, Television: Tv, Photography: Camera };
+function TypeIcon({ type, label }: { type: string; label: string }) {
+  const Icon = TYPE_ICONS[type] ?? Film;
+  return <span title={label} aria-label={label} className="inline-flex text-muted-foreground"><Icon className="h-4 w-4" /></span>;
+}
+const JobBadge = ({ id }: { id?: string | null | undefined }) => id ? <span className="whitespace-nowrap rounded-sm bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">{id}</span> : <span className="text-muted-foreground">—</span>;
 
 type ClientRow = { id: string; name: string; company: string };
 
@@ -368,7 +383,7 @@ function Productions() {
               <ProductionAvatar name={p.name} imagePath={p.imagePath} className="h-12 w-12 text-sm" />
               <Link to="/productions/$id" params={{ id: p.id }} className="min-w-0 flex-1">
                 <div className="truncate font-semibold text-primary underline-offset-2 hover:underline">{p.name}</div>
-                {p.jobId && <div className="text-xs text-muted-foreground">{t("productionList.columns.Job ID")}: {p.jobId}</div>}
+                {p.jobId && <div><JobBadge id={p.jobId} /></div>}
                 <div className="mt-1 flex items-center gap-2"><ClientBadge name={p.client} /><span className="text-xs text-muted-foreground">{t(`productionTypes.${p.type}`, p.type)}</span></div>
               </Link>
               <div className="flex shrink-0 items-center gap-2">
@@ -382,7 +397,7 @@ function Productions() {
                 )}
               </div>
             </div>
-            <div className="mt-2 text-xs text-muted-foreground">{p.date || "Date TBC"} · {p.days} day(s) · {p.location}</div>
+            <div className="mt-2 text-xs text-muted-foreground"><span className="whitespace-nowrap">{p.date ? fmtDate(p.date) : "Date TBC"}</span> · {p.days} day(s) · {p.location}</div>
             <div className="text-xs text-muted-foreground">Created {createdLabel(p.createdAt)}</div>
             <div className="mt-3 flex items-center justify-between text-sm"><span>{fmtMoney(p.budget, p.currency)}</span><span className="text-xs text-muted-foreground">Crew {p.crewBooked}/{p.crewNeeded}</span></div>
             <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary" style={{ width: `${p.crewNeeded ? Math.min(100, (p.crewBooked / p.crewNeeded) * 100) : 0}%` }} /></div>
@@ -392,7 +407,7 @@ function Productions() {
       <div className="hidden md:block"><Panel title={t("productionList.all")}>
         <table className="w-full text-sm">
           <thead className="text-left text-[11px] text-muted-foreground">
-            <tr>{["Production", "Job ID", "Type", "Location", "Date", "Days", "Budget", "Created", "Status", ""].map((h) => <th key={h} className="px-4 py-2 font-medium">{h === "Created" ? "Created" : h ? t(`productionList.columns.${h}`) : ""}</th>)}</tr>
+            <tr>{["Production", "Job ID", "Type", "Location", "Date", "Days", "Budget", "Created", "Status", ""].map((h) => <th key={h} className={`${h === "Type" ? "px-2 text-center" : "px-4"} whitespace-nowrap py-2 font-medium`}>{h === "Created" ? "Created" : h ? t(`productionList.columns.${h}`) : ""}</th>)}</tr>
           </thead>
           <tbody>
             {filteredList.length === 0 && <tr><td colSpan={10} className="px-4 py-6 text-center text-muted-foreground">No productions match "{search}".</td></tr>}
@@ -404,13 +419,13 @@ function Productions() {
                     <div className="min-w-0"><Link to="/productions/$id" params={{ id: p.id }} className="text-primary underline-offset-2 hover:underline">{p.name}</Link><div className="mt-1"><ClientBadge name={p.client} /></div></div>
                   </div>
                 </td>
-                <td className="px-4 text-muted-foreground">{p.jobId ?? "—"}</td>
-                <td className="px-4">{t(`productionTypes.${p.type}`, p.type)}</td>
+                <td className="px-4"><JobBadge id={p.jobId} /></td>
+                <td className="px-2 text-center"><TypeIcon type={p.type} label={t(`productionTypes.${p.type}`, p.type)} /></td>
                 <td className="px-4 text-muted-foreground">{p.location}</td>
-                <td className="px-4 text-muted-foreground">{p.date}</td>
+                <td className="whitespace-nowrap px-4 text-muted-foreground">{fmtDate(p.date)}</td>
                 <td className="px-4">{p.days}</td>
                 <td className="px-4">{fmtMoney(p.budget, p.currency)}</td>
-                <td className="px-4 text-muted-foreground">{createdLabel(p.createdAt)}</td>
+                <td className="whitespace-nowrap px-4 text-muted-foreground">{createdLabel(p.createdAt)}</td>
                 <td className="px-4"><Badge>{t(`productionList.status.${p.status}`, p.status)}</Badge></td>
                 <td className="px-4">
                   {isProducer && (
