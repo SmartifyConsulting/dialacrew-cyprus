@@ -42,10 +42,12 @@ function GigsPage() {
   const role = useRole(uid).data;
   const qc = useQueryClient();
   const [form, setForm] = useState(empty);
-  const [showForm, setShowForm] = useState(false);
-  // "Post a Gig" menu item lands here with #post — open the form straight away.
+  const [view, setView] = useState<"find" | "post">("find");
+  const showForm = view === "post";
+  const setShowForm = (v: boolean | ((s: boolean) => boolean)) => setView((cur) => ((typeof v === "function" ? v(cur === "post") : v) ? "post" : "find"));
+  // "#post" opens the Post a Gig tab straight away.
   useEffect(() => {
-    const check = () => { if (window.location.hash === "#post") { setShowForm(true); setTimeout(() => document.getElementById("post-gig-form")?.scrollIntoView({ behavior: "smooth" }), 50); } };
+    const check = () => { if (window.location.hash === "#post") setView("post"); };
     check(); window.addEventListener("hashchange", check); return () => window.removeEventListener("hashchange", check);
   }, []);
   const [agree, setAgree] = useState(false);
@@ -119,12 +121,16 @@ function GigsPage() {
   const isCrew = role === "crew";
   return (
     <Page open title={t("nav.findGigs")} subtitle={t("gigs.subtitle")}>
-      <Panel title={t("gigs.open")}><div className="p-4"><FindGigsTab canClaim={!!crewId} /></div></Panel>
+      <div role="tablist" aria-label="Gigs" className="mb-6 flex gap-2 border-b border-border">
+        {([["find", "Find a Gig"], ["post", "Post a Gig"]] as const).map(([k, l]) => (
+          <button key={k} role="tab" aria-selected={view === k} onClick={() => { setView(k); window.history.replaceState(null, "", k === "post" ? "/gigs#post" : "/gigs"); }}
+            className={`border-b-2 px-4 py-2 text-sm font-semibold ${view === k ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}>{l}</button>
+        ))}
+      </div>
+      {view === "find" && <Panel title={t("gigs.open")}><div className="p-4"><FindGigsTab canClaim={!!crewId} /></div></Panel>}
 
-      <div className="mt-8">
-        <Panel title={t("gigs.community")} right={isCrew && (
-          <button onClick={() => setShowForm((s) => !s)} className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">{showForm ? t("common.close") : t("gigs.post")}</button>
-        )}>
+      <div className={view === "find" ? "mt-8" : ""}>
+        <Panel title={view === "post" ? "Post a Gig" : t("gigs.community")}>
           <div className="p-4">
             <p className="text-sm text-muted-foreground">{t("gigs.communityHelp")}</p>
 
@@ -150,6 +156,7 @@ function GigsPage() {
               </div>
             )}
 
+            {view === "find" && <>
             <h4 className="mt-6 text-sm font-semibold uppercase tracking-wide text-primary">{t("nav.findGigs")}</h4>
             {isCrew && (
               <label className="my-4 flex items-start gap-2 rounded-xl border border-border bg-card p-3 text-sm">
@@ -189,7 +196,8 @@ function GigsPage() {
               </div>
             )}
 
-            {mine.length > 0 && (
+            </>}
+            {view === "post" && mine.length > 0 && (
               <div className="mt-8">
                 <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-primary">{t("gigs.posted")}</h4>
                 <div className="divide-y divide-border rounded-xl border border-border">{mine.map((g) => (
