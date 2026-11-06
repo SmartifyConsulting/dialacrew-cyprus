@@ -7,9 +7,10 @@ export const polishDescription = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({
     text: z.string().min(3).max(4000), name: z.string().max(200), type: z.string().max(60), client: z.string().max(200),
   }).parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const { aiJson } = await import("./ai.server");
     const out = await aiJson<{ polished: string }>({
+      meta: { userId: context.userId },
       name: "polish_description",
       schema: { type: "object", additionalProperties: false, required: ["polished"], properties: { polished: { type: "string" } } },
       instructions:

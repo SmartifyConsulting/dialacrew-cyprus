@@ -14,6 +14,8 @@ import { zar } from "@/lib/demo-data";
 import { DocumentChecklistsAdmin } from "@/components/admin/DocumentChecklistsAdmin";
 import { EquipmentAdmin } from "@/components/admin/EquipmentAdmin";
 import { CountriesAdmin } from "@/components/admin/CountriesAdmin";
+import { StatusPill } from "@/components/admin/StatusPill";
+import { TokenLedger } from "@/components/admin/TokenLedger";
 import { ChecklistTemplateManager } from "@/components/ChecklistTemplateManager";
 import { confirmDialog, promptDialog } from "@/components/ConfirmDialog";
 import { useAddCrewGroupMember, useCreateCrewGroup, useCreateProductionType, useCrew, useCrewGroups, useDeleteCrewGroup, useProductionTypes, useRemoveCrewGroupMember } from "@/lib/db";
@@ -168,12 +170,13 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 const ADMIN_GROUPS = [
   { name: "People & Organisations", tabs: ["Users", "Crew", "Companies", "Subscriptions"] },
-  { name: "Reporting", tabs: ["Finance", "Bookings", "Gigs"] },
+  { name: "Reporting", tabs: ["Bookings", "Gigs"] },
   { name: "Equipment", tabs: ["Equipment"] },
   { name: "Disputes", tabs: ["Disputes"] },
   { name: "Reviews", tabs: ["Reviews"] },
   { name: "Templates", tabs: ["Checklists"] },
   { name: "Countries", tabs: ["Countries"] },
+  { name: "Finance", tabs: ["Finance"] },
   { name: "Platform Management", tabs: ["Configuration", "System Settings", "Audit Log"] },
 ] as const;
 // Producers get everything Super Admin has, except Platform Management (super-admin only) and
@@ -181,10 +184,11 @@ const ADMIN_GROUPS = [
 // templates rather than editing crew records directly.
 const PRODUCER_ADMIN_GROUPS = [
   { name: "People & Organisations", tabs: ["Users", "Crew"] },
-  { name: "Reporting", tabs: ["Finance", "Bookings"] },
+  { name: "Reporting", tabs: ["Bookings"] },
   { name: "Disputes", tabs: ["Disputes"] },
   { name: "Reviews", tabs: ["Reviews"] },
   { name: "Templates", tabs: ["Checklists"] },
+  { name: "Finance", tabs: ["Finance"] },
 ] as const;
 type AdminGroup = (typeof ADMIN_GROUPS)[number]["name"] | (typeof PRODUCER_ADMIN_GROUPS)[number]["name"];
 type AdminTab = (typeof ADMIN_GROUPS)[number]["tabs"][number] | (typeof PRODUCER_ADMIN_GROUPS)[number]["tabs"][number];
@@ -248,7 +252,7 @@ function AdminPage() {
       {tab === "Companies" && <CompaniesTab />}
       {tab === "Bookings" && <BookingsTab />}
       {tab === "Gigs" && <GigsTab />}
-      {tab === "Finance" && <div className="space-y-6"><PaymentsTab /><InvoicesTab /><GigFeesTab /></div>}
+      {tab === "Finance" && <div className="space-y-6"><PaymentsTab /><InvoicesTab /><GigFeesTab />{isSuperAdmin && <TokenLedger />}</div>}
       {tab === "Equipment" && <EquipmentAdmin />}
       {tab === "Disputes" && <DisputesTab />}
       {tab === "Reviews" && <ReviewsTab />}
@@ -779,6 +783,13 @@ function CompaniesTab() {
 
 const BOOKING_STATUSES = ["draft", "open", "pencil", "awaiting_crew_confirmation", "confirmed", "in_progress", "awaiting_review", "completed", "payment_released", "cancelled", "disputed"] as const;
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function fmtDay(d: string | null) {
+  if (!d) return "—";
+  const [y, m, day] = d.slice(0, 10).split("-");
+  return `${day} ${MONTHS[Number(m) - 1] ?? ""} ${y}`;
+}
+
 function BookingsTab() {
   const { t } = useTranslation();
   const inv = useInv();
@@ -812,26 +823,24 @@ function BookingsTab() {
 
   return (
     <Panel title={`${t("adminNav.labels.Bookings")} (${bookings.data?.length ?? 0})`}>
-      <ul className="divide-y divide-border">
+      <ul className="divide-y divide-border text-sm">
         {[...byProduction.entries()].map(([prodId, group]) => (
           <li key={prodId}>
-            <button onClick={() => setOpenProd(openProd === prodId ? null : prodId)} className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left hover:bg-muted/40">
+            <button onClick={() => setOpenProd(openProd === prodId ? null : prodId)} className="flex w-full items-center justify-between gap-3 px-4 py-2 text-left text-sm hover:bg-muted/40">
               <span className="font-medium">{group.name} <span className="font-normal text-muted-foreground">({group.rows.length})</span></span>
-              <span className="text-xs text-muted-foreground">{openProd === prodId ? "Hide ▲" : "Show ▼"}</span>
+              <span className="text-[11px] text-muted-foreground">{openProd === prodId ? "Hide ▲" : "Show ▼"}</span>
             </button>
             {openProd === prodId && (
-              <table className="w-full text-sm">
+              <table className="w-full border-t border-border bg-muted/20 text-sm">
                 <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Crew</th><th className="px-4">Role</th><th className="px-4">Date</th><th className="px-4">Status</th><th className="px-4">Payment</th><th className="px-4">Action</th></tr></thead>
                 <tbody>{group.rows.map((b) => (
                   <tr key={b.id} className="border-t border-border">
-                    <td className="px-4 py-2">{(b.crew_members as { name: string } | null)?.name}</td>
-                    <td className="px-4">{b.role}</td><td className="px-4">{b.booking_date}</td>
+                    <td className="px-4 py-2 font-medium">{(b.crew_members as { name: string } | null)?.name}</td>
+                    <td className="px-4">{b.role}</td><td className="whitespace-nowrap px-4">{fmtDay(b.booking_date)}</td>
                     <td className="px-4">
-                      <select className={`${invField} py-1`} value={b.status} onChange={(e) => setStatus(b.id, e.target.value as (typeof BOOKING_STATUSES)[number])}>
-                        {BOOKING_STATUSES.map((s) => <option key={s} value={s}>{t(`workflowStatuses.${s}`)}</option>)}
-                      </select>
+                      <StatusPill value={b.status as (typeof BOOKING_STATUSES)[number]} options={BOOKING_STATUSES} label={(s) => t(`workflowStatuses.${s}`)} onChange={(s) => setStatus(b.id, s)} />
                     </td>
-                    <td className="px-4 text-xs text-muted-foreground">{b.payment_status}</td>
+                    <td className="whitespace-nowrap px-4 text-xs text-muted-foreground">{t(`workflowStatuses.${b.payment_status}`)}</td>
                     <td className="px-4"><button onClick={() => removeBooking(b.id)} className="text-xs text-destructive hover:underline">Delete</button></td>
                   </tr>
                 ))}</tbody>
@@ -871,9 +880,7 @@ function PaymentsTab() {
             <td className="px-4">{(b.crew_members as { name: string } | null)?.name}</td>
             <td className="px-4">{zar(b.crew_rate * b.days)}</td>
             <td className="px-4">
-              <select className={`${invField} py-1`} value={b.payment_status} onChange={(e) => setStatus(b.id, e.target.value as (typeof PAYMENT_STATUSES)[number])}>
-                {PAYMENT_STATUSES.map((s) => <option key={s} value={s}>{t(`workflowStatuses.${s}`)}</option>)}
-              </select>
+              <StatusPill value={b.payment_status as (typeof PAYMENT_STATUSES)[number]} options={PAYMENT_STATUSES} label={(s) => t(`workflowStatuses.${s}`)} onChange={(s) => setStatus(b.id, s)} />
             </td>
           </tr>
         ))}</tbody>
@@ -917,9 +924,7 @@ function InvoicesTab() {
             <td className="px-4">{(i.productions as { name: string } | null)?.name}</td>
             <td className="px-4">{zar(i.subtotal)}</td><td className="px-4">{zar(i.vat_amount)}</td><td className="px-4 font-semibold">{zar(i.total)}</td>
             <td className="px-4">
-              <select className={`${invField} py-1`} value={i.status} onChange={(e) => setStatus(i.id, e.target.value)}>
-                {INVOICE_STATUSES.map((s) => <option key={s} value={s}>{t(`workflowStatuses.${s}`)}</option>)}
-              </select>
+              <StatusPill value={i.status as (typeof INVOICE_STATUSES)[number]} options={INVOICE_STATUSES} label={(s) => t(`workflowStatuses.${s}`)} onChange={(s) => setStatus(i.id, s)} />
             </td>
             <td className="px-4"><button onClick={() => removeInvoice(i.id)} className="text-xs text-destructive hover:underline">Delete</button></td>
           </tr>
@@ -960,9 +965,7 @@ function GigsTab() {
             <td className="px-4">{g.event_date}</td>
             <td className="px-4">{zar(g.amount)}</td>
             <td className="px-4">
-              <select className={`${invField} py-1`} value={g.status} onChange={(e) => setStatus(g.id, e.target.value as (typeof GIG_STATUSES)[number])}>
-                {GIG_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
+              <StatusPill value={g.status as (typeof GIG_STATUSES)[number]} options={GIG_STATUSES} label={(s) => s} onChange={(s) => setStatus(g.id, s)} />
             </td>
             <td className="px-4"><button onClick={() => removeGig(g.id)} className="text-xs text-destructive hover:underline">Delete</button></td>
           </tr>

@@ -41,6 +41,7 @@ export const breakdownScript = createServerFn({ method: "POST" })
       instructions:
         "You are a film storyboard artist's assistant. Break the given creative brief into a numbered sequence of shots, grouped into scenes. For each shot give a concise visual description (camera angle/framing, subject, action — written so a pencil-sketch illustrator could draw it directly) and a realistic duration in seconds (typically 2-8). Keep descriptions under 2 sentences. Return 6-20 shots depending on the brief's length.",
       input: data.brief,
+      meta: { userId: context.userId, productionId: data.productionId },
     });
     return { shots: out.shots };
   });
@@ -66,11 +67,16 @@ export const generateShotImage = createServerFn({ method: "POST" })
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
         body: JSON.stringify({ model: "gpt-image-1", prompt, size: "1024x1024", n: 1 }),
       });
+      const { logAiUsage } = await import("./ai-usage.server");
+      const { OPENAI_IMAGE_PER_CALL_USD } = await import("./ai-usage");
+      const usageMeta = { activity: "Storyboard illustration", userId: context.userId, productionId: data.productionId };
       if (!res.ok) {
         const t = await res.text().catch(() => "");
         console.error("Storyboard image generation error", res.status, t);
+        await logAiUsage({ provider: "openai", operation: "Image generation", model: "gpt-image-1", status: res.status, cost_usd: 0, error_message: t }, usageMeta);
         throw new Error(res.status === 402 || res.status === 403 ? "AI access is unavailable — check the OpenAI account's billing and access." : "The AI could not generate this illustration.");
       }
+      await logAiUsage({ provider: "openai", operation: "Image generation", model: "gpt-image-1", status: 200, cost_usd: OPENAI_IMAGE_PER_CALL_USD }, usageMeta);
       const body = (await res.json()) as { data: { b64_json: string }[] };
       const b64 = body.data[0]?.b64_json;
       if (!b64) throw new Error("The AI returned no image.");
