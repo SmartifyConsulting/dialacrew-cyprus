@@ -77,6 +77,12 @@ function CrewProfile() {
   if (!m) return <Page open title={c.isLoading ? "Loading…" : "Profile not found"}>{null}</Page>;
   const canEdit = role.data === "producer" || role.data === "admin" || m.user_id === session?.user.id;
   const isOwnProfile = m.user_id === session?.user.id;
+  const visibleTabs = TABS.filter((t) => {
+    if (t === "Checklists" || t === "Emergency" || t === "Account") return isOwnProfile;
+    if (t === "Travel" || t === "Banking") return canEdit;
+    return true;
+  });
+  const activeTab = tab && visibleTabs.includes(tab) ? tab : visibleTabs[0];
   const done = (jobs.data ?? []).filter((j) => (j.productions as { status?: string } | null)?.status === "Wrapped").length;
   // Distinct productions this crew member has been booked on (excluding cancelled bookings) — a simple
   // popularity signal producers can see at a glance, separate from "Projects completed" (wrapped only).
