@@ -2775,6 +2775,7 @@ export type Database = {
           skills: string[]
           social_opt_in: boolean
           spotlight_featured_at: string | null
+          spotlight_links: Json
           suspended: boolean
           whatsapp_number: string | null
         }
@@ -2791,6 +2792,7 @@ export type Database = {
           skills?: string[]
           social_opt_in?: boolean
           spotlight_featured_at?: string | null
+          spotlight_links?: Json
           suspended?: boolean
           whatsapp_number?: string | null
         }
@@ -2807,6 +2809,7 @@ export type Database = {
           skills?: string[]
           social_opt_in?: boolean
           spotlight_featured_at?: string | null
+          spotlight_links?: Json
           suspended?: boolean
           whatsapp_number?: string | null
         }
