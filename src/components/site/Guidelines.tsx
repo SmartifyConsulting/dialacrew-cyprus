@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AutoTranslatedText } from "@/components/AutoTranslatedText";
 import { useQueryClient } from "@tanstack/react-query";
@@ -44,6 +44,13 @@ export function Guidelines({ p, isProducer }: { p: Production; isProducer: boole
     qc.invalidateQueries({ queryKey: ["productions"] });
   }
 
+  // "Don't show again" is a personal choice remembered on this device.
+  const dismissKey = `guidelines-dismissed:${session?.user.id ?? "anon"}`;
+  const [dismissed, setDismissed] = useState(false);
+  useEffect(() => { setDismissed(window.localStorage.getItem(dismissKey) === "1"); }, [dismissKey]);
+  const dismiss = () => { window.localStorage.setItem(dismissKey, "1"); setDismissed(true); };
+
+  if (dismissed && !editing) return null;
   if (p.postRulesHidden && !isProducer) return null;
 
   const hideToggle = isProducer && (
@@ -81,6 +88,7 @@ export function Guidelines({ p, isProducer }: { p: Production; isProducer: boole
         <div className="flex items-center gap-3">
           {isAdmin && <button onClick={() => { setText(p.postRules || DEFAULT_GUIDELINES); setEditing(true); }} className="text-xs font-semibold text-primary hover:underline">{t("common.edit")}</button>}
           {hideToggle}
+          <button onClick={dismiss} className="text-xs font-semibold text-muted-foreground hover:text-foreground">Don't show again</button>
         </div>
       </div>
       <div className="mt-2 whitespace-pre-wrap text-sm">{p.postRules && p.postRules !== DEFAULT_GUIDELINES ? <AutoTranslatedText text={p.postRules} /> : t("guidelines.defaults")}</div>
