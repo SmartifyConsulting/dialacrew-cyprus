@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { GigNegotiation } from "@/components/GigNegotiation";
 import { ChecklistTemplateManager } from "@/components/ChecklistTemplateManager";
 import { Badge, Panel } from "@/components/AppShell";
+import { SortableFrames } from "@/lib/frame-controls";
 import { AudioRecorder } from "@/components/AudioRecorder";
 import { fmtMoney, zar, type Booking, type Crew, type Production } from "@/lib/demo-data";
 import { assetsTotal, providerTotal } from "@/lib/costing";
@@ -473,13 +474,19 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
                 </div>
               )}
               <details className="group rounded-lg border border-border/70">
-                <summary className="cursor-pointer select-none px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/40">{t("locationsUi.details")}</summary>
-                <div className="space-y-3 border-t border-border px-3 py-3">
-                  <LocationPhotos p={p} locationId={pt.id} isProducer={isProducer} />
-                  {isProducer && <LocationFee p={p} locationId={pt.id} />}
-                  {isProducer && <LocationRisks p={p} locationId={pt.id} hasCoords={pt.latitude != null && pt.longitude != null} />}
-                </div>
+                <summary className="cursor-pointer select-none px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/40">Photos</summary>
+                <div className="border-t border-border px-3 py-3"><LocationPhotos p={p} locationId={pt.id} isProducer={isProducer} /></div>
               </details>
+              {isProducer && (<>
+              <details className="group rounded-lg border border-border/70">
+                <summary className="cursor-pointer select-none px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/40">Fees</summary>
+                <div className="border-t border-border px-3 py-3"><LocationFee p={p} locationId={pt.id} /></div>
+              </details>
+              <details className="group rounded-lg border border-border/70">
+                <summary className="cursor-pointer select-none px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/40">Risks</summary>
+                <div className="border-t border-border px-3 py-3"><LocationRisks p={p} locationId={pt.id} hasCoords={pt.latitude != null && pt.longitude != null} /></div>
+              </details>
+              </>)}
             </div>
             {isProducer && (
               <div className="flex h-8 shrink-0 items-center gap-2">
@@ -988,7 +995,8 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
   }, [f.address, f.summary, f.latitude, f.longitude, f.geofence]);
 
   return (
-    <div className="space-y-5">
+    <SortableFrames storageKey={`sidebar-frames:${p.id}`} frames={[
+      { id: "overview", node: (
       <Panel title={t("workspace.overview")} right={isProducer && saveState !== "idle" ? (
         <span className="text-xs text-muted-foreground">{saveState === "saving" ? "Saving…" : "Saved"}</span>
       ) : undefined}>
@@ -1013,12 +1021,13 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
             {isProducer && <><dt>{t("productionList.columns.Budget")}</dt><dd className="text-foreground">{fmtMoney(p.budget, p.currency)}</dd></>}
           </dl>
         </div>
-      </Panel>
-
-      <Panel title={t("overview.locations", "Locations")}>
+      </Panel>) },
+      { id: "locations", node: (
+      <Panel title={t("overview.locations", "Locations")} collapsible defaultCollapsed>
         <LocationPoints p={p} isProducer={isProducer} myCrewId={myCrewId} />
-      </Panel>
-      <Panel title={t("overview.recceDate", "Recce date")}>
+      </Panel>) },
+      { id: "recce", node: (
+      <Panel title={t("overview.recceDate", "Recce date")} collapsible defaultCollapsed>
         <div className="space-y-1 p-4">
           {p.recceDate && <p className="font-semibold text-foreground">Production recce · {dayLabel(`${p.recceDate}T00:00:00`)}</p>}
           {(() => {
@@ -1055,10 +1064,10 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
               : <p className="text-xs text-muted-foreground">Add a map location to see the recce forecast.</p>;
           })()}
         </div>
-      </Panel>
-      <ProductionSchedule p={p} isProducer={isProducer} />
-      {isProducer && <Panel title="Open gig rate negotiations"><div className="space-y-3 p-4">{(openGigs.data ?? []).map(g => <div key={g.id} className="rounded border border-border p-3 text-sm"><strong>{g.role}</strong> · {fmtMoney(Number(g.crew_rate),p.currency)} / day<GigNegotiation bookingId={g.id} role="producer" offeredRate={Number(g.crew_rate)} productionId={p.id} /></div>)}{!openGigs.data?.length && <p className="text-xs text-muted-foreground">No open gigs.</p>}</div></Panel>}
-    </div>
+      </Panel>) },
+      { id: "gear", node: <ProductionSchedule p={p} isProducer={isProducer} /> },
+      ...(isProducer ? [{ id: "negotiations", node: <Panel title="Open gig rate negotiations" collapsible defaultCollapsed><div className="space-y-3 p-4">{(openGigs.data ?? []).map(g => <div key={g.id} className="rounded border border-border p-3 text-sm"><strong>{g.role}</strong> · {fmtMoney(Number(g.crew_rate),p.currency)} / day<GigNegotiation bookingId={g.id} role="producer" offeredRate={Number(g.crew_rate)} productionId={p.id} /></div>)}{!openGigs.data?.length && <p className="text-xs text-muted-foreground">No open gigs.</p>}</div></Panel> }] : []),
+    ]} />
   );
 }
 
@@ -1796,7 +1805,7 @@ function ProductionSchedule({ p, isProducer }: { p: Ctx["p"]; isProducer: boolea
   const show = (d: string | null, tm: string | null) => d ? `${dayLabel(`${d}T00:00:00`)} · ${hhmm(tm) ?? "time TBC"}` : "Date TBC";
   return (
     <>
-      <Panel title="Gear Check Date">
+      <Panel title="Gear Check Date" collapsible defaultCollapsed>
         <div className="space-y-2 p-4 text-sm">
           {isProducer ? (
             <div className="grid gap-3">

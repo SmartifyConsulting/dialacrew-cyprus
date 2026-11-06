@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
+import { FrameHeaderControls } from "@/lib/frame-controls";
 import { Briefcase, ChevronDown, Home, Search, Shield, Star, User, type LucideIcon, Wallet, ReceiptText, CalendarDays, Megaphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany, useRole, useSession } from "@/lib/auth";
@@ -297,7 +298,7 @@ export function Panel({ title, children, right, badge, collapsible, defaultColla
           <h2 className="truncate font-display text-sm font-semibold uppercase tracking-wide text-primary">{title}</h2>
           {badge}
         </div>
-        {right}
+        <div className="flex shrink-0 items-center gap-2">{right}<FrameHeaderControls /></div>
       </div>
       {(!collapsible || !collapsed) && children}
     </section>
