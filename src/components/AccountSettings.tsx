@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 import { Panel, Badge } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
-import { useMemberships, useRole } from "@/lib/auth";
+import { useMemberships, useRole, useSession } from "@/lib/auth";
 import { friendlyError } from "@/lib/errors";
 import { deleteMyAccount } from "@/lib/account.functions";
 
@@ -47,7 +47,9 @@ function BillingPanel({ userId }: { userId: string | undefined }) {
   );
 }
 
-function SignInPanel({ email }: { email: string | undefined }) {
+function SignInPanel({ email: passed }: { email: string | undefined }) {
+  const { session } = useSession();
+  const email = passed ?? session?.user.email;
   const [newEmail, setNewEmail] = useState("");
   const [pw, setPw] = useState("");
   const [show, setShow] = useState(false);
