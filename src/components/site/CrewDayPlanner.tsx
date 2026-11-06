@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import { CREW_COUNTRIES, matchesCountry, productionCountry, setCrewCountryFilter, useCrewCountryFilter } from "@/lib/crew-country";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeftRight, Copy, Pencil, Plus, Sparkles, Trash2, UserPlus } from "lucide-react";
@@ -17,6 +17,22 @@ import { useScenarios, scenarioKey, type Scenario } from "@/components/site/Scen
 const addDays = (ymd: string, n: number) => { const d = new Date(`${ymd}T00:00:00`); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 const localYmd = (iso: string) => { const d = new Date(iso); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 const dayLabel = (ymd: string) => new Date(`${ymd}T00:00:00`).toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short" });
+// Which sandbox the producer last pencilled for a day ("s1" or a scenario id) — remembered per browser so the
+// chosen column stays highlighted (and the rest greyed out) in both the day table and the summary.
+const SEL_KEY = "sandbox-selected";
+const selListeners = new Set<() => void>();
+const readSel = (): Record<string, string> => { try { return JSON.parse(window.localStorage.getItem(SEL_KEY) || "{}"); } catch { return {}; } };
+function setSelectedSandbox(productionId: string, date: string, key: string) {
+  try { window.localStorage.setItem(SEL_KEY, JSON.stringify({ ...readSel(), [`${productionId}:${date}`]: key })); } catch { /* not remembered */ }
+  selListeners.forEach((l) => l());
+}
+function useSelectedSandbox(productionId: string, date: string): string | null {
+  const raw = useSyncExternalStore((cb) => { selListeners.add(cb); return () => { selListeners.delete(cb); }; },
+    () => { try { return window.localStorage.getItem(SEL_KEY) || "{}"; } catch { return "{}"; } }, () => "{}");
+  try { return (JSON.parse(raw) as Record<string, string>)[`${productionId}:${date}`] ?? null; } catch { return null; }
+}
+const selCls = (selected: string | null, key: string) =>
+  !selected ? "" : selected === key ? "bg-card ring-2 ring-inset ring-primary shadow-lg" : "opacity-50 grayscale bg-muted/40";
 const ghost = "inline-flex items-center gap-1 rounded-sm border border-border px-2 py-1 text-xs hover:border-primary hover:text-primary disabled:opacity-50";
 const SIZE_TIERS = ["Small", "Medium", "Large", "Extra-Large"] as const;
 
@@ -87,6 +103,7 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
 }) {
   const req = useCrewRequiredDay(p, date, roleList);
   const sc = useScenarios(p, date, roleList);
+  const selected = useSelectedSandbox(p.id, date);
   const countryFilter = useCrewCountryFilter();
   const localCountry = productionCountry(p.currency);
   const [pickKey, setPickKey] = useState<string | null>(null); // "s1:<role>" or "<scenarioId>:<role>"
@@ -172,7 +189,7 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
         <thead>
           <tr className="border-b border-border">
             <th className="min-w-[8rem] px-2 py-2 text-left sm:min-w-[13rem] sm:px-3"><span className="font-display text-xs font-semibold uppercase tracking-wide text-primary sm:text-sm">Crew Required</span></th>
-            <th className="min-w-[10rem] border-l-2 border-border px-2 py-2 text-left sm:min-w-[17rem] sm:px-3">
+            <th className={`min-w-[10rem] border-l-2 border-border px-2 py-2 text-left sm:min-w-[17rem] sm:px-3 ${selCls(selected, "s1")}`}>
               <div className="flex items-center gap-2">
                 <span className="flex-1 font-display text-xs font-semibold uppercase tracking-wide text-primary sm:text-sm">Sandbox 1</span>
                 <select className="w-20 shrink-0 rounded-sm bg-primary px-1.5 py-1 text-[9px] font-semibold text-primary-foreground sm:w-28 sm:text-[10px]" value=""
@@ -189,7 +206,7 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
             {sc.scenarios.map((s) => {
               const target = scTarget(s);
               return (
-                <th key={s.id} className="min-w-[10rem] border-l-2 border-border px-2 py-2 text-left sm:min-w-[17rem] sm:px-3">
+                <th key={s.id} className={`min-w-[10rem] border-l-2 border-border px-2 py-2 text-left sm:min-w-[17rem] sm:px-3 ${selCls(selected, s.id)}`}>
                   <div className="flex items-center gap-2">
                     <input defaultValue={s.name} onBlur={(e) => sc.renameScenario(s, e.target.value)} maxLength={80} aria-label="Sandbox name"
                       className="min-w-0 flex-1 bg-transparent font-display text-xs font-semibold uppercase tracking-wide text-primary outline-none sm:text-sm" />
@@ -224,7 +241,7 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
                     <button onClick={() => removeRole(role)} aria-label={`Remove ${role}`} className="shrink-0 font-bold text-destructive">−</button>
                   </div>
                 </td>
-                <td className="border-l-2 border-border px-2 py-2 align-top text-xs sm:px-3 sm:py-2.5 sm:text-sm">
+                <td className={`border-l-2 border-border px-2 py-2 align-top text-xs sm:px-3 sm:py-2.5 sm:text-sm ${selCls(selected, "s1")}`}>
                   {req.isConfirmed(role) ? <span className="text-xs text-success">Confirmed</span> : (
                     <div className="flex items-start gap-2">
                       <span className="min-w-0 flex-1 text-xs text-muted-foreground">
@@ -254,7 +271,7 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
                   const assigned = sc.assignedForRole(s, role);
                   const key = `${s.id}:${role}`;
                   return (
-                    <td key={s.id} className="border-l-2 border-border px-2 py-2 align-top text-xs sm:px-3 sm:py-2.5 sm:text-sm">
+                    <td key={s.id} className={`border-l-2 border-border px-2 py-2 align-top text-xs sm:px-3 sm:py-2.5 sm:text-sm ${selCls(selected, s.id)}`}>
                       <div className="flex items-start gap-2">
                         <span className="min-w-0 flex-1 text-xs text-muted-foreground">
                           {assigned ? (
@@ -294,14 +311,14 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
                 <button onClick={addRole} className="shrink-0 rounded-sm border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary hover:text-primary">+ Add role</button>
               </div>
             </td>
-            <td className="space-y-2 border-l-2 border-border px-2 py-2 align-top sm:px-3 sm:py-3">
+            <td className={`space-y-2 border-l-2 border-border px-2 py-2 align-top sm:px-3 sm:py-3 ${selCls(selected, "s1")}`}>
               <div className="text-xs"><span className="text-muted-foreground">Total:</span> <b>{fmtMoney(req.dayTotal, p.currency)}</b></div>
-              <button onClick={() => toast.success("Crew Required is already pencilled — Find/Swap updates it instantly.")} className={`${ghost} w-full justify-center`}>Pencil this Crew</button>
+              <button onClick={() => { setSelectedSandbox(p.id, date, "s1"); toast.success("Crew Required is already pencilled — Find/Swap updates it instantly."); }} className={`${ghost} w-full justify-center`}>Pencil this Crew</button>
             </td>
             {sc.scenarios.map((s) => (
-              <td key={s.id} className="space-y-2 border-l-2 border-border px-2 py-2 align-top sm:px-3 sm:py-3">
+              <td key={s.id} className={`space-y-2 border-l-2 border-border px-2 py-2 align-top sm:px-3 sm:py-3 ${selCls(selected, s.id)}`}>
                 <div className="text-xs"><span className="text-muted-foreground">Total:</span> <b>{fmtMoney(sc.totalFor(s), p.currency)}</b></div>
-                <button onClick={() => sc.commit(s)} disabled={sc.committing} className={`${ghost} w-full justify-center`}>Pencil this Crew</button>
+                <button onClick={() => { setSelectedSandbox(p.id, date, s.id); sc.commit(s); }} disabled={sc.committing} className={`${ghost} w-full justify-center`}>Pencil this Crew</button>
               </td>
             ))}
             <td />
@@ -412,6 +429,8 @@ function DaySummaryRow({ p, date, dayIndex, roleList, maxCols }: {
     assign: async (role, id) => { await sc.selectForRole(s, role, id, null); },
   }));
   const cols: (SummaryCol | null)[] = [s1Col, ...scCols];
+  const selected = useSelectedSandbox(p.id, date);
+  const colKeys = ["s1", ...sc.scenarios.map((s) => s.id)];
   while (cols.length < maxCols) cols.push(null);
 
   function closePencil() { setPencilFor(null); setPencilRole(null); }
@@ -420,38 +439,10 @@ function DaySummaryRow({ p, date, dayIndex, roleList, maxCols }: {
     <tr className="border-t border-border">
       <td className="px-3 py-2 font-medium">Day {dayIndex + 1} · {dayLabel(date)}</td>
       {cols.map((col, i) => (
-        <td key={i} className="px-3 py-2 text-right tabular-nums">
+        <td key={i} className={`px-3 py-2 text-right tabular-nums ${colKeys[i] ? selCls(selected, colKeys[i]!) : ""}`}>
           {col == null ? "—" : (
             <div className="relative inline-flex items-center justify-end gap-1.5">
               <span title={col.names.length ? col.names.join("\n") : "No crew allocated yet"}>{fmtMoney(col.total, p.currency)}</span>
-              <button type="button" onClick={() => { setPencilFor(pencilFor === i ? null : i); setPencilRole(null); }}
-                title="Pencil crew in from here" aria-label={`Pencil crew into Sandbox ${i + 1} for this day`}
-                className="inline-flex items-center justify-center rounded-sm border border-primary p-1 text-primary">
-                <Pencil className="h-3 w-3" />
-              </button>
-              {pencilFor === i && (
-                <div className="absolute right-0 top-full z-20 mt-1 w-56 max-h-72 space-y-1 overflow-y-auto rounded-sm border border-border bg-card p-2 text-left shadow-md">
-                  {pencilRole == null ? (
-                    col.openRoles.length === 0
-                      ? <p className="p-1 text-xs text-muted-foreground">Every role is filled.</p>
-                      : col.openRoles.map((role) => (
-                        <button key={role} type="button" onClick={() => setPencilRole(role)} className="block w-full rounded-sm px-2 py-1.5 text-left text-xs hover:bg-muted">{role}</button>
-                      ))
-                  ) : (
-                    <>
-                      <button type="button" onClick={() => setPencilRole(null)} className="mb-1 text-[11px] text-muted-foreground hover:text-primary">← {pencilRole}</button>
-                      {col.candidatesFor(pencilRole).length === 0 && <p className="p-1 text-xs text-muted-foreground">No crew for this role in this country.</p>}
-                      {col.candidatesFor(pencilRole).map((c) => (
-                        <div key={c.id} className="flex items-center justify-between gap-2 rounded-sm border border-border px-2 py-1.5 text-xs">
-                          <span className="min-w-0 truncate">{c.name} · {fmtMoney(c.dayRate, p.currency)}{c.unavailable && <><br /><UnavailableTag /></>}</span>
-                          <button type="button" onClick={async () => { await col.assign(pencilRole, c.id); closePencil(); }}
-                            className="shrink-0 rounded-sm bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground">Select</button>
-                        </div>
-                      ))}
-                    </>
-                  )}
-                </div>
-              )}
             </div>
           )}
         </td>
