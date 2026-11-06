@@ -16,6 +16,7 @@ function isDespia() {
 export function AuthForm() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const countries = useCountries();
   const inviteToken = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("invite") : null;
   const [mode, setMode] = useState<"signin" | "signup">(inviteToken ? "signup" : "signin");
   const [email, setEmail] = useState("");

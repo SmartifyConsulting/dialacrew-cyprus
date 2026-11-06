@@ -19,7 +19,7 @@ export function EquipmentAvailability({ p }: { p: { id: string; date: string } }
   const toHire = rows.filter((r) => r.free === 0 && r.mine === 0).map((r) => r.item.name);
 
   return (
-    <Panel title="Our equipment" right={items.length > 0 ? <span className="text-xs text-muted-foreground">{rows.filter((r) => r.free > 0 || r.mine > 0).length} of {items.length} usable</span> : undefined}>
+    <Panel title="Our equipment" collapsible defaultCollapsed right={items.length > 0 ? <span className="text-xs text-muted-foreground">{rows.filter((r) => r.free > 0 || r.mine > 0).length} of {items.length} usable</span> : undefined}>
       {items.length === 0 ? (
         <p className="p-4 text-sm text-muted-foreground">No company equipment has been listed yet. An admin can add it under Admin, Operations, Equipment.</p>
       ) : (
