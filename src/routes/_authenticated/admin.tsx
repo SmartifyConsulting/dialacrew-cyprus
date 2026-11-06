@@ -20,6 +20,7 @@ import { ChecklistTemplateManager } from "@/components/ChecklistTemplateManager"
 import { confirmDialog, promptDialog } from "@/components/ConfirmDialog";
 import { useAddCrewGroupMember, useCreateCrewGroup, useCreateProductionType, useCrew, useCrewGroups, useDeleteCrewGroup, useProductionTypes, useRemoveCrewGroupMember } from "@/lib/db";
 import { useDefaultCrewRoles } from "@/lib/site";
+import { Avatar } from "@/components/site/SiteTabs";
 
 const REQUIRED_FIELDS = ["name", "role", "department"] as const;
 const CREW_FIELDS = [...REQUIRED_FIELDS, "location", "email", "phone", "day_rate", "experience"] as const;
@@ -342,14 +343,18 @@ function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
   const users = useQuery({
     queryKey: ["admin-users"],
     queryFn: async () => {
-      const [p, r] = await Promise.all([
-        supabase.from("profiles").select("id, email, full_name, suspended, created_at, social_opt_in, spotlight_featured_at, spotlight_links"),
+      const [p, r, c] = await Promise.all([
+        supabase.from("profiles").select("id, email, full_name, suspended, created_at, social_opt_in, spotlight_featured_at, spotlight_links, avatar_url"),
         supabase.from("user_roles").select("user_id, role"),
+        supabase.from("crew_members").select("user_id, photo_url").not("user_id", "is", null),
       ]);
       if (p.error) throw p.error; if (r.error) throw r.error;
       const roles = new Map<string, string[]>();
       for (const row of r.data ?? []) roles.set(row.user_id, [...(roles.get(row.user_id) ?? []), row.role]);
-      return (p.data ?? []).map((u) => ({ ...u, roles: roles.get(u.id) ?? [] }));
+      // Crew upload their photo on their crew profile, so fall back to it when the account has none.
+      const crewPhoto = new Map<string, string>();
+      for (const row of c.data ?? []) if (row.user_id && row.photo_url) crewPhoto.set(row.user_id, row.photo_url);
+      return (p.data ?? []).map((u) => ({ ...u, photo: u.avatar_url || crewPhoto.get(u.id) || null, roles: roles.get(u.id) ?? [] }));
     },
   });
   // Producers can hand out producer/crew/client roles but never grant or remove admin — that stays Super Admin-only.
@@ -392,7 +397,7 @@ function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
             return (
             <tr key={u.id} className="border-t border-border">
               <td className="px-4 py-2 font-medium">
-                <span className="inline-flex items-center gap-1">{first || "—"}{u.social_opt_in && (u.spotlight_featured_at
+                <span className="inline-flex items-center gap-2"><Avatar name={u.full_name || u.email || "?"} path={u.photo} size={28} />{first || "—"}{u.social_opt_in && (u.spotlight_featured_at
                   ? <Star className="h-3.5 w-3.5 fill-foreground text-foreground" aria-label="Featured on social media" />
                   : <Star className="h-3.5 w-3.5 fill-destructive text-destructive" aria-label="Happy to be featured on social media" />)}</span>
                 {u.social_opt_in && <SpotlightCell id={u.id} featuredAt={u.spotlight_featured_at} links={(u.spotlight_links as string[] | null) ?? []} />}
