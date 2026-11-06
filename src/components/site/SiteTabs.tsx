@@ -1664,7 +1664,7 @@ export function CommercialsTab({ p, bookings, crewNames, requests }: Ctx & { boo
   const billing = rows.reduce((a, r) => a + r.charge, 0) + extrasTotal;
 
   async function toggleTravel(required: boolean) {
-    const { error } = await supabase.from("productions").update({ travel_required: required }).eq("id", p.id);
+    const { error } = await supabase.from("productions").update({ travel_required: required } as never).eq("id", p.id);
     if (error) { toast.error(friendlyError(error)); return; }
     inv(["productions"], ["production", p.id]);
   }
