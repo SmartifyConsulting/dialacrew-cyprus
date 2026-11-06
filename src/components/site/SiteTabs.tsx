@@ -88,8 +88,8 @@ function placeFromAddress(a: NominatimAddress | undefined, fallback: string) {
 
 // Debounced address lookup against OpenStreetMap's free Nominatim search — no API key needed.
 // Falls back to a plain text input (with no suggestions) if the request fails.
-export function AddressAutocomplete({ value, onChange, onSelect, placeholder, className }: {
-  value: string; onChange: (v: string) => void; onSelect: (s: AddressSuggestion) => void; placeholder?: string; className?: string;
+export function AddressAutocomplete({ value, onChange, onSelect, placeholder, className, country }: {
+  value: string; onChange: (v: string) => void; onSelect: (s: AddressSuggestion) => void; placeholder?: string; className?: string; country?: string;
 }) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [open, setOpen] = useState(false);
@@ -103,14 +103,14 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder, cl
     const t = setTimeout(async () => {
       setLoading(true);
       try {
-        const { results } = await search({ data: { q: value } });
+        const { results } = await search({ data: country ? { q: value, country } : { q: value } });
         setSuggestions(results.map((d) => ({ label: shortAddress(d.address, d.name, d.display_name), exactAddress: d.display_name, place: placeFromAddress(d.address, d.display_name.split(",")[0] ?? d.display_name), lat: d.lat, lon: d.lon })));
         setFailed(false);
       } catch { setSuggestions([]); setFailed(true); }
       setLoading(false);
     }, 400);
     return () => clearTimeout(t);
-  }, [value, open, search]);
+  }, [value, open, search, country]);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) { if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false); }
@@ -128,8 +128,13 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder, cl
         onFocus={() => setOpen(true)}
         autoComplete="off"
       />
-      {open && (loading || suggestions.length > 0 || (failed && value.trim().length >= 3)) && (
-        <div className="absolute z-20 mt-1 w-full rounded-sm border border-border bg-card shadow-md">
+      {open && value.trim().length >= 3 && (
+        <div className="absolute z-20 mt-1 max-h-72 w-full overflow-y-auto rounded-sm border border-border bg-card shadow-md">
+          <button type="button" onClick={() => { onSelect({ label: value.trim(), exactAddress: value.trim(), place: value.trim().split(",")[0] ?? value.trim(), lat: "", lon: "" }); setOpen(false); setSuggestions([]); }}
+            className="block w-full border-b border-border px-3 py-2 text-left text-xs font-semibold text-primary hover:bg-muted">
+            Use “{value.trim()}” as typed
+          </button>
+          {!loading && !failed && suggestions.length === 0 && <div className="px-3 py-2 text-xs text-muted-foreground">No matching places — keep typing the street and suburb, or use it as typed.</div>}
           {loading && <div className="px-3 py-2 text-xs text-muted-foreground">Searching…</div>}
           {!loading && failed && suggestions.length === 0 && <div className="px-3 py-2 text-xs text-destructive">Address lookup failed — you can still type the address in manually.</div>}
           {!loading && suggestions.map((s, i) => (
@@ -510,7 +515,7 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
             <NumberedPin n={editingId ? points.findIndex((pt) => pt.id === editingId) + 1 : points.length + 1} />
             <span className="text-sm font-bold text-foreground">{editingId ? `Edit location` : `Location ${points.length + 1}`}</span>
           </div>
-          <AddressAutocomplete className={`${input} w-full`} placeholder={t("locationsUi.address")} value={lf.address}
+          <AddressAutocomplete className={`${input} w-full`} placeholder={t("locationsUi.address")} value={lf.address} country={productionCountry(p.currency)}
             onChange={(v) => setLf({ ...lf, address: v })}
             onSelect={(s) => setLf({ ...lf, label: s.place, address: s.exactAddress, latitude: s.lat, longitude: s.lon })} />
           <div className="space-y-3">
@@ -1843,3 +1848,4 @@ function ProductionSchedule({ p, isProducer }: { p: Ctx["p"]; isProducer: boolea
 }
 import { AutoTranslatedText } from "@/components/AutoTranslatedText";
 import { useTranslation } from "react-i18next";
+import { productionCountry } from "@/lib/crew-country";

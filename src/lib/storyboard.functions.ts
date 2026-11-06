@@ -65,7 +65,7 @@ export const generateShotImage = createServerFn({ method: "POST" })
       const res = await fetch("https://api.openai.com/v1/images/generations", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-        body: JSON.stringify({ model: "dall-e-3", prompt, size: "1024x1024", n: 1, response_format: "b64_json" }),
+        body: JSON.stringify({ model: "gpt-image-1-mini", prompt, size: "1024x1024", n: 1 }),
       });
       const { logAiUsage } = await import("./ai-usage.server");
       const { OPENAI_IMAGE_PER_CALL_USD } = await import("./ai-usage");
@@ -73,10 +73,10 @@ export const generateShotImage = createServerFn({ method: "POST" })
       if (!res.ok) {
         const t = await res.text().catch(() => "");
         console.error("Storyboard image generation error", res.status, t);
-        await logAiUsage({ provider: "openai", operation: "Image generation", model: "dall-e-3", status: res.status, cost_usd: 0, error_message: t }, usageMeta);
+        await logAiUsage({ provider: "openai", operation: "Image generation", model: "gpt-image-1-mini", status: res.status, cost_usd: 0, error_message: t }, usageMeta);
         throw new Error(res.status === 402 || res.status === 403 ? "AI access is unavailable — check the OpenAI account's billing and access." : "The AI could not generate this illustration.");
       }
-      await logAiUsage({ provider: "openai", operation: "Image generation", model: "dall-e-3", status: 200, cost_usd: OPENAI_IMAGE_PER_CALL_USD }, usageMeta);
+      await logAiUsage({ provider: "openai", operation: "Image generation", model: "gpt-image-1-mini", status: 200, cost_usd: OPENAI_IMAGE_PER_CALL_USD }, usageMeta);
       const body = (await res.json()) as { data: { b64_json: string }[] };
       const b64 = body.data[0]?.b64_json;
       if (!b64) throw new Error("The AI returned no image.");
@@ -88,14 +88,14 @@ export const generateShotImage = createServerFn({ method: "POST" })
 
       await supabaseAdmin.from("storyboard_shots").update({ image_path: path, status: "generated" }).eq("id", data.shotId);
       await supabaseAdmin.from("storyboard_generations").insert({
-        production_id: data.productionId, shot_id: data.shotId, kind: "image", provider: "openai", model: "dall-e-3", status: "succeeded", created_by: context.userId,
+        production_id: data.productionId, shot_id: data.shotId, kind: "image", provider: "openai", model: "gpt-image-1-mini", status: "succeeded", created_by: context.userId,
       });
       return { path };
     } catch (e) {
       const message = e instanceof Error ? e.message : "The AI could not generate this illustration.";
       await supabaseAdmin.from("storyboard_shots").update({ status: "failed", generation_error: message }).eq("id", data.shotId);
       await supabaseAdmin.from("storyboard_generations").insert({
-        production_id: data.productionId, shot_id: data.shotId, kind: "image", provider: "openai", model: "dall-e-3", status: "failed", created_by: context.userId,
+        production_id: data.productionId, shot_id: data.shotId, kind: "image", provider: "openai", model: "gpt-image-1-mini", status: "failed", created_by: context.userId,
       });
       throw new Error(message);
     }

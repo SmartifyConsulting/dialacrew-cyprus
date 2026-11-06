@@ -40,7 +40,7 @@ export const Route = createFileRoute("/_authenticated/crew/$id")({
 
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
 const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground";
-const TABS = ["About", "Projects", "Portfolio", "Equipment", "Checklists", "Reviews", "Banking", "Travel", "Emergency", "Account"] as const;
+const TABS = ["About", "Account", "Travel", "Equipment", "Checklists", "Reviews", "Emergency"] as const;
 
 function CrewProfile() {
   const { id } = Route.useParams();
@@ -125,7 +125,7 @@ function CrewProfile() {
 
         <nav className="flex gap-1 overflow-x-auto border-y border-border px-4">
           {TABS.filter((t) => {
-            if (t === "Banking" || t === "Checklists" || t === "Emergency" || t === "Account") return isOwnProfile;
+            if (t === "Checklists" || t === "Emergency" || t === "Account") return isOwnProfile;
             if (t === "Travel") return canEdit;
             return true;
           }).map((t) => <button key={t} onClick={() => setTab(t)} className={`whitespace-nowrap border-b-2 px-3 py-3 text-sm font-semibold ${tab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}>{t}</button>)}
@@ -147,31 +147,30 @@ function CrewProfile() {
               </section>
             </div>
           )}
-          {tab === "Projects" && (
-            <ul className="divide-y divide-border">
-              {(jobs.data ?? []).length === 0 && <li className="py-3 text-sm text-muted-foreground">No projects yet.</li>}
-              {(jobs.data ?? []).map((j) => (
-                <ProjectRow key={j.id} job={j} userId={session?.user.id} canRespond={canEdit && m.user_id === session?.user.id} isProducer={role.data === "producer"} onChange={() => { jobs.refetch(); }} />
-              ))}
-            </ul>
-          )}
-          {tab === "Portfolio" && (
-            m.portfolio_url || m.youtube_url || m.vimeo_url || m.instagram_url ? (
+          {tab === "About" && (
+            <section className="mt-6 border-t border-border pt-5"><h3 className="mb-2 font-semibold">Portfolio</h3>
+            {m.portfolio_url || m.youtube_url || m.vimeo_url || m.instagram_url ? (
               <div className="flex flex-wrap gap-3 text-sm">
                 {m.portfolio_url && <a href={m.portfolio_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Portfolio / showreel</a>}
                 {m.youtube_url && <a href={m.youtube_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">YouTube</a>}
                 {m.vimeo_url && <a href={m.vimeo_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Vimeo</a>}
                 {m.instagram_url && <a href={m.instagram_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Instagram</a>}
               </div>
-            ) : <p className="text-sm text-muted-foreground">No portfolio links added yet.</p>
+            ) : <p className="text-sm text-muted-foreground">No portfolio links added yet.</p>}
+            </section>
           )}
           {tab === "Equipment" && <Kit crewId={id} items={assets.data ?? []} canEdit={canEdit} onChange={refresh} />}
           {tab === "Checklists" && isOwnProfile && <CrewPersonalChecklists crewId={id} />}
           {tab === "Reviews" && <ReviewsTab crewId={id} />}
-          {tab === "Banking" && isOwnProfile && <BankingTab crewId={id} />}
+
           {tab === "Travel" && canEdit && <PassportTab crewId={id} canEdit={canEdit} />}
           {tab === "Emergency" && isOwnProfile && <CrewEmergencySettings crewId={id} />}
-          {tab === "Account" && isOwnProfile && <AccountSettings userId={session?.user.id} email={session?.user.email} />}
+          {tab === "Account" && isOwnProfile && (
+            <div className="space-y-5">
+              <section className="rounded-sm border border-border"><h3 className="border-b border-border px-4 py-3 font-semibold">Banking</h3><div className="p-4"><BankingTab crewId={id} /></div></section>
+              <AccountSettings userId={session?.user.id} email={session?.user.email} />
+            </div>
+          )}
         </div>
       </div>
     </Page>
