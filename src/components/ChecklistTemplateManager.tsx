@@ -18,6 +18,10 @@ export function ChecklistTemplateManager({ audience, targetId }: { audience: Che
   const { session } = useSession();
   const qc = useQueryClient();
   const q = useChecklistTemplates(audience);
+  const docTemplates = useQuery({ queryKey: ["document-templates"], enabled: audience === "producer" && !!targetId, queryFn: async () => {
+    const { data, error } = await supabase.from("document_checklist_templates").select("id, name").eq("kind", "documents").order("name");
+    if (error) throw error; return data ?? [];
+  } }).data ?? [];
   const [name, setName] = useState("");
   const [items, setItems] = useState<string[]>([""]);
   const [selected, setSelected] = useState("");
@@ -45,6 +49,19 @@ export function ChecklistTemplateManager({ audience, targetId }: { audience: Che
   async function apply() {
     if (!targetId || !selected) return;
     setBusy(true);
+    if (selected.startsWith("doc:")) {
+      // Document checklists live in their own template table; copy them in as a normal production checklist.
+      const id = selected.slice(4);
+      const tpl = docTemplates.find((d) => d.id === id);
+      const { data: rows, error: e1 } = await supabase.from("document_checklist_template_items").select("label, sort_order").eq("template_id", id).order("sort_order");
+      const { data: list, error: e2 } = e1 ? { data: null, error: e1 } : await supabase.from("production_checklists").insert({ production_id: targetId, title: tpl?.name ?? "Documents", sort_order: 999 }).select("id").single();
+      const e3 = e2 || !list ? e2 : (await supabase.from("production_checklist_items").insert((rows ?? []).map((r, i) => ({ checklist_id: list.id, label: r.label, sort_order: i })))).error;
+      setBusy(false);
+      if (e1 || e2 || e3) { toast.error((e1 || e2 || e3)!.message); return; }
+      toast.success(translate("templates.applied")); setSelected("");
+      void qc.invalidateQueries({ queryKey: ["checklists", targetId] });
+      return;
+    }
     const { error } = await supabase.rpc("apply_checklist_template", { p_template_id: selected, ...(audience === "producer" ? { p_production_id: targetId } : {}), ...(audience === "crew" ? { p_crew_id: targetId } : {}) });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
@@ -58,7 +75,8 @@ export function ChecklistTemplateManager({ audience, targetId }: { audience: Che
     {targetId && <div className="flex flex-wrap gap-2">
       <select aria-label={translate("templates.choose")} value={selected} onChange={(e) => setSelected(e.target.value)} className="min-w-52 flex-1 rounded border border-border bg-background p-2 text-sm">
         <option value="">{translate("templates.choose")}</option>
-        {(q.data ?? []).map((t) => <option key={t.id} value={t.id}>{t.title}{t.owner_id ? ` (${translate("templates.mine")})` : ""}</option>)}
+        <optgroup label="Checklists">{(q.data ?? []).map((t) => <option key={t.id} value={t.id}>{t.title}{t.owner_id ? ` (${translate("templates.mine")})` : ""}</option>)}</optgroup>
+        {docTemplates.length > 0 && <optgroup label="Documents">{docTemplates.map((d) => <option key={d.id} value={`doc:${d.id}`}>{d.name}</option>)}</optgroup>}
       </select>
       <button disabled={!selected || busy} onClick={apply} className="rounded bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-50">{translate("templates.addChecklist")}</button>
     </div>}
