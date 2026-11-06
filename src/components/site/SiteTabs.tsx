@@ -8,7 +8,9 @@ import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { nativeFeedback } from "@/lib/native";
-import { Camera, Check, CheckCircle2, Circle, Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Download, FileText, GripVertical, ImageUp, LogIn, LogOut, MapPin, Mic, Minus, Paperclip, Pencil, Plus, Sparkles, Star, Sun, Trash2, Users } from "lucide-react";
+import { Camera, Check, CheckCircle2, CalendarDays, Circle, Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Download, FileText, GripVertical, ImageUp, LogIn, LogOut, MapPin, Mic, Minus, Paperclip, Pencil, Plus, Sparkles, Star, Sun, Trash2, Users } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { GigNegotiation } from "@/components/GigNegotiation";
 import { ChecklistTemplateManager } from "@/components/ChecklistTemplateManager";
@@ -416,17 +418,18 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
                     <span>{t("locationsUi.shootDay", { number: i + 1 })}: {canSeeExactAddress ? (pt.label || t("overview.tbc")) : areaOnly(pt.address || pt.label || "", p.location)}</span>
                     {pt.starts_at && pt.latitude != null && pt.longitude != null && <DayWeatherIcon lat={pt.latitude} lon={pt.longitude} date={localYmd(pt.starts_at)} />}
                   </div>
-                  <div className="text-sm font-semibold text-foreground">{pt.starts_at ? localDay(pt.starts_at) : t("overview.tbc")}</div>
-                  <div className="text-xs text-muted-foreground">{pt.starts_at ? timeRange(pt.starts_at, pt.ends_at) : t("calendar.timeTbc")}</div>
+                  <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0">
+                    <span className="text-sm font-semibold text-foreground">{pt.starts_at ? localDay(pt.starts_at) : t("overview.tbc")}</span>
+                    <span className="text-xs font-medium text-muted-foreground">{pt.starts_at ? timeRange(pt.starts_at, pt.ends_at) : t("calendar.timeTbc")}</span>
+                  </div>
                   {isProducer && (
                     <div className="mt-2 space-y-1 text-xs text-muted-foreground">
                       <span className="block font-semibold text-foreground">{t("overview.recceDate")}</span>
-                      <input
-                        type="date"
-                        aria-label={`Recce date for Shoot Day ${i + 1}`}
-                        className={`${input} w-full py-1 text-xs`}
+                      <CalendarDatePicker
+                        label={`Recce date for Shoot Day ${i + 1}`}
+                        className="w-full"
                         value={pt.recce_date ?? ""}
-                        onChange={(e) => saveRecce(pt.id, { recce_date: e.target.value || null }, e.target.value ? "Recce date saved" : "Recce date cleared")}
+                        onChange={(v) => saveRecce(pt.id, { recce_date: v || null }, v ? "Recce date saved" : "Recce date cleared")}
                       />
                       <div className="flex items-center gap-2">
                         <AmPmTimePicker label={`Recce start time for Shoot Day ${i + 1}`} placeholder="Select start time" value={hhmm(pt.recce_start_time) ?? ""} onChange={(value) => {
@@ -1690,6 +1693,29 @@ export function AmPmTimePicker({ value, onChange, label, placeholder = "Select t
       <option value="">{placeholder === "Select time" ? t("productionModal.selectTime") : placeholder}</option>
       {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
     </select>
+  );
+}
+
+// A nicer date picker than the native <input type="date">: a button showing the chosen day, with a
+// popover calendar (reusing the shadcn/react-day-picker Calendar already in the app) to pick from.
+export function CalendarDatePicker({ value, onChange, label, placeholder = "Select date", className, min, max }: { value: string; onChange: (value: string) => void; label: string; placeholder?: string; className?: string; min?: string; max?: string }) {
+  const [open, setOpen] = useState(false);
+  const selected = value ? new Date(`${value}T00:00:00`) : undefined;
+  return (
+    <div className={`relative shrink-0 ${className ?? ""}`}>
+      <button type="button" aria-label={label} onClick={() => setOpen((o) => !o)}
+        className={`${input} flex min-w-0 items-center gap-1.5 py-1 text-left text-xs ${className ? "w-full" : ""}`}>
+        <CalendarDays className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        <span className={value ? "" : "text-muted-foreground"}>{value ? dayLabel(`${value}T00:00:00`) : placeholder}</span>
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-20 mt-1 rounded-sm border border-border bg-card shadow-md">
+          <Calendar mode="single" selected={selected}
+            onSelect={(d) => { if (d) onChange(format(d, "yyyy-MM-dd")); setOpen(false); }}
+            disabled={(d) => (min ? format(d, "yyyy-MM-dd") < min : false) || (max ? format(d, "yyyy-MM-dd") > max : false)} />
+        </div>
+      )}
+    </div>
   );
 }
 
