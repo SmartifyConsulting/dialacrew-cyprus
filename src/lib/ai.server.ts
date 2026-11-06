@@ -8,8 +8,9 @@ export const AI_MODEL = "gpt-4.1-mini";
 const ACTIVITY: Record<string, string> = {
   storyboard_breakdown: "Storyboard shot breakdown",
   polish_description: "Polish with AI",
-  sound_design: "Sound design proposals",
-  translation: "Translation",
+  storyboard_sound_director: "Sound design proposals",
+  content_translation: "Translation",
+  company_memory: "MemoryBank relearn",
 };
 
 export async function aiJson<T>(opts: { name: string; schema: Record<string, unknown>; instructions: string; input: string; meta?: UsageMeta }): Promise<T> {
