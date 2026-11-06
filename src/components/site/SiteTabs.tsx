@@ -10,7 +10,7 @@ import { geocodeSearch } from "@/lib/geocode.functions";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { nativeFeedback } from "@/lib/native";
-import { Camera, Check, CheckCircle2, CalendarDays, Circle, Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Download, FileText, GripVertical, ImageUp, LogIn, LogOut, MapPin, Mic, Minus, Paperclip, Pencil, Plus, Sparkles, Star, Sun, Trash2, Users } from "lucide-react";
+import { Camera, Check, CheckCircle2, CalendarDays, Circle, Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Download, FileText, GripVertical, ImageUp, LogIn, LogOut, MapPin, Megaphone, Mic, Minus, Paperclip, Pencil, Plus, Sparkles, Star, Sun, Trash2, Users } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -1358,6 +1358,11 @@ export function PostsTab({ p, userId, myName, isProducer }: Ctx) {
   return (
     <div className="w-full space-y-4">
       <Guidelines p={p} isProducer={isProducer} />
+      <div className="flex justify-end">
+        <Link to="/gigs" hash="post" className="inline-flex items-center gap-1.5 rounded-sm border border-primary px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/10">
+          <Megaphone className="h-4 w-4" /> {t("nav.postGig", { defaultValue: "Post a Gig" })}
+        </Link>
+      </div>
       <div className="rounded-sm border border-border bg-card p-4">
         <textarea rows={3} className={`${input} w-full`} placeholder={t("workspace.share")} value={body} onChange={(e) => setBody(e.target.value)} />
         {recording && <div className="mt-2"><AudioRecorder onCancel={() => setRecording(false)} onDone={(blob, transcript) => { setRecording(false); setAudio({ blob, transcript }); if (transcript) setBody((b) => (b ? `${b}\n${transcript}` : transcript)); }} /></div>}
