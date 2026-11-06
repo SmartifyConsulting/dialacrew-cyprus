@@ -3180,6 +3180,63 @@ export type Database = {
           },
         ]
       }
+      storyboard_audio_packages: {
+        Row: { key: string; name: string; credits: number; price_cents: number; currency: string; active: boolean; sort_order: number; updated_at: string }
+        Insert: { key: string; name: string; credits: number; price_cents: number; currency?: string; active?: boolean; sort_order?: number; updated_at?: string }
+        Update: { key?: string; name?: string; credits?: number; price_cents?: number; currency?: string; active?: boolean; sort_order?: number; updated_at?: string }
+        Relationships: []
+      }
+      storyboard_audio_pricing: {
+        Row: { generation_kind: string; credits_per_generation: number; updated_at: string }
+        Insert: { generation_kind: string; credits_per_generation: number; updated_at?: string }
+        Update: { generation_kind?: string; credits_per_generation?: number; updated_at?: string }
+        Relationships: []
+      }
+      storyboard_audio_purchases: {
+        Row: {
+          id: string; production_id: string; package_key: string; credits: number; amount_cents: number; currency: string
+          paystack_reference: string; status: string; created_by: string; created_at: string; paid_at: string | null
+        }
+        Insert: {
+          id?: string; production_id: string; package_key: string; credits: number; amount_cents: number; currency?: string
+          paystack_reference: string; status?: string; created_by?: string; created_at?: string; paid_at?: string | null
+        }
+        Update: {
+          id?: string; production_id?: string; package_key?: string; credits?: number; amount_cents?: number; currency?: string
+          paystack_reference?: string; status?: string; created_by?: string; created_at?: string; paid_at?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "storyboard_audio_purchases_production_id_fkey"; columns: ["production_id"]; isOneToOne: false; referencedRelation: "productions"; referencedColumns: ["id"] },
+          { foreignKeyName: "storyboard_audio_purchases_package_key_fkey"; columns: ["package_key"]; isOneToOne: false; referencedRelation: "storyboard_audio_packages"; referencedColumns: ["key"] },
+        ]
+      }
+      storyboard_audio_transactions: {
+        Row: {
+          id: string; production_id: string; kind: string; credits: number; idempotency_key: string
+          purchase_id: string | null; cue_id: string | null; balance_after: number; note: string | null; created_by: string; created_at: string
+        }
+        Insert: {
+          id?: string; production_id: string; kind: string; credits: number; idempotency_key: string
+          purchase_id?: string | null; cue_id?: string | null; balance_after: number; note?: string | null; created_by?: string; created_at?: string
+        }
+        Update: {
+          id?: string; production_id?: string; kind?: string; credits?: number; idempotency_key?: string
+          purchase_id?: string | null; cue_id?: string | null; balance_after?: number; note?: string | null; created_by?: string; created_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "storyboard_audio_transactions_production_id_fkey"; columns: ["production_id"]; isOneToOne: false; referencedRelation: "productions"; referencedColumns: ["id"] },
+          { foreignKeyName: "storyboard_audio_transactions_purchase_id_fkey"; columns: ["purchase_id"]; isOneToOne: false; referencedRelation: "storyboard_audio_purchases"; referencedColumns: ["id"] },
+          { foreignKeyName: "storyboard_audio_transactions_cue_id_fkey"; columns: ["cue_id"]; isOneToOne: false; referencedRelation: "storyboard_audio_cues"; referencedColumns: ["id"] },
+        ]
+      }
+      storyboard_audio_wallets: {
+        Row: { production_id: string; available_credits: number; reserved_credits: number; total_purchased: number; total_consumed: number; created_at: string; updated_at: string }
+        Insert: { production_id: string; available_credits?: number; reserved_credits?: number; total_purchased?: number; total_consumed?: number; created_at?: string; updated_at?: string }
+        Update: { production_id?: string; available_credits?: number; reserved_credits?: number; total_purchased?: number; total_consumed?: number; created_at?: string; updated_at?: string }
+        Relationships: [
+          { foreignKeyName: "storyboard_audio_wallets_production_id_fkey"; columns: ["production_id"]; isOneToOne: true; referencedRelation: "productions"; referencedColumns: ["id"] },
+        ]
+      }
       storyboard_audio_cues: {
         Row: {
           audio_path: string | null

@@ -7,7 +7,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { friendlyError } from "@/lib/errors";
 import { uploadFile, useSignedUrl } from "@/lib/site";
 import { Panel } from "@/components/AppShell";
-import { proposeSoundtrack, generateAudioCue, restoreAudioVersion } from "@/lib/sound-design.functions";
+import { confirmDialog } from "@/components/ConfirmDialog";
+import { proposeSoundtrack, generateAudioCue, getAudioGenerationCost, restoreAudioVersion } from "@/lib/sound-design.functions";
+import { TopUpAudioCredits } from "@/components/site/TopUpAudioCredits";
 import type { Production } from "@/lib/demo-data";
 
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring min-w-0";
@@ -79,6 +81,7 @@ export function SoundDesignStudio({ p, isProducer }: { p: Production; isProducer
 
   const propose = useServerFn(proposeSoundtrack);
   const generate = useServerFn(generateAudioCue);
+  const getCost = useServerFn(getAudioGenerationCost);
   const [proposing, setProposing] = useState(false);
   const [proposals, setProposals] = useState<Proposal[] | null>(null);
   const [picked, setPicked] = useState<Set<number>>(new Set());
@@ -129,11 +132,24 @@ export function SoundDesignStudio({ p, isProducer }: { p: Production; isProducer
 
   async function runGenerate(cue: Cue) {
     if (!cue.prompt?.trim()) { toast.error("Write a prompt for this cue first"); return; }
+    const kind = cue.kind === "upload" ? "sfx" : cue.kind;
+    let cost: { credits: number; available: number };
+    try { cost = await getCost({ data: { productionId: p.id, kind } }); }
+    catch (e) { toast.error(friendlyError(e)); return; }
+    if (cost.credits > 0) {
+      if (cost.available < cost.credits) { toast.error(`You need ${cost.credits} credits to generate this, but you currently have ${cost.available}. Top up to continue.`); return; }
+      const confirmed = await confirmDialog(
+        `${cue.audio_path ? "Regenerate" : "Generate"} ${KIND_LABELS[kind]}\n\nCredits required: ${cost.credits}\nAvailable credits: ${cost.available}\nRemaining after: ${cost.available - cost.credits}`,
+        { confirmLabel: `Generate for ${cost.credits} Credits` },
+      );
+      if (!confirmed) return;
+    }
     setGeneratingId(cue.id);
     refresh();
     try {
-      await generate({ data: { productionId: p.id, cueId: cue.id, kind: cue.kind === "upload" ? "sfx" : cue.kind, prompt: cue.prompt, durationSeconds: cue.duration_seconds ?? undefined } });
-      toast.success("Audio generated");
+      await generate({ data: { productionId: p.id, cueId: cue.id, kind, prompt: cue.prompt, durationSeconds: cue.duration_seconds ?? undefined } });
+      toast.success(cost.credits > 0 ? `Your ${KIND_LABELS[kind].toLowerCase()} is ready! ${cost.credits} credits have been used. You have ${cost.available - cost.credits} credits remaining.` : "Audio generated");
+      qc.invalidateQueries({ queryKey: ["storyboard-audio-wallet", p.id] });
     } catch (e) { toast.error(friendlyError(e)); }
     finally { setGeneratingId(null); refresh(); }
   }
@@ -155,6 +171,7 @@ export function SoundDesignStudio({ p, isProducer }: { p: Production; isProducer
 
   return (
     <div className="space-y-4">
+      <TopUpAudioCredits productionId={p.id} />
       <Panel title="AI Sound Director">
         <div className="space-y-3 p-4">
           <p className="text-xs text-muted-foreground">Analyses this storyboard's scenes and shots and proposes an emotional soundtrack journey — music, SFX, ambience and narration — for you to review before anything is generated.</p>

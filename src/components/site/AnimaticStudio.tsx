@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { friendlyError } from "@/lib/errors";
 import { signedUrl, uploadFile } from "@/lib/site";
 import { Panel } from "@/components/AppShell";
+import { TopUpAudioCredits } from "@/components/site/TopUpAudioCredits";
 import type { Production } from "@/lib/demo-data";
 
 const btn = "inline-flex items-center gap-1.5 rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50";
@@ -186,10 +187,16 @@ export function AnimaticStudio({ p, isProducer }: { p: Production; isProducer: b
   }).data ?? [];
 
   if (!isProducer) return <p className="rounded-sm border border-dashed border-border p-4 text-sm text-muted-foreground">Storyboard Studio is managed by the production's producer.</p>;
-  if (playableShots.length === 0) return <p className="rounded-sm border border-dashed border-border p-6 text-center text-sm text-muted-foreground">Generate at least one illustration in Illustrate mode to preview an animatic.</p>;
+  if (playableShots.length === 0) return (
+    <div className="space-y-4">
+      <TopUpAudioCredits productionId={p.id} />
+      <p className="rounded-sm border border-dashed border-border p-6 text-center text-sm text-muted-foreground">Generate at least one illustration in Illustrate mode to preview an animatic.</p>
+    </div>
+  );
 
   return (
     <div className="space-y-4">
+      <TopUpAudioCredits productionId={p.id} />
       <div ref={containerRef} className="relative aspect-video w-full overflow-hidden rounded-sm bg-black">
         {currentEntry?.shot.image_path && imageUrls[currentEntry.shot.image_path] && (
           <img src={imageUrls[currentEntry.shot.image_path]!} alt="" className="absolute inset-0 h-full w-full object-contain" style={{ opacity: 1 - fadeProgress }} />

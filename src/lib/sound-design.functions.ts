@@ -52,6 +52,21 @@ export const proposeSoundtrack = createServerFn({ method: "POST" })
     return { proposals: out.proposals };
   });
 
+// Credit cost preview, shown before the producer confirms a (re)generation — "Generate for 50
+// Credits" — plus their current balance, so insufficient-credit messaging can be shown up front
+// instead of after an avoidable round trip.
+export const getAudioGenerationCost = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ productionId: z.string().min(1), kind: z.enum(["music", "sfx", "ambience", "narration"]) }).parse(d))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [{ data: pricing }, { data: wallet }] = await Promise.all([
+      supabaseAdmin.from("storyboard_audio_pricing").select("credits_per_generation").eq("generation_kind", data.kind).maybeSingle(),
+      supabaseAdmin.from("storyboard_audio_wallets").select("available_credits").eq("production_id", data.productionId).maybeSingle(),
+    ]);
+    return { credits: pricing?.credits_per_generation ?? 0, available: wallet?.available_credits ?? 0 };
+  });
+
 async function uploadAndLogVersion(opts: {
   productionId: string; cueId: string; bytes: Uint8Array; contentType: string; ext: string; prompt: string | null; userId: string;
 }) {
@@ -76,7 +91,26 @@ export const generateAudioCue = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertProducerSiteMember(context, data.productionId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin.from("storyboard_audio_cues").update({ status: "generating", generation_error: null }).eq("id", data.cueId);
+
+    // Atomic claim: only proceeds if this cue wasn't already mid-generation, so a duplicate click
+    // can't trigger two paid generations for the same cue.
+    const { data: claimed } = await supabaseAdmin.from("storyboard_audio_cues").update({ status: "generating", generation_error: null })
+      .eq("id", data.cueId).neq("status", "generating").select("id").maybeSingle();
+    if (!claimed) throw new Error("This cue is already generating.");
+
+    const { data: pricing } = await supabaseAdmin.from("storyboard_audio_pricing").select("credits_per_generation").eq("generation_kind", data.kind).maybeSingle();
+    const creditsNeeded = pricing?.credits_per_generation ?? 0;
+    const idempotencyKey = crypto.randomUUID();
+    if (creditsNeeded > 0) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabaseAdmin.rpc as any)("reserve_storyboard_audio_credits", { _production_id: data.productionId, _credits: creditsNeeded, _idempotency_key: idempotencyKey, _cue_id: data.cueId });
+      } catch (e) {
+        await supabaseAdmin.from("storyboard_audio_cues").update({ status: "failed", generation_error: "Not enough Storyboard Audio Credits." }).eq("id", data.cueId);
+        const { data: wallet } = await supabaseAdmin.from("storyboard_audio_wallets").select("available_credits").eq("production_id", data.productionId).maybeSingle();
+        throw new Error(`You need ${creditsNeeded} credits to generate this, but you currently have ${wallet?.available_credits ?? 0}. Top up to continue.`);
+      }
+    }
 
     try {
       let path: string;
@@ -119,11 +153,18 @@ export const generateAudioCue = createServerFn({ method: "POST" })
         path = await uploadAndLogVersion({ productionId: data.productionId, cueId: data.cueId, bytes, contentType: "audio/mpeg", ext: "mp3", prompt: data.prompt, userId: context.userId });
         await supabaseAdmin.from("storyboard_generations").insert({ production_id: data.productionId, shot_id: null, kind: data.kind, provider: "stability", model: "stable-audio-2.5", status: "succeeded", created_by: context.userId });
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (creditsNeeded > 0) await (supabaseAdmin.rpc as any)("finalize_storyboard_audio_charge", { _idempotency_key: idempotencyKey });
       return { path };
     } catch (e) {
       const message = e instanceof Error ? e.message : "The AI could not generate this audio.";
       await supabaseAdmin.from("storyboard_audio_cues").update({ status: "failed", generation_error: message }).eq("id", data.cueId);
       await supabaseAdmin.from("storyboard_generations").insert({ production_id: data.productionId, shot_id: null, kind: data.kind, provider: data.kind === "narration" ? "openai" : "stability", status: "failed", created_by: context.userId });
+      // Generation failed after credits were reserved — release them back rather than leaving an
+      // unexplained reservation. (If the AI provider itself charged us for the failed attempt, that
+      // is a separate provider-cost reconciliation, not the customer's problem.)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (creditsNeeded > 0) await (supabaseAdmin.rpc as any)("release_storyboard_audio_reservation", { _idempotency_key: idempotencyKey });
       throw new Error(message);
     }
   });

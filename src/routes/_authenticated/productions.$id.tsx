@@ -20,7 +20,10 @@ import { CrewOvertimePanel, useBookingRates } from "@/components/site/Overtime";
 import { ChecklistsPanel, CommercialsTab, CONFIRMED_BOOKING_STATUSES, MembersList, OverviewTab, PostsTab, RegisterTab, TasksTab } from "@/components/site/SiteTabs";
 
 export const Route = createFileRoute("/_authenticated/productions/$id")({
-  validateSearch: (s: Record<string, unknown>): { tab?: string } => (typeof s["tab"] === "string" ? { tab: s["tab"] } : {}),
+  validateSearch: (s: Record<string, unknown>): { tab?: string; audio_ref?: string } => ({
+    ...(typeof s["tab"] === "string" ? { tab: s["tab"] } : {}),
+    ...(typeof s["audio_ref"] === "string" ? { audio_ref: s["audio_ref"] } : {}),
+  }),
   head: () => ({
     meta: [
       { title: "Production site — Book a Crew" },
