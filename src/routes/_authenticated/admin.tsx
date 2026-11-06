@@ -184,10 +184,11 @@ const ADMIN_GROUPS = [
 // templates rather than editing crew records directly.
 const PRODUCER_ADMIN_GROUPS = [
   { name: "People & Organisations", tabs: ["Users", "Crew"] },
-  { name: "Reporting", tabs: ["Finance", "Bookings"] },
+  { name: "Reporting", tabs: ["Bookings"] },
   { name: "Disputes", tabs: ["Disputes"] },
   { name: "Reviews", tabs: ["Reviews"] },
   { name: "Templates", tabs: ["Checklists"] },
+  { name: "Finance", tabs: ["Finance"] },
 ] as const;
 type AdminGroup = (typeof ADMIN_GROUPS)[number]["name"] | (typeof PRODUCER_ADMIN_GROUPS)[number]["name"];
 type AdminTab = (typeof ADMIN_GROUPS)[number]["tabs"][number] | (typeof PRODUCER_ADMIN_GROUPS)[number]["tabs"][number];
@@ -782,6 +783,13 @@ function CompaniesTab() {
 
 const BOOKING_STATUSES = ["draft", "open", "pencil", "awaiting_crew_confirmation", "confirmed", "in_progress", "awaiting_review", "completed", "payment_released", "cancelled", "disputed"] as const;
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function fmtDay(d: string | null) {
+  if (!d) return "—";
+  const [y, m, day] = d.slice(0, 10).split("-");
+  return `${day} ${MONTHS[Number(m) - 1] ?? ""} ${y}`;
+}
+
 function BookingsTab() {
   const { t } = useTranslation();
   const inv = useInv();
@@ -815,20 +823,20 @@ function BookingsTab() {
 
   return (
     <Panel title={`${t("adminNav.labels.Bookings")} (${bookings.data?.length ?? 0})`}>
-      <ul className="divide-y divide-border">
+      <ul className="divide-y divide-border text-sm">
         {[...byProduction.entries()].map(([prodId, group]) => (
           <li key={prodId}>
-            <button onClick={() => setOpenProd(openProd === prodId ? null : prodId)} className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left hover:bg-muted/40">
+            <button onClick={() => setOpenProd(openProd === prodId ? null : prodId)} className="flex w-full items-center justify-between gap-3 px-4 py-2 text-left text-sm hover:bg-muted/40">
               <span className="font-medium">{group.name} <span className="font-normal text-muted-foreground">({group.rows.length})</span></span>
-              <span className="text-xs text-muted-foreground">{openProd === prodId ? "Hide ▲" : "Show ▼"}</span>
+              <span className="text-[11px] text-muted-foreground">{openProd === prodId ? "Hide ▲" : "Show ▼"}</span>
             </button>
             {openProd === prodId && (
-              <table className="w-full text-sm">
+              <table className="w-full border-t border-border bg-muted/20 text-sm">
                 <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Crew</th><th className="px-4">Role</th><th className="px-4">Date</th><th className="px-4">Status</th><th className="px-4">Payment</th><th className="px-4">Action</th></tr></thead>
                 <tbody>{group.rows.map((b) => (
                   <tr key={b.id} className="border-t border-border">
-                    <td className="px-4 py-2">{(b.crew_members as { name: string } | null)?.name}</td>
-                    <td className="px-4">{b.role}</td><td className="px-4">{b.booking_date}</td>
+                    <td className="px-4 py-2 font-medium">{(b.crew_members as { name: string } | null)?.name}</td>
+                    <td className="px-4">{b.role}</td><td className="whitespace-nowrap px-4">{fmtDay(b.booking_date)}</td>
                     <td className="px-4">
                       <StatusPill value={b.status as (typeof BOOKING_STATUSES)[number]} options={BOOKING_STATUSES} label={(s) => t(`workflowStatuses.${s}`)} onChange={(s) => setStatus(b.id, s)} />
                     </td>
