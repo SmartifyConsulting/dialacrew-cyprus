@@ -81,7 +81,7 @@ export function CountriesAdmin() {
 
   async function remove(c: Country) {
     if (countries.length <= 1) return void toast.error("Keep at least one country");
-    if (!(await confirmDialog({ title: `Remove ${c.name}?`, description: "It will no longer appear in country lists. Its logos are removed too.", confirmLabel: "Remove" }))) return;
+    if (!(await confirmDialog("It will no longer appear in country lists. Its logos are removed too.", { title: `Remove ${c.name}?`, confirmLabel: "Remove", destructive: true }))) return;
     try {
       await saveCountries(countries.filter((x) => x.code !== c.code));
       if (logos[c.code]) { const { [c.code]: _gone, ...rest } = logos; await saveLogos(rest); }
