@@ -44,6 +44,6 @@
 - [x] Sandbox: selected sandbox highlighted, others greyed; no pencil icons in summary
 - [x] Remove Focus/Workspace toggle; restore two-column production page
 - [x] Production site: fix storyboard error, Overview collapsed, frame alignment, hide template manager link, Document category in template dropdown, Documents moved into Files (renamed Photos)
-- [ ] Our Equipment: search, seeded 2/3 free units, book from production
-- [ ] Address picker: local-country results + use typed address
-- [ ] Crew profile: remove Projects, Portfolio into About, Banking under Account, Account after About then Travel
+- [x] Our Equipment: search, seeded 2/3 free units, book from production
+- [x] Address picker: local-country results + use typed address
+- [x] Crew profile: remove Projects, Portfolio into About, Banking under Account, Account after About then Travel
