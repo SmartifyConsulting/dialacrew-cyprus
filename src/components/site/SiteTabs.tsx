@@ -1617,8 +1617,22 @@ export function TasksTab({ p, userId }: Ctx) {
 
 
 /* ---------------- Commercials (producer only) ---------------- */
+// A booking's total travel cost: flight + visa + accommodation + food, plus the per diem allowance
+// (a daily rate) paid for every day of the booking.
+const travelCostOf = (b: Booking) =>
+  (b.travelFlightCost ?? 0) + (b.travelVisaCost ?? 0) + (b.travelAccommodationCost ?? 0) + (b.travelFoodCost ?? 0) + (b.travelPerDiemRate ?? 0) * b.days;
+
+function TravelCostCell({ value, onSave }: { value: number; onSave: (n: number) => void }) {
+  return (
+    <input type="number" min={0} defaultValue={value || ""} placeholder="0"
+      className="w-20 rounded-sm border border-input bg-background px-1.5 py-1 text-right text-xs outline-none focus:border-ring"
+      onBlur={(e) => { const n = Number(e.target.value); if (Number.isFinite(n) && n !== value) onSave(n); }} />
+  );
+}
+
 export function CommercialsTab({ p, bookings, crewNames, requests }: Ctx & { bookings: Booking[]; crewNames: Record<string, string>; requests: { production: string; amount: number; state: string; kind: string; detail: string }[] }) {
   const { t } = useTranslation();
+  const inv = useInvalidate();
   const selected = useBookingAssets(true).data ?? [];
   const invoices = useQuery({ queryKey: ["production-invoices", p.id], queryFn: async () => {
     const { data, error } = await supabase.from("invoices").select("id, booking_id, invoice_number, status, total").eq("production_id", p.id);
@@ -1626,40 +1640,68 @@ export function CommercialsTab({ p, bookings, crewNames, requests }: Ctx & { boo
   } }).data ?? [];
   const rows = bookings.filter((b) => b.productionId === p.id).map((b) => {
     const lines = selected.filter((s) => s.booking_id === b.id).map((s) => ({ dailyFee: Number(s.daily_fee), days: s.days }));
-    return { b, assets: assetsTotal(lines), cost: providerTotal(b.crewRate, b.days, lines), charge: b.clientCharge * b.days + assetsTotal(lines) };
+    return { b, assets: assetsTotal(lines), cost: providerTotal(b.crewRate, b.days, lines), charge: b.clientCharge * b.days + assetsTotal(lines), travel: travelCostOf(b) };
   });
   const extras = requests.filter((r) => r.production === p.name && r.state === "Approved");
   const extrasTotal = extras.reduce((a, r) => a + r.amount, 0);
   const crewCost = rows.reduce((a, r) => a + r.b.crewRate * r.b.days, 0);
   const assetCost = rows.reduce((a, r) => a + r.assets, 0);
-  const running = crewCost + assetCost + extrasTotal;
+  const travelCost = p.travelRequired ? rows.reduce((a, r) => a + r.travel, 0) : 0;
+  const running = crewCost + assetCost + extrasTotal + travelCost;
   const billing = rows.reduce((a, r) => a + r.charge, 0) + extrasTotal;
+
+  async function toggleTravel(required: boolean) {
+    const { error } = await supabase.from("productions").update({ travel_required: required }).eq("id", p.id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    inv(["productions"], ["production", p.id]);
+  }
+  async function saveTravel(bookingId: string, patch: Partial<Record<"travel_flight_cost" | "travel_visa_cost" | "travel_accommodation_cost" | "travel_food_cost" | "travel_per_diem_rate", number>>) {
+    const { error } = await supabase.from("bookings").update(patch).eq("id", bookingId);
+    if (error) { toast.error(friendlyError(error)); return; }
+    inv(["bookings"]);
+  }
+
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-border bg-border md:grid-cols-5">
-        {([["Budget", fmtMoney(p.budget, p.currency)], ["Running cost", fmtMoney(running, p.currency)], ["Client billing", fmtMoney(billing, p.currency)], ["Margin", fmtMoney(billing - running, p.currency)], ["Budget left", fmtMoney(p.budget - running, p.currency)]]
+      <div className={`grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-border bg-border ${p.travelRequired ? "md:grid-cols-6" : "md:grid-cols-5"}`}>
+        {([["Budget", fmtMoney(p.budget, p.currency)], ["Running cost", fmtMoney(running, p.currency)], ...(p.travelRequired ? [["Travel cost", fmtMoney(travelCost, p.currency)] as [string, string]] : []), ["Client billing", fmtMoney(billing, p.currency)], ["Margin", fmtMoney(billing - running, p.currency)], ["Budget left", fmtMoney(p.budget - running, p.currency)]]
         ).map(([l, v]) => (
-          <div key={l} className="bg-card px-4 py-3"><div className="text-[11px] text-muted-foreground">{t(`budget.${l}`)}</div><div className="font-display text-2xl font-semibold">{v}</div></div>
+          <div key={l} className="bg-card px-4 py-3"><div className="text-[11px] text-muted-foreground">{l === "Travel cost" ? l : t(`budget.${l}`)}</div><div className="font-display text-2xl font-semibold">{v}</div></div>
         ))}
       </div>
+      <label className="flex items-center gap-2 rounded-sm border border-border bg-card p-3 text-sm font-medium">
+        <input type="checkbox" className="accent-primary" checked={!!p.travelRequired} onChange={(e) => toggleTravel(e.target.checked)} />
+        Travel required for this production
+        <span className="font-normal text-muted-foreground">— flights, visas, accommodation, food and a daily per diem are added to every crew member's cost below.</span>
+      </label>
       <Panel title={t("budget.breakdown")}>
         <table className="w-full text-sm">
           <thead className="text-left text-[11px] text-muted-foreground"><tr>
             <th className="px-4 py-2">{t("common.role")}</th><th className="px-4">{t("budget.provider")}</th><th className="px-4">{t("productionList.columns.Days")}</th>
-            <th className="px-4">{t("budget.crewRate")}</th><th className="px-4">{t("budget.assets")}</th><th className="px-4">{t("budget.providerTotal")}</th>
+            <th className="px-4">{t("budget.crewRate")}</th><th className="px-4">{t("budget.assets")}</th>
+            {p.travelRequired && <><th className="px-4">Flight</th><th className="px-4">Visa</th><th className="px-4">Accommodation</th><th className="px-4">Food</th><th className="px-4">Per diem/day</th></>}
+            <th className="px-4">{t("budget.providerTotal")}</th>
             <th className="px-4">{t("budget.clientCharge")}</th><th className="px-4">{t("budget.invoice")}</th><th className="px-4">{t("common.status")}</th></tr></thead>
           <tbody>
-            {rows.map(({ b, assets, cost, charge }) => (
+            {rows.map(({ b, assets, cost, charge, travel }) => (
               <tr key={b.id} className="border-t border-border">
                 <td className="px-4 py-2.5 font-medium">{b.role}</td>
                 <td className="px-4">{b.crewId ? <Link to="/crew/$id" params={{ id: b.crewId }} className="hover:text-primary">{crewNames[b.crewId] ?? t("budget.unfilled")}</Link> : t("budget.unfilled")}</td>
                 <td className="px-4">{b.days}</td>
-                <td className="px-4 text-muted-foreground">{zar(b.crewRate)}</td><td className="px-4">{zar(assets)}</td><td className="px-4 font-semibold">{zar(cost)}</td>
+                <td className="px-4 text-muted-foreground">{zar(b.crewRate)}</td><td className="px-4">{zar(assets)}</td>
+                {p.travelRequired && <>
+                  <td className="px-4"><TravelCostCell value={b.travelFlightCost ?? 0} onSave={(n) => saveTravel(b.id, { travel_flight_cost: n })} /></td>
+                  <td className="px-4"><TravelCostCell value={b.travelVisaCost ?? 0} onSave={(n) => saveTravel(b.id, { travel_visa_cost: n })} /></td>
+                  <td className="px-4"><TravelCostCell value={b.travelAccommodationCost ?? 0} onSave={(n) => saveTravel(b.id, { travel_accommodation_cost: n })} /></td>
+                  <td className="px-4"><TravelCostCell value={b.travelFoodCost ?? 0} onSave={(n) => saveTravel(b.id, { travel_food_cost: n })} /></td>
+                  <td className="px-4"><TravelCostCell value={b.travelPerDiemRate ?? 0} onSave={(n) => saveTravel(b.id, { travel_per_diem_rate: n })} /></td>
+                </>}
+                <td className="px-4 font-semibold">{zar(cost + travel)}</td>
                 <td className="px-4">{zar(charge)}</td><td className="px-4">{invoices.filter((i) => i.booking_id === b.id).map((i) => <div key={i.id} className="text-xs"><Link to="/invoices/$id" params={{ id: i.id }} className="font-semibold text-primary underline">{i.invoice_number}</Link> <Badge>{i.status}</Badge></div>)}</td><td className="px-4"><Badge>{b.status}</Badge></td>
               </tr>
             ))}
             {extras.map((r, i) => (
-              <tr key={i} className="border-t border-border"><td className="px-4 py-2.5 font-medium">{r.kind}</td><td className="px-4 text-muted-foreground" colSpan={5}>{r.detail}</td><td className="px-4">{zar(r.amount)}</td><td className="px-4"><Badge>Approved</Badge></td></tr>
+              <tr key={i} className="border-t border-border"><td className="px-4 py-2.5 font-medium">{r.kind}</td><td className="px-4 text-muted-foreground" colSpan={p.travelRequired ? 10 : 5}>{r.detail}</td><td className="px-4">{zar(r.amount)}</td><td className="px-4"><Badge>Approved</Badge></td></tr>
             ))}
           </tbody>
         </table>

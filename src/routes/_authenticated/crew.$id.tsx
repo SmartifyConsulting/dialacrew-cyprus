@@ -39,7 +39,7 @@ export const Route = createFileRoute("/_authenticated/crew/$id")({
 
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
 const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground";
-const TABS = ["About", "Projects", "Portfolio", "Equipment", "Checklists", "Reviews", "Banking", "Emergency"] as const;
+const TABS = ["About", "Projects", "Portfolio", "Equipment", "Checklists", "Reviews", "Banking", "Travel", "Emergency"] as const;
 
 function CrewProfile() {
   const { id } = Route.useParams();
@@ -123,7 +123,11 @@ function CrewProfile() {
         </div>
 
         <nav className="flex gap-1 overflow-x-auto border-y border-border px-4">
-          {TABS.filter((t) => (t !== "Banking" && t !== "Checklists" && t !== "Emergency") || isOwnProfile).map((t) => <button key={t} onClick={() => setTab(t)} className={`whitespace-nowrap border-b-2 px-3 py-3 text-sm font-semibold ${tab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}>{t}</button>)}
+          {TABS.filter((t) => {
+            if (t === "Banking" || t === "Checklists" || t === "Emergency") return isOwnProfile;
+            if (t === "Travel") return canEdit;
+            return true;
+          }).map((t) => <button key={t} onClick={() => setTab(t)} className={`whitespace-nowrap border-b-2 px-3 py-3 text-sm font-semibold ${tab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}>{t}</button>)}
         </nav>
 
         <div className="p-6">
@@ -164,6 +168,7 @@ function CrewProfile() {
           {tab === "Checklists" && isOwnProfile && <CrewPersonalChecklists crewId={id} />}
           {tab === "Reviews" && <ReviewsTab crewId={id} />}
           {tab === "Banking" && isOwnProfile && <BankingTab crewId={id} />}
+          {tab === "Travel" && canEdit && <PassportTab crewId={id} canEdit={canEdit} />}
           {tab === "Emergency" && isOwnProfile && <CrewEmergencySettings crewId={id} />}
         </div>
       </div>
@@ -461,6 +466,96 @@ function BankingTab({ crewId }: { crewId: string }) {
           <div><div className="text-xs text-muted-foreground">Routing / sort / branch code</div><div className="font-medium">{f.routingOrSortCode || "—"}</div></div>
           <div><div className="text-xs text-muted-foreground">Currency</div><div className="font-medium">{f.currency || "—"}</div></div>
           {f.notes && <div className="sm:col-span-2"><div className="text-xs text-muted-foreground">Notes</div><div className="font-medium">{f.notes}</div></div>}
+          {updatedAt && <div className="text-xs text-muted-foreground sm:col-span-2">Last updated {new Date(updatedAt).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" })}</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+type PassportDetails = { passportName: string; passportNumber: string; expiryDate: string };
+const blankPassport: PassportDetails = { passportName: "", passportNumber: "", expiryDate: "" };
+type PassportRow = { passport_name: string | null; passport_number: string | null; expiry_date: string | null; updated_at: string | null };
+
+// Passport details (needed to book international flights for crew travelling abroad) are encrypted
+// at rest and only ever reach the client through SECURITY DEFINER RPCs, same pattern as banking.
+function PassportTab({ crewId, canEdit }: { crewId: string; canEdit: boolean }) {
+  const [unlocked, setUnlocked] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [f, setF] = useState<PassportDetails>(blankPassport);
+  const [saving, setSaving] = useState(false);
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+
+  async function load() {
+    setChecking(true);
+    try {
+      const { data, error: rpcError } = await (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<{ data: PassportRow[] | null; error: Error | null }>)("get_passport_details", { _crew_id: crewId });
+      if (rpcError) throw rpcError;
+      const row = data?.[0];
+      if (row) {
+        setF({ passportName: row.passport_name ?? "", passportNumber: row.passport_number ?? "", expiryDate: row.expiry_date ?? "" });
+        setUpdatedAt(row.updated_at ?? null);
+      }
+      setUnlocked(true);
+    } catch (e) { toast.error(friendlyError(e)); }
+    finally { setChecking(false); }
+  }
+
+  async function save() {
+    if (!f.passportName.trim()) { toast.error("Enter the name exactly as printed in the passport"); return; }
+    setSaving(true);
+    try {
+      const { error } = await (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<{ error: Error | null }>)("upsert_passport_details", {
+        _crew_id: crewId, _passport_name: f.passportName, _passport_number: f.passportNumber, _expiry_date: f.expiryDate || null,
+      });
+      if (error) throw error;
+      toast.success("Passport details saved — encrypted at rest");
+      setEditing(false);
+      setUpdatedAt(new Date().toISOString());
+    } catch (e) { toast.error(friendlyError(e)); }
+    finally { setSaving(false); }
+  }
+
+  useEffect(() => { void load(); }, [crewId]);
+
+  if (!unlocked) {
+    return <p className="py-8 text-center text-sm text-muted-foreground">{checking ? "Loading passport details…" : "Passport details couldn't be loaded."}</p>;
+  }
+
+  const expiringSoon = f.expiryDate && new Date(f.expiryDate) < new Date(Date.now() + 1000 * 60 * 60 * 24 * 180);
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Lock className="h-3 w-3" /> Encrypted at rest · only you and producers can view this</p>
+        {!editing && canEdit && <button onClick={() => setEditing(true)} className="text-xs font-semibold text-primary hover:underline">Edit</button>}
+      </div>
+      <p className="text-xs text-muted-foreground">These details are used to book flights when a production requires international travel.</p>
+      {editing ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block sm:col-span-2"><span className="text-xs text-muted-foreground">Name as written in passport *</span>
+            <input className={`${input} mt-1 w-full`} value={f.passportName} onChange={(e) => setF({ ...f, passportName: e.target.value })} /></label>
+          <label className="block"><span className="text-xs text-muted-foreground">Passport number</span>
+            <input className={`${input} mt-1 w-full`} value={f.passportNumber} onChange={(e) => setF({ ...f, passportNumber: e.target.value.toUpperCase() })} /></label>
+          <label className="block"><span className="text-xs text-muted-foreground">Expiry date</span>
+            <input type="date" className={`${input} mt-1 w-full`} value={f.expiryDate} onChange={(e) => setF({ ...f, expiryDate: e.target.value })} /></label>
+          <div className="flex gap-2 sm:col-span-2">
+            <button disabled={saving} onClick={save} className={`${btn} disabled:opacity-60`}>{saving ? "Saving…" : "Save"}</button>
+            <button onClick={() => setEditing(false)} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold">Cancel</button>
+          </div>
+        </div>
+      ) : (
+        <div className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+          <div className="sm:col-span-2"><div className="text-xs text-muted-foreground">Name as written in passport</div><div className="font-medium">{f.passportName || "—"}</div></div>
+          <div><div className="text-xs text-muted-foreground">Passport number</div><div className="font-medium">{f.passportNumber || "—"}</div></div>
+          <div>
+            <div className="text-xs text-muted-foreground">Expiry date</div>
+            <div className={`font-medium ${expiringSoon ? "text-destructive" : ""}`}>
+              {f.expiryDate ? new Date(`${f.expiryDate}T12:00:00`).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" }) : "—"}
+              {expiringSoon && " · expiring within 6 months"}
+            </div>
+          </div>
           {updatedAt && <div className="text-xs text-muted-foreground sm:col-span-2">Last updated {new Date(updatedAt).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" })}</div>}
         </div>
       )}

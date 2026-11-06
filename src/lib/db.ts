@@ -11,6 +11,7 @@ const toProduction = (r: any): Production => ({
   address: r.address ?? "", summary: r.summary ?? "", latitude: r.latitude, longitude: r.longitude, geofenceM: r.geofence_m ?? 10, currency: r.currency ?? "ZAR", postRules: r.post_rules ?? "", postRulesHidden: !!r.post_rules_hidden, imagePath: r.image_path ?? null,
   timezone: r.timezone ?? null, recceStart: r.recce_start_time ?? null, recceEnd: r.recce_end_time ?? null,
   gearPickupDate: r.gear_pickup_date ?? null, gearPickupTime: r.gear_pickup_time ?? null, gearDropoffDate: r.gear_dropoff_date ?? null, gearDropoffTime: r.gear_dropoff_time ?? null,
+  travelRequired: !!r.travel_required,
 });
 const toCrew = (r: any): Crew & { pencilled: boolean } => ({
   id: r.id, name: r.name, role: r.role, department: r.department, location: r.location,
@@ -25,6 +26,9 @@ const toBooking = (r: any): Booking => ({
   pencilPriority: r.pencil_priority ?? null, pencilExpiresAt: r.pencil_expires_at ?? null,
   createdBy: r.created_by ?? null, cancelledReason: r.cancelled_reason ?? null,
   createdAt: r.created_at, ...({ escrowReleasedAt: r.escrow_released_at ?? null } as object),
+  travelFlightCost: Number(r.travel_flight_cost ?? 0), travelVisaCost: Number(r.travel_visa_cost ?? 0),
+  travelAccommodationCost: Number(r.travel_accommodation_cost ?? 0), travelFoodCost: Number(r.travel_food_cost ?? 0),
+  travelPerDiemRate: Number(r.travel_per_diem_rate ?? 0),
 });
 
 const run = async <T,>(p: PromiseLike<{ data: any; error: any }>, map: (r: any) => T): Promise<T[]> => {

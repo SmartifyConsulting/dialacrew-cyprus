@@ -5,6 +5,7 @@ export type Production = {
   address?: string; summary?: string; latitude?: number | null; longitude?: number | null; geofenceM?: number; currency?: string; postRules?: string; postRulesHidden?: boolean; imagePath?: string | null;
   timezone?: string | null; recceStart?: string | null; recceEnd?: string | null;
   gearPickupDate?: string | null; gearPickupTime?: string | null; gearDropoffDate?: string | null; gearDropoffTime?: string | null;
+  travelRequired?: boolean;
 };
 
 export type Crew = {
@@ -25,6 +26,8 @@ export type Booking = {
   pencilPriority?: number | null; pencilExpiresAt?: string | null;
   createdBy?: string | null; cancelledReason?: string | null;
   createdAt?: string;
+  // Extra production-paid costs when the production requires international travel.
+  travelFlightCost?: number; travelVisaCost?: number; travelAccommodationCost?: number; travelFoodCost?: number; travelPerDiemRate?: number;
 };
 
 export const zar = (n: number) => "R" + n.toLocaleString("en-ZA");
