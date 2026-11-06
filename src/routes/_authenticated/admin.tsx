@@ -168,13 +168,11 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 const ADMIN_GROUPS = [
   { name: "People & Organisations", tabs: ["Users", "Crew", "Companies", "Subscriptions"] },
-  { name: "Operations", tabs: ["Bookings", "Gigs"] },
+  { name: "Reporting", tabs: ["Finance", "Bookings", "Gigs"] },
   { name: "Equipment", tabs: ["Equipment"] },
-  { name: "Finance", tabs: ["Payments", "Invoices", "Gig Fees"] },
   { name: "Disputes", tabs: ["Disputes"] },
   { name: "Reviews", tabs: ["Reviews"] },
-  { name: "Engagement", tabs: ["Social Spotlights"] },
-  { name: "Documents", tabs: ["Document Checklists", "Templates"] },
+  { name: "Templates", tabs: ["Checklists"] },
   { name: "Countries", tabs: ["Countries"] },
   { name: "Platform Management", tabs: ["Configuration", "System Settings", "Audit Log"] },
 ] as const;
@@ -183,12 +181,10 @@ const ADMIN_GROUPS = [
 // templates rather than editing crew records directly.
 const PRODUCER_ADMIN_GROUPS = [
   { name: "People & Organisations", tabs: ["Users", "Crew"] },
-  { name: "Operations", tabs: ["Bookings"] },
-  { name: "Finance", tabs: ["Payments", "Invoices", "Gig Fees"] },
+  { name: "Reporting", tabs: ["Finance", "Bookings"] },
   { name: "Disputes", tabs: ["Disputes"] },
   { name: "Reviews", tabs: ["Reviews"] },
-  { name: "Engagement", tabs: ["Social Spotlights"] },
-  { name: "Documents", tabs: ["Document Checklists", "Templates"] },
+  { name: "Templates", tabs: ["Checklists"] },
 ] as const;
 type AdminGroup = (typeof ADMIN_GROUPS)[number]["name"] | (typeof PRODUCER_ADMIN_GROUPS)[number]["name"];
 type AdminTab = (typeof ADMIN_GROUPS)[number]["tabs"][number] | (typeof PRODUCER_ADMIN_GROUPS)[number]["tabs"][number];
@@ -252,16 +248,20 @@ function AdminPage() {
       {tab === "Companies" && <CompaniesTab />}
       {tab === "Bookings" && <BookingsTab />}
       {tab === "Gigs" && <GigsTab />}
-      {tab === "Payments" && <PaymentsTab />}
-      {tab === "Invoices" && <InvoicesTab />}
+      {tab === "Finance" && <div className="space-y-6"><PaymentsTab /><InvoicesTab /><GigFeesTab /></div>}
       {tab === "Equipment" && <EquipmentAdmin />}
       {tab === "Disputes" && <DisputesTab />}
       {tab === "Reviews" && <ReviewsTab />}
       {tab === "Subscriptions" && <SubscriptionsTab />}
-      {tab === "Gig Fees" && <GigFeesTab />}
-      {tab === "Social Spotlights" && <SpotlightTab />}
-      {tab === "Document Checklists" && <DocumentChecklistsAdmin />}
-      {tab === "Templates" && <ChecklistTemplateManager audience="producer" />}
+      {tab === "Checklists" && (
+        <div className="space-y-6">
+          <ChecklistTemplateManager audience="producer" />
+          <div>
+            <h3 className="mb-2 flex items-center gap-2 font-display text-sm font-semibold"><Folder className="h-4 w-4 text-primary" aria-hidden /> Document checklist</h3>
+            <DocumentChecklistsAdmin />
+          </div>
+        </div>
+      )}
       {tab === "Countries" && <CountriesAdmin />}
       {tab === "Audit Log" && <AuditLogTab />}
       {tab === "Configuration" && <PlaceholderTab name="Configuration" />}
@@ -339,7 +339,7 @@ function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
     queryKey: ["admin-users"],
     queryFn: async () => {
       const [p, r] = await Promise.all([
-        supabase.from("profiles").select("id, email, full_name, suspended, created_at"),
+        supabase.from("profiles").select("id, email, full_name, suspended, created_at, social_opt_in, spotlight_featured_at, spotlight_links"),
         supabase.from("user_roles").select("user_id, role"),
       ]);
       if (p.error) throw p.error; if (r.error) throw r.error;
@@ -383,7 +383,10 @@ function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
             const last = rest.join(" ");
             return (
             <tr key={u.id} className="border-t border-border">
-              <td className="px-4 py-2 font-medium">{first || "—"}</td>
+              <td className="px-4 py-2 font-medium">
+                <span className="inline-flex items-center gap-1">{first || "—"}{u.social_opt_in && <Star className="h-3.5 w-3.5 fill-destructive text-destructive" aria-label="Happy to be featured on social media" />}</span>
+                {u.social_opt_in && <SpotlightCell id={u.id} featuredAt={u.spotlight_featured_at} links={(u.spotlight_links as string[] | null) ?? []} />}
+              </td>
               <td className="px-4 font-medium">{last || "—"}</td>
               <td className="px-4 text-muted-foreground">{u.email}</td>
               <td className="px-4 py-2.5">
@@ -1098,6 +1101,34 @@ function AuditLogTab() {
 
 const invField = "rounded-sm border border-input bg-background px-2 py-1.5 text-sm outline-none focus:border-ring";
 
+function SpotlightCell({ id, featuredAt, links }: { id: string; featuredAt: string | null; links: string[] }) {
+  const inv = useInv();
+  const [open, setOpen] = useState(false);
+  const [date, setDate] = useState(featuredAt ? featuredAt.slice(0, 10) : new Date().toISOString().slice(0, 10));
+  const [text, setText] = useState(links.join("\n"));
+  async function save(clear = false) {
+    const list = clear ? [] : text.split(/\s+/).map((l) => l.trim()).filter(Boolean);
+    if (list.some((l) => !/^https?:\/\//i.test(l))) { toast.error("Each link must start with http:// or https://"); return; }
+    const { error } = await supabase.from("profiles").update({ spotlight_featured_at: clear ? null : new Date(`${date}T12:00:00`).toISOString(), spotlight_links: list }).eq("id", id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success(clear ? "Feature cleared" : "Feature recorded"); setOpen(false); inv(["admin-users"]);
+  }
+  return (
+    <div className="mt-1 text-[11px] font-normal">
+      {featuredAt ? (
+        <span className="text-success">Featured {new Date(featuredAt).toLocaleDateString("en-ZA")}{links.length > 0 && <> · {links.map((l, i) => <a key={l} href={l} target="_blank" rel="noopener noreferrer" className="ml-1 text-primary underline">link {i + 1}</a>)}</>}</span>
+      ) : <span className="text-muted-foreground">Not featured yet</span>}
+      <button onClick={() => setOpen(!open)} className="ml-2 text-primary hover:underline">{featuredAt ? "Edit" : "Record feature"}</button>
+      {open && (
+        <div className="mt-1 space-y-1 rounded-sm border border-border bg-background p-2">
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full rounded-sm border border-input bg-card px-2 py-1" aria-label="Date featured" />
+          <textarea rows={2} value={text} onChange={(e) => setText(e.target.value)} placeholder="Post links, one per line" className="w-full rounded-sm border border-input bg-card px-2 py-1" />
+          <div className="flex gap-2"><button onClick={() => save()} className={btn}>Save</button>{featuredAt && <button onClick={() => save(true)} className="text-destructive hover:underline">Clear</button>}</div>
+        </div>
+      )}
+    </div>
+  );
+}
 function SpotlightTab() {
   const [country, setCountry] = useState("All");
   const list = useQuery({
