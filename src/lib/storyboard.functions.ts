@@ -60,7 +60,20 @@ export const generateShotImage = createServerFn({ method: "POST" })
 
     await supabaseAdmin.from("storyboard_shots").update({ status: "generating", generation_error: null }).eq("id", data.shotId);
 
-    const prompt = `Black-and-white graphite pencil storyboard panel, hand-drawn film storyboard art style, rough sketchy pencil shading, no color, no text or captions in the image. Scene: ${data.description}`;
+    // Continuity: every panel is drawn with the whole sequence in view, plus the shot right before
+    // it, so characters, wardrobe, setting, props and time of day stay consistent from panel to panel.
+    const { data: seq } = await supabaseAdmin.from("storyboard_shots").select("id, scene_number, shot_number, description").eq("production_id", data.productionId).order("sort_order");
+    const list = seq ?? [];
+    const idx = list.findIndex((s) => s.id === data.shotId);
+    const prev = idx > 0 ? list[idx - 1] : null;
+    const story = list.map((s) => `S${s.scene_number}.${s.shot_number}: ${s.description}`).join(" | ").slice(0, 2500);
+    const prompt = [
+      "Black-and-white graphite pencil storyboard panel, hand-drawn film storyboard art style, rough sketchy pencil shading, no color, no text or captions in the image.",
+      "Strict continuity: this panel belongs to one continuous film sequence. Keep the same characters (faces, age, build, hairstyle, wardrobe), the same locations, props, vehicles, weather and time of day as the rest of the sequence, unless this shot explicitly changes them. Same drawing style and line weight in every panel.",
+      `Full sequence for reference: ${story}`,
+      prev ? `Previous shot (match its characters and setting): ${prev.description}` : "",
+      `Draw THIS shot: ${data.description}`,
+    ].filter(Boolean).join("\n");
     try {
       const res = await fetch("https://api.openai.com/v1/images/generations", {
         method: "POST",

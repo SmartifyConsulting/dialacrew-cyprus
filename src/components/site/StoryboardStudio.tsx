@@ -138,6 +138,24 @@ function IllustrateMode({ p, isProducer }: { p: Production; isProducer: boolean 
     finally { setGeneratingId(null); refresh(); }
   }
 
+  const [bulk, setBulk] = useState<{ done: number; total: number } | null>(null);
+  async function generateAll() {
+    const todo = shots.filter((s) => s.description.trim() && !s.image_path && s.status !== "generating");
+    if (!todo.length) { toast.info("Every shot already has an illustration"); return; }
+    setBulk({ done: 0, total: todo.length });
+    let failed = 0;
+    // One at a time, in story order, so each panel can follow the one before it.
+    for (const [i, shot] of todo.entries()) {
+      setGeneratingId(shot.id);
+      try { await generateImage({ data: { productionId: p.id, shotId: shot.id, description: shot.description } }); }
+      catch { failed++; }
+      setBulk({ done: i + 1, total: todo.length });
+      refresh();
+    }
+    setGeneratingId(null); setBulk(null); refresh();
+    failed ? toast.error(`${failed} of ${todo.length} illustrations failed — retry them individually`) : toast.success(`${todo.length} illustrations generated`);
+  }
+
   if (!isProducer) return <p className="rounded-sm border border-dashed border-border p-4 text-sm text-muted-foreground">Storyboard Studio is managed by the production's producer.</p>;
 
   return (
@@ -148,6 +166,10 @@ function IllustrateMode({ p, isProducer }: { p: Production; isProducer: boolean 
           <div className="flex gap-2">
             <button onClick={runBreakdown} disabled={breakingDown} className={btn}><Sparkles className="h-3.5 w-3.5" /> {breakingDown ? "Breaking down…" : "Break down into shots"}</button>
             <button onClick={addBlankShot} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold hover:border-primary hover:text-primary">+ Add shot manually</button>
+            {shots.length > 0 && <button onClick={generateAll} disabled={!!bulk} className={`${btn} ml-auto`}>
+              {bulk ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <PencilIcon className="h-3.5 w-3.5" />}
+              {bulk ? `Generating ${Math.min(bulk.done + 1, bulk.total)} of ${bulk.total}…` : "Generate all"}
+            </button>}
           </div>
         </div>
       </Panel>
