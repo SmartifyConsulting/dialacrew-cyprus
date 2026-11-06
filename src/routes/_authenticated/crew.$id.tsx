@@ -40,7 +40,7 @@ export const Route = createFileRoute("/_authenticated/crew/$id")({
 
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
 const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground";
-const TABS = ["About", "Account", "Travel", "Equipment", "Checklists", "Reviews", "Emergency"] as const;
+const TABS = ["Account", "Emergency", "Banking", "Travel", "Equipment", "Checklists", "Reviews"] as const;
 
 function CrewProfile() {
   const { id } = Route.useParams();
@@ -48,9 +48,9 @@ function CrewProfile() {
   const role = useRole(session?.user.id);
   const inv = useInvalidate();
   const { tab: tabParam } = Route.useSearch();
-  const initialTab: (typeof TABS)[number] = tabParam === "kit" ? "Equipment" : "About";
-  const [tab, setTab] = useState<(typeof TABS)[number]>(initialTab);
-  useEffect(() => { setTab(initialTab); }, [initialTab]);
+  const requested: (typeof TABS)[number] | null = tabParam === "kit" ? "Equipment" : null;
+  const [tab, setTab] = useState<(typeof TABS)[number] | null>(requested);
+  useEffect(() => { setTab(requested); }, [requested]);
   const [editing, setEditing] = useState(false);
 
   const c = useQuery({
