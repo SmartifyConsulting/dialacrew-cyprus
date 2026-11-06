@@ -199,11 +199,6 @@ export type Database = {
           review_deadline: string | null
           role: string
           status: Database["public"]["Enums"]["booking_status"]
-          travel_accommodation_cost: number
-          travel_flight_cost: number
-          travel_food_cost: number
-          travel_per_diem_rate: number
-          travel_visa_cost: number
           wrap_time: string | null
         }
         Insert: {
@@ -234,11 +229,6 @@ export type Database = {
           review_deadline?: string | null
           role: string
           status?: Database["public"]["Enums"]["booking_status"]
-          travel_accommodation_cost?: number
-          travel_flight_cost?: number
-          travel_food_cost?: number
-          travel_per_diem_rate?: number
-          travel_visa_cost?: number
           wrap_time?: string | null
         }
         Update: {
@@ -269,11 +259,6 @@ export type Database = {
           review_deadline?: string | null
           role?: string
           status?: Database["public"]["Enums"]["booking_status"]
-          travel_accommodation_cost?: number
-          travel_flight_cost?: number
-          travel_food_cost?: number
-          travel_per_diem_rate?: number
-          travel_visa_cost?: number
           wrap_time?: string | null
         }
         Relationships: [
@@ -2686,7 +2671,6 @@ export type Database = {
           status: string
           summary: string
           timezone: string
-          travel_required: boolean
           type: string
         }
         Insert: {
@@ -2726,7 +2710,6 @@ export type Database = {
           status?: string
           summary?: string
           timezone?: string
-          travel_required?: boolean
           type?: string
         }
         Update: {
@@ -2766,7 +2749,6 @@ export type Database = {
           status?: string
           summary?: string
           timezone?: string
-          travel_required?: boolean
           type?: string
         }
         Relationships: [
