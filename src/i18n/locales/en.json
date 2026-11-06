@@ -48,8 +48,8 @@
     "tabs": { "Posts": "Posts", "Crew": "Crew", "Checklists": "Checklists", "Tasks": "Tasks", "Documents": "Documents", "Photos": "Photos", "Storyboard": "Storyboard", "Budget": "Budget", "Review": "Review", "Audit": "Audit" }
   },
   "productionList": {
-    "subtitle": "Start from the client brief, then break it down into crew and resources.", "search": "Search by Production ID or name", "all": "All productions",
-    "columns": { "Production": "Production", "Job ID": "Production ID", "Type": "Type", "Location": "Location", "Date": "Date", "Days": "Days", "Budget": "Budget", "Status": "Status" },
+    "subtitle": "Start from the client brief, then break it down into crew and resources.", "search": "Search by Job ID or name", "all": "All productions",
+    "columns": { "Production": "Production", "Job ID": "Job ID", "Type": "Type", "Location": "Location", "Date": "Date", "Days": "Days", "Budget": "Budget", "Status": "Status" },
     "status": { "Active": "Active", "Upcoming": "Upcoming", "Wrapped": "Wrapped", "Completed": "Completed", "Draft": "Draft" }
   },
   "calendar": {

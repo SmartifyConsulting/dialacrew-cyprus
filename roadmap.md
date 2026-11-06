@@ -39,3 +39,7 @@
 - [x] Auto post to production feed when shoot dates, recce or location change
 - [x] Compact production page header / info banner
 - [x] Admin: Engagement merged into Users (red star, feature date + links); Reporting > Finance replaces Operations; Templates > Checklists with Document checklist (folder icon)
+- [ ] Production list: type icons, Job ID badge, DD MON YYYY non-wrapping dates
+- [ ] Storyboard tab after Crew; locations in 3 columns
+- [ ] Sandbox: selected sandbox highlighted, others greyed; no pencil icons in summary
+- [ ] Remove Focus/Workspace toggle; restore two-column production page
