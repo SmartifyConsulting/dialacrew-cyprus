@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/lib/auth";
 import { useMyCrewId } from "@/lib/site";
 import { zar } from "@/lib/demo-data";
+import { useTranslation } from "react-i18next";
 
 const PAID = ["payment_released", "completed", "resolved"];
 
@@ -16,6 +17,7 @@ function payLabel(status: string) {
 }
 
 function EarningsPage() {
+  const { t, i18n } = useTranslation();
   const { session } = useSession();
   const uid = session?.user.id;
   const crewId = useMyCrewId(true).data;
@@ -36,7 +38,7 @@ function EarningsPage() {
 
   const total = (b: { crew_rate: number | null; days: number | null }) => Number(b.crew_rate ?? 0) * Number(b.days ?? 1);
   const month = new Date().toISOString().slice(0, 7);
-  const monthName = new Date().toLocaleString("en-ZA", { month: "long" });
+  const monthName = new Date().toLocaleString(i18n.language, { month: "long" });
   const paidMonth = jobs.filter((j) => PAID.includes(j.status) && (j.booking_date ?? "").startsWith(month)).reduce((a, j) => a + total(j), 0)
     + gigs.filter((g) => g.status === "completed" && (g.event_date ?? "").startsWith(month)).reduce((a, g) => a + Number(g.amount ?? 0), 0);
   const toCome = jobs.filter((j) => !PAID.includes(j.status) && j.status !== "cancelled").reduce((a, j) => a + total(j), 0)
@@ -44,19 +46,19 @@ function EarningsPage() {
   const gigEarned = gigs.filter((g) => g.status === "completed").reduce((a, g) => a + Number(g.amount ?? 0), 0);
 
   return (
-    <Page open title="Earnings" subtitle="What you've been paid and what's coming">
+    <Page open title={t("nav.earnings")} subtitle={t("earnings.subtitle")}>
       <section className="mb-5 rounded-2xl bg-success p-5 text-primary-foreground">
-        <div className="text-sm opacity-90">Paid in {monthName}</div>
+        <div className="text-sm opacity-90">{t("earnings.paidMonth", { month: monthName })}</div>
         <div className="font-display text-4xl font-semibold">{zar(paidMonth)}</div>
-        <div className="mt-1 text-sm opacity-90">{zar(toCome)} still to come</div>
+        <div className="mt-1 text-sm opacity-90">{t("earnings.toCome", { amount: zar(toCome) })}</div>
       </section>
-      <div className="mb-5"><Panel title="Gigs from the network (Find Gigs)">
+      <div className="mb-5"><Panel title={t("earnings.network")}>
         <div className="grid grid-cols-2 gap-3 p-4">
-          <div className="rounded-lg bg-muted p-3"><div className="text-xs text-muted-foreground">Gigs secured</div><div className="mt-1 font-display text-2xl font-semibold">{gigs.length}</div></div>
-          <div className="rounded-lg bg-muted p-3"><div className="text-xs text-muted-foreground">Money earned</div><div className="mt-1 font-display text-2xl font-semibold text-success">{zar(gigEarned)}</div></div>
+          <div className="rounded-lg bg-muted p-3"><div className="text-xs text-muted-foreground">{t("earnings.secured")}</div><div className="mt-1 font-display text-2xl font-semibold">{gigs.length}</div></div>
+          <div className="rounded-lg bg-muted p-3"><div className="text-xs text-muted-foreground">{t("earnings.earned")}</div><div className="mt-1 font-display text-2xl font-semibold text-success">{zar(gigEarned)}</div></div>
         </div>
       </Panel></div>
-      <Panel title="Coming from gigs">
+      <Panel title={t("earnings.coming")}>
         <ul className="divide-y divide-border text-sm">
           {gigs.filter((g) => g.status === "secured" && (g.event_date ?? "") >= new Date().toISOString().slice(0, 10)).sort((a, b) => (a.event_date ?? "").localeCompare(b.event_date ?? "")).map((g) => (
             <li key={g.id} className="flex items-center gap-3 px-4 py-3">
@@ -64,12 +66,12 @@ function EarningsPage() {
               <div className="text-right"><div className="font-semibold">{zar(Number(g.amount ?? 0))}</div><Badge>Upcoming</Badge></div>
             </li>
           ))}
-          {gigs.filter((g) => g.status === "secured" && (g.event_date ?? "") >= new Date().toISOString().slice(0, 10)).length === 0 && <li className="p-4 text-muted-foreground">No gigs booked ahead.</li>}
+          {gigs.filter((g) => g.status === "secured" && (g.event_date ?? "") >= new Date().toISOString().slice(0, 10)).length === 0 && <li className="p-4 text-muted-foreground">{t("earnings.noUpcoming")}</li>}
         </ul>
       </Panel>
-      <Panel title="Jobs">
+      <Panel title={t("earnings.jobs")}>
         <ul className="divide-y divide-border text-sm">
-          {jobs.length + gigs.length === 0 && <li className="p-4 text-muted-foreground">No earnings yet.</li>}
+          {jobs.length + gigs.length === 0 && <li className="p-4 text-muted-foreground">{t("earnings.empty")}</li>}
           {jobs.filter((j) => j.status !== "cancelled").map((j) => {
             const pr = j.productions as { name?: string; client?: string } | null;
             return (

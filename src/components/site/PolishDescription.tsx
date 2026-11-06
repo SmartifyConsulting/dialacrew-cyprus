@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Sparkles } from "lucide-react";
@@ -8,18 +9,19 @@ import { polishDescription } from "@/lib/description.functions";
 export function PolishDescription({ text, name, type, client, onPolished }: {
   text: string; name: string; type: string; client: string; onPolished: (polished: string) => void;
 }) {
+  const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
   const [polishedText, setPolishedText] = useState<string | null>(null);
   const polish = useServerFn(polishDescription);
 
   async function run() {
-    if (!text.trim()) { toast.error("Write a description first"); return; }
+    if (!text.trim()) { toast.error(t("polish.required")); return; }
     setBusy(true);
     try {
       const r = await polish({ data: { text, name, type, client } });
       onPolished(r.polished);
       setPolishedText(r.polished);
-      toast.success("Description polished. Check it before you save.");
+      toast.success(t("polish.done"));
     } catch (e) { toast.error(friendlyError(e)); }
     setBusy(false);
   }
@@ -30,7 +32,7 @@ export function PolishDescription({ text, name, type, client, onPolished }: {
 
   return (
     <button type="button" onClick={run} disabled={busy} className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline disabled:opacity-50">
-      <Sparkles className="h-3.5 w-3.5" /> {busy ? "Polishing…" : "Polish with AI"}
+      <Sparkles className="h-3.5 w-3.5" /> {busy ? t("polish.busy") : t("polish.action")}
     </button>
   );
 }

@@ -1,0 +1,35 @@
+{
+  "common": {
+    "language": "语言",
+    "changeLanguage": "更改语言",
+    "signOut": "退出",
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "edit": "编辑",
+    "add": "添加",
+    "send": "发送",
+    "confirm": "确认",
+    "close": "关闭",
+    "search": "搜索",
+    "loading": "加载中...",
+    "settings": "设置",
+    "noData": "No data",
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "phone": "Phone",
+    "email": "Email",
+    "name": "Name",
+    "role": "Role",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "nav": {
+    "home": "首页",
+    "myProfile": "我的资料",
+    "admin": "管理员",
+    "profile": "我的资料",
+    "calendar": "日历"
+  }
+}

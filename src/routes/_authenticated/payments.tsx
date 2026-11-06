@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Page, Panel } from "@/components/AppShell";
 import { useApproveJob, useBookings, useCrew, useProductions } from "@/lib/db";
@@ -41,6 +42,8 @@ function usePools() {
 }
 
 function PaymentsPage() {
+  const { t: translate, i18n } = useTranslation();
+  const money = (amount: number) => new Intl.NumberFormat(i18n.language, { style: "currency", currency: "ZAR", maximumFractionDigits: 0 }).format(amount);
   const bookings = useBookings().data ?? [];
   const crew = useCrew().data ?? [];
   const prods = useProductions().data ?? [];
@@ -66,29 +69,29 @@ function PaymentsPage() {
 
   async function doFund(pid: string) {
     setBusy(pid);
-    try { const r = await fund({ data: { productionId: pid } }); toast.success(`Escrow created for ${rand(r.amount)} — fund it on Escrow.com`); refresh(); }
+    try { const r = await fund({ data: { productionId: pid } }); toast.success(translate("payments.funded", { amount: money(r.amount) })); refresh(); }
     catch (e) { toast.error((e as Error).message); } finally { setBusy(null); }
   }
   async function doRelease(pid: string, ids: string[]) {
-    if (!ids.length) { toast.error("Tick at least one crew member."); return; }
+    if (!ids.length) { toast.error(translate("payments.pick")); return; }
     setBusy(pid);
-    try { const r = await release({ data: { productionId: pid, bookingIds: ids } }); toast.success(`Released pay for ${r.released} crew`); setPicked({}); refresh(); }
+    try { const r = await release({ data: { productionId: pid, bookingIds: ids } }); toast.success(translate("payments.released", { count: r.released })); setPicked({}); refresh(); }
     catch (e) { toast.error((e as Error).message); } finally { setBusy(null); }
   }
 
   const byProd = prods.map((p) => ({ p, list: rows.filter((b) => b.productionId === p.id) })).filter((x) => x.list.length);
 
   return (
-    <Page title="Payments" subtitle="One escrow pool per production. Release everyone's pay in one click at wrap.">
+    <Page title={translate("nav.payments")} subtitle={translate("payments.subtitle")}>
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         {tiles.map((t) => (
           <div key={t.label} className="rounded-xl border border-border bg-card p-5">
-            <p className="text-sm text-muted-foreground">{t.label}</p>
-            <p className="mt-1 text-2xl font-bold text-foreground">{rand(t.value)}</p>
+            <p className="text-sm text-muted-foreground">{translate(`payments.labels.${t.label}`)}</p>
+            <p className="mt-1 text-2xl font-bold text-foreground">{money(t.value)}</p>
           </div>
         ))}
       </div>
-      {byProd.length === 0 && <p className="text-muted-foreground">No payments yet.</p>}
+      {byProd.length === 0 && <p className="text-muted-foreground">{translate("payments.empty")}</p>}
       <div className="space-y-6">
         {byProd.map(({ p, list }) => {
           const pool = pools.find((x) => x.production_id === p.id);
@@ -97,9 +100,9 @@ function PaymentsPage() {
           return (
             <Panel key={p.id} title={p.name} right={
               <div className="flex items-center gap-2">
-                {pool && <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">Escrow: {POOL[pool.status] ?? pool.status}</span>}
-                {!pool && <button disabled={busy === p.id} onClick={() => doFund(p.id)} className="rounded-xl bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-50">Manage Payouts</button>}
-                {pool && open.length > 0 && <button disabled={busy === p.id} onClick={() => doRelease(p.id, ids)} className="rounded-xl bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-50">Release {ids.length} selected</button>}
+                {pool && <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">{translate("payments.escrow")}: {translate(`payments.pool.${pool.status}`, POOL[pool.status] ?? pool.status)}</span>}
+                {!pool && <button disabled={busy === p.id} onClick={() => doFund(p.id)} className="rounded-xl bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-50">{translate("payments.manage")}</button>}
+                {pool && open.length > 0 && <button disabled={busy === p.id} onClick={() => doRelease(p.id, ids)} className="rounded-xl bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-50">{translate("payments.release", { count: ids.length })}</button>}
               </div>
             }>
               <div className="divide-y divide-border px-4">
@@ -108,15 +111,15 @@ function PaymentsPage() {
                   const done = released(b);
                   return (
                     <div key={b.id} className="flex flex-wrap items-center gap-3 py-3">
-                      <input type="checkbox" aria-label={`Include ${c?.name ?? "crew"}`} disabled={done || !pool} checked={done ? false : picked[b.id] ?? true} onChange={(e) => setPicked((s) => ({ ...s, [b.id]: e.target.checked }))} className="h-4 w-4" />
+                      <input type="checkbox" aria-label={translate("payments.include", { name: c?.name ?? translate("nav.crew") })} disabled={done || !pool} checked={done ? false : picked[b.id] ?? true} onChange={(e) => setPicked((s) => ({ ...s, [b.id]: e.target.checked }))} className="h-4 w-4" />
                       <div className="min-w-48 flex-1">
-                        <p className="font-semibold text-foreground">{c?.name ?? "Crew"}</p>
-                        <p className="text-sm text-muted-foreground">{b.role} · {b.days} day{b.days === 1 ? "" : "s"}</p>
+                        <p className="font-semibold text-foreground">{c?.name ?? translate("nav.crew")}</p>
+                        <p className="text-sm text-muted-foreground">{translate(`roles.${b.role}`, b.role)} · {translate("payments.days", { count: b.days })}</p>
                       </div>
-                      <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">{done ? "Paid" : STAGE[b.status]}</span>
-                      <span className="w-28 text-right font-semibold text-foreground">{rand(total(b))}</span>
+                      <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">{translate(`payments.stage.${done ? "Paid" : STAGE[b.status]}`)}</span>
+                      <span className="w-28 text-right font-semibold text-foreground">{money(total(b))}</span>
                       {b.status === "awaiting_review" && (
-                        <button className="rounded-xl border border-border px-3 py-1.5 text-sm font-medium" onClick={() => approve.mutate(b.id, { onSuccess: () => toast.success("Job approved"), onError: (e) => toast.error(e.message) })}>Approve</button>
+                        <button className="rounded-xl border border-border px-3 py-1.5 text-sm font-medium" onClick={() => approve.mutate(b.id, { onSuccess: () => toast.success(translate("payments.approved")), onError: (e) => toast.error(e.message) })}>{translate("dashboard.approve")}</button>
                       )}
                     </div>
                   );

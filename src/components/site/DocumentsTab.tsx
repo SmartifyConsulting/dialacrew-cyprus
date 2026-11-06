@@ -16,6 +16,7 @@ type Item = { id: string; label: string; sort_order: number };
 type Doc = { id: string; name: string; path: string; category: string; checklist_item_id: string | null; uploader_name: string; created_at: string };
 
 export function DocumentsTab({ p, userId, myName, isProducer }: { p: { id: string; name: string }; userId: string; myName: string; isProducer: boolean }) {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const inv = useInvalidate();
   const docs = (useDocs(p.id).data ?? []) as Doc[];
@@ -130,7 +131,7 @@ export function DocumentsTab({ p, userId, myName, isProducer }: { p: { id: strin
 
   return (
     <div className="space-y-5">
-      <Panel title={`Document checklist (${items.filter((i) => docs.some((d) => d.checklist_item_id === i.id)).length}/${items.length} on file)`}
+      <Panel title={t("files.checklist", { uploaded: items.filter((i) => docs.some((d) => d.checklist_item_id === i.id)).length, total: items.length })}
         collapsible defaultCollapsed
         badge={(() => {
           const outstanding = items.filter((i) => !docs.some((d) => d.checklist_item_id === i.id)).length;
@@ -139,7 +140,7 @@ export function DocumentsTab({ p, userId, myName, isProducer }: { p: { id: strin
         right={isProducer && templates.length > 0 ? (
           <select className={`${input} py-1 text-xs`} value="" aria-label="Load a saved checklist" disabled={busy}
             onChange={(e) => { if (e.target.value) loadTemplate(e.target.value); }}>
-            <option value="">Load a saved checklist…</option>
+            <option value="">{t("files.load")}</option>
             {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
         ) : undefined}>
@@ -155,7 +156,7 @@ export function DocumentsTab({ p, userId, myName, isProducer }: { p: { id: strin
                   <span className="min-w-0 flex-1 text-sm font-medium">{item.label}</span>
                   <span className="text-xs text-muted-foreground">{itemDocs.length} file{itemDocs.length === 1 ? "" : "s"}</span>
                   <label className={`${btn} cursor-pointer ${uploadingFor === item.id ? "opacity-60" : ""}`}>
-                    {uploadingFor === item.id ? "Uploading…" : "Upload"}
+                    {uploadingFor === item.id ? t("files.uploading") : t("files.upload")}
                     <input type="file" multiple hidden disabled={uploadingFor !== null} onChange={(e) => { uploadTo(item, e.target.files); e.target.value = ""; }} />
                   </label>
                   {isProducer && <button aria-label={`Remove ${item.label}`} onClick={() => removeItem(item.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>}
@@ -179,16 +180,17 @@ export function DocumentsTab({ p, userId, myName, isProducer }: { p: { id: strin
         )}
       </Panel>
 
-      <Panel title={`General documents (${generalDocs.length})`} right={
+      <Panel title={t("files.general", { count: generalDocs.length })} right={
         <label className={`${btn} cursor-pointer ${general ? "opacity-60" : ""}`}>
-          {general ? "Uploading…" : "Upload"}
+          {general ? t("files.uploading") : t("files.upload")}
           <input type="file" multiple hidden disabled={general} onChange={async (e) => { setGeneral(true); await uploadTo(null, e.target.files); setGeneral(false); e.target.value = ""; }} />
         </label>}>
         <ul className="divide-y divide-border">
-          {generalDocs.length === 0 && <li className="p-4 text-sm text-muted-foreground">No other documents yet.</li>}
+          {generalDocs.length === 0 && <li className="p-4 text-sm text-muted-foreground">{t("files.empty")}</li>}
           {generalDocs.map((d) => <DocRow key={d.id} d={d} />)}
         </ul>
       </Panel>
     </div>
   );
 }
+import { useTranslation } from "react-i18next";

@@ -198,6 +198,7 @@ const WEATHER_ICONS: Record<number, typeof Sun> = {
 };
 
 function DayWeather({ lat, lon, date }: { lat: number; lon: number; date: string }) {
+  const { t } = useTranslation();
   const forecast = useQuery({
     queryKey: ["weather", lat, lon, date],
     queryFn: async () => {
@@ -215,8 +216,8 @@ function DayWeather({ lat, lon, date }: { lat: number; lon: number; date: string
     staleTime: 3 * 60 * 60 * 1000,
     retry: false,
   });
-  if (forecast.isPending) return <p className="text-xs text-muted-foreground">Checking the forecast…</p>;
-  if (forecast.isError || !forecast.data) return <p className="text-xs text-muted-foreground">No forecast for this date yet (forecasts run up to 16 days ahead).</p>;
+  if (forecast.isPending) return <p className="text-xs text-muted-foreground">{t("locationsUi.checking")}</p>;
+  if (forecast.isError || !forecast.data) return <p className="text-xs text-muted-foreground">{t("locationsUi.noForecast")}</p>;
   const w = forecast.data;
   const Icon = WEATHER_ICONS[w.code] ?? Cloud;
   return (
@@ -254,6 +255,8 @@ function DayWeatherIcon({ lat, lon, date }: { lat: number; lon: number; date: st
 }
 
 function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer" | "myCrewId">) {
+  const { t, i18n } = useTranslation();
+  const localDay = (value: string) => new Date(value).toLocaleDateString(i18n.language, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
   const inv = useInvalidate();
   const bookings = useBookings().data ?? [];
   const canSeeExactAddress = isProducer || bookings.some((booking) => booking.productionId === p.id && booking.crewId === myCrewId && ["confirmed", "in_progress", "awaiting_review", "payment_released", "completed"].includes(booking.status));
@@ -391,11 +394,11 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
     <div>
       {isProducer && !adding && points.length === 0 && (
         <div className="flex justify-end px-4 pt-4">
-          <button onClick={startAdd} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> Add Location</button>
+          <button onClick={startAdd} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> {t("reviewText.addLocation")}</button>
         </div>
       )}
       <ul className="space-y-3 p-3 text-sm">
-        {points.length === 0 && <li className="p-4 text-muted-foreground">No locations yet.</li>}
+        {points.length === 0 && <li className="p-4 text-muted-foreground">{t("locationsUi.empty")}</li>}
         {points.map((pt, i) => (
           <li key={pt.id}
             draggable={isProducer && points.length > 1}
@@ -410,14 +413,14 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
                 <NumberedPin n={i + 1} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 text-sm font-bold text-foreground">
-                    <span>Shoot Day {i + 1}: {canSeeExactAddress ? (pt.label || "Location TBC") : areaOnly(pt.address || pt.label || "", p.location)}</span>
+                    <span>{t("locationsUi.shootDay", { number: i + 1 })}: {canSeeExactAddress ? (pt.label || t("overview.tbc")) : areaOnly(pt.address || pt.label || "", p.location)}</span>
                     {pt.starts_at && pt.latitude != null && pt.longitude != null && <DayWeatherIcon lat={pt.latitude} lon={pt.longitude} date={localYmd(pt.starts_at)} />}
                   </div>
-                  <div className="text-sm font-semibold text-foreground">{pt.starts_at ? dayLabel(pt.starts_at) : "Date TBC"}</div>
-                  <div className="text-xs text-muted-foreground">{pt.starts_at ? timeRange(pt.starts_at, pt.ends_at) : "Time TBC"}</div>
+                  <div className="text-sm font-semibold text-foreground">{pt.starts_at ? localDay(pt.starts_at) : t("overview.tbc")}</div>
+                  <div className="text-xs text-muted-foreground">{pt.starts_at ? timeRange(pt.starts_at, pt.ends_at) : t("calendar.timeTbc")}</div>
                   {isProducer && (
                     <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-                      <span className="block font-semibold text-foreground">Recce date</span>
+                      <span className="block font-semibold text-foreground">{t("overview.recceDate")}</span>
                       <input
                         type="date"
                         aria-label={`Recce date for Shoot Day ${i + 1}`}
@@ -443,27 +446,27 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
               ) : <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><MapPin className="h-3.5 w-3.5 text-primary" /> {pt.label || p.location} · Exact address shared after booking confirmation.</p>}
               {(pt.recce_date || pt.starts_at) && (
                 <div className="space-y-1 rounded-md bg-muted/30 px-2.5 py-2">
-                  <p className="text-xs font-semibold text-foreground">Weather forecast</p>
+                  <p className="text-xs font-semibold text-foreground">{t("locationsUi.forecast")}</p>
                   {pt.recce_date && (
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground">Recce · {dayLabel(`${pt.recce_date}T00:00:00`)}</p>
+                      <p className="text-xs font-medium text-muted-foreground">{t("dashboard.recce")} · {localDay(`${pt.recce_date}T00:00:00`)}</p>
                       {pt.latitude != null && pt.longitude != null
                         ? <DayWeather lat={pt.latitude} lon={pt.longitude} date={pt.recce_date} />
-                        : <p className="text-xs text-muted-foreground">Add a map location to see the recce forecast.</p>}
+                        : <p className="text-xs text-muted-foreground">{t("locationsUi.addMap")}</p>}
                     </div>
                   )}
                   {pt.starts_at && (
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground">Shoot · {dayLabel(pt.starts_at)}</p>
+                      <p className="text-xs font-medium text-muted-foreground">{t("overview.shoot")} · {localDay(pt.starts_at)}</p>
                       {pt.latitude != null && pt.longitude != null
                         ? <DayWeather lat={pt.latitude} lon={pt.longitude} date={localYmd(pt.starts_at)} />
-                        : <p className="text-xs text-muted-foreground">Add a map location to see the shoot-day forecast.</p>}
+                        : <p className="text-xs text-muted-foreground">{t("locationsUi.addMap")}</p>}
                     </div>
                   )}
                 </div>
               )}
               <details className="group rounded-lg border border-border/70">
-                <summary className="cursor-pointer select-none px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/40">Photos · Fees · Risks <span className="font-normal text-muted-foreground">(expand)</span></summary>
+                <summary className="cursor-pointer select-none px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/40">{t("locationsUi.details")}</summary>
                 <div className="space-y-3 border-t border-border px-3 py-3">
                   <LocationPhotos p={p} locationId={pt.id} isProducer={isProducer} />
                   {isProducer && <LocationFee p={p} locationId={pt.id} />}
@@ -486,12 +489,12 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
             <NumberedPin n={editingId ? points.findIndex((pt) => pt.id === editingId) + 1 : points.length + 1} />
             <span className="text-sm font-bold text-foreground">{editingId ? `Edit location` : `Location ${points.length + 1}`}</span>
           </div>
-          <AddressAutocomplete className={`${input} w-full`} placeholder="Address — start typing to search" value={lf.address}
+          <AddressAutocomplete className={`${input} w-full`} placeholder={t("locationsUi.address")} value={lf.address}
             onChange={(v) => setLf({ ...lf, address: v })}
             onSelect={(s) => setLf({ ...lf, label: s.place, address: s.exactAddress, latitude: s.lat, longitude: s.lon })} />
           <div className="space-y-3">
             <div className="grid gap-2 sm:grid-cols-2">
-              <label className="block min-w-0"><span className="text-xs text-muted-foreground">Shoot starts · Date & time</span>
+              <label className="block min-w-0"><span className="text-xs text-muted-foreground">{t("locationsUi.starts")}</span>
                 <input type="datetime-local" className={`${input} mt-1 w-full min-w-0`} value={lf.startsAt}
                   onChange={(e) => {
                     const startsAt = e.target.value;
@@ -500,11 +503,11 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
                     const recceDate = !lf.recceDate && startDay ? addDays(startDay, -1) : lf.recceDate;
                     setLf({ ...lf, startsAt, endsAt, recceDate });
                   }} /></label>
-              <label className="block min-w-0"><span className="text-xs text-muted-foreground">Shoot ends · Date & time</span>
+              <label className="block min-w-0"><span className="text-xs text-muted-foreground">{t("locationsUi.ends")}</span>
                 <input type="datetime-local" className={`${input} mt-1 w-full min-w-0`} value={lf.endsAt} onChange={(e) => setLf({ ...lf, endsAt: e.target.value })} /></label>
             </div>
             <div className="space-y-1.5">
-              <label className="block min-w-0"><span className="text-xs text-muted-foreground">Recce date</span>
+              <label className="block min-w-0"><span className="text-xs text-muted-foreground">{t("overview.recceDate")}</span>
                 <input type="date" className={`${input} mt-1 w-full min-w-0`} value={lf.recceDate} onChange={(e) => setLf({ ...lf, recceDate: e.target.value })} /></label>
               <div className="flex items-center gap-2">
                 <AmPmTimePicker label="Recce start time" placeholder="Select start time" value={lf.recceStart} onChange={(value) => setLf({ ...lf, recceStart: value, recceEnd: !lf.recceEnd && value ? addHoursToHHMM(value, 3) : lf.recceEnd })} />
@@ -513,14 +516,14 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
             </div>
           </div>
           <div className="flex gap-2">
-            <button disabled={busy} onClick={savePoint} className={btn}>{busy ? "Saving…" : editingId ? "Update location" : "Save location"}</button>
-            <button onClick={cancelForm} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold">Cancel</button>
+            <button disabled={busy} onClick={savePoint} className={btn}>{busy ? t("recovery.saving") : t("locationsUi.save")}</button>
+            <button onClick={cancelForm} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold">{t("common.cancel")}</button>
           </div>
         </div>
       )}
       {isProducer && !adding && points.length > 0 && (
         <div className="flex justify-end px-4 pb-4">
-          <button onClick={startAdd} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> Add Location</button>
+          <button onClick={startAdd} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> {t("reviewText.addLocation")}</button>
         </div>
       )}
       {isProducer && <div className="border-t border-border p-3"><ProjectWideRisks p={p} /></div>}
@@ -703,6 +706,7 @@ function ChecklistItemPhotoThumb({ photo, index, count, canEdit, onDelete, onMov
 }
 
 export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">) {
+  const { t } = useTranslation();
   const inv = useInvalidate();
   const checklists = (useChecklists(p.id).data ?? []) as Array<{ id: string; title: string; production_checklist_items: ChecklistItem[] }>;
   const members = useSiteMembers(p.id).data ?? [];
@@ -814,9 +818,9 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
   const doneCount = checklists.reduce((n, c) => n + c.production_checklist_items.filter((i) => i.done).length, 0);
   return (
     <div className="space-y-4">
-      {isProducer && <><div className="text-right"><Link to="/admin" search={{ tab: "Templates" }} className="text-sm font-semibold text-primary underline">Manage checklist templates</Link></div><ChecklistTemplateManager audience="producer" targetId={p.id} /></>}
+      {isProducer && <><div className="text-right"><Link to="/admin" search={{ tab: "Templates" }} className="text-sm font-semibold text-primary underline">{t("checklists.manage")}</Link></div><ChecklistTemplateManager audience="producer" targetId={p.id} /></>}
       <div role="tablist" aria-label="Checklist progress" className="flex gap-2 border-b border-border">
-        {(["Checklist", "Done"] as const).map((tab) => <button key={tab} role="tab" aria-selected={view === tab} onClick={() => setView(tab)} className={`border-b-2 px-4 py-2 text-sm font-semibold ${view === tab ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}>{tab} ({tab === "Checklist" ? pendingCount : doneCount})</button>)}
+        {(["Checklist", "Done"] as const).map((tab) => <button key={tab} role="tab" aria-selected={view === tab} onClick={() => setView(tab)} className={`border-b-2 px-4 py-2 text-sm font-semibold ${view === tab ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}>{t(tab === "Checklist" ? "checklists.pending" : "calendar.done")} ({tab === "Checklist" ? pendingCount : doneCount})</button>)}
       </div>
       <div className="grid items-start gap-5 md:grid-cols-2">
       {checklists.map((c) => {
@@ -825,10 +829,10 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
         <Panel key={c.id} title={c.title} collapsible defaultCollapsed
           badge={notDone > 0 ? <span className="rounded-full bg-destructive px-2 py-0.5 text-xs font-bold text-white">{notDone}</span> : undefined}
           right={isProducer && (
-          <div className="flex items-center gap-3"><button onClick={() => saveChecklistAsTemplate(c)} className="text-xs font-semibold text-primary underline">Save as template</button><button onClick={() => removeChecklist(c.id)} className="text-muted-foreground hover:text-destructive" aria-label={`Remove ${c.title}`}><Trash2 className="h-3.5 w-3.5" /></button></div>
+          <div className="flex items-center gap-3"><button onClick={() => saveChecklistAsTemplate(c)} className="text-xs font-semibold text-primary underline">{t("checklists.saveAs")}</button><button onClick={() => removeChecklist(c.id)} className="text-muted-foreground hover:text-destructive" aria-label={t("signup.remove", { service: c.title })}><Trash2 className="h-3.5 w-3.5" /></button></div>
         )}>
           <ul className="divide-y divide-border text-sm">
-            {c.production_checklist_items.filter((i) => i.done === (view === "Done")).length === 0 && <li className="p-4 text-muted-foreground">{view === "Done" ? "Nothing completed yet." : "All items completed."}</li>}
+            {c.production_checklist_items.filter((i) => i.done === (view === "Done")).length === 0 && <li className="p-4 text-muted-foreground">{t(view === "Done" ? "checklists.noneDone" : "checklists.allDone")}</li>}
             {c.production_checklist_items.filter((item) => item.done === (view === "Done")).map((item) => (
               <li key={item.id} className="px-4 py-2.5">
                 <div className="flex items-center gap-3">
@@ -847,7 +851,7 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
                     <>
                       <select aria-label={`Assign ${item.label}`} value={item.assigned_to ?? ""} onChange={(e) => assignItem(item.id, e.target.value)}
                         className="shrink-0 rounded-sm border border-input bg-background px-1.5 py-1 text-[11px] max-w-24">
-                        <option value="">Unassigned</option>
+                        <option value="">{t("tasks.unassigned")}</option>
                         {members.filter((m) => crewRelevantToChecklist(m, c.title)).map((m) => <option key={m.crew_id} value={m.crew_id}>{m.name}</option>)}
                       </select>
                       {item.assigned_to && (
@@ -904,14 +908,14 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
       {isProducer && view === "Checklist" && (
         addingList ? (
           <div className="flex gap-2 rounded-sm border border-border bg-card p-3">
-            <input autoFocus className={`${input} flex-1`} placeholder="Checklist name, e.g. Wardrobe checklist"
+            <input autoFocus className={`${input} flex-1`} placeholder={t("templates.name")}
               value={newTitle} onChange={(e) => setNewTitle(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") addChecklist(); if (e.key === "Escape") { setAddingList(false); setNewTitle(""); } }} />
-            <button onClick={addChecklist} className={btn}>Add</button>
-            <button onClick={() => { setAddingList(false); setNewTitle(""); }} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold">Cancel</button>
+            <button onClick={addChecklist} className={btn}>{t("common.add")}</button>
+            <button onClick={() => { setAddingList(false); setNewTitle(""); }} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold">{t("common.cancel")}</button>
           </div>
         ) : (
-          <button onClick={() => setAddingList(true)} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> Add checklist</button>
+          <button onClick={() => setAddingList(true)} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> {t("templates.addChecklist")}</button>
         )
       )}
     </div>
@@ -920,6 +924,7 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
 
 /* ---------------- Overview ---------------- */
 export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
+  const { t } = useTranslation();
   const inv = useInvalidate();
   const locationPoints = useLocationPoints(p.id).data ?? [];
   const overviewBookings = useBookings().data ?? [];
@@ -979,13 +984,13 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
 
   return (
     <div className="space-y-5">
-      <Panel title="Overview" right={isProducer && saveState !== "idle" ? (
+      <Panel title={t("workspace.overview")} right={isProducer && saveState !== "idle" ? (
         <span className="text-xs text-muted-foreground">{saveState === "saving" ? "Saving…" : "Saved"}</span>
       ) : undefined}>
         <div className="space-y-3 p-4 text-sm">
           {isProducer ? (
             <>
-            <label className="block"><span className="text-xs text-muted-foreground">Production summary</span>
+            <label className="block"><span className="text-xs text-muted-foreground">{t("workspace.summary")}</span>
               <textarea rows={4} className={`${input} mt-1 w-full`} value={f.summary} onChange={(e) => update({ summary: e.target.value })} /></label>
               <div className="flex justify-end"><PolishDescription text={f.summary} name={p.name} type={p.type} client={p.client} onPolished={(v) => update({ summary: v })} /></div>
             </>
@@ -993,22 +998,22 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
             <p className="whitespace-pre-wrap">{p.summary || "No summary yet."}</p>
           )}
           <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground [&>dt]:font-bold [&>dt]:text-foreground">
-            <dt>Production ID</dt><dd className="text-foreground">{p.jobId || "—"}</dd>
-            <dt>Client</dt><dd className="text-foreground">{p.client}</dd>
-            <dt>Type</dt><dd className="text-foreground">{p.type}</dd>
-            <dt>Shoot</dt><dd className="text-foreground">{p.date || "TBC"} · {p.days} day(s)</dd>
-            <dt>Recce</dt><dd className="text-foreground">{p.recceDate ? dayLabel(`${p.recceDate}T00:00:00`) : "TBC"}</dd>
-            <dt>Gear check</dt><dd className="text-foreground">{p.gearPickupDate ? dayLabel(`${p.gearPickupDate}T00:00:00`) : "TBC"}</dd>
-            <dt>Crew</dt><dd className="text-foreground">{p.crewBooked} / {p.crewNeeded}</dd>
-            {isProducer && <><dt>Budget</dt><dd className="text-foreground">{fmtMoney(p.budget, p.currency)}</dd></>}
+            <dt>{t("productionList.columns.Job ID")}</dt><dd className="text-foreground">{p.jobId || "—"}</dd>
+            <dt>{t("overview.client")}</dt><dd className="text-foreground">{p.client}</dd>
+            <dt>{t("productionList.columns.Type")}</dt><dd className="text-foreground">{p.type}</dd>
+            <dt>{t("overview.shoot")}</dt><dd className="text-foreground">{p.date || t("overview.tbc")} · {t("overview.days", { count: p.days })}</dd>
+            <dt>{t("dashboard.recce")}</dt><dd className="text-foreground">{p.recceDate ? dayLabel(`${p.recceDate}T00:00:00`) : t("overview.tbc")}</dd>
+            <dt>{t("dashboard.gear")}</dt><dd className="text-foreground">{p.gearPickupDate ? dayLabel(`${p.gearPickupDate}T00:00:00`) : t("overview.tbc")}</dd>
+            <dt>{t("nav.crew")}</dt><dd className="text-foreground">{p.crewBooked} / {p.crewNeeded}</dd>
+            {isProducer && <><dt>{t("productionList.columns.Budget")}</dt><dd className="text-foreground">{fmtMoney(p.budget, p.currency)}</dd></>}
           </dl>
         </div>
       </Panel>
 
-      <Panel title="Locations">
+      <Panel title={t("overview.locations", "Locations")}>
         <LocationPoints p={p} isProducer={isProducer} myCrewId={myCrewId} />
       </Panel>
-      <Panel title="Recce Date">
+      <Panel title={t("overview.recceDate", "Recce date")}>
         <div className="space-y-1 p-4">
           {p.recceDate && <p className="font-semibold text-foreground">Production recce · {dayLabel(`${p.recceDate}T00:00:00`)}</p>}
           {(() => {
@@ -1272,6 +1277,7 @@ export function Avatar({ name, path, size = 36 }: { name: string; path?: string 
 
 /* ---------------- Posts ---------------- */
 export function PostsTab({ p, userId, myName, isProducer }: Ctx) {
+  const { t, i18n } = useTranslation();
   const posts = usePosts(p.id);
   const inv = useInvalidate();
   const [body, setBody] = useState("");
@@ -1328,30 +1334,30 @@ export function PostsTab({ p, userId, myName, isProducer }: Ctx) {
     <div className="w-full space-y-4">
       <Guidelines p={p} isProducer={isProducer} />
       <div className="rounded-sm border border-border bg-card p-4">
-        <textarea rows={3} className={`${input} w-full`} placeholder="Share an update with everyone on this job…" value={body} onChange={(e) => setBody(e.target.value)} />
+        <textarea rows={3} className={`${input} w-full`} placeholder={t("workspace.share")} value={body} onChange={(e) => setBody(e.target.value)} />
         {recording && <div className="mt-2"><AudioRecorder onCancel={() => setRecording(false)} onDone={(blob, transcript) => { setRecording(false); setAudio({ blob, transcript }); if (transcript) setBody((b) => (b ? `${b}\n${transcript}` : transcript)); }} /></div>}
         {audio && !recording && <div className="mt-2 flex items-center gap-2 text-xs text-primary"><Mic className="h-3 w-3" /> Voice note attached{audio.transcript ? " and transcribed" : ""} <button className="text-muted-foreground underline" onClick={() => setAudio(null)}>remove</button></div>}
         {files.length > 0 && <div className="mt-2 flex flex-wrap gap-2">{files.map((f, i) => <span key={i} className="rounded-sm bg-muted px-2 py-1 text-xs">{f.name} <button onClick={() => setFiles(files.filter((_, j) => j !== i))}>×</button></span>)}</div>}
         <div className="mt-3 flex items-center gap-2">
-          <button onClick={() => setRecording(true)} disabled={recording} className="inline-flex items-center gap-1 rounded-sm border border-border px-3 py-2 text-xs hover:border-primary"><Mic className="h-4 w-4" /> Audio</button>
+          <button onClick={() => setRecording(true)} disabled={recording} className="inline-flex items-center gap-1 rounded-sm border border-border px-3 py-2 text-xs hover:border-primary"><Mic className="h-4 w-4" /> {t("workspace.audio")}</button>
           <label className="inline-flex cursor-pointer items-center gap-1 rounded-sm border border-border px-3 py-2 text-xs hover:border-primary">
-            <Camera className="h-4 w-4" /> Camera
+            <Camera className="h-4 w-4" /> {t("workspace.camera")}
             <input type="file" accept="image/*" capture="environment" hidden onChange={(e) => { setFiles([...files, ...Array.from(e.target.files ?? [])]); e.target.value = ""; }} />
           </label>
-          <button onClick={() => fileRef.current?.click()} className="inline-flex items-center gap-1 rounded-sm border border-border px-3 py-2 text-xs hover:border-primary"><Paperclip className="h-4 w-4" /> Attach</button>
+          <button onClick={() => fileRef.current?.click()} className="inline-flex items-center gap-1 rounded-sm border border-border px-3 py-2 text-xs hover:border-primary"><Paperclip className="h-4 w-4" /> {t("workspace.attach")}</button>
           <input ref={fileRef} type="file" multiple hidden onChange={(e) => { setFiles([...files, ...Array.from(e.target.files ?? [])]); e.target.value = ""; }} />
-          <button onClick={submit} disabled={busy || recording} className={`${btn} ml-auto`}>{busy ? "Posting…" : "Post"}</button>
+          <button onClick={submit} disabled={busy || recording} className={`${btn} ml-auto`}>{busy ? t("workspace.posting") : t("workspace.post")}</button>
         </div>
       </div>
-      {posts.data?.length === 0 && <p className="text-center text-sm text-muted-foreground">No posts yet. Start the conversation.</p>}
+      {posts.data?.length === 0 && <p className="text-center text-sm text-muted-foreground">{t("workspace.noPosts")}</p>}
       {posts.data?.map((post) => (
         <article key={post.id} className="rounded-sm border border-border bg-card p-4">
           <header className="mb-2 flex items-center gap-3">
             <Avatar name={post.author_name || "?"} />
-            <div className="flex-1"><div className="text-sm font-semibold">{post.author_name || "Team member"}</div><div className="text-xs text-muted-foreground">{when(post.created_at)}</div></div>
-            {(post.author_id === userId || isProducer) && <button aria-label="Delete post" onClick={() => remove(post.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>}
+            <div className="flex-1"><div className="text-sm font-semibold">{post.author_name || t("workspace.teamMember")}</div><div className="text-xs text-muted-foreground">{new Date(post.created_at).toLocaleString(i18n.language)}</div></div>
+            {(post.author_id === userId || isProducer) && <button aria-label={t("workspace.deletePost")} onClick={() => remove(post.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>}
           </header>
-          {post.body && <p className="whitespace-pre-wrap text-sm">{post.body}</p>}
+          {post.body && <div className="text-sm"><AutoTranslatedText text={post.body} /></div>}
           {post.audio_path && <AudioPlayer path={post.audio_path} />}
           {post.transcript && post.transcript !== post.body && <p className="mt-2 rounded-sm bg-muted p-2 text-xs italic text-muted-foreground">Transcript: {post.transcript}</p>}
           {Array.isArray(post.attachments) && post.attachments.length > 0 && (
@@ -1409,7 +1415,7 @@ export function MessagesTab({ p, userId, myName }: Ctx & { bookings: Booking[]; 
         {(messages.data ?? []).map((m) => (
           <div key={m.id} className={`rounded-sm p-2 text-sm ${m.sender_id === userId ? "ml-auto max-w-[80%] bg-primary/15" : "max-w-[80%] bg-muted"}`}>
             <div className="text-xs font-semibold">{m.sender_name}</div>
-            <div className="whitespace-pre-wrap">{m.body}</div>
+            <AutoTranslatedText text={m.body} />
             <div className="text-[10px] text-muted-foreground">{when(m.created_at)}</div>
           </div>
         ))}
@@ -1555,6 +1561,7 @@ export function RegisterTab({ p, isProducer, userId, myName, myCrewId }: Ctx) {
 
 /* ---------------- Tasks ---------------- */
 export function TasksTab({ p, userId }: Ctx) {
+  const { t: translate } = useTranslation();
   const tasks = useTasks(p.id).data ?? [];
   const members = useSiteMembers(p.id).data ?? [];
   const inv = useInvalidate();
@@ -1577,25 +1584,25 @@ export function TasksTab({ p, userId }: Ctx) {
   async function toggle(id: string, done: boolean) { await supabase.from("site_tasks").update({ done }).eq("id", id); inv(["tasks", p.id]); }
   async function remove(id: string) { const { error } = await supabase.from("site_tasks").delete().eq("id", id); if (error) toast.error(friendlyError(error)); inv(["tasks", p.id]); }
   return (
-    <Panel title="Tasks">
+    <Panel title={translate("workspace.tabs.Tasks")}>
       <div className="flex flex-wrap gap-2 border-b border-border p-4">
-        <input className={`${input} min-w-56 flex-1`} placeholder="New task…" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} onKeyDown={(e) => e.key === "Enter" && add()} />
-        <select className={input} value={f.crew} onChange={(e) => setF({ ...f, crew: e.target.value })}><option value="">Unassigned</option>{members.map((m) => <option key={m.crew_id} value={m.crew_id}>{m.user_id === userId ? "Self" : m.name}</option>)}</select>
+        <input className={`${input} min-w-56 flex-1`} placeholder={translate("tasks.new")} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} onKeyDown={(e) => e.key === "Enter" && add()} />
+        <select className={input} value={f.crew} onChange={(e) => setF({ ...f, crew: e.target.value })}><option value="">{translate("tasks.unassigned")}</option>{members.map((m) => <option key={m.crew_id} value={m.crew_id}>{m.user_id === userId ? translate("tasks.self") : m.name}</option>)}</select>
         <input type="date" className={input} value={f.due} onChange={(e) => setF({ ...f, due: e.target.value })} />
-        <button onClick={add} className={btn}>Add task</button>
+        <button onClick={add} className={btn}>{translate("tasks.add")}</button>
       </div>
       <ul className="divide-y divide-border">
-        {tasks.length === 0 && <li className="p-4 text-sm text-muted-foreground">No tasks yet.</li>}
+        {tasks.length === 0 && <li className="p-4 text-sm text-muted-foreground">{translate("tasks.empty")}</li>}
         {tasks.map((t) => (
           <li key={t.id} className="flex items-center gap-3 px-4 py-2.5">
-            <button aria-label={t.done ? "Mark not done" : "Mark done"} onClick={() => toggle(t.id, !t.done)}>{t.done ? <CheckCircle2 className="h-5 w-5 text-success" /> : <Circle className="h-5 w-5 text-muted-foreground" />}</button>
+            <button aria-label={translate(t.done ? "tasks.undo" : "gigs.done")} onClick={() => toggle(t.id, !t.done)}>{t.done ? <CheckCircle2 className="h-5 w-5 text-success" /> : <Circle className="h-5 w-5 text-muted-foreground" />}</button>
             <span className={`flex-1 text-sm ${t.done ? "text-muted-foreground line-through" : ""}`}>{t.title}</span>
-            <button onClick={() => togglePublic(t.id, !t.is_public)} aria-label={t.is_public ? "Make private" : "Post to the team"}
+            <button onClick={() => togglePublic(t.id, !t.is_public)} aria-label={translate(t.is_public ? "tasks.makePrivate" : "tasks.share")}
               className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${t.is_public ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground"}`}>
-              {t.is_public ? "Public" : "Private"}
+              {translate(t.is_public ? "tasks.public" : "tasks.private")}
             </button>
             <span className="text-xs text-muted-foreground">{assigneeLabel(t.assigned_crew_id)}{t.due_date ? ` · due ${t.due_date}` : ""}</span>
-            <button aria-label="Delete task" onClick={() => remove(t.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
+            <button aria-label={translate("tasks.delete")} onClick={() => remove(t.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
           </li>
         ))}
       </ul>
@@ -1608,6 +1615,7 @@ export function TasksTab({ p, userId }: Ctx) {
 
 /* ---------------- Commercials (producer only) ---------------- */
 export function CommercialsTab({ p, bookings, crewNames, requests }: Ctx & { bookings: Booking[]; crewNames: Record<string, string>; requests: { production: string; amount: number; state: string; kind: string; detail: string }[] }) {
+  const { t } = useTranslation();
   const selected = useBookingAssets(true).data ?? [];
   const invoices = useQuery({ queryKey: ["production-invoices", p.id], queryFn: async () => {
     const { data, error } = await supabase.from("invoices").select("id, booking_id, invoice_number, status, total").eq("production_id", p.id);
@@ -1628,20 +1636,20 @@ export function CommercialsTab({ p, bookings, crewNames, requests }: Ctx & { boo
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-border bg-border md:grid-cols-5">
         {([["Budget", fmtMoney(p.budget, p.currency)], ["Running cost", fmtMoney(running, p.currency)], ["Client billing", fmtMoney(billing, p.currency)], ["Margin", fmtMoney(billing - running, p.currency)], ["Budget left", fmtMoney(p.budget - running, p.currency)]]
         ).map(([l, v]) => (
-          <div key={l} className="bg-card px-4 py-3"><div className="text-[11px] text-muted-foreground">{l}</div><div className="font-display text-2xl font-semibold">{v}</div></div>
+          <div key={l} className="bg-card px-4 py-3"><div className="text-[11px] text-muted-foreground">{t(`budget.${l}`)}</div><div className="font-display text-2xl font-semibold">{v}</div></div>
         ))}
       </div>
-      <Panel title="Cost breakdown">
+      <Panel title={t("budget.breakdown")}>
         <table className="w-full text-sm">
           <thead className="text-left text-[11px] text-muted-foreground"><tr>
-            <th className="px-4 py-2">Role</th><th className="px-4">Provider</th><th className="px-4">Days</th>
-            <th className="px-4">Crew rate</th><th className="px-4">Assets</th><th className="px-4">Provider total</th>
-            <th className="px-4">Client charge</th><th className="px-4">Invoice attachment</th><th className="px-4">Status</th></tr></thead>
+            <th className="px-4 py-2">{t("common.role")}</th><th className="px-4">{t("budget.provider")}</th><th className="px-4">{t("productionList.columns.Days")}</th>
+            <th className="px-4">{t("budget.crewRate")}</th><th className="px-4">{t("budget.assets")}</th><th className="px-4">{t("budget.providerTotal")}</th>
+            <th className="px-4">{t("budget.clientCharge")}</th><th className="px-4">{t("budget.invoice")}</th><th className="px-4">{t("common.status")}</th></tr></thead>
           <tbody>
             {rows.map(({ b, assets, cost, charge }) => (
               <tr key={b.id} className="border-t border-border">
                 <td className="px-4 py-2.5 font-medium">{b.role}</td>
-                <td className="px-4">{b.crewId ? <Link to="/crew/$id" params={{ id: b.crewId }} className="hover:text-primary">{crewNames[b.crewId] ?? "Open"}</Link> : "Open"}</td>
+                <td className="px-4">{b.crewId ? <Link to="/crew/$id" params={{ id: b.crewId }} className="hover:text-primary">{crewNames[b.crewId] ?? t("budget.unfilled")}</Link> : t("budget.unfilled")}</td>
                 <td className="px-4">{b.days}</td>
                 <td className="px-4 text-muted-foreground">{zar(b.crewRate)}</td><td className="px-4">{zar(assets)}</td><td className="px-4 font-semibold">{zar(cost)}</td>
                 <td className="px-4">{zar(charge)}</td><td className="px-4">{invoices.filter((i) => i.booking_id === b.id).map((i) => <div key={i.id} className="text-xs"><Link to="/invoices/$id" params={{ id: i.id }} className="font-semibold text-primary underline">{i.invoice_number}</Link> <Badge>{i.status}</Badge></div>)}</td><td className="px-4"><Badge>{b.status}</Badge></td>
@@ -1662,22 +1670,24 @@ export const SiteIcons = { Users };
 
 /* Selectable 12-hour time slots; database values remain 24-hour HH:mm. */
 export function AmPmTimePicker({ value, onChange, label, placeholder = "Select time" }: { value: string; onChange: (value: string) => void; label: string; placeholder?: string }) {
+  const { i18n, t } = useTranslation();
+  const formatTime = (hour: number, minute: number) => new Intl.DateTimeFormat(i18n.language, { hour: "numeric", minute: "2-digit" }).format(new Date(2024, 0, 1, hour, minute));
   // Listed starting at 8am (the usual start of a shoot day) and wrapping back around to 7:30am, rather than starting at midnight.
   const options = Array.from({ length: 48 }, (_, i) => {
     const h = Math.floor(((i + 16) % 48) / 2), m = (i + 16) % 2 ? "30" : "00";
-    return { value: `${String(h).padStart(2, "0")}:${m}`, label: `${h % 12 || 12}:${m} ${h < 12 ? "AM" : "PM"}` };
+    return { value: `${String(h).padStart(2, "0")}:${m}`, label: formatTime(h, Number(m)) };
   });
   const normalized = value.slice(0, 5);
   if (normalized && !options.some((option) => option.value === normalized)) {
     const [hour, minute] = normalized.split(":").map(Number);
     if (hour !== undefined && minute !== undefined && Number.isFinite(hour) && Number.isFinite(minute)) {
-      options.push({ value: normalized, label: `${hour % 12 || 12}:${String(minute).padStart(2, "0")} ${hour < 12 ? "AM" : "PM"}` });
+      options.push({ value: normalized, label: formatTime(hour, minute) });
       options.sort((a, b) => a.value.localeCompare(b.value));
     }
   }
   return (
     <select aria-label={label} className={`${input} min-w-0 flex-1 py-1 text-xs`} value={normalized} onChange={(e) => onChange(e.target.value)}>
-      <option value="">{placeholder}</option>
+      <option value="">{placeholder === "Select time" ? t("productionModal.selectTime") : placeholder}</option>
       {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
     </select>
   );
@@ -1734,3 +1744,5 @@ function ProductionSchedule({ p, isProducer }: { p: Ctx["p"]; isProducer: boolea
     </>
   );
 }
+import { AutoTranslatedText } from "@/components/AutoTranslatedText";
+import { useTranslation } from "react-i18next";

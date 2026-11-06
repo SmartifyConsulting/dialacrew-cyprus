@@ -29,18 +29,20 @@ const blank = (p: Production): RetroForm => ({
 });
 
 function Pills({ opts, value, onChange }: { opts: string[]; value: string[]; onChange: (v: string[]) => void }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-wrap gap-1.5">
       {opts.map((o) => {
         const on = value.includes(o);
         return <button type="button" key={o} aria-pressed={on} onClick={() => onChange(on ? value.filter((x) => x !== o) : [...value, o])}
-          className={`rounded-full border px-2.5 py-0.5 text-[11px] transition ${on ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:border-primary"}`}>{o}</button>;
+          className={`rounded-full border px-2.5 py-0.5 text-[11px] transition ${on ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:border-primary"}`}>{t(`reviewOptions.${o}`, o)}</button>;
       })}
     </div>
   );
 }
 
 export function RetroTab({ p }: { p: Production }) {
+  const { t: translate } = useTranslation();
   const { session } = useSession();
   const phase = useAiLearningPhase(session?.user.id);
   const qc = useQueryClient();
@@ -76,8 +78,8 @@ export function RetroTab({ p }: { p: Production }) {
       await qc.invalidateQueries({ queryKey: ["retro", p.id] });
       await qc.invalidateQueries({ queryKey: ["company_memory"] });
       await qc.invalidateQueries({ queryKey: ["saved-review-count"] });
-      toast.success(`Saved — ${p.client}'s MemoryBank has been updated`);
-    } catch (err) { toast.error(err instanceof Error ? err.message : "Could not save."); } finally { setBusy(false); }
+      toast.success(translate("reviewText.saved", { client: p.client }));
+    } catch (err) { toast.error(err instanceof Error ? err.message : translate("reviewText.saveError")); } finally { setBusy(false); }
   };
 
   const num = (k: keyof RetroForm) => (
@@ -88,36 +90,36 @@ export function RetroTab({ p }: { p: Production }) {
     <form onSubmit={submit} className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
       <div className="space-y-5">
         <section className="rounded-sm border border-border bg-card p-4">
-          <h3 className="mb-3 font-display text-sm text-primary">1 · Project</h3>
+          <h3 className="mb-3 font-display text-sm text-primary">1 · {translate("review.project")}</h3>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <label className="space-y-1"><span className={label}>Type</span><select className={field} value={f.type} onChange={(e) => set("type", e.target.value)}>{TYPES.map((t) => <option key={t}>{t}</option>)}</select></label>
-            <label className="space-y-1"><span className={label}>Shoot days</span>{num("shootDays")}</label>
-            <label className="space-y-1"><span className={label}>Crew size</span><select className={field} value={f.crewSize} onChange={(e) => set("crewSize", e.target.value)}>{SIZES.map((t) => <option key={t}>{t}</option>)}</select></label>
-            <label className="space-y-1"><span className={label}>Locations</span>{num("locationsCount")}</label>
+            <label className="space-y-1"><span className={label}>{translate("productionList.columns.Type")}</span><select className={field} value={f.type} onChange={(e) => set("type", e.target.value)}>{TYPES.map((t) => <option key={t} value={t}>{translate(`review.types.${t}`)}</option>)}</select></label>
+            <label className="space-y-1"><span className={label}>{translate("review.shootDays")}</span>{num("shootDays")}</label>
+            <label className="space-y-1"><span className={label}>{translate("review.crewSize")}</span><select className={field} value={f.crewSize} onChange={(e) => set("crewSize", e.target.value)}>{SIZES.map((t) => <option key={t}>{t}</option>)}</select></label>
+            <label className="space-y-1"><span className={label}>{translate("overview.locations")}</span>{num("locationsCount")}</label>
           </div>
         </section>
 
         <section className="rounded-sm border border-border bg-card p-4">
-          <h3 className="mb-3 font-display text-sm text-primary">2 · Planned vs actual</h3>
+          <h3 className="mb-3 font-display text-sm text-primary">2 · {translate("review.variance")}</h3>
           <div className="grid grid-cols-[auto_1fr_1fr] items-center gap-2 text-sm">
-            <span /><span className={label}>Planned</span><span className={label}>Actual</span>
-            <span>Budget (R)</span>{num("budgetPlanned")}{num("budgetActual")}
-            <span>Overtime (hrs)</span>{num("otPlanned")}{num("otActual")}
-            <span>Post (weeks)</span>{num("postPlanned")}{num("postActual")}
+            <span /><span className={label}>{translate("review.planned")}</span><span className={label}>{translate("review.actual")}</span>
+            <span>{translate("budget.Budget")} (R)</span>{num("budgetPlanned")}{num("budgetActual")}
+            <span>{translate("review.overtime")}</span>{num("otPlanned")}{num("otActual")}
+            <span>{translate("review.post")}</span>{num("postPlanned")}{num("postActual")}
           </div>
-          <label className="mt-3 block space-y-1"><span className={label}>Primary cause of difference</span>
-            <select className={field} value={f.deltaCause} onChange={(e) => set("deltaCause", e.target.value)}>{CAUSES.map((c) => <option key={c}>{c}</option>)}</select></label>
+          <label className="mt-3 block space-y-1"><span className={label}>{translate("review.cause")}</span>
+            <select className={field} value={f.deltaCause} onChange={(e) => set("deltaCause", e.target.value)}>{CAUSES.map((c) => <option key={c} value={c}>{translate(`review.causes.${c}`)}</option>)}</select></label>
         </section>
 
         <section className="rounded-sm border border-border bg-card p-4">
-          <h3 className="mb-3 font-display text-sm text-primary">3 · Friction ratings</h3>
+          <h3 className="mb-3 font-display text-sm text-primary">3 · {translate("review.friction")}</h3>
           <div className="space-y-3">
             {CATS.map((c) => (
               <div key={c}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-sm">{c}</span>
+                  <span className="text-sm">{translate(`reviewOptions.${c}`)}</span>
                   <div className="flex">{[1, 2, 3, 4, 5].map((n) => (
-                    <button type="button" key={n} aria-label={`${c} ${n} stars`} onClick={() => set("ratings", { ...f.ratings, [c]: n })}>
+                    <button type="button" key={n} aria-label={translate("reviewText.stars", { category: translate(`reviewOptions.${c}`), count: n })} onClick={() => set("ratings", { ...f.ratings, [c]: n })}>
                       <Star className={`h-5 w-5 ${n <= (f.ratings[c] ?? 0) ? "fill-primary text-primary" : "text-muted-foreground"}`} />
                     </button>
                   ))}</div>
@@ -129,28 +131,28 @@ export function RetroTab({ p }: { p: Production }) {
         </section>
 
         <section className="rounded-sm border border-border bg-card p-4">
-          <h3 className="mb-3 font-display text-sm text-primary">4 · Locations & vendors</h3>
+          <h3 className="mb-3 font-display text-sm text-primary">4 · {translate("review.locationsVendors")}</h3>
           {f.locations.map((l, i) => (
             <div key={`l${i}`} className="mb-3 space-y-1.5">
-              <input className={field} placeholder="Location name" value={l.name} onChange={(e) => set("locations", f.locations.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
+              <input className={field} placeholder={translate("reviewText.locationName")} value={l.name} onChange={(e) => set("locations", f.locations.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
               <Pills opts={LOC_TAGS} value={l.tags} onChange={(v) => set("locations", f.locations.map((x, j) => j === i ? { ...x, tags: v } : x))} />
             </div>
           ))}
-          <button type="button" className="mb-4 text-xs text-primary" onClick={() => set("locations", [...f.locations, { name: "", tags: [] }])}>+ Add location</button>
+          <button type="button" className="mb-4 text-xs text-primary" onClick={() => set("locations", [...f.locations, { name: "", tags: [] }])}>+ {translate("reviewText.addLocation")}</button>
           {f.vendors.map((v, i) => (
             <div key={`v${i}`} className="mb-3 space-y-1.5">
-              <input className={field} placeholder="Vendor or crew name" value={v.name} onChange={(e) => set("vendors", f.vendors.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
+              <input className={field} placeholder={translate("reviewText.vendorName")} value={v.name} onChange={(e) => set("vendors", f.vendors.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
               <Pills opts={VEN_TAGS} value={v.tags} onChange={(t) => set("vendors", f.vendors.map((x, j) => j === i ? { ...x, tags: t } : x))} />
             </div>
           ))}
-          <button type="button" className="text-xs text-primary" onClick={() => set("vendors", [...f.vendors, { name: "", tags: [] }])}>+ Add vendor</button>
+          <button type="button" className="text-xs text-primary" onClick={() => set("vendors", [...f.vendors, { name: "", tags: [] }])}>+ {translate("reviewText.addVendor")}</button>
         </section>
 
         <section className="rounded-sm border border-border bg-card p-4">
-          <h3 className="mb-3 font-display text-sm text-primary">5 · Quick notes</h3>
+          <h3 className="mb-3 font-display text-sm text-primary">5 · {translate("review.notes")}</h3>
           {([["win", "Top operational win"], ["risk", "Top risk / close call"], ["warning", "What should AI warn us about on the next similar shoot?"]] as const).map(([k, t]) => (
             <label key={k} className="mb-3 block space-y-1">
-              <span className="flex justify-between"><span className={label}>{t}</span><span className="text-[11px] text-muted-foreground">{f[k].length}/280</span></span>
+              <span className="flex justify-between"><span className={label}>{translate(`reviewText.${k}`, t)}</span><span className="text-[11px] text-muted-foreground">{f[k].length}/280</span></span>
               <textarea className={`${field} min-h-16`} maxLength={280} value={f[k]} onChange={(e) => set(k, e.target.value)} />
             </label>
           ))}
@@ -161,21 +163,22 @@ export function RetroTab({ p }: { p: Production }) {
         <div className="rounded-sm border border-primary/50 bg-card p-4">
           {phase.learning ? (
             <p className="text-xs text-muted-foreground">
-              The AI memory summary unlocks once {AI_MIN_REVIEWS} reviews have been saved to AI memory ({phase.saved} of {AI_MIN_REVIEWS} so far). Saving this review teaches the AI about {p.client}.
+              {translate("reviewText.unlock", { minimum: AI_MIN_REVIEWS, saved: phase.saved, client: p.client })}
             </p>
           ) : (
             <>
-              <h3 className="mb-2 flex items-center gap-2 font-display text-sm text-primary"><Sparkles className="h-4 w-4" />AI Memory Summary</h3>
-              {out?.lessons ? <p className="rounded-sm bg-primary/10 p-3 text-sm"><strong>Lessons learned:</strong> {out.lessons}</p>
-                : <p className="text-xs text-muted-foreground">Save to generate the lessons-learned alert. It's added to {p.client}'s MemoryBank and used in future crew matching.</p>}
+              <h3 className="mb-2 flex items-center gap-2 font-display text-sm text-primary"><Sparkles className="h-4 w-4" />{translate("reviewText.memory")}</h3>
+              {out?.lessons ? <p className="rounded-sm bg-primary/10 p-3 text-sm"><strong>{translate("reviewText.lessons")}</strong> {out.lessons}</p>
+                : <p className="text-xs text-muted-foreground">{translate("reviewText.generate", { client: p.client })}</p>}
               <pre className="mt-3 max-h-80 overflow-auto rounded-sm bg-background p-2 text-[10px] leading-snug text-muted-foreground">{JSON.stringify(out?.payload && Object.keys(out.payload).length ? out.payload : preview, null, 2)}</pre>
             </>
           )}
           <button disabled={busy} className="mt-3 w-full rounded-sm bg-primary px-4 py-2 font-display text-sm font-semibold text-primary-foreground disabled:opacity-60">
-            {busy ? "Learning…" : existing.data ? "Update review" : "Save review & teach AI"}
+            {busy ? translate("review.learning") : existing.data ? translate("review.update") : translate("review.save")}
           </button>
         </div>
       </aside>
     </form>
   );
 }
+import { useTranslation } from "react-i18next";

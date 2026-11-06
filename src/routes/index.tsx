@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { TopNav } from "@/components/AppShell";
 import { AuthForm } from "@/components/AuthForm";
-import logoUrl from "@/assets/bookacrew-sa-logo-black.png";
+import { useCountryLogo, useVisitorCountry } from "@/lib/country-logos";
 
 const HERO_BG = "https://static.wixstatic.com/media/20efcd_c74b87f40292491e9dbcf1db2483f78c~mv2.jpg";
 
@@ -23,6 +23,7 @@ export const Route = createFileRoute("/")({
 
 // Home is the sign-in / sign-up screen only — marketing sections are intentionally hidden.
 function Index() {
+  const logoUrl = useCountryLogo("signup", useVisitorCountry());
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <TopNav />

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronDown } from "lucide-react";
 import { inviteCrewMembers } from "@/lib/invite.functions";
 import { toast } from "sonner";
@@ -12,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { zar } from "@/lib/demo-data";
 import { DocumentChecklistsAdmin } from "@/components/admin/DocumentChecklistsAdmin";
 import { EquipmentAdmin } from "@/components/admin/EquipmentAdmin";
+import { CountriesAdmin } from "@/components/admin/CountriesAdmin";
 import { ChecklistTemplateManager } from "@/components/ChecklistTemplateManager";
 import { confirmDialog, promptDialog } from "@/components/ConfirmDialog";
 import { useAddCrewGroupMember, useCreateCrewGroup, useCreateProductionType, useCrew, useCrewGroups, useDeleteCrewGroup, useProductionTypes, useRemoveCrewGroupMember } from "@/lib/db";
@@ -173,6 +175,7 @@ const ADMIN_GROUPS = [
   { name: "Reviews", tabs: ["Reviews"] },
   { name: "Engagement", tabs: ["Social Spotlights"] },
   { name: "Documents", tabs: ["Document Checklists", "Templates"] },
+  { name: "Countries", tabs: ["Countries"] },
   { name: "Platform Management", tabs: ["Configuration", "System Settings", "Audit Log"] },
 ] as const;
 // Producers get everything Super Admin has, except Platform Management (super-admin only) and
@@ -200,6 +203,7 @@ function PlaceholderTab({ name }: { name: string }) {
 }
 
 function AdminPage() {
+  const { t: translate } = useTranslation();
   const { session } = useSession();
   const role = useRole(session?.user.id);
   const isSuperAdmin = role.data === "admin";
@@ -230,17 +234,17 @@ function AdminPage() {
   }
 
   return (
-    <Page open title="Admin" subtitle={isSuperAdmin ? "Platform operations and oversight" : "Production and crew operations"}>
+    <Page open title={translate("nav.admin")} subtitle={translate(isSuperAdmin ? "adminNav.platformSubtitle" : "adminNav.producerSubtitle")}>
       <nav className="mb-1 flex gap-1 overflow-x-auto border-b border-border">
         {groups.map((g) => (
           <button key={g.name} onClick={() => selectGroup(g)}
-            className={`whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-semibold ${group === g.name ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>{g.name}</button>
+            className={`whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-semibold ${group === g.name ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>{translate(`adminNav.labels.${g.name}`)}</button>
         ))}
       </nav>
       <nav className="mb-5 flex gap-1 overflow-x-auto">
         {activeGroup.tabs.map((t) => (
           <button key={t} onClick={() => setTab(t)}
-            className={`whitespace-nowrap rounded-sm px-3 py-1.5 text-xs font-semibold ${tab === t ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>{t}</button>
+            className={`whitespace-nowrap rounded-sm px-3 py-1.5 text-xs font-semibold ${tab === t ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>{translate(`adminNav.labels.${t}`)}</button>
         ))}
       </nav>
       {tab === "Users" && <UsersTab canManageAdmins={isSuperAdmin} />}
@@ -258,6 +262,7 @@ function AdminPage() {
       {tab === "Social Spotlights" && <SpotlightTab />}
       {tab === "Document Checklists" && <DocumentChecklistsAdmin />}
       {tab === "Templates" && <ChecklistTemplateManager audience="producer" />}
+      {tab === "Countries" && <CountriesAdmin />}
       {tab === "Audit Log" && <AuditLogTab />}
       {tab === "Configuration" && <PlaceholderTab name="Configuration" />}
       {tab === "System Settings" && <PlaceholderTab name="System Settings" />}
@@ -327,6 +332,7 @@ const ROLE_BADGE: Record<string, string> = {
 };
 
 function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
+  const { t } = useTranslation();
   const inv = useInv();
   const [showImport, setShowImport] = useState(false);
   const users = useQuery({
@@ -349,28 +355,28 @@ function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
   async function toggleSuspend(id: string, suspended: boolean) {
     const { error } = await supabase.from("profiles").update({ suspended: !suspended }).eq("id", id);
     if (error) { toast.error(friendlyError(error)); return; }
-    toast.success(!suspended ? "User suspended" : "User reactivated");
+    toast.success(t(!suspended ? "adminUsers.suspended" : "adminUsers.reactivated"));
     inv(["admin-users"]);
   }
   async function addRole(userId: string, role: (typeof ALL_ROLES)[number]) {
     const { error } = await supabase.from("user_roles").insert({ user_id: userId, role });
     if (error) { toast.error(friendlyError(error)); return; }
-    toast.success("Role added");
+    toast.success(t("adminUsers.roleAdded"));
     inv(["admin-users"]);
   }
   async function removeRole(userId: string, role: string) {
     const { error } = await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role as (typeof ALL_ROLES)[number]);
     if (error) { toast.error(friendlyError(error)); return; }
-    toast.success("Role removed");
+    toast.success(t("adminUsers.roleRemoved"));
     inv(["admin-users"]);
   }
   return (
     <div className="space-y-5">
-    <Panel title={`Users (${users.data?.length ?? 0})`} right={
-      <button onClick={() => setShowImport(!showImport)} className="text-xs font-semibold text-primary hover:underline">{showImport ? "Hide import" : "+ Import crew from CSV"}</button>
+    <Panel title={`${t("adminNav.labels.Users")} (${users.data?.length ?? 0})`} right={
+      <button onClick={() => setShowImport(!showImport)} className="text-xs font-semibold text-primary hover:underline">{t(showImport ? "adminUsers.hideImport" : "adminUsers.import")}</button>
     }>
       <table className="w-full text-sm">
-        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">First name</th><th className="px-4">Last name</th><th className="px-4">Email</th><th className="px-4">Roles</th><th className="px-4">Status</th><th className="px-4">Action</th></tr></thead>
+        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">{t("signup.firstName")}</th><th className="px-4">{t("signup.lastName")}</th><th className="px-4">{t("common.email")}</th><th className="px-4">{t("adminUsers.roles")}</th><th className="px-4">{t("common.status")}</th><th className="px-4">{t("common.actions")}</th></tr></thead>
         <tbody>
           {(users.data ?? []).map((u) => {
             const [first, ...rest] = (u.full_name || "").trim().split(/\s+/).filter(Boolean);
@@ -384,7 +390,7 @@ function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
                 <div className="flex flex-wrap items-center gap-1.5">
                   {u.roles.map((r) => (
                     <span key={r} className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium capitalize ${ROLE_BADGE[r] ?? "bg-muted text-muted-foreground"}`}>
-                      {r}
+                      {t(`accountRoles.${r}`, r)}
                       {(canManageAdmins || r !== "admin") && (
                         <button onClick={() => removeRole(u.id, r)} aria-label={`Remove ${r} role`} className="-mr-0.5 text-current opacity-60 hover:opacity-100">×</button>
                       )}
@@ -394,14 +400,14 @@ function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
                     <select value="" onChange={(e) => { if (e.target.value) addRole(u.id, e.target.value as (typeof ROLES)[number]); }}
                       aria-label={`Add a role to ${u.full_name || u.email}`}
                       className="rounded-full border border-dashed border-border bg-transparent px-2.5 py-1 text-xs font-medium text-muted-foreground hover:border-primary hover:text-primary">
-                      <option value="">+ Role</option>
-                      {ROLES.filter((r) => !u.roles.includes(r)).map((r) => <option key={r} value={r} className="bg-background text-foreground capitalize">{r}</option>)}
+                      <option value="">+ {t("common.role")}</option>
+                      {ROLES.filter((r) => !u.roles.includes(r)).map((r) => <option key={r} value={r} className="bg-background text-foreground capitalize">{t(`accountRoles.${r}`)}</option>)}
                     </select>
                   )}
                 </div>
               </td>
               <td className="px-4">{u.suspended ? <Badge>Declined</Badge> : <Badge>Confirmed</Badge>}</td>
-              <td className="px-4"><button onClick={() => toggleSuspend(u.id, u.suspended)} className="text-xs text-primary hover:underline">{u.suspended ? "Reactivate" : "Suspend"}</button></td>
+              <td className="px-4"><button onClick={() => toggleSuspend(u.id, u.suspended)} className="text-xs text-primary hover:underline">{t(u.suspended ? "adminUsers.reactivate" : "adminUsers.suspend")}</button></td>
             </tr>
             );
           })}
@@ -765,6 +771,7 @@ function CompaniesTab() {
 const BOOKING_STATUSES = ["draft", "open", "pencil", "awaiting_crew_confirmation", "confirmed", "in_progress", "awaiting_review", "completed", "payment_released", "cancelled", "disputed"] as const;
 
 function BookingsTab() {
+  const { t } = useTranslation();
   const inv = useInv();
   const [openProd, setOpenProd] = useState<string | null>(null);
   const bookings = useQuery({
@@ -795,7 +802,7 @@ function BookingsTab() {
   }
 
   return (
-    <Panel title={`Bookings (${bookings.data?.length ?? 0})`}>
+    <Panel title={`${t("adminNav.labels.Bookings")} (${bookings.data?.length ?? 0})`}>
       <ul className="divide-y divide-border">
         {[...byProduction.entries()].map(([prodId, group]) => (
           <li key={prodId}>
@@ -812,7 +819,7 @@ function BookingsTab() {
                     <td className="px-4">{b.role}</td><td className="px-4">{b.booking_date}</td>
                     <td className="px-4">
                       <select className={`${invField} py-1`} value={b.status} onChange={(e) => setStatus(b.id, e.target.value as (typeof BOOKING_STATUSES)[number])}>
-                        {BOOKING_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                        {BOOKING_STATUSES.map((s) => <option key={s} value={s}>{t(`workflowStatuses.${s}`)}</option>)}
                       </select>
                     </td>
                     <td className="px-4 text-xs text-muted-foreground">{b.payment_status}</td>
@@ -831,6 +838,7 @@ function BookingsTab() {
 const PAYMENT_STATUSES = ["not_required", "payment_required", "payment_received", "funds_held", "awaiting_release", "release_authorised", "payment_released", "payment_failed", "payment_disputed"] as const;
 
 function PaymentsTab() {
+  const { t } = useTranslation();
   const inv = useInv();
   const rows = useQuery({
     queryKey: ["admin-payments"],
@@ -845,7 +853,7 @@ function PaymentsTab() {
   }
 
   return (
-    <Panel title={`Payments (${rows.data?.length ?? 0})`}>
+    <Panel title={`${t("nav.payments")} (${rows.data?.length ?? 0})`}>
       <table className="w-full text-sm">
         <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Production</th><th className="px-4">Crew</th><th className="px-4">Amount</th><th className="px-4">Status</th></tr></thead>
         <tbody>{(rows.data ?? []).map((b) => (
@@ -855,7 +863,7 @@ function PaymentsTab() {
             <td className="px-4">{zar(b.crew_rate * b.days)}</td>
             <td className="px-4">
               <select className={`${invField} py-1`} value={b.payment_status} onChange={(e) => setStatus(b.id, e.target.value as (typeof PAYMENT_STATUSES)[number])}>
-                {PAYMENT_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                {PAYMENT_STATUSES.map((s) => <option key={s} value={s}>{t(`workflowStatuses.${s}`)}</option>)}
               </select>
             </td>
           </tr>
@@ -868,6 +876,7 @@ function PaymentsTab() {
 const INVOICE_STATUSES = ["draft", "sent", "paid", "overdue", "cancelled"];
 
 function InvoicesTab() {
+  const { t } = useTranslation();
   const inv = useInv();
   const invoices = useQuery({
     queryKey: ["admin-invoices"],
@@ -889,7 +898,7 @@ function InvoicesTab() {
   }
 
   return (
-    <Panel title={`Invoices (${invoices.data?.length ?? 0})`}>
+    <Panel title={`${t("nav.invoices")} (${invoices.data?.length ?? 0})`}>
       <table className="w-full text-sm">
         <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Invoice #</th><th className="px-4">Crew</th><th className="px-4">Production</th><th className="px-4">Subtotal</th><th className="px-4">VAT</th><th className="px-4">Total</th><th className="px-4">Status</th><th className="px-4">Action</th></tr></thead>
         <tbody>{(invoices.data ?? []).map((i) => (
@@ -900,7 +909,7 @@ function InvoicesTab() {
             <td className="px-4">{zar(i.subtotal)}</td><td className="px-4">{zar(i.vat_amount)}</td><td className="px-4 font-semibold">{zar(i.total)}</td>
             <td className="px-4">
               <select className={`${invField} py-1`} value={i.status} onChange={(e) => setStatus(i.id, e.target.value)}>
-                {INVOICE_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                {INVOICE_STATUSES.map((s) => <option key={s} value={s}>{t(`workflowStatuses.${s}`)}</option>)}
               </select>
             </td>
             <td className="px-4"><button onClick={() => removeInvoice(i.id)} className="text-xs text-destructive hover:underline">Delete</button></td>

@@ -2770,6 +2770,7 @@ export type Database = {
           full_name: string
           id: string
           phone: string | null
+          preferred_language: string | null
           role: string
           skills: string[]
           social_opt_in: boolean
@@ -2785,6 +2786,7 @@ export type Database = {
           full_name?: string
           id: string
           phone?: string | null
+          preferred_language?: string | null
           role?: string
           skills?: string[]
           social_opt_in?: boolean
@@ -2800,6 +2802,7 @@ export type Database = {
           full_name?: string
           id?: string
           phone?: string | null
+          preferred_language?: string | null
           role?: string
           skills?: string[]
           social_opt_in?: boolean

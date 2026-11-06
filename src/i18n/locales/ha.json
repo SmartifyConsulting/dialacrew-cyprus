@@ -1,0 +1,35 @@
+{
+  "common": {
+    "language": "Harshe",
+    "changeLanguage": "Canza harshe",
+    "signOut": "Fita",
+    "save": "Ajiye",
+    "cancel": "Soke",
+    "delete": "Share",
+    "edit": "Gyara",
+    "add": "Ƙara",
+    "send": "Aika",
+    "confirm": "Tabbatar",
+    "close": "Rufe",
+    "search": "Bincika",
+    "loading": "Ana lodawa...",
+    "settings": "Saituna",
+    "noData": "No data",
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "phone": "Phone",
+    "email": "Email",
+    "name": "Name",
+    "role": "Role",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "nav": {
+    "home": "Gida",
+    "myProfile": "Bayanin Na",
+    "admin": "Manaja",
+    "profile": "Bayanin Na",
+    "calendar": "Kalanda"
+  }
+}

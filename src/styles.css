@@ -6,6 +6,15 @@
 
 @custom-variant dark (&:is(.dark *));
 
+html {
+  font-size: calc(100% * var(--lang-scale, 1));
+}
+
+html:lang(hi), html:lang(mr), html:lang(ur), html:lang(te), html:lang(ta), html:lang(ml), html:lang(ar) {
+  --font-sans: "Noto Sans", "Nirmala UI", "Segoe UI", system-ui, sans-serif;
+  line-height: 1.6;
+}
+
 /*
  * Design system definition.
  *

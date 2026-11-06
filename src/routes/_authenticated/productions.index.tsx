@@ -16,6 +16,7 @@ import { ProductionAvatar } from "@/components/site/ProductionCover";
 import { ImageCropDialog } from "@/components/site/ImageCropDialog";
 import { AmPmTimePicker } from "@/components/site/SiteTabs";
 import { confirmDialog } from "@/components/ConfirmDialog";
+import { useTranslation } from "react-i18next";
 
 export const Route = createFileRoute("/_authenticated/productions/")({
   validateSearch: (s: Record<string, unknown>): { new?: boolean } => (s["new"] ? { new: true } : {}),
@@ -38,6 +39,7 @@ type ClientRow = { id: string; name: string; company: string };
 
 // Dropdown to pick an existing client, add a new one inline, or bulk-import a CSV of clients.
 function ClientPicker({ clients, value, onChange, onClientsChanged }: { clients: ClientRow[]; value: string; onChange: (company: string) => void; onClientsChanged: () => void }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState(false);
@@ -100,13 +102,13 @@ function ClientPicker({ clients, value, onChange, onClientsChanged }: { clients:
   return (
     <div className="relative">
       <button type="button" onClick={() => setOpen(!open)} className={`${field} flex items-center justify-between text-left`}>
-        <span className={value ? "" : "text-muted-foreground"}>{value || "Select client *"}</span>
+        <span className={value ? "" : "text-muted-foreground"}>{value || t("clientPicker.select")}</span>
         <span className="text-muted-foreground">▾</span>
       </button>
       {open && (
         <div className="absolute z-20 mt-1 w-full rounded-sm border border-border bg-card shadow-md">
           <div className="p-2">
-            <input autoFocus className={field} placeholder="Search clients…" value={query} onChange={(e) => setQuery(e.target.value)} />
+            <input autoFocus className={field} placeholder={t("clientPicker.search")} value={query} onChange={(e) => setQuery(e.target.value)} />
           </div>
           <ul className="max-h-48 overflow-y-auto">
             {filtered.map((c) => (
@@ -116,21 +118,21 @@ function ClientPicker({ clients, value, onChange, onClientsChanged }: { clients:
                 </button>
               </li>
             ))}
-            {filtered.length === 0 && <li className="px-3 py-2 text-sm text-muted-foreground">No clients found.</li>}
+            {filtered.length === 0 && <li className="px-3 py-2 text-sm text-muted-foreground">{t("clientPicker.empty")}</li>}
           </ul>
           <div className="border-t border-border p-2">
             {adding ? (
               <div className="space-y-2">
-                <input className={field} placeholder="Company name *" value={newClient.company} onChange={(e) => setNewClient({ ...newClient, company: e.target.value })} />
-                <input className={field} placeholder="Contact name" value={newClient.name} onChange={(e) => setNewClient({ ...newClient, name: e.target.value })} />
+                <input className={field} placeholder={t("clientPicker.company")} value={newClient.company} onChange={(e) => setNewClient({ ...newClient, company: e.target.value })} />
+                <input className={field} placeholder={t("clientPicker.contact")} value={newClient.name} onChange={(e) => setNewClient({ ...newClient, name: e.target.value })} />
                 <div className="flex gap-2">
-                  <button type="button" disabled={busy} onClick={addClient} className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-60">{busy ? "Saving…" : "Save client"}</button>
-                  <button type="button" onClick={() => setAdding(false)} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold">Cancel</button>
+                  <button type="button" disabled={busy} onClick={addClient} className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-60">{busy ? t("recovery.saving") : t("clientPicker.save")}</button>
+                  <button type="button" onClick={() => setAdding(false)} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold">{t("common.cancel")}</button>
                 </div>
               </div>
             ) : (
               <div className="flex items-center justify-between gap-2">
-                <button type="button" onClick={() => setAdding(true)} className="text-xs font-semibold text-primary hover:underline">+ Add new client</button>
+                <button type="button" onClick={() => setAdding(true)} className="text-xs font-semibold text-primary hover:underline">+ {t("clientPicker.add")}</button>
                 <button type="button" onClick={() => fileRef.current?.click()} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
                   <Upload className="h-3.5 w-3.5" /> Upload clients (csv or xls)
                 </button>
@@ -145,6 +147,7 @@ function ClientPicker({ clients, value, onChange, onClientsChanged }: { clients:
 }
 
 function Productions() {
+  const { t } = useTranslation();
   const list = useProductions().data ?? [];
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -270,51 +273,51 @@ function Productions() {
   };
 
   return (
-    <Page open title="Productions" subtitle="Start from the client brief, then break it down into crew and resources."
-      actions={isProducer ? <button onClick={openNew} className="rounded-sm bg-primary px-4 py-2 font-display text-sm font-semibold text-primary-foreground">+ New production</button> : undefined}>
+    <Page open title={t("nav.productions")} subtitle={t("productionList.subtitle")}
+      actions={isProducer ? <button onClick={openNew} className="rounded-sm bg-primary px-4 py-2 font-display text-sm font-semibold text-primary-foreground">+ {t("dashboard.newProduction")}</button> : undefined}>
       <ImageCropDialog file={cropSource} onCancel={() => setCropSource(null)} onDone={applyCrop} />
       {open && isProducer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={closeModal}>
           <form onSubmit={submit} onClick={(e) => e.stopPropagation()} className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-sm border border-border bg-card p-5 shadow-lg">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-display text-lg font-semibold">{editingId ? "Edit production" : duplicating ? "Duplicate production" : "New production"}</h2>
-              <button type="button" onClick={closeModal} className="text-muted-foreground hover:text-foreground" aria-label="Close">✕</button>
+              <h2 className="font-display text-lg font-semibold">{editingId ? t("productionModal.edit") : duplicating ? t("productionModal.duplicate") : t("dashboard.newProduction")}</h2>
+              <button type="button" onClick={closeModal} className="text-muted-foreground hover:text-foreground" aria-label={t("common.close")}>✕</button>
             </div>
             <div className="rounded-sm border border-border p-4">
-              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Production info</h3>
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("productionModal.info")}</h3>
               <div className="mb-4 flex items-center gap-4">
-                <label className="group relative grid h-20 w-20 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-xl border border-dashed border-border bg-muted hover:border-primary" aria-label="Add a cover picture">
-                  {coverPreview ?? editingCoverUrl ? <img src={coverPreview ?? editingCoverUrl ?? ""} alt="Cover preview" className="h-full w-full object-cover" /> : <span className="px-2 text-center text-[10px] font-semibold text-muted-foreground">Add cover</span>}
+                <label className="group relative grid h-20 w-20 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-xl border border-dashed border-border bg-muted hover:border-primary" aria-label={t("modalDetails.addCover")}>
+                  {coverPreview ?? editingCoverUrl ? <img src={coverPreview ?? editingCoverUrl ?? ""} alt={t("modalDetails.coverPreview")} className="h-full w-full object-cover" /> : <span className="px-2 text-center text-[10px] font-semibold text-muted-foreground">{t("modalDetails.addCover")}</span>}
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => { pickCover(e.target.files?.[0]); e.target.value = ""; }} />
                 </label>
-                <p className="text-xs text-muted-foreground">Square picture shown beside the production name. You can change it later from the production site.</p>
+                <p className="text-xs text-muted-foreground">{t("productionModal.coverHelp")}</p>
               </div>
               <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
-                <label className={labelCls}>Ref Number (optional)
-                  <input className={`${field} mt-1`} placeholder="External system reference" value={f.externalRef} onChange={(e) => setF({ ...f, externalRef: e.target.value })} /></label>
-                <label className={labelCls}>Client *
+                <label className={labelCls}>{t("productionModal.reference")}
+                  <input className={`${field} mt-1`} placeholder={t("productionModal.external")} value={f.externalRef} onChange={(e) => setF({ ...f, externalRef: e.target.value })} /></label>
+                <label className={labelCls}>{t("overview.client")} *
                   <ClientPicker clients={clients} value={f.client} onChange={(company) => setF({ ...f, client: company, name: f.name === `${f.type} - ${f.client}` || !f.name ? `${f.type} - ${company}` : f.name })} onClientsChanged={() => qc.invalidateQueries({ queryKey: ["clients"] })} /></label>
-                <label className={labelCls}>Production name *
-                  <input className={`${field} mt-1`} placeholder="Production name" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></label>
-                <label className={labelCls}>Type
+                <label className={labelCls}>{t("productionModal.name")} *
+                  <input className={`${field} mt-1`} placeholder={t("productionModal.name")} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></label>
+                <label className={labelCls}>{t("productionList.columns.Type")}
                   {addingType ? (
                     <div className="mt-1 flex gap-2">
-                      <input autoFocus className={field} placeholder="New type name" value={newType} onChange={(e) => setNewType(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addType())} />
+                      <input autoFocus className={field} placeholder={t("productionModal.newType")} value={newType} onChange={(e) => setNewType(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addType())} />
                       <button type="button" onClick={addType} className="shrink-0 rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground">Save</button>
                       <button type="button" onClick={() => { setAddingType(false); setNewType(""); }} className="shrink-0 rounded-sm border border-border px-3 py-2 text-xs font-semibold">Cancel</button>
                     </div>
                   ) : (
                     <select className={`${field} mt-1`} value={f.type} onChange={(e) => e.target.value === "__add__" ? setAddingType(true) : setF({ ...f, type: e.target.value, name: f.name === `${f.type} - ${f.client}` || !f.name ? `${e.target.value} - ${f.client}` : f.name })}>
-                      {productionTypes.map((t) => <option key={t}>{t}</option>)}
-                      <option value="__add__">+ Add new type…</option>
+                      {productionTypes.map((type) => <option key={type} value={type}>{t(`productionTypes.${type}`, type)}</option>)}
+                      <option value="__add__">+ {t("productionModal.addType")}</option>
                     </select>
                   )}</label>
-                <label className={labelCls}>Recce date
+                <label className={labelCls}>{t("overview.recceDate")}
                   <div className="mt-1 flex gap-2">
                     <input className={`${field} min-w-0 flex-1`} type="date" max={f.startDate || undefined} value={f.recceDate} onChange={(e) => setF({ ...f, recceDate: e.target.value })} />
-                    <AmPmTimePicker label="Recce time" value={f.recceTime} onChange={(value) => setF({ ...f, recceTime: value })} />
+                    <AmPmTimePicker label={t("productionModal.recceTime")} placeholder={t("productionModal.selectTime")} value={f.recceTime} onChange={(value) => setF({ ...f, recceTime: value })} />
                   </div></label>
-                <label className={labelCls}>Start date *
+                <label className={labelCls}>{t("productionModal.start")} *
                   <input className={`${field} mt-1`} type="date" value={f.startDate}
                     onChange={(e) => setF({
                       ...f, startDate: e.target.value,
@@ -322,39 +325,39 @@ function Productions() {
                       // Default the recce to 3 days before the shoot; keep it as-is if it's already earlier, but never after the new start date.
                       recceDate: !f.recceDate ? addDays(e.target.value, -3) : f.recceDate > e.target.value ? e.target.value : f.recceDate,
                     })} /></label>
-                <label className={labelCls}>End date *
+                <label className={labelCls}>{t("productionModal.end")} *
                   <input className={`${field} mt-1`} type="date" min={f.startDate || undefined} value={f.endDate} onChange={(e) => setF({ ...f, endDate: e.target.value })} /></label>
-                <label className={labelCls}>Budget excl. VAT / tax *
+                <label className={labelCls}>{t("productionModal.netBudget")} *
                   <input className={`${field} mt-1`} type="number" min={0} placeholder="0" value={f.budget || ""} onChange={(e) => setF({ ...f, budget: +e.target.value })} /></label>
                 <div>
-                  <span className={labelCls}>Estimated budget incl. VAT / tax</span>
+                  <span className={labelCls}>{t("productionModal.grossBudget")}</span>
                   <div className="mt-1 flex items-center gap-2">
                     <div className="flex-1 rounded-sm border border-border bg-muted/30 px-3 py-2 text-sm font-semibold">
                       {new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" }).format(f.budget * (1 + (Number((f as any).vatRate ?? 15) || 0) / 100))}
                     </div>
-                    <input aria-label="VAT / tax rate percentage" className="w-16 rounded-sm border border-input bg-background px-2 py-2 text-sm" type="number" min={0} max={100} step="0.01"
+                    <input aria-label={t("modalDetails.taxRate")} className="w-16 rounded-sm border border-input bg-background px-2 py-2 text-sm" type="number" min={0} max={100} step="0.01"
                       value={(f as any).vatRate ?? 15} onChange={(e) => setF({ ...f, vatRate: Number(e.target.value) } as typeof f)} />
                     <span className="text-xs text-muted-foreground">%</span>
                   </div>
                 </div>
-                <div className="flex items-end pb-2 text-xs text-muted-foreground sm:col-span-2">{f.startDate && f.endDate ? `${days} shoot day(s)` : "Start and end date are required"}</div>
-                <label className={`${labelCls} sm:col-span-2`}>Description
-                  <textarea rows={3} className={`${field} mt-1`} placeholder="Brief, look, shots, anything the team should know"
+                <div className="flex items-end pb-2 text-xs text-muted-foreground sm:col-span-2">{f.startDate && f.endDate ? t("overview.days", { count: days }) : t("productionModal.datesRequired")}</div>
+                <label className={`${labelCls} sm:col-span-2`}>{t("productionModal.description")}
+                  <textarea rows={3} className={`${field} mt-1`} placeholder={t("productionModal.brief")}
                     value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} /></label>
                 <div className="flex justify-end sm:col-span-2"><PolishDescription text={f.description} name={f.name} type={f.type} client={f.client} onPolished={(v) => setF({ ...f, description: v })} /></div>
               </div>
             </div>
 
             <div className="mt-4 flex justify-end gap-2">
-              <button type="button" onClick={closeModal} className="rounded-sm border border-border px-4 py-2 text-sm font-semibold">Cancel</button>
-              <button className="rounded-sm bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">{editingId ? "Save changes" : "Create draft"}</button>
+              <button type="button" onClick={closeModal} className="rounded-sm border border-border px-4 py-2 text-sm font-semibold">{t("common.cancel")}</button>
+              <button className="rounded-sm bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">{editingId ? t("productionModal.saveChanges") : t("productionModal.createDraft")}</button>
             </div>
           </form>
         </div>
       )}
       <div className="relative mb-4 max-w-sm">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <input className={`${field} pl-9`} placeholder="Search by Production ID or name" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <input className={`${field} pl-9`} placeholder={t("productionList.search")} value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
       <div className="grid gap-3 md:hidden">
         {filteredList.length === 0 && <p className="text-sm text-muted-foreground">No productions match "{search}".</p>}
@@ -364,11 +367,11 @@ function Productions() {
               <ProductionAvatar name={p.name} imagePath={p.imagePath} className="h-12 w-12 text-sm" />
               <Link to="/productions/$id" params={{ id: p.id }} className="min-w-0 flex-1">
                 <div className="truncate font-semibold text-primary underline-offset-2 hover:underline">{p.name}</div>
-                {p.jobId && <div className="text-xs text-muted-foreground">Production ID: {p.jobId}</div>}
-                <div className="mt-1 flex items-center gap-2"><ClientBadge name={p.client} /><span className="text-xs text-muted-foreground">{p.type}</span></div>
+                {p.jobId && <div className="text-xs text-muted-foreground">{t("productionList.columns.Job ID")}: {p.jobId}</div>}
+                <div className="mt-1 flex items-center gap-2"><ClientBadge name={p.client} /><span className="text-xs text-muted-foreground">{t(`productionTypes.${p.type}`, p.type)}</span></div>
               </Link>
               <div className="flex shrink-0 items-center gap-2">
-                <Badge>{p.status}</Badge>
+                <Badge>{t(`productionList.status.${p.status}`, p.status)}</Badge>
                 {isProducer && (
                   <>
                     <button onClick={() => openEdit(p)} className="text-muted-foreground hover:text-primary" aria-label={`Edit ${p.name}`}><Pencil className="h-4 w-4" /></button>
@@ -384,10 +387,10 @@ function Productions() {
           </div>
         ))}
       </div>
-      <div className="hidden md:block"><Panel title="All productions">
+      <div className="hidden md:block"><Panel title={t("productionList.all")}>
         <table className="w-full text-sm">
           <thead className="text-left text-[11px] text-muted-foreground">
-            <tr>{["Production", "Production ID", "Type", "Location", "Date", "Days", "Budget", "Status", ""].map((h) => <th key={h} className="px-4 py-2 font-medium">{h}</th>)}</tr>
+            <tr>{["Production", "Job ID", "Type", "Location", "Date", "Days", "Budget", "Status", ""].map((h) => <th key={h} className="px-4 py-2 font-medium">{h ? t(`productionList.columns.${h}`) : ""}</th>)}</tr>
           </thead>
           <tbody>
             {filteredList.length === 0 && <tr><td colSpan={9} className="px-4 py-6 text-center text-muted-foreground">No productions match "{search}".</td></tr>}
@@ -400,12 +403,12 @@ function Productions() {
                   </div>
                 </td>
                 <td className="px-4 text-muted-foreground">{p.jobId ?? "—"}</td>
-                <td className="px-4">{p.type}</td>
+                <td className="px-4">{t(`productionTypes.${p.type}`, p.type)}</td>
                 <td className="px-4 text-muted-foreground">{p.location}</td>
                 <td className="px-4 text-muted-foreground">{p.date}</td>
                 <td className="px-4">{p.days}</td>
                 <td className="px-4">{fmtMoney(p.budget, p.currency)}</td>
-                <td className="px-4"><Badge>{p.status}</Badge></td>
+                <td className="px-4"><Badge>{t(`productionList.status.${p.status}`, p.status)}</Badge></td>
                 <td className="px-4">
                   {isProducer && (
                     <div className="flex items-center gap-2">

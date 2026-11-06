@@ -7,15 +7,23 @@ import { useCompany, useRole, useSession } from "@/lib/auth";
 import { NotificationBell } from "@/components/NotificationBell";
 import { PaymentCelebration } from "@/components/PaymentCelebration";
 import { useSignedUrl } from "@/lib/site";
-import logo from "@/assets/bookacrew-sa-logo.png.asset.json";
+import { useCountryLogo } from "@/lib/country-logos";
 import { NativePushSession } from "@/components/NativePush";
 import { disableNativePush } from "@/lib/native-push";
+import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+
+const navKeys: Record<string, string> = {
+  Dashboard: "dashboard", Home: "home", Calendar: "calendar", Productions: "productions",
+  Crew: "crew", Payments: "payments", "Find Gigs": "findGigs", Earnings: "earnings",
+  Invoices: "invoices", Profile: "profile", "My Profile": "myProfile", Admin: "admin",
+};
 
 function useMyProfile(userId: string | undefined) {
   return useQuery({
     queryKey: ["nav-avatar", userId], enabled: !!userId,
     queryFn: async () => {
-      const { data, error } = await supabase.from("profiles").select("full_name, email, avatar_url").eq("id", userId!).maybeSingle();
+      const { data, error } = await supabase.from("profiles").select("full_name, email, avatar_url, country").eq("id", userId!).maybeSingle();
       if (error) throw error;
       return data;
     },
@@ -63,13 +71,14 @@ export const navByRole: Record<string, NavItem[]> = {
 };
 
 function BottomNav({ items }: { items: NavItem[] }) {
+  const { t } = useTranslation();
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 bg-nav text-nav-foreground md:hidden" aria-label="Main menu">
       <ul className="flex">
         {items.map((n) => (
           <li key={n.label} className="flex-1">
             <Link to={n.to} className={`flex flex-col items-center gap-1 py-5 font-sans text-sm font-medium text-nav-foreground/80`} activeProps={{ className: "!text-nav-foreground font-semibold" }}>
-              <n.icon className="h-[1.6rem] w-[1.6rem]" />{n.label}
+              <n.icon className="h-[1.6rem] w-[1.6rem]" /><span className="max-w-full break-words text-center">{t(`nav.${navKeys[n.label]}`, { defaultValue: n.label })}</span>
             </Link>
           </li>
         ))}
@@ -79,6 +88,7 @@ function BottomNav({ items }: { items: NavItem[] }) {
 }
 
 export function TopNav() {
+  const { t } = useTranslation();
   const { session, ready } = useSession();
   const role = useRole(session?.user.id);
   const me = useMyProfile(session?.user.id);
@@ -98,20 +108,18 @@ export function TopNav() {
     navigate({ to: "/", replace: true });
   }
 
+  const navLogo = useCountryLogo("nav", me.data?.country);
   const signedIn = ready && session;
   return (
     <>
       {signedIn && <NativePushSession userId={session.user.id} />}
       {signedIn && (
         <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col bg-nav text-nav-foreground md:flex" aria-label="Main menu">
-          <Link to="/dashboard" className="flex justify-center px-5 py-5"><img src={logo.url} alt="Book a Crew" className="h-[173px] w-auto" /></Link>
-          <div className="flex items-center justify-end px-5">
-            <NotificationBell userId={session.user.id} requireAcknowledgement={role.data === "crew"} />
-          </div>
+          <Link to="/dashboard" className="flex justify-center px-5 py-5"><img src={navLogo} alt="Book a Crew" className="h-[173px] w-auto max-w-full rounded-lg object-contain" /></Link>
           <nav className="flex flex-1 flex-col gap-1 px-3">
             {items.map((n) => (
               <Link key={n.label} to={n.to} className={`flex items-center gap-3 rounded-xl px-4 py-3 font-sans text-[15px] font-medium text-nav-foreground/85 transition-colors hover:bg-nav-foreground/10 hover:text-nav-foreground`} activeProps={{ className: "bg-nav-foreground/15 !text-nav-foreground font-semibold" }}>
-                <n.icon className="h-4 w-4" />{n.label}
+                <n.icon className="h-4 w-4 shrink-0" /><span className="min-w-0 break-words">{t(`nav.${navKeys[n.label]}`, { defaultValue: n.label })}</span>
               </Link>
             ))}
           </nav>
@@ -123,17 +131,24 @@ export function TopNav() {
                 <p className="truncate text-xs font-medium capitalize text-nav-foreground/60">{role.data ? `${role.data}` : ""}</p>
               </div>
             </Link>
-            <button onClick={signOut} className="mt-3 w-full rounded-xl border border-nav-foreground/30 px-3 py-2 font-sans text-sm font-medium text-nav-foreground hover:bg-nav-foreground/10">Sign out</button>
+            <button onClick={signOut} className="mt-3 w-full rounded-xl border border-nav-foreground/30 px-3 py-2 font-sans text-sm font-medium text-nav-foreground hover:bg-nav-foreground/10">{t("common.signOut")}</button>
           </div>
         </aside>
+      )}
+      {signedIn && (
+        <div className="fixed right-6 top-4 z-40 hidden items-center gap-3 text-foreground md:flex">
+          <LanguageSwitcher compact className="border-border bg-card text-foreground shadow-sm" />
+          <div className="grid h-10 w-10 place-items-center rounded-full border border-border bg-card shadow-sm"><NotificationBell userId={session.user.id} requireAcknowledgement={role.data === "crew"} /></div>
+        </div>
       )}
       <header className={`sticky top-0 z-30 ${signedIn ? "md:pl-60" : ""}`}>
         <div className={signedIn ? "bg-nav text-nav-foreground md:hidden" : "bg-nav text-nav-foreground"}>
           <div className={`flex items-center gap-4 px-4 py-8 ${signedIn ? "" : "mx-auto max-w-7xl"}`}>
-            {signedIn && <Link to="/dashboard" className="shrink-0"><img src={logo.url} alt="Book a Crew" className="h-[7.5rem] w-auto" /></Link>}
+            {signedIn && <Link to="/dashboard" className="shrink-0"><img src={navLogo} alt="Book a Crew" className="h-[7.5rem] w-auto rounded-lg object-contain" /></Link>}
             <div className="ml-auto flex items-center gap-3">
+              <LanguageSwitcher compact className="border-nav-foreground/30 bg-transparent text-nav-foreground" />
               {signedIn && <NotificationBell userId={session.user.id} requireAcknowledgement={role.data === "crew"} />}
-              {signedIn && <button onClick={signOut} className="rounded-sm border border-nav-foreground/30 px-3 py-1 font-display text-xs font-semibold text-nav-foreground">Sign out</button>}
+              {signedIn && <button onClick={signOut} className="rounded-sm border border-nav-foreground/30 px-3 py-1 font-display text-xs font-semibold text-nav-foreground">{t("common.signOut")}</button>}
             </div>
           </div>
         </div>
@@ -161,6 +176,8 @@ function RoleGate({ children, open }: { children: ReactNode; open?: boolean | un
 }
 
 export function Page({ title, subtitle, actions, children, open }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode; children: ReactNode; open?: boolean }) {
+  const { t } = useTranslation();
+  const titleKey = typeof title === "string" ? navKeys[title] : undefined;
   return (
     <div className="min-h-screen bg-background">
       <TopNav />
@@ -169,7 +186,7 @@ export function Page({ title, subtitle, actions, children, open }: { title: Reac
         <RoleGate open={open}>
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
             <div>
-              <h1 className="font-sans text-3xl font-bold normal-case tracking-tight text-foreground md:text-4xl">{title}</h1>
+              <h1 className="font-sans text-3xl font-bold normal-case tracking-tight text-foreground md:text-4xl">{titleKey ? t(`nav.${titleKey}`) : title}</h1>
               {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
             </div>
             {actions}
@@ -211,7 +228,8 @@ const statusLabel: Record<string, string> = {
 };
 
 export function Badge({ children }: { children: string }) {
-  return <span className={`inline-block rounded-sm px-2 py-0.5 text-xs font-semibold ${tone[children] ?? "bg-muted text-muted-foreground"}`}>{statusLabel[children] ?? children}</span>;
+  const { t } = useTranslation();
+  return <span className={`inline-block rounded-sm px-2 py-0.5 text-xs font-semibold ${tone[children] ?? "bg-muted text-muted-foreground"}`}>{t(`statuses.${children}`, statusLabel[children] ?? children)}</span>;
 }
 
 // Fixed palette so each client name always lands on the same color — makes client identity scannable at a glance.

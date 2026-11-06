@@ -1,0 +1,35 @@
+{
+  "common": {
+    "language": "Èdè",
+    "changeLanguage": "Yi èdè padà",
+    "signOut": "Jáde",
+    "save": "Fipamọ́",
+    "cancel": "Fagilee",
+    "delete": "Pa rẹ́",
+    "edit": "Ṣatúnṣe",
+    "add": "Fikun",
+    "send": "Firanṣẹ́",
+    "confirm": "Jẹrisi",
+    "close": "Pa",
+    "search": "Wa",
+    "loading": "N gbé...",
+    "settings": "Eto",
+    "noData": "No data",
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "phone": "Phone",
+    "email": "Email",
+    "name": "Name",
+    "role": "Role",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "nav": {
+    "home": "Ile",
+    "myProfile": "Profaili Mi",
+    "admin": "Alabojuto",
+    "profile": "Profaili Mi",
+    "calendar": "Kalẹnda"
+  }
+}

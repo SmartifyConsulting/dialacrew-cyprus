@@ -134,6 +134,20 @@
       "when": 1793617684209,
       "tag": "0018_native_push_alerts",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793909963314,
+      "tag": "0019_migration",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793910349740,
+      "tag": "0020_transparent_ng_in_logos",
+      "breakpoints": true
     }
   ]
 }

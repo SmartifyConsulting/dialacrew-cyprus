@@ -10,6 +10,7 @@ import { useMyCrewId, uploadFile } from "@/lib/site";
 import { Avatar } from "@/components/site/SiteTabs";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   validateSearch: (s: Record<string, unknown>): { tab?: string } => (typeof s["tab"] === "string" ? { tab: s["tab"] } : {}),
@@ -38,6 +39,7 @@ function MyProfile() {
   return (
     <Page open title="My profile">
       <div className="mx-auto max-w-md">
+        <div className="mb-4"><LanguageSwitcher /></div>
         <AvatarCard userId={session?.user.id} />
         <p className="mt-5 text-center text-muted-foreground">
           {role.isLoading || crewId.isLoading ? "Loading…" : "Profiles are for crew and service providers."}
@@ -198,7 +200,7 @@ function CompanyPanel({ userId }: { userId: string | undefined }) {
 
   return (
     <Page open title={company.data.companies?.name ? `${company.data.companies.name} Settings` : "Company Settings"} actions={<Button variant="outline" asChild><Link to="/mobile-setup">Mobile store setup</Link></Button>}>
-      <div className="mb-5"><AvatarCard userId={userId} /></div>
+      <div className="mb-5 flex flex-wrap items-center gap-4"><AvatarCard userId={userId} /><LanguageSwitcher /></div>
       <div className="grid gap-5 lg:grid-cols-2">
         <Panel title="Your role">
           <div className="p-4 text-sm">

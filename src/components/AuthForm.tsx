@@ -6,6 +6,7 @@ import { PasswordInput, fieldClass, labelClass, submitClass } from "@/components
 import { mapAuthError, passwordChecks, usePlatformSetting } from "@/lib/auth";
 import { SERVICE_SKILLS } from "@/lib/skills";
 import { COUNTRIES } from "@/lib/countries";
+import { useTranslation } from "react-i18next";
 
 function isDespia() {
   return typeof navigator !== "undefined" && navigator.userAgent.toLowerCase().includes("despia");
@@ -13,6 +14,7 @@ function isDespia() {
 
 /** Sign-in / sign-up card shared by the home page and /auth. */
 export function AuthForm() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const inviteToken = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("invite") : null;
   const [mode, setMode] = useState<"signin" | "signup">(inviteToken ? "signup" : "signin");
@@ -154,7 +156,7 @@ export function AuthForm() {
       {(["signin", "signup"] as const).map((m) => (
         <button key={m} type="button" onClick={() => { setMode(m); setError(""); }}
           className={`py-2 font-display text-sm font-semibold ${mode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}>
-          {m === "signin" ? "Sign in" : "Sign up"}
+          {m === "signin" ? t("auth.signIn") : t("auth.signUp")}
         </button>
       ))}
     </div>
@@ -168,47 +170,47 @@ export function AuthForm() {
             </div>
           )}
           {!invite && (
-            <div><span className={labelClass}>I am</span>
+            <div><span className={labelClass}>{t("signup.identity")}</span>
               <div className={`grid gap-2 ${producerSignupEnabled ? "grid-cols-2" : "grid-cols-1"}`}>
                 {(producerSignupEnabled ? (["crew", "producer"] as const) : (["crew"] as const)).map((r) => (
                   <button key={r} type="button" onClick={() => setRole(r)}
                     className={`rounded-sm border py-2 text-sm font-semibold ${role === r ? "border-primary bg-primary/15 text-primary" : "border-input text-muted-foreground"}`}>
-                    {r === "crew" ? "Crew member" : "Producer"}
+                    {t(`signup.${r}`)}
                   </button>
                 ))}
               </div>
               {!producerSignupEnabled && (
-                <p className="mt-1 text-xs text-muted-foreground">Producer accounts are set up by an existing producer.</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t("signup.producerSetup")}</p>
               )}
             </div>
           )}
           <div className="grid grid-cols-2 gap-2">
-            <div><label className={labelClass} htmlFor="firstName">First name</label>
+            <div><label className={labelClass} htmlFor="firstName">{t("signup.firstName")}</label>
               <input id="firstName" required value={firstName} onChange={(e) => setFirstName(e.target.value)} className={fieldClass} /></div>
-            <div><label className={labelClass} htmlFor="lastName">Last name</label>
+            <div><label className={labelClass} htmlFor="lastName">{t("signup.lastName")}</label>
               <input id="lastName" required value={lastName} onChange={(e) => setLastName(e.target.value)} className={fieldClass} /></div>
           </div>
-          <div><label className={labelClass} htmlFor="phone">Phone</label>
+          <div><label className={labelClass} htmlFor="phone">{t("common.phone")}</label>
             <div className="flex gap-2">
-              <select aria-label="Country code" value={dialCode} onChange={(e) => setDialCode(e.target.value)} className={`${fieldClass} w-28`}>
+              <select aria-label={t("signup.countryCode")} value={dialCode} onChange={(e) => setDialCode(e.target.value)} className={`${fieldClass} w-28`}>
                 {DIAL_CODES.map((d) => <option key={d.code} value={d.code}>{d.label}</option>)}
               </select>
               <input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="82 123 4567" className={fieldClass} />
             </div></div>
           {!invite && producerSignupEnabled && role === "producer" && (
-            <div><label className={labelClass} htmlFor="companyName">Company name</label>
+            <div><label className={labelClass} htmlFor="companyName">{t("signup.company")}</label>
               <input id="companyName" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} className={fieldClass} /></div>
           )}
           {role === "producer" && (
-            <div><label className={labelClass} htmlFor="producerCountry">Country you produce in</label>
+            <div><label className={labelClass} htmlFor="producerCountry">{t("signup.country")}</label>
               <select id="producerCountry" required value={country} onChange={(e) => setCountry(e.target.value)} className={fieldClass}>
                 {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name} ({c.currency})</option>)}
               </select>
-              <p className="mt-1 text-[11px] text-muted-foreground">New productions are priced in this country's currency.</p></div>
+              <p className="mt-1 text-[11px] text-muted-foreground">{t("signup.currency")}</p></div>
           )}
           {!invite && role === "crew" && (
             <div>
-              <span className={labelClass}>Which services do you offer? (pick as many as apply)</span>
+              <span className={labelClass}>{t("signup.services")}</span>
               <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
                 {SERVICE_SKILLS.map((s) => {
                   const on = skills.includes(s);
@@ -220,18 +222,18 @@ export function AuthForm() {
                   );
                 })}
               </div>
-              <p className="mt-2 text-[10px] text-muted-foreground">Service not listed? Add your own.</p>
+              <p className="mt-2 text-[10px] text-muted-foreground">{t("signup.customService")}</p>
               <div className="mt-1 flex gap-2">
-                <input value={customSkill} onChange={(e) => setCustomSkill(e.target.value)} placeholder="Your service" className={`${fieldClass} text-xs`}
+                <input value={customSkill} onChange={(e) => setCustomSkill(e.target.value)} placeholder={t("signup.yourService")} className={`${fieldClass} text-xs`}
                   onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); const v = customSkill.trim(); if (v && !skills.includes(v)) setSkills([...skills, v]); setCustomSkill(""); } }} />
                 <button type="button" onClick={() => { const v = customSkill.trim(); if (v && !skills.includes(v)) setSkills([...skills, v]); setCustomSkill(""); }}
-                  className="rounded-sm border border-input px-3 text-xs font-semibold text-muted-foreground hover:border-primary hover:text-primary">Add</button>
+                  className="rounded-sm border border-input px-3 text-xs font-semibold text-muted-foreground hover:border-primary hover:text-primary">{t("common.add")}</button>
               </div>
               {skills.filter((s) => !SERVICE_SKILLS.includes(s)).length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {skills.filter((s) => !SERVICE_SKILLS.includes(s)).map((s) => (
                     <span key={s} className="flex items-center gap-1 rounded-sm bg-primary/15 px-2 py-1 text-xs text-primary">
-                      {s} <button type="button" onClick={() => setSkills(skills.filter((x) => x !== s))} aria-label={`Remove ${s}`}>×</button>
+                      {s} <button type="button" onClick={() => setSkills(skills.filter((x) => x !== s))} aria-label={t("signup.remove", { service: s })}>×</button>
                     </span>
                   ))}
                 </div>
@@ -240,41 +242,41 @@ export function AuthForm() {
           )}
         </>
       )}
-      <div><label className={labelClass} htmlFor="email">Email</label>
+      <div><label className={labelClass} htmlFor="email">{t("auth.email")}</label>
         <input id="email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className={fieldClass} /></div>
-      <div><label className={labelClass} htmlFor="password">Password</label>
+      <div><label className={labelClass} htmlFor="password">{t("auth.password")}</label>
         <PasswordInput id="password" ref={pwRef} required autoComplete={mode === "signin" ? "current-password" : "new-password"} value={password} onChange={(e) => setPassword(e.target.value)} />
         {mode === "signup" && (
           <ul className="mt-2 space-y-0.5 text-xs">
-            {checks.map((c) => <li key={c.id} className={c.ok ? "text-success" : "text-muted-foreground"}>{c.ok ? "✓" : "○"} {c.label}</li>)}
+            {checks.map((c) => <li key={c.id} className={c.ok ? "text-success" : "text-muted-foreground"}>{c.ok ? "✓" : "○"} {t(`auth.checks.${c.id}`, c.label)}</li>)}
           </ul>
         )}
       </div>
       {mode === "signup" && role === "crew" && (
         <label className="flex items-start gap-2 text-xs text-muted-foreground">
           <input type="checkbox" className="mt-0.5 accent-primary" checked={socialOptIn} onChange={(e) => setSocialOptIn(e.target.checked)} />
-          <span>Yes, Book a Crew may feature me on its social media in my country (optional).</span>
+          <span>{t("signup.social")}</span>
         </label>
       )}
       {mode === "signup" && (
         <label className="flex items-start gap-2 text-xs text-muted-foreground">
           <input type="checkbox" className="mt-0.5 accent-primary" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
-          <span>I agree to the <Link to="/terms" target="_blank" className="text-primary hover:underline">Terms &amp; Conditions</Link> and Privacy Policy, and (for crew) confirm I'm registering as an independent contractor, not an employee of Book a Crew.</span>
+          <span>{t("signup.consentBefore")} <Link to="/terms" target="_blank" className="text-primary hover:underline">{t("signup.terms")}</Link> {t("signup.consentAfter")}</span>
         </label>
       )}
       <p aria-live="polite" className="min-h-5 text-sm text-destructive">{error}</p>
       <button type="submit" disabled={busy || wait > 0} className={submitClass}>
-        {wait > 0 ? `Try again in ${wait}s` : busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
+        {wait > 0 ? t("auth.retry", { seconds: wait }) : busy ? t("auth.wait") : mode === "signin" ? t("auth.signIn") : t("auth.create")}
       </button>
       {mode === "signin" && (
         <div className="text-center">
-          <Link to="/forgot-password" tabIndex={-1} className="text-sm text-muted-foreground underline hover:text-primary">Forgot password?</Link>
+          <Link to="/forgot-password" tabIndex={-1} className="text-sm text-muted-foreground underline hover:text-primary">{t("auth.forgot")}</Link>
         </div>
       )}
     </form>
 
     <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
-      <span className="h-px flex-1 bg-border" />or<span className="h-px flex-1 bg-border" />
+      <span className="h-px flex-1 bg-border" />{t("auth.or")}<span className="h-px flex-1 bg-border" />
     </div>
     <button type="button" onClick={google} className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card py-3 font-display text-sm font-semibold text-foreground shadow-sm hover:bg-muted">
       <svg viewBox="0 0 48 48" className="h-5 w-5" aria-hidden="true">
@@ -283,7 +285,7 @@ export function AuthForm() {
         <path fill="#4CAF50" d="M24 44c5.5 0 10.4-1.9 14.3-5.1l-6.6-5.6c-2 1.5-4.6 2.5-7.7 2.5-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.6 39.6 16.2 44 24 44z" />
         <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6.6 5.6C41.3 36.2 44 30.6 44 24c0-1.3-.1-2.7-.4-3.5z" />
       </svg>
-      Continue with Google
+      {t("auth.google")}
     </button>
     </div>
   );
