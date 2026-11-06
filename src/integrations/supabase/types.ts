@@ -923,6 +923,7 @@ export type Database = {
           available: boolean
           bio: string
           certifications: Json
+          country: string
           created_at: string
           day_rate: number
           department: string
@@ -951,6 +952,7 @@ export type Database = {
           available?: boolean
           bio?: string
           certifications?: Json
+          country?: string
           created_at?: string
           day_rate?: number
           department: string
@@ -979,6 +981,7 @@ export type Database = {
           available?: boolean
           bio?: string
           certifications?: Json
+          country?: string
           created_at?: string
           day_rate?: number
           department?: string

@@ -1,0 +1,2 @@
+ALTER TABLE public.crew_members ADD COLUMN IF NOT EXISTS country text NOT NULL DEFAULT 'ZA';
+UPDATE public.crew_members c SET country = upper(p.country) FROM public.profiles p WHERE p.id = c.user_id AND p.country IS NOT NULL AND length(p.country) = 2;
