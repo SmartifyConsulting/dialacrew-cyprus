@@ -1,6 +1,8 @@
 /** Turns a raw Supabase/Postgres error into a short, user-friendly sentence for a toast. */
 export function friendlyError(e: unknown): string {
-  const raw = e instanceof Error ? e.message : String(e);
+  const raw = e instanceof Error ? e.message
+    : e && typeof e === "object" && typeof (e as { message?: unknown }).message === "string" ? (e as { message: string }).message
+    : String(e);
   const m = raw.toLowerCase();
 
   if (m.includes("could not find the table") || m.includes("schema cache")) {

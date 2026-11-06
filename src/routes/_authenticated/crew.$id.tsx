@@ -40,7 +40,7 @@ export const Route = createFileRoute("/_authenticated/crew/$id")({
 
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
 const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground";
-const TABS = ["About", "Account", "Travel", "Equipment", "Checklists", "Reviews", "Emergency"] as const;
+const TABS = ["Account", "Emergency", "Banking", "Travel", "Equipment", "Checklists", "Reviews"] as const;
 
 function CrewProfile() {
   const { id } = Route.useParams();
@@ -48,9 +48,9 @@ function CrewProfile() {
   const role = useRole(session?.user.id);
   const inv = useInvalidate();
   const { tab: tabParam } = Route.useSearch();
-  const initialTab: (typeof TABS)[number] = tabParam === "kit" ? "Equipment" : "About";
-  const [tab, setTab] = useState<(typeof TABS)[number]>(initialTab);
-  useEffect(() => { setTab(initialTab); }, [initialTab]);
+  const requested: (typeof TABS)[number] | null = tabParam === "kit" ? "Equipment" : null;
+  const [tab, setTab] = useState<(typeof TABS)[number] | null>(requested);
+  useEffect(() => { setTab(requested); }, [requested]);
   const [editing, setEditing] = useState(false);
 
   const c = useQuery({
@@ -77,6 +77,12 @@ function CrewProfile() {
   if (!m) return <Page open title={c.isLoading ? "Loading…" : "Profile not found"}>{null}</Page>;
   const canEdit = role.data === "producer" || role.data === "admin" || m.user_id === session?.user.id;
   const isOwnProfile = m.user_id === session?.user.id;
+  const visibleTabs = TABS.filter((t) => {
+    if (t === "Checklists" || t === "Emergency" || t === "Account") return isOwnProfile;
+    if (t === "Travel" || t === "Banking") return canEdit;
+    return true;
+  });
+  const activeTab = tab && visibleTabs.includes(tab) ? tab : visibleTabs[0];
   const done = (jobs.data ?? []).filter((j) => (j.productions as { status?: string } | null)?.status === "Wrapped").length;
   // Distinct productions this crew member has been booked on (excluding cancelled bookings) — a simple
   // popularity signal producers can see at a glance, separate from "Projects completed" (wrapped only).
@@ -121,19 +127,7 @@ function CrewProfile() {
               <div className="flex items-center gap-3"><MapPin className="h-4 w-4" /> {m.location || "No location"}</div>
             </div>
           )}
-        </div>
-
-        <nav className="flex gap-1 overflow-x-auto border-y border-border px-4">
-          {TABS.filter((t) => {
-            if (t === "Checklists" || t === "Emergency" || t === "Account") return isOwnProfile;
-            if (t === "Travel") return canEdit;
-            return true;
-          }).map((t) => <button key={t} onClick={() => setTab(t)} className={`whitespace-nowrap border-b-2 px-3 py-3 text-sm font-semibold ${tab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}>{t}</button>)}
-        </nav>
-
-        <div className="p-6">
-          {tab === "About" && (
-            <div className="space-y-6">
+          <div className="mt-6 space-y-6 border-t border-border pt-5">
               <section><h3 className="mb-2 flex items-center gap-2 font-semibold"><Award className="h-4 w-4" /> Skills & Expertise</h3>
                 {m.skills.length ? <div className="flex flex-wrap gap-2">{m.skills.map((s) => <span key={s} className="rounded-sm bg-primary/15 px-2 py-1 text-xs text-primary">{s}</span>)}</div> : <p className="text-sm text-muted-foreground">No skills added yet</p>}
               </section>
@@ -145,10 +139,7 @@ function CrewProfile() {
                   <div key={l}><div className="font-display text-3xl font-bold">{v}</div><div className="text-xs text-muted-foreground">{l}</div></div>
                 ))}
               </section>
-            </div>
-          )}
-          {tab === "About" && (
-            <section className="mt-6 border-t border-border pt-5"><h3 className="mb-2 font-semibold">Portfolio</h3>
+            <section className="border-t border-border pt-5"><h3 className="mb-2 font-semibold">Portfolio</h3>
             {m.portfolio_url || m.youtube_url || m.vimeo_url || m.instagram_url ? (
               <div className="flex flex-wrap gap-3 text-sm">
                 {m.portfolio_url && <a href={m.portfolio_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Portfolio / showreel</a>}
@@ -158,18 +149,23 @@ function CrewProfile() {
               </div>
             ) : <p className="text-sm text-muted-foreground">No portfolio links added yet.</p>}
             </section>
-          )}
-          {tab === "Equipment" && <Kit crewId={id} items={assets.data ?? []} canEdit={canEdit} onChange={refresh} />}
-          {tab === "Checklists" && isOwnProfile && <CrewPersonalChecklists crewId={id} />}
-          {tab === "Reviews" && <ReviewsTab crewId={id} />}
+          </div>
+        </div>
 
-          {tab === "Travel" && canEdit && <PassportTab crewId={id} canEdit={canEdit} />}
-          {tab === "Emergency" && isOwnProfile && <CrewEmergencySettings crewId={id} />}
-          {tab === "Account" && isOwnProfile && (
-            <div className="space-y-5">
-              <section className="rounded-sm border border-border"><h3 className="border-b border-border px-4 py-3 font-semibold">Banking</h3><div className="p-4"><BankingTab crewId={id} /></div></section>
-              <AccountSettings userId={session?.user.id} email={session?.user.email} />
-            </div>
+        <nav className="flex gap-1 overflow-x-auto border-y border-border px-4">
+          {visibleTabs.map((t) => <button key={t} onClick={() => setTab(t)} className={`whitespace-nowrap border-b-2 px-3 py-3 text-sm font-semibold ${activeTab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}>{t}</button>)}
+        </nav>
+
+        <div className="p-6">
+          {activeTab === "Banking" && canEdit && <BankingTab crewId={id} />}
+          {activeTab === "Equipment" && <Kit crewId={id} items={assets.data ?? []} canEdit={canEdit} onChange={refresh} />}
+          {activeTab === "Checklists" && isOwnProfile && <CrewPersonalChecklists crewId={id} />}
+          {activeTab === "Reviews" && <ReviewsTab crewId={id} />}
+
+          {activeTab === "Travel" && canEdit && <PassportTab crewId={id} canEdit={canEdit} />}
+          {activeTab === "Emergency" && isOwnProfile && <CrewEmergencySettings crewId={id} />}
+          {activeTab === "Account" && isOwnProfile && (
+            <AccountSettings userId={session?.user.id} email={session?.user.email} />
           )}
         </div>
       </div>

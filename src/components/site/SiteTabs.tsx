@@ -519,20 +519,34 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
             onChange={(v) => setLf({ ...lf, address: v })}
             onSelect={(s) => setLf({ ...lf, label: s.place, address: s.exactAddress, latitude: s.lat, longitude: s.lon })} />
           <div className="space-y-3">
-            <div className="grid gap-2 sm:grid-cols-2">
-              <label className="block min-w-0"><span className="text-xs text-muted-foreground">{t("locationsUi.starts")}</span>
-                <input type="datetime-local" className={`${input} mt-1 w-full min-w-0`} value={lf.startsAt}
-                  onChange={(e) => {
-                    const startsAt = e.target.value;
-                    const endsAt = !lf.endsAt && startsAt ? addHoursLocal(startsAt, 8) : lf.endsAt;
-                    setLf({ ...lf, startsAt, endsAt });
-                  }} /></label>
-              <label className="block min-w-0"><span className="text-xs text-muted-foreground">{t("locationsUi.ends")}</span>
-                <input type="datetime-local" className={`${input} mt-1 w-full min-w-0`} value={lf.endsAt} onChange={(e) => setLf({ ...lf, endsAt: e.target.value })} /></label>
-            </div>
+            {(() => {
+              // Same layout as the recce: one shoot date, then start and end times. An end time at or
+              // before the start time means the shoot wraps after midnight (next day).
+              const date = lf.startsAt.slice(0, 10);
+              const startT = lf.startsAt.slice(11, 16);
+              const endT = lf.endsAt.slice(11, 16);
+              const build = (d: string, s: string, e: string) => {
+                if (!d) return { startsAt: "", endsAt: "" };
+                const startsAt = s ? `${d}T${s}` : `${d}T00:00`;
+                if (!e) return { startsAt, endsAt: s ? addHoursLocal(startsAt, 8) : "" };
+                let endsAt = `${d}T${e}`;
+                if (s && e <= s) endsAt = addHoursLocal(endsAt, 24);
+                return { startsAt, endsAt };
+              };
+              return (
+                <div className="space-y-1.5">
+                  <span className="block text-xs text-muted-foreground">{t("overview.shoot", "Shoot")} date</span>
+                  <CalendarDatePicker label="Shoot date" className="w-full" value={date} onChange={(v) => setLf({ ...lf, ...build(v, startT, endT) })} />
+                  <div className="flex items-center gap-2">
+                    <AmPmTimePicker label="Shoot start time" placeholder="Select start time" value={startT} onChange={(v) => setLf({ ...lf, ...build(date, v, endT) })} />
+                    <AmPmTimePicker label="Shoot end time" placeholder="Select end time" value={endT} onChange={(v) => setLf({ ...lf, ...build(date, startT, v) })} />
+                  </div>
+                </div>
+              );
+            })()}
             <div className="space-y-1.5">
-              <label className="block min-w-0"><span className="text-xs text-muted-foreground">{t("overview.recceDate")}</span>
-                <input type="date" className={`${input} mt-1 w-full min-w-0`} value={lf.recceDate} onChange={(e) => setLf({ ...lf, recceDate: e.target.value })} /></label>
+              <span className="block text-xs text-muted-foreground">{t("overview.recceDate")}</span>
+              <CalendarDatePicker label="Recce date" className="w-full" value={lf.recceDate} onChange={(v) => setLf({ ...lf, recceDate: v })} />
               <div className="flex items-center gap-2">
                 <AmPmTimePicker label="Recce start time" placeholder="Select start time" value={lf.recceStart} onChange={(value) => setLf({ ...lf, recceStart: value, recceEnd: !lf.recceEnd && value ? addHoursToHHMM(value, 3) : lf.recceEnd })} />
                 <AmPmTimePicker label="Recce end time" placeholder="Select end time" value={lf.recceEnd} onChange={(value) => setLf({ ...lf, recceEnd: value })} />
