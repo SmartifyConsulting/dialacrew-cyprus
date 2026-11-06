@@ -606,7 +606,7 @@ export function CrewDayPlanner({ p }: { p: Production }) {
                 {shootDays.length > 1 && (
                   <div className="relative">
                     <button disabled={copying === day} onClick={() => openCopy(day)}
-                      className="inline-flex items-center gap-1 rounded-sm border border-white/40 px-2 py-1 text-xs text-primary-foreground hover:bg-white/10 disabled:opacity-50">
+                      className="inline-flex h-8 items-center gap-1 rounded-md border border-primary-foreground/60 px-3 text-xs font-semibold text-primary-foreground hover:bg-primary-foreground/10 disabled:opacity-50">
                       <Copy className="h-3 w-3" /> Copy to…
                     </button>
                     {copyOpenFor === day && (
