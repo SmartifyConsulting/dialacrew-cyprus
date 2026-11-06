@@ -66,7 +66,7 @@ function ProductionSite() {
   const [tab, setTab] = useState<Tab>(tabParam === "find-crew" ? "Crew" : isValidTab(tabParam) ? tabParam : "Posts");
   useEffect(() => { if (tabParam === "find-crew") setTab("Crew"); else if (isValidTab(tabParam)) setTab(tabParam); }, [tabParam]);
   const [asideOpen, setAsideOpen] = useState(true);
-  const [focusPanelOpen, setFocusPanelOpen] = useState(true);
+  const [focusPanelOpen, setFocusPanelOpen] = useState(false);
   // Workspace (two-column) vs Focus (compact top info panel, full-width tabs) — a per-browser
   // preference, not tied to this production, remembered across sessions.
   const [layout, setLayout] = useState<LayoutView>(getStoredLayout);
@@ -116,16 +116,16 @@ function ProductionSite() {
   );
 
   return (
-    <Page open title={<span className="inline-flex items-center gap-4"><ProductionCover p={p} isProducer={isProducer} />{p.name}</span>} subtitle={<span className="inline-flex items-center gap-2"><ClientBadge name={p.client} /> {p.type} · {p.date} · {p.days} day(s)</span>} actions={actions}>
+    <Page open title={<span className="inline-flex items-center gap-3"><ProductionCover p={p} isProducer={isProducer} />{p.name}</span>} subtitle={<span className="inline-flex items-center gap-2"><ClientBadge name={p.client} /> {p.type} · {p.date} · {p.days} day(s)</span>} actions={actions}>
       {closeError && <p role="alert" className="mb-3 text-sm text-destructive">{closeError}</p>}
       {closed && <div className="mb-4 rounded border border-border bg-muted p-3 text-sm font-semibold">Completed — read-only archive. No new activity or invoices can be added.</div>}
       {layout === "workspace" && (
         <div className="-mt-3 mb-4 flex items-center gap-1 text-sm text-muted-foreground"><MapPin className="h-4 w-4 text-primary" /> {p.address || p.location}</div>
       )}
       {layout === "focus" && !focusPanelOpen && (
-        <div className="sticky top-16 z-20 mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-sm border border-border bg-card px-4 py-2.5 text-sm shadow-sm">
+        <div className="sticky top-16 z-20 mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-sm border border-border bg-card px-3 py-1.5 text-xs shadow-sm">
           <span className="font-semibold">{p.name}</span>
-          <span className="text-muted-foreground">{p.date || "Date TBC"}</span>
+          <span className="text-muted-foreground">{p.date || "Date TBC"} · {p.days} day(s)</span><span className="text-muted-foreground">Crew {p.crewBooked}/{p.crewNeeded}</span>
           <span className="flex min-w-0 items-center gap-1 text-muted-foreground"><MapPin className="h-3.5 w-3.5 shrink-0 text-primary" /> <span className="truncate">{p.address || p.location}</span></span>
           <button onClick={() => setFocusPanelOpen(true)} className="ml-auto inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-primary hover:underline">
             <ChevronDown className="h-3.5 w-3.5" /> Expand
@@ -144,7 +144,7 @@ function ProductionSite() {
         <aside className={
           layout === "workspace"
             ? `space-y-5 lg:sticky lg:top-28 lg:self-start ${asideOpen ? "" : "lg:hidden"}`
-            : focusPanelOpen ? "mb-5 space-y-3 rounded-sm border border-border bg-card p-4" : "hidden"
+            : focusPanelOpen ? "mb-4 space-y-2 rounded-sm border border-border bg-card p-3" : "hidden"
         }>
           {layout === "workspace" ? (
             <button onClick={() => setAsideOpen(false)} className="hidden items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-primary lg:flex">

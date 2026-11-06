@@ -39,12 +39,12 @@ export function ProductionCover({ p, isProducer }: { p: { id: string; name: stri
   }
 
   return (
-    <span className="relative mb-3 inline-flex shrink-0 align-middle">
-      <ProductionAvatar name={p.name} imagePath={p.imagePath} className="h-16 w-16 text-lg md:h-20 md:w-20 md:text-xl" />
+    <span className="relative inline-flex shrink-0 align-middle">
+      <ProductionAvatar name={p.name} imagePath={p.imagePath} className="h-10 w-10 text-sm" />
       {isProducer && (
         <>
-          <label className={`absolute -bottom-1.5 -right-1.5 grid h-7 w-7 cursor-pointer place-items-center rounded-full bg-primary text-primary-foreground shadow ${busy ? "opacity-60" : ""}`} aria-label="Edit picture">
-            <Pencil className="h-3.5 w-3.5" />
+          <label className={`absolute -bottom-1 -right-1 grid h-5 w-5 cursor-pointer place-items-center rounded-full bg-primary text-primary-foreground shadow ${busy ? "opacity-60" : ""}`} aria-label="Edit picture">
+            <Pencil className="h-3 w-3" />
             <input type="file" accept="image/*" hidden disabled={busy} onChange={(e) => { setCropSource(e.target.files?.[0] ?? null); e.target.value = ""; }} />
           </label>
           <ImageCropDialog file={cropSource} onCancel={() => setCropSource(null)} onDone={(f) => { setCropSource(null); save(f); }} />
