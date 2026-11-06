@@ -68,7 +68,7 @@ export const generateShotImage = createServerFn({ method: "POST" })
     const prev = idx > 0 ? list[idx - 1] : null;
     if (idx < 0) throw new Error("Shot not found in this production.");
     let anchor: (typeof list)[number] | null = null;
-    for (let i = idx - 1; i >= 0; i--) if (list[i].is_anchor) { anchor = list[i]; break; }
+    for (let i = idx - 1; i >= 0; i--) { const s = list[i]; if (s?.is_anchor) { anchor = s; break; } }
     const story = list.map((s) => `S${s.scene_number}.${s.shot_number}: ${s.description}`).join(" | ").slice(0, 2500);
     const prompt = [
       "Black-and-white graphite pencil storyboard panel, hand-drawn film storyboard art style, rough sketchy pencil shading, no color, no text or captions in the image.",
