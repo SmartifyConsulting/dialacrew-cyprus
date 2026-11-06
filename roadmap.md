@@ -35,3 +35,7 @@
 - [x] Social-media opt-in at signup + admin spotlight queue + crew toggle
 - [x] Email-domain company onboarding, pending approval, 2 extra admins
 - [x] Crew can never rate anyone
+- [x] Crew pickers show unavailable crew (reschedule hint); local-country default + country filter
+- [x] Auto post to production feed when shoot dates, recce or location change
+- [x] Compact production page header / info banner
+- [x] Admin: Engagement merged into Users (red star, feature date + links); Reporting > Finance replaces Operations; Templates > Checklists with Document checklist (folder icon)
