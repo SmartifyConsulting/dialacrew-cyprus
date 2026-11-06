@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
-import { Briefcase, ChevronDown, Home, Search, Shield, Star, User, type LucideIcon, Wallet, ReceiptText, CalendarDays } from "lucide-react";
+import { Briefcase, ChevronDown, Home, Search, Shield, Star, User, type LucideIcon, Wallet, ReceiptText, CalendarDays, Megaphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany, useRole, useSession } from "@/lib/auth";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -17,7 +17,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 const navKeys: Record<string, string> = {
   Dashboard: "dashboard", Home: "home", Calendar: "calendar", Productions: "productions",
   Crew: "crew", Payments: "payments", "Find Gigs": "findGigs", Earnings: "earnings",
-  Invoices: "invoices", Profile: "profile", "My Profile": "myProfile", Admin: "admin",
+  Invoices: "invoices", Profile: "profile", "My Profile": "myProfile", Admin: "admin", "Post a Gig": "postGig",
 };
 
 function useMyProfile(userId: string | undefined) {
@@ -42,7 +42,7 @@ function NavAvatar({ name, path, size = 40 }: { name: string; path?: string | nu
     : <span style={{ width: size, height: size }} className="grid shrink-0 place-items-center rounded-full border-2 border-white bg-primary text-sm font-bold text-primary-foreground">{initials(name)}</span>;
 }
 
-type NavItem = { to: string; label: string; icon: LucideIcon };
+type NavItem = { to: string; label: string; icon: LucideIcon; hash?: string };
 // One menu definition per role, used by both the top bar and the phone bottom bar.
 export const navByRole: Record<string, NavItem[]> = {
   producer: [
@@ -59,6 +59,7 @@ export const navByRole: Record<string, NavItem[]> = {
     { to: "/earnings", label: "Earnings", icon: Wallet },
     { to: "/invoices", label: "Invoices", icon: ReceiptText },
     { to: "/profile", label: "Profile", icon: User },
+    { to: "/gigs", hash: "post", label: "Post a Gig", icon: Megaphone },
   ],
   client: [{ to: "/profile", label: "My Profile", icon: User }],
   admin: [
@@ -78,7 +79,7 @@ function BottomNav({ items }: { items: NavItem[] }) {
       <ul className="flex">
         {items.map((n) => (
           <li key={n.label} className="flex-1">
-            <Link to={n.to} className={`flex flex-col items-center gap-1 py-5 font-sans text-sm font-medium text-nav-foreground/80`} activeProps={{ className: "!text-nav-foreground font-semibold" }}>
+            <Link to={n.to} hash={n.hash} className={`flex flex-col items-center gap-1 py-5 font-sans text-sm font-medium text-nav-foreground/80`} activeProps={{ className: "!text-nav-foreground font-semibold" }}>
               <n.icon className="h-[1.6rem] w-[1.6rem]" /><span className="max-w-full break-words text-center">{t(`nav.${navKeys[n.label]}`, { defaultValue: n.label })}</span>
             </Link>
           </li>
@@ -119,7 +120,7 @@ export function TopNav() {
           <Link to="/dashboard" className="flex justify-center px-5 py-5"><img src={navLogo} alt="Book a Crew" className="h-[173px] w-auto max-w-full rounded-lg object-contain" /></Link>
           <nav className="flex flex-1 flex-col gap-1 px-3">
             {items.map((n) => (
-              <Link key={n.label} to={n.to} className={`flex items-center gap-3 rounded-xl px-4 py-3 font-sans text-[15px] font-medium text-nav-foreground/85 transition-colors hover:bg-nav-foreground/10 hover:text-nav-foreground`} activeProps={{ className: "bg-nav-foreground/15 !text-nav-foreground font-semibold" }}>
+              <Link key={n.label} to={n.to} hash={n.hash} activeOptions={{ includeHash: !!n.hash }} className={`flex items-center gap-3 rounded-xl px-4 py-3 font-sans text-[15px] font-medium text-nav-foreground/85 transition-colors hover:bg-nav-foreground/10 hover:text-nav-foreground`} activeProps={{ className: "bg-nav-foreground/15 !text-nav-foreground font-semibold" }}>
                 <n.icon className="h-4 w-4 shrink-0" /><span className="min-w-0 break-words">{t(`nav.${navKeys[n.label]}`, { defaultValue: n.label })}</span>
               </Link>
             ))}

@@ -583,7 +583,7 @@ export function CrewDayPlanner({ p }: { p: Production }) {
       {shootDays.map((day, i) => {
         const dayTotal = productionBookings.filter((b) => b.bookingDate === day).reduce((sum, b) => sum + costOf(b), 0);
         const otherDays = shootDays.filter((d) => d !== day);
-        const isCollapsed = collapsed.has(day) !== (i === 0); // day 0 open by default, rest collapsed
+        const isCollapsed = !collapsed.has(day); // every day collapsed by default; the set holds days opened
         const toggleDay = () => setCollapsed((prev) => { const n = new Set(prev); if (n.has(day)) n.delete(day); else n.add(day); return n; });
         return (
           <section key={day} className="rounded-sm border border-border bg-card">
@@ -594,12 +594,15 @@ export function CrewDayPlanner({ p }: { p: Production }) {
                 <span className="shrink-0 text-xs font-normal opacity-90">{fmtMoney(dayTotal, p.currency)} pencilled</span>
               </button>
               <div className="flex items-center gap-2">
+                <div className="relative">
                 <select disabled={sizeTypes.length === 0} value=""
                   onChange={(e) => { const g = sizeTypes.find((x) => x.id === e.target.value); if (g) applySizeType(day, g); }}
-                  className="rounded-sm border border-white bg-transparent px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40" aria-label="Select Crew Type">
+                  className="h-8 cursor-pointer appearance-none rounded-md border border-primary-foreground/60 bg-primary-foreground/10 pl-3 pr-9 text-xs font-semibold text-primary-foreground hover:bg-primary-foreground/20 disabled:cursor-not-allowed disabled:opacity-40" aria-label="Select Crew Type">
                   <option value="" disabled className="bg-background text-foreground">Select Crew Type</option>
                   {sizeTypes.map((g) => <option key={g.id} value={g.id} className="bg-background text-foreground">{g.name} ({g.memberIds.length})</option>)}
                 </select>
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-primary-foreground" />
+                </div>
                 {shootDays.length > 1 && (
                   <div className="relative">
                     <button disabled={copying === day} onClick={() => openCopy(day)}

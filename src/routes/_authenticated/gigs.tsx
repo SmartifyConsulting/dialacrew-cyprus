@@ -43,6 +43,11 @@ function GigsPage() {
   const qc = useQueryClient();
   const [form, setForm] = useState(empty);
   const [showForm, setShowForm] = useState(false);
+  // "Post a Gig" menu item lands here with #post — open the form straight away.
+  useEffect(() => {
+    const check = () => { if (window.location.hash === "#post") { setShowForm(true); setTimeout(() => document.getElementById("post-gig-form")?.scrollIntoView({ behavior: "smooth" }), 50); } };
+    check(); window.addEventListener("hashchange", check); return () => window.removeEventListener("hashchange", check);
+  }, []);
   const [agree, setAgree] = useState(false);
   const startCheckout = useServerFn(startGigCheckout);
   const verifyCheckout = useServerFn(verifyGigCheckout);
@@ -124,7 +129,7 @@ function GigsPage() {
             <p className="text-sm text-muted-foreground">{t("gigs.communityHelp")}</p>
 
             {showForm && (
-              <div className="mt-4 rounded-xl border border-border p-4">
+              <div id="post-gig-form" className="mt-4 rounded-xl border border-border p-4">
                 <div className="grid gap-3 md:grid-cols-2">
                   <label className="text-sm">Gig title *<input className={field} value={form.title} onChange={set("title")} /></label>
                   <label className="text-sm">Role needed *<input className={field} placeholder="e.g. Focus puller" value={form.role} onChange={set("role")} /></label>
