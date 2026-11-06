@@ -1,14 +1,15 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Film, Pencil as PencilIcon, RefreshCw, Sparkles, Trash2 } from "lucide-react";
+import { Pencil as PencilIcon, RefreshCw, Sparkles, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { friendlyError } from "@/lib/errors";
 import { useSignedUrl } from "@/lib/site";
 import { Panel } from "@/components/AppShell";
 import { breakdownScript, generateShotImage } from "@/lib/storyboard.functions";
 import { SoundDesignStudio } from "@/components/site/SoundDesignStudio";
+import { AnimaticStudio } from "@/components/site/AnimaticStudio";
 import type { Production } from "@/lib/demo-data";
 
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring min-w-0";
@@ -37,20 +38,11 @@ export function StoryboardStudio({ p, isProducer }: { p: Production; isProducer:
       </nav>
       {mode === "Illustrate" && <IllustrateMode p={p} isProducer={isProducer} />}
       {mode === "Sound Design" && <SoundDesignStudio p={p} isProducer={isProducer} />}
-      {mode === "Animatic" && <ComingSoon icon={<Film className="h-5 w-5" />} title="Animatic" stage="Stage 3" note="Synchronized playback of the illustrations and audio, with MP4 export." />}
+      {mode === "Animatic" && <AnimaticStudio p={p} isProducer={isProducer} />}
     </div>
   );
 }
 
-function ComingSoon({ icon, title, stage, note }: { icon: ReactNode; title: string; stage: string; note: string }) {
-  return (
-    <div className="flex flex-col items-center gap-2 rounded-sm border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-      {icon}
-      <p className="font-semibold text-foreground">{title} — {stage}</p>
-      <p className="max-w-sm">{note}</p>
-    </div>
-  );
-}
 
 function ShotImage({ path }: { path: string | null }) {
   const url = useSignedUrl(path ?? undefined).data;

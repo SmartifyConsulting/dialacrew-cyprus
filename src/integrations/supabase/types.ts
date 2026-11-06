@@ -3351,6 +3351,41 @@ export type Database = {
           },
         ]
       }
+      storyboard_exports: {
+        Row: {
+          created_at: string
+          created_by: string
+          duration_seconds: number | null
+          id: string
+          production_id: string
+          video_path: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          duration_seconds?: number | null
+          id?: string
+          production_id: string
+          video_path: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          duration_seconds?: number | null
+          id?: string
+          production_id?: string
+          video_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storyboard_exports_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       storyboard_shots: {
         Row: {
           created_at: string
