@@ -830,7 +830,7 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
   const doneCount = checklists.reduce((n, c) => n + c.production_checklist_items.filter((i) => i.done).length, 0);
   return (
     <div className="space-y-4">
-      {isProducer && <><div className="text-right"><Link to="/admin" search={{ tab: "Templates" }} className="text-sm font-semibold text-primary underline">{t("checklists.manage")}</Link></div><ChecklistTemplateManager audience="producer" targetId={p.id} /></>}
+      {isProducer && <ChecklistTemplateManager audience="producer" targetId={p.id} />}
       <div role="tablist" aria-label="Checklist progress" className="flex gap-2 border-b border-border">
         {(["Checklist", "Done"] as const).map((tab) => <button key={tab} role="tab" aria-selected={view === tab} onClick={() => setView(tab)} className={`border-b-2 px-4 py-2 text-sm font-semibold ${view === tab ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}>{t(tab === "Checklist" ? "checklists.pending" : "calendar.done")} ({tab === "Checklist" ? pendingCount : doneCount})</button>)}
       </div>
@@ -997,7 +997,7 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
   return (
     <SortableFrames storageKey={`sidebar-frames:${p.id}`} frames={[
       { id: "overview", node: (
-      <Panel title={t("workspace.overview")} right={isProducer && saveState !== "idle" ? (
+      <Panel title={t("workspace.overview")} collapsible defaultCollapsed right={isProducer && saveState !== "idle" ? (
         <span className="text-xs text-muted-foreground">{saveState === "saving" ? "Saving…" : "Saved"}</span>
       ) : undefined}>
         <div className="space-y-3 p-4 text-sm">

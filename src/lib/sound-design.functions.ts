@@ -3,7 +3,8 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 async function assertProducerSiteMember(context: { supabase: unknown; userId: string }, productionId: string) {
-  const rpc = (context.supabase as { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> }).rpc;
+  const db = (context.supabase as { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> });
+  const rpc = (fn: string, args: Record<string, unknown>) => db.rpc(fn, args);
   const [role, member] = await Promise.all([
     rpc("has_role", { _user_id: context.userId, _role: "producer" }),
     rpc("is_site_member", { _prod: productionId }),

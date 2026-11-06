@@ -40,7 +40,7 @@ export const Route = createFileRoute("/_authenticated/productions/$id")({
 // Crew see only Posts, Tasks and Photos (Overview is the fixed left widget).
 // The Crew tab is a live workspace: Crew Role Required on top, the Sandbox scenario planner below.
 const CREW_TABS = ["Posts", "Tasks", "Photos"] as const;
-const MANAGER_TABS = ["Posts", "Crew", "Storyboard", "Checklists", "Tasks", "Documents", "Photos", "Budget", "Review", "Audit"] as const;
+const MANAGER_TABS = ["Posts", "Crew", "Storyboard", "Checklists", "Tasks", "Photos", "Budget", "Review", "Audit"] as const;
 type Tab = (typeof MANAGER_TABS)[number];
 function ProductionSite() {
   const { t: translate } = useTranslation();
@@ -103,9 +103,9 @@ function ProductionSite() {
           className={`${asideOpen ? "hidden" : "hidden lg:flex"} h-9 w-9 items-center justify-center rounded-sm border border-border bg-card text-muted-foreground hover:text-primary lg:sticky lg:top-28 lg:self-start`}>
           <ChevronRight className="h-4 w-4" />
         </button>
-        <aside className={`space-y-5 lg:sticky lg:top-28 lg:self-start ${asideOpen ? "" : "lg:hidden"}`}>
-          <button onClick={() => setAsideOpen(false)} className="hidden items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-primary lg:flex">
-            <ChevronLeft className="h-4 w-4" /> {translate("workspace.collapse")}
+        <aside className={`relative space-y-5 lg:sticky lg:top-28 lg:self-start ${asideOpen ? "" : "lg:hidden"}`}>
+          <button onClick={() => setAsideOpen(false)} aria-label={translate("workspace.collapse")} title={translate("workspace.collapse")} className="absolute -right-3 top-2 z-10 hidden h-6 w-6 items-center justify-center rounded-full border border-border bg-card text-muted-foreground hover:text-primary lg:flex">
+            <ChevronLeft className="h-3.5 w-3.5" />
           </button>
           {myCrewId && <CrewOvertimePanel productionId={p.id} crewId={myCrewId} rate={rates[myCrewId] ?? 0} date={p.date || null} />}
           <fieldset disabled={closed} className="min-w-0">
@@ -132,10 +132,9 @@ function ProductionSite() {
           {tab === "Checklists" && <ChecklistsPanel p={p} isProducer={isProducer} />}
           {tab === "Tasks" && <TasksTab {...ctx} />}
           {tab === "Audit" && isProducer && <AuditTab p={p} />}
-          {tab === "Photos" && <PhotosTab p={p} userId={userId} isProducer={isProducer} />}
+          {tab === "Photos" && <div className="space-y-5"><PhotosTab p={p} userId={userId} isProducer={isProducer} />{isProducer && <DocumentsTab p={p} userId={userId} myName={myName} isProducer={isProducer} />}</div>}
           {tab === "Storyboard" && <StoryboardStudio p={p} isProducer={isProducer} />}
-          {tab === "Documents" && isProducer && <DocumentsTab p={p} userId={userId} myName={myName} isProducer={isProducer} />}
-          {tab === "Budget" && isProducer && <CommercialsTab {...ctx} bookings={bookings} crewNames={crewNames} requests={requests} />}
+                    {tab === "Budget" && isProducer && <CommercialsTab {...ctx} bookings={bookings} crewNames={crewNames} requests={requests} />}
           {tab === "Review" && isProducer && <RetroTab p={p} />}
           </fieldset>
         </section>
