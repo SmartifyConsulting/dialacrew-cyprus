@@ -515,7 +515,7 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
             <NumberedPin n={editingId ? points.findIndex((pt) => pt.id === editingId) + 1 : points.length + 1} />
             <span className="text-sm font-bold text-foreground">{editingId ? `Edit location` : `Location ${points.length + 1}`}</span>
           </div>
-          <AddressAutocomplete className={`${input} w-full`} placeholder={t("locationsUi.address")} value={lf.address}
+          <AddressAutocomplete className={`${input} w-full`} placeholder={t("locationsUi.address")} value={lf.address} country={productionCountry(p.currency)}
             onChange={(v) => setLf({ ...lf, address: v })}
             onSelect={(s) => setLf({ ...lf, label: s.place, address: s.exactAddress, latitude: s.lat, longitude: s.lon })} />
           <div className="space-y-3">
@@ -1848,3 +1848,4 @@ function ProductionSchedule({ p, isProducer }: { p: Ctx["p"]; isProducer: boolea
 }
 import { AutoTranslatedText } from "@/components/AutoTranslatedText";
 import { useTranslation } from "react-i18next";
+import { productionCountry } from "@/lib/crew-country";
