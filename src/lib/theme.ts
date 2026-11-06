@@ -22,9 +22,14 @@ export const themeBootScript = `(function(){try{var t=localStorage.getItem('${ST
 
 /** Per-user light/dark preference, persisted in localStorage and applied as the .dark class. */
 export function useTheme() {
-  const [theme, setThemeState] = useState<Theme>(() => getStoredTheme() ?? systemTheme());
+  // Always starts as "light" — matching what the server renders, since the server can't see
+  // localStorage — then syncs to the real value right after mount (themeBootScript has already
+  // applied the correct .dark class before this ever paints, so there's no visible flash either way).
+  const [theme, setThemeState] = useState<Theme>("light");
+  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => { applyTheme(theme); }, [theme]);
+  useEffect(() => { setMounted(true); setThemeState(getStoredTheme() ?? systemTheme()); }, []);
+  useEffect(() => { if (mounted) applyTheme(theme); }, [theme, mounted]);
 
   function setTheme(next: Theme) {
     setThemeState(next);

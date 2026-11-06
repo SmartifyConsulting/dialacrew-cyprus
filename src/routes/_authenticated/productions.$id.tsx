@@ -11,6 +11,7 @@ import { useMyCrewId, useMyName } from "@/lib/site";
 import { RetroTab } from "@/components/site/RetroTab";
 import { CrewDayPlanner } from "@/components/site/CrewDayPlanner";
 import { PhotosTab } from "@/components/site/PhotosTab";
+import { StoryboardStudio } from "@/components/site/StoryboardStudio";
 import { AuditTab } from "@/components/site/AuditTab";
 import { ProductionCover } from "@/components/site/ProductionCover";
 import { DocumentsTab } from "@/components/site/DocumentsTab";
@@ -36,7 +37,7 @@ export const Route = createFileRoute("/_authenticated/productions/$id")({
 // Crew see only Posts, Tasks and Photos (Overview is the fixed left widget).
 // The Crew tab is a live workspace: Crew Role Required on top, the Sandbox scenario planner below.
 const CREW_TABS = ["Posts", "Tasks", "Photos"] as const;
-const MANAGER_TABS = ["Posts", "Crew", "Checklists", "Tasks", "Documents", "Photos", "Budget", "Review", "Audit"] as const;
+const MANAGER_TABS = ["Posts", "Crew", "Checklists", "Tasks", "Documents", "Photos", "Storyboard", "Budget", "Review", "Audit"] as const;
 type Tab = (typeof MANAGER_TABS)[number];
 type LayoutView = "workspace" | "focus";
 const LAYOUT_KEY = "production-layout-view";
@@ -181,6 +182,7 @@ function ProductionSite() {
           {tab === "Tasks" && <TasksTab {...ctx} />}
           {tab === "Audit" && isProducer && <AuditTab p={p} />}
           {tab === "Photos" && <PhotosTab p={p} userId={userId} isProducer={isProducer} />}
+          {tab === "Storyboard" && <StoryboardStudio p={p} isProducer={isProducer} />}
           {tab === "Documents" && isProducer && <DocumentsTab p={p} userId={userId} myName={myName} isProducer={isProducer} />}
           {tab === "Budget" && isProducer && <CommercialsTab {...ctx} bookings={bookings} crewNames={crewNames} requests={requests} />}
           {tab === "Review" && isProducer && <RetroTab p={p} />}

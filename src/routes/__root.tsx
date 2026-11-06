@@ -105,7 +105,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    // suppressHydrationWarning: the boot script below sets .dark from localStorage before React
+    // hydrates, which legitimately differs from the server-rendered markup (the server can't see
+    // localStorage) — without this, React would throw that mismatch away and re-render from scratch.
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
         {/* eslint-disable-next-line react/no-danger -- sets the .dark class before paint so there's no flash of the wrong theme */}

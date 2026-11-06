@@ -3198,6 +3198,116 @@ export type Database = {
           },
         ]
       }
+      storyboard_generations: {
+        Row: {
+          cost_usd: number | null
+          created_at: string
+          created_by: string
+          id: string
+          kind: string
+          model: string | null
+          production_id: string
+          provider: string
+          shot_id: string | null
+          status: string
+        }
+        Insert: {
+          cost_usd?: number | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          kind?: string
+          model?: string | null
+          production_id: string
+          provider: string
+          shot_id?: string | null
+          status?: string
+        }
+        Update: {
+          cost_usd?: number | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          kind?: string
+          model?: string | null
+          production_id?: string
+          provider?: string
+          shot_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storyboard_generations_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storyboard_generations_shot_id_fkey"
+            columns: ["shot_id"]
+            isOneToOne: false
+            referencedRelation: "storyboard_shots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      storyboard_shots: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string
+          duration_seconds: number
+          generation_error: string | null
+          id: string
+          image_path: string | null
+          production_id: string
+          scene_number: number
+          shot_number: number
+          sort_order: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          description?: string
+          duration_seconds?: number
+          generation_error?: string | null
+          id?: string
+          image_path?: string | null
+          production_id: string
+          scene_number?: number
+          shot_number?: number
+          sort_order?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string
+          duration_seconds?: number
+          generation_error?: string | null
+          id?: string
+          image_path?: string | null
+          production_id?: string
+          scene_number?: number
+          shot_number?: number
+          sort_order?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storyboard_shots_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_tasks: {
         Row: {
           assigned_crew_id: string | null
