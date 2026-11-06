@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ChevronLeft, ChevronRight, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { Badge, ClientBadge, Page } from "@/components/AppShell";
 import { confirmDialog } from "@/components/ConfirmDialog";
 import { useRole, useSession } from "@/lib/auth";
@@ -98,15 +98,9 @@ function ProductionSite() {
     <Page open compact title={<span className="inline-flex items-center gap-3"><ProductionCover p={p} isProducer={isProducer} />{p.name}</span>} subtitle={<span className="inline-flex items-center gap-2"><ClientBadge name={p.client} /> {p.type} · {p.date} · {p.days} day(s) · <MapPin className="h-3 w-3 text-primary" />{p.address || p.location}</span>} actions={actions}>
       {closeError && <p role="alert" className="mb-3 text-sm text-destructive">{closeError}</p>}
       {closed && <div className="mb-4 rounded border border-border bg-muted p-3 text-sm font-semibold">Completed — read-only archive. No new activity or invoices can be added.</div>}
-      <div className={`grid gap-5 ${asideOpen ? "lg:grid-cols-[380px_minmax(0,1fr)]" : "lg:grid-cols-[auto_minmax(0,1fr)]"}`}>
-        <button onClick={() => setAsideOpen(true)} aria-label="Expand overview panel"
-          className={`${asideOpen ? "hidden" : "hidden lg:flex"} h-9 w-9 items-center justify-center rounded-sm border border-border bg-card text-muted-foreground hover:text-primary lg:sticky lg:top-28 lg:self-start`}>
-          <ChevronRight className="h-4 w-4" />
-        </button>
+      <div className={`grid gap-5 ${asideOpen ? "lg:grid-cols-[380px_minmax(0,1fr)]" : "lg:grid-cols-[minmax(0,1fr)]"}`}>
+        {/* The side panel hides only while the Crew tab is open — no manual collapse button. */}
         <aside className={`relative space-y-5 lg:sticky lg:top-28 lg:self-start ${asideOpen ? "" : "lg:hidden"}`}>
-          <button onClick={() => setAsideOpen(false)} aria-label={translate("workspace.collapse")} title={translate("workspace.collapse")} className="absolute -right-3 top-2 z-10 hidden h-6 w-6 items-center justify-center rounded-full border border-border bg-card text-muted-foreground hover:text-primary lg:flex">
-            <ChevronLeft className="h-3.5 w-3.5" />
-          </button>
           {myCrewId && <CrewOvertimePanel productionId={p.id} crewId={myCrewId} rate={rates[myCrewId] ?? 0} date={p.date || null} />}
           <fieldset disabled={closed} className="min-w-0">
             <OverviewTab {...ctx} />

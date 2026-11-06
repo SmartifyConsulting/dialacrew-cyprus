@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { arrangeFrames } from "@/lib/frame-controls";
 
-describe("sidebar frame order", () => {
-  it("puts pinned frames at the top", () => {
-    expect(arrangeFrames(["overview", "locations", "gear"], { order: [], pinned: ["gear"] })).toEqual(["gear", "overview", "locations"]);
+describe("arrangeFrames", () => {
+  it("pinning a frame keeps it open but does not move it to the top", () => {
+    expect(arrangeFrames(["a", "b", "c"], { order: ["a", "b", "c"], pinned: ["c"] })).toEqual(["a", "b", "c"]);
   });
-  it("keeps a dragged order and appends new frames", () => {
-    expect(arrangeFrames(["overview", "locations", "gear"], { order: ["locations", "overview"], pinned: [] })).toEqual(["locations", "overview", "gear"]);
+  it("keeps the saved drag order and appends new frames", () => {
+    expect(arrangeFrames(["a", "b", "c", "d"], { order: ["c", "a", "b"], pinned: [] })).toEqual(["c", "a", "b", "d"]);
   });
 });
