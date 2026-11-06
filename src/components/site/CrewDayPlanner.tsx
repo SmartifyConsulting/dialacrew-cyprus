@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { CREW_COUNTRIES, matchesCountry, productionCountry, setCrewCountryFilter, useCrewCountryFilter } from "@/lib/crew-country";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeftRight, Copy, Pencil, Plus, Sparkles, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
@@ -19,7 +20,16 @@ const dayLabel = (ymd: string) => new Date(`${ymd}T00:00:00`).toLocaleDateString
 const ghost = "inline-flex items-center gap-1 rounded-sm border border-border px-2 py-1 text-xs hover:border-primary hover:text-primary disabled:opacity-50";
 const SIZE_TIERS = ["Small", "Medium", "Large", "Extra-Large"] as const;
 
-type Candidate = { id: string; name: string; role: string; dayRate: number };
+type Candidate = { id: string; name: string; role: string; dayRate: number; unavailable?: boolean; country?: string };
+type RawCandidate = { id: string; name: string; role: string; dayRate: number; unavailable?: boolean; country?: string };
+// Unavailable crew stay listed (a producer may reschedule for them); local crew by default.
+function toCandidates(list: RawCandidate[], filter: string, local: string): Candidate[] {
+  return list.filter((c) => matchesCountry(c.country, filter, local))
+    .map((c) => ({ id: c.id, name: c.name, role: c.role, dayRate: c.dayRate, unavailable: !!c.unavailable, country: c.country ?? "ZA" }))
+    .sort((a, b) => Number(a.unavailable) - Number(b.unavailable));
+}
+const onlyAvailable = (l: Candidate[]) => l.filter((c) => !c.unavailable);
+const UnavailableTag = () => <span className="mt-0.5 inline-block rounded-full bg-destructive/15 px-1.5 py-0.5 text-[10px] font-semibold text-destructive">Unavailable · reschedule shoot?</span>;
 
 function CandidatePopover({ candidates, onSelect, currency }: { candidates: Candidate[]; onSelect: (c: Candidate) => void; currency?: string | undefined }) {
   return (
@@ -28,12 +38,13 @@ function CandidatePopover({ candidates, onSelect, currency }: { candidates: Cand
         <div key={c.id} className="flex items-center justify-between gap-3 rounded-sm border border-border px-3 py-2 text-xs">
           <span className="min-w-0">
             <span className="font-medium">{c.name}</span>{c.role && <span className="text-muted-foreground"> · {c.role}</span>}
-            <span className="block text-muted-foreground">{fmtMoney(c.dayRate, currency)} / day</span>
+            <span className="block text-muted-foreground">{fmtMoney(c.dayRate, currency)} / day · {c.country}</span>
+            {c.unavailable && <UnavailableTag />}
           </span>
-          <button onClick={() => onSelect(c)} className="shrink-0 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Select</button>
+          <button onClick={() => { if (c.unavailable) toast.warning(`${c.name} is not free on these dates — you will need to reschedule the shoot.`); onSelect(c); }} className="shrink-0 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Select</button>
         </div>
       ))}
-      {candidates.length === 0 && <p className="whitespace-nowrap p-1 text-xs text-muted-foreground">No available crew for this role.</p>}
+      {candidates.length === 0 && <p className="whitespace-nowrap p-1 text-xs text-muted-foreground">No crew for this role in this country.</p>}
     </div>
   );
 }
@@ -76,12 +87,14 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
 }) {
   const req = useCrewRequiredDay(p, date, roleList);
   const sc = useScenarios(p, date, roleList);
+  const countryFilter = useCrewCountryFilter();
+  const localCountry = productionCountry(p.currency);
   const [pickKey, setPickKey] = useState<string | null>(null); // "s1:<role>" or "<scenarioId>:<role>"
 
   const s1Candidates = (role: string, matches: CrewRequiredMatch[]): Candidate[] =>
-    req.candidatesFor(role, matches).map((c) => ({ id: c.id, name: c.name, role: c.role, dayRate: c.dayRate }));
+    toCandidates(req.candidatesFor(role, matches), countryFilter, localCountry);
   const scCandidates = (s: Scenario, role: string, excludeId?: string): Candidate[] =>
-    sc.candidatesFor(s, role, excludeId).map((c) => ({ id: c.id, name: c.name, role: c.role, dayRate: c.dayRate }));
+    toCandidates(sc.candidatesFor(s, role, excludeId), countryFilter, localCountry);
 
   // Select Crew Mix on Scenario 1 pencils each available member of that mix into whichever open role they fit.
   async function applyMixToS1(group: { name: string; memberIds: string[] }) {
@@ -108,13 +121,13 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
   const s1Target: WizardTarget = {
     key: "s1", label: "Sandbox 1",
     openRoles: () => roleList.filter((r) => !req.isConfirmed(r) && req.byRole(r).length === 0),
-    candidatesFor: (role) => s1Candidates(role, req.byRole(role)),
+    candidatesFor: (role) => onlyAvailable(s1Candidates(role, req.byRole(role))),
     assign: async (role, id) => { await req.pencil(role, id, [], true); },
   };
   const scTarget = (s: Scenario): WizardTarget => ({
     key: s.id, label: s.name,
     openRoles: () => roleList.filter((r) => !sc.assignedForRole(s, r)),
-    candidatesFor: (role) => scCandidates(s, role),
+    candidatesFor: (role) => onlyAvailable(scCandidates(s, role)),
     assign: async (role, id) => { await sc.selectForRole(s, role, id, null); },
   });
   function getTarget(key: string): WizardTarget | undefined {
@@ -374,13 +387,15 @@ function DaySummaryRow({ p, date, dayIndex, roleList, maxCols }: {
 }) {
   const req = useCrewRequiredDay(p, date, roleList);
   const sc = useScenarios(p, date, roleList);
+  const countryFilter = useCrewCountryFilter();
+  const localCountry = productionCountry(p.currency);
   const [pencilFor, setPencilFor] = useState<number | null>(null);
   const [pencilRole, setPencilRole] = useState<string | null>(null);
 
   const s1Candidates = (role: string, matches: CrewRequiredMatch[]): Candidate[] =>
-    req.candidatesFor(role, matches).map((c) => ({ id: c.id, name: c.name, role: c.role, dayRate: c.dayRate }));
+    toCandidates(req.candidatesFor(role, matches), countryFilter, localCountry);
   const scCandidates = (s: Scenario, role: string): Candidate[] =>
-    sc.candidatesFor(s, role).map((c) => ({ id: c.id, name: c.name, role: c.role, dayRate: c.dayRate }));
+    toCandidates(sc.candidatesFor(s, role), countryFilter, localCountry);
 
   const s1Col: SummaryCol = {
     total: req.dayTotal,
@@ -425,10 +440,10 @@ function DaySummaryRow({ p, date, dayIndex, roleList, maxCols }: {
                   ) : (
                     <>
                       <button type="button" onClick={() => setPencilRole(null)} className="mb-1 text-[11px] text-muted-foreground hover:text-primary">← {pencilRole}</button>
-                      {col.candidatesFor(pencilRole).length === 0 && <p className="p-1 text-xs text-muted-foreground">No available crew for this role.</p>}
+                      {col.candidatesFor(pencilRole).length === 0 && <p className="p-1 text-xs text-muted-foreground">No crew for this role in this country.</p>}
                       {col.candidatesFor(pencilRole).map((c) => (
                         <div key={c.id} className="flex items-center justify-between gap-2 rounded-sm border border-border px-2 py-1.5 text-xs">
-                          <span className="min-w-0 truncate">{c.name} · {fmtMoney(c.dayRate, p.currency)}</span>
+                          <span className="min-w-0 truncate">{c.name} · {fmtMoney(c.dayRate, p.currency)}{c.unavailable && <><br /><UnavailableTag /></>}</span>
                           <button type="button" onClick={async () => { await col.assign(pencilRole, c.id); closePencil(); }}
                             className="shrink-0 rounded-sm bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground">Select</button>
                         </div>

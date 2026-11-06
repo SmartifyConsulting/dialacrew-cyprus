@@ -85,7 +85,7 @@ export function useScenarios(p: Production, date: string, roleList: string[]) {
     return crew.find((c) => ids.has(c.id) && crewFitsRole(c, role));
   }
   function candidatesFor(s: Scenario, role: string, excludeId?: string) {
-    return crew.filter((c) => crewFitsRole(c, role) && c.id !== excludeId && c.available && availableForRange(c.id));
+    return crew.filter((c) => crewFitsRole(c, role) && c.id !== excludeId).map((c) => ({ ...c, unavailable: !(c.available && availableForRange(c.id)) }));
   }
   function withEveryDay(s: Scenario, fn: (day: Selection) => Selection): SelectionByDay {
     const next: SelectionByDay = {};
