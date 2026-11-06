@@ -105,7 +105,7 @@ function ProductionSite() {
           <fieldset disabled={closed} className="min-w-0">
             <OverviewTab {...ctx} />
           </fieldset>
-          {isProducer && tab === "Crew" && <EquipmentAvailability p={p} />}
+          {isProducer && <EquipmentAvailability p={p} />}
         </aside>
         <section className="flex min-w-0 flex-col">
           <nav className="mb-4 flex w-full gap-1 overflow-x-auto rounded-sm border border-border bg-card">
