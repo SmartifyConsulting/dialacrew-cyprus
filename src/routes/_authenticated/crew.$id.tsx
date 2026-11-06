@@ -157,14 +157,14 @@ function CrewProfile() {
         </nav>
 
         <div className="p-6">
-          {tab === "Banking" && canEdit && <BankingTab crewId={id} />}
-          {tab === "Equipment" && <Kit crewId={id} items={assets.data ?? []} canEdit={canEdit} onChange={refresh} />}
-          {tab === "Checklists" && isOwnProfile && <CrewPersonalChecklists crewId={id} />}
-          {tab === "Reviews" && <ReviewsTab crewId={id} />}
+          {activeTab === "Banking" && canEdit && <BankingTab crewId={id} />}
+          {activeTab === "Equipment" && <Kit crewId={id} items={assets.data ?? []} canEdit={canEdit} onChange={refresh} />}
+          {activeTab === "Checklists" && isOwnProfile && <CrewPersonalChecklists crewId={id} />}
+          {activeTab === "Reviews" && <ReviewsTab crewId={id} />}
 
-          {tab === "Travel" && canEdit && <PassportTab crewId={id} canEdit={canEdit} />}
-          {tab === "Emergency" && isOwnProfile && <CrewEmergencySettings crewId={id} />}
-          {tab === "Account" && isOwnProfile && (
+          {activeTab === "Travel" && canEdit && <PassportTab crewId={id} canEdit={canEdit} />}
+          {activeTab === "Emergency" && isOwnProfile && <CrewEmergencySettings crewId={id} />}
+          {activeTab === "Account" && isOwnProfile && (
             <AccountSettings userId={session?.user.id} email={session?.user.email} />
           )}
         </div>
