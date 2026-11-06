@@ -37,6 +37,7 @@ import { Route as AuthenticatedInvoicesIdRouteImport } from './routes/_authentic
 import { Route as AuthenticatedProductionsIndexRouteImport } from './routes/_authenticated/productions.index'
 import { Route as AuthenticatedProductionsIdRouteImport } from './routes/_authenticated/productions.$id'
 import { Route as ApiPublicNativePushRouteImport } from './routes/api/public/native-push'
+import { Route as ApiPublicPaystackWebhookRouteImport } from './routes/api/public/paystack-webhook'
 import { Route as ApiPublicCalendarTokenRouteImport } from './routes/api/public/calendar.$token'
 
 const IndexRoute = IndexRouteImport.update({
@@ -181,6 +182,12 @@ const ApiPublicNativePushRoute = ApiPublicNativePushRouteImport.update({
   path: '/api/public/native-push',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPaystackWebhookRoute =
+  ApiPublicPaystackWebhookRouteImport.update({
+    id: '/api/public/paystack-webhook',
+    path: '/api/public/paystack-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicCalendarTokenRoute = ApiPublicCalendarTokenRouteImport.update({
   id: '/api/public/calendar/$token',
   path: '/api/public/calendar/$token',
@@ -213,6 +220,7 @@ export interface FileRoutesByFullPath {
   '/invoices/$id': typeof AuthenticatedInvoicesIdRoute
   '/productions/$id': typeof AuthenticatedProductionsIdRoute
   '/api/public/native-push': typeof ApiPublicNativePushRoute
+  '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
   '/crew/': typeof AuthenticatedCrewIndexRoute
   '/productions/': typeof AuthenticatedProductionsIndexRoute
   '/api/public/calendar/$token': typeof ApiPublicCalendarTokenRoute
@@ -243,6 +251,7 @@ export interface FileRoutesByTo {
   '/invoices/$id': typeof AuthenticatedInvoicesIdRoute
   '/productions/$id': typeof AuthenticatedProductionsIdRoute
   '/api/public/native-push': typeof ApiPublicNativePushRoute
+  '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
   '/crew': typeof AuthenticatedCrewIndexRoute
   '/productions': typeof AuthenticatedProductionsIndexRoute
   '/api/public/calendar/$token': typeof ApiPublicCalendarTokenRoute
@@ -275,6 +284,7 @@ export interface FileRoutesById {
   '/_authenticated/invoices/$id': typeof AuthenticatedInvoicesIdRoute
   '/_authenticated/productions/$id': typeof AuthenticatedProductionsIdRoute
   '/api/public/native-push': typeof ApiPublicNativePushRoute
+  '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
   '/_authenticated/crew/': typeof AuthenticatedCrewIndexRoute
   '/_authenticated/productions/': typeof AuthenticatedProductionsIndexRoute
   '/api/public/calendar/$token': typeof ApiPublicCalendarTokenRoute
@@ -307,6 +317,7 @@ export interface FileRouteTypes {
     | '/invoices/$id'
     | '/productions/$id'
     | '/api/public/native-push'
+    | '/api/public/paystack-webhook'
     | '/crew/'
     | '/productions/'
     | '/api/public/calendar/$token'
@@ -337,6 +348,7 @@ export interface FileRouteTypes {
     | '/invoices/$id'
     | '/productions/$id'
     | '/api/public/native-push'
+    | '/api/public/paystack-webhook'
     | '/crew'
     | '/productions'
     | '/api/public/calendar/$token'
@@ -368,6 +380,7 @@ export interface FileRouteTypes {
     | '/_authenticated/invoices/$id'
     | '/_authenticated/productions/$id'
     | '/api/public/native-push'
+    | '/api/public/paystack-webhook'
     | '/_authenticated/crew/'
     | '/_authenticated/productions/'
     | '/api/public/calendar/$token'
@@ -387,6 +400,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermsRoute: typeof TermsRoute
   ApiPublicNativePushRoute: typeof ApiPublicNativePushRoute
+  ApiPublicPaystackWebhookRoute: typeof ApiPublicPaystackWebhookRoute
   ApiPublicCalendarTokenRoute: typeof ApiPublicCalendarTokenRoute
 }
 
@@ -588,6 +602,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicNativePushRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/paystack-webhook': {
+      id: '/api/public/paystack-webhook'
+      path: '/api/public/paystack-webhook'
+      fullPath: '/api/public/paystack-webhook'
+      preLoaderRoute: typeof ApiPublicPaystackWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/calendar/$token': {
       id: '/api/public/calendar/$token'
       path: '/api/public/calendar/$token'
@@ -662,6 +683,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   TermsRoute: TermsRoute,
   ApiPublicNativePushRoute: ApiPublicNativePushRoute,
+  ApiPublicPaystackWebhookRoute: ApiPublicPaystackWebhookRoute,
   ApiPublicCalendarTokenRoute: ApiPublicCalendarTokenRoute,
 }
 export const routeTree = rootRouteImport

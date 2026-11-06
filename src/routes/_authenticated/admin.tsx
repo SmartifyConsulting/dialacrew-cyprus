@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Folder, Star } from "lucide-react";
 import { inviteCrewMembers } from "@/lib/invite.functions";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
