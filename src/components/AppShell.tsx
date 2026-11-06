@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
-import { FrameHeaderControls } from "@/lib/frame-controls";
+import { FrameHeaderControls, useFramePinned } from "@/lib/frame-controls";
 import { Briefcase, ChevronDown, Home, Search, Shield, Star, User, type LucideIcon, Wallet, ReceiptText, CalendarDays, Megaphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany, useRole, useSession } from "@/lib/auth";
@@ -285,13 +285,15 @@ export function ClientBadge({ name }: { name: string }) {
 export function Panel({ title, children, right, badge, collapsible, defaultCollapsed }: {
   title: ReactNode; children: ReactNode; right?: ReactNode; badge?: ReactNode; collapsible?: boolean; defaultCollapsed?: boolean;
 }) {
-  const [collapsed, setCollapsed] = useState(!!collapsible && !!defaultCollapsed);
+  const [collapsedState, setCollapsed] = useState(!!collapsible && !!defaultCollapsed);
+  const pinnedOpen = useFramePinned();
+  const collapsed = collapsedState && !pinnedOpen;
   return (
     <section className="rounded-sm border border-border bg-card">
       <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
         <div className="flex min-w-0 items-center gap-2">
           {collapsible && (
-            <button type="button" onClick={() => setCollapsed((c) => !c)} aria-label={collapsed ? "Expand" : "Collapse"} className="shrink-0 text-muted-foreground hover:text-foreground">
+            <button type="button" disabled={pinnedOpen} onClick={() => setCollapsed((c) => !c)} aria-label={collapsed ? "Expand" : "Collapse"} className="shrink-0 text-muted-foreground hover:text-foreground">
               <ChevronDown className={`h-4 w-4 transition-transform ${collapsed ? "-rotate-90" : ""}`} />
             </button>
           )}
