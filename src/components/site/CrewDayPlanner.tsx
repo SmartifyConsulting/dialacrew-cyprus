@@ -464,6 +464,7 @@ function DaySummaryRow({ p, date, dayIndex, roleList, maxCols }: {
 // its own (crew can differ day to day); Copy to: carries one day's pencils and scenarios across
 // to whichever other days are ticked, instead of starting from scratch every time.
 export function CrewDayPlanner({ p }: { p: Production }) {
+  const crewCountry = useCrewCountryFilter();
   const qc = useQueryClient();
   const locationPoints = useLocationPoints(p.id).data ?? [];
   const allBookings = useBookings().data ?? [];
@@ -560,6 +561,13 @@ export function CrewDayPlanner({ p }: { p: Production }) {
       <div className="rounded-sm border border-border bg-card p-3 text-sm">
         <span className="text-muted-foreground">Pencilled across the whole production:</span> <b>{fmtMoney(totalPencilled, p.currency)}</b>{" "}
         <span className={variance < 0 ? "text-destructive" : "text-success"}>({variance < 0 ? `${fmtMoney(-variance, p.currency)} over` : `${fmtMoney(variance, p.currency)} under`} budget of {fmtMoney(p.budget, p.currency)})</span>
+        <label className="ml-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground">Crew from
+          <select value={crewCountry} onChange={(e) => setCrewCountryFilter(e.target.value)} className="rounded-sm border border-input bg-background px-2 py-1 text-xs text-foreground">
+            <option value="local">Local ({CREW_COUNTRIES.find((c) => c.code === productionCountry(p.currency))?.label})</option>
+            {CREW_COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
+            <option value="ALL">All countries</option>
+          </select>
+        </label>
       </div>
       <section className="rounded-sm border border-border bg-card">
         <div className="border-b border-primary bg-primary px-4 py-2.5 text-primary-foreground">
