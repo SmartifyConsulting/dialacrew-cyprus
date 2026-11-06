@@ -178,19 +178,19 @@ function RoleGate({ children, open }: { children: ReactNode; open?: boolean | un
   return <>{children}</>;
 }
 
-export function Page({ title, subtitle, actions, children, open }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode; children: ReactNode; open?: boolean }) {
+export function Page({ title, subtitle, actions, children, open, compact }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode; children: ReactNode; open?: boolean; compact?: boolean }) {
   const { t } = useTranslation();
   const titleKey = typeof title === "string" ? navKeys[title] : undefined;
   return (
     <div className="min-h-screen bg-background">
       <TopNav />
       <div className="md:pl-60">
-      <main className="mx-auto max-w-7xl px-4 py-8 pb-36 md:pb-6 md:pt-12">
+      <main className={`mx-auto max-w-7xl px-4 pb-36 md:pb-6 ${compact ? "py-4 md:pt-6" : "py-8 md:pt-12"}`}>
         <RoleGate open={open}>
-          <div className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
+          <div className={`flex flex-wrap items-end justify-between gap-3 border-b border-border ${compact ? "mb-3 pb-2" : "mb-5 pb-4"}`}>
             <div>
-              <h1 className="font-sans text-3xl font-bold normal-case tracking-tight text-foreground md:text-4xl">{titleKey ? t(`nav.${titleKey}`) : title}</h1>
-              {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
+              <h1 className={`font-sans font-bold normal-case tracking-tight text-foreground ${compact ? "text-xl md:text-2xl" : "text-3xl md:text-4xl"}`}>{titleKey ? t(`nav.${titleKey}`) : title}</h1>
+              {subtitle && <p className={`text-muted-foreground ${compact ? "mt-0.5 text-xs" : "mt-1 text-sm"}`}>{subtitle}</p>}
             </div>
             {actions}
           </div>

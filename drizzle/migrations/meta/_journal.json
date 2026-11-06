@@ -148,6 +148,27 @@
       "when": 1793910349740,
       "tag": "0020_transparent_ng_in_logos",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1794000261200,
+      "tag": "0021_migration",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1794000337727,
+      "tag": "0022_migration",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1794000440639,
+      "tag": "0023_migration",
+      "breakpoints": true
     }
   ]
 }

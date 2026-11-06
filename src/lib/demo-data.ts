@@ -11,7 +11,7 @@ export type Production = {
 
 export type Crew = {
   id: string; name: string; role: string; department: string; location: string;
-  rating: number; dayRate: number; available: boolean; experience: number; kit?: string; skills?: string[];
+  rating: number; dayRate: number; available: boolean; experience: number; kit?: string; skills?: string[]; country?: string;
 };
 
 export type BookingStatus =

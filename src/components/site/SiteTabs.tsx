@@ -645,7 +645,7 @@ export function useCrewRequiredDay(p: Pick<Ctx, "p">["p"], date: string, roleLis
     return bookings.some((b) => b.role.trim().toLowerCase() === role.toLowerCase() && CONFIRMED_BOOKING_STATUSES.includes(b.status));
   }
   function candidatesFor(role: string, matches: CrewRequiredMatch[]) {
-    return crew.filter((c) => crewFitsRole(c, role) && !matches.some((m) => m.crewId === c.id) && availableForDate(c));
+    return crew.filter((c) => crewFitsRole(c, role) && !matches.some((m) => m.crewId === c.id)).map((c) => ({ ...c, unavailable: !availableForDate(c) }));
   }
   // Pencil a crew member into a role (same "pencil" status the planner uses on commit). When
   // swapping, replaceIds are the not-yet-confirmed bookings for that role to drop first.

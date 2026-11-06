@@ -923,6 +923,7 @@ export type Database = {
           available: boolean
           bio: string
           certifications: Json
+          country: string
           created_at: string
           day_rate: number
           department: string
@@ -951,6 +952,7 @@ export type Database = {
           available?: boolean
           bio?: string
           certifications?: Json
+          country?: string
           created_at?: string
           day_rate?: number
           department: string
@@ -979,6 +981,7 @@ export type Database = {
           available?: boolean
           bio?: string
           certifications?: Json
+          country?: string
           created_at?: string
           day_rate?: number
           department?: string
@@ -2775,6 +2778,7 @@ export type Database = {
           skills: string[]
           social_opt_in: boolean
           spotlight_featured_at: string | null
+          spotlight_links: Json
           suspended: boolean
           whatsapp_number: string | null
         }
@@ -2791,6 +2795,7 @@ export type Database = {
           skills?: string[]
           social_opt_in?: boolean
           spotlight_featured_at?: string | null
+          spotlight_links?: Json
           suspended?: boolean
           whatsapp_number?: string | null
         }
@@ -2807,6 +2812,7 @@ export type Database = {
           skills?: string[]
           social_opt_in?: boolean
           spotlight_featured_at?: string | null
+          spotlight_links?: Json
           suspended?: boolean
           whatsapp_number?: string | null
         }
@@ -3180,325 +3186,6 @@ export type Database = {
           },
         ]
       }
-      storyboard_audio_packages: {
-        Row: { key: string; name: string; credits: number; price_cents: number; currency: string; active: boolean; sort_order: number; updated_at: string }
-        Insert: { key: string; name: string; credits: number; price_cents: number; currency?: string; active?: boolean; sort_order?: number; updated_at?: string }
-        Update: { key?: string; name?: string; credits?: number; price_cents?: number; currency?: string; active?: boolean; sort_order?: number; updated_at?: string }
-        Relationships: []
-      }
-      storyboard_audio_pricing: {
-        Row: { generation_kind: string; credits_per_generation: number; updated_at: string }
-        Insert: { generation_kind: string; credits_per_generation: number; updated_at?: string }
-        Update: { generation_kind?: string; credits_per_generation?: number; updated_at?: string }
-        Relationships: []
-      }
-      storyboard_audio_purchases: {
-        Row: {
-          id: string; production_id: string; package_key: string; credits: number; amount_cents: number; currency: string
-          paystack_reference: string; status: string; created_by: string; created_at: string; paid_at: string | null
-        }
-        Insert: {
-          id?: string; production_id: string; package_key: string; credits: number; amount_cents: number; currency?: string
-          paystack_reference: string; status?: string; created_by?: string; created_at?: string; paid_at?: string | null
-        }
-        Update: {
-          id?: string; production_id?: string; package_key?: string; credits?: number; amount_cents?: number; currency?: string
-          paystack_reference?: string; status?: string; created_by?: string; created_at?: string; paid_at?: string | null
-        }
-        Relationships: [
-          { foreignKeyName: "storyboard_audio_purchases_production_id_fkey"; columns: ["production_id"]; isOneToOne: false; referencedRelation: "productions"; referencedColumns: ["id"] },
-          { foreignKeyName: "storyboard_audio_purchases_package_key_fkey"; columns: ["package_key"]; isOneToOne: false; referencedRelation: "storyboard_audio_packages"; referencedColumns: ["key"] },
-        ]
-      }
-      storyboard_audio_transactions: {
-        Row: {
-          id: string; production_id: string; kind: string; credits: number; idempotency_key: string
-          purchase_id: string | null; cue_id: string | null; balance_after: number; note: string | null; created_by: string; created_at: string
-        }
-        Insert: {
-          id?: string; production_id: string; kind: string; credits: number; idempotency_key: string
-          purchase_id?: string | null; cue_id?: string | null; balance_after: number; note?: string | null; created_by?: string; created_at?: string
-        }
-        Update: {
-          id?: string; production_id?: string; kind?: string; credits?: number; idempotency_key?: string
-          purchase_id?: string | null; cue_id?: string | null; balance_after?: number; note?: string | null; created_by?: string; created_at?: string
-        }
-        Relationships: [
-          { foreignKeyName: "storyboard_audio_transactions_production_id_fkey"; columns: ["production_id"]; isOneToOne: false; referencedRelation: "productions"; referencedColumns: ["id"] },
-          { foreignKeyName: "storyboard_audio_transactions_purchase_id_fkey"; columns: ["purchase_id"]; isOneToOne: false; referencedRelation: "storyboard_audio_purchases"; referencedColumns: ["id"] },
-          { foreignKeyName: "storyboard_audio_transactions_cue_id_fkey"; columns: ["cue_id"]; isOneToOne: false; referencedRelation: "storyboard_audio_cues"; referencedColumns: ["id"] },
-        ]
-      }
-      storyboard_audio_wallets: {
-        Row: { production_id: string; available_credits: number; reserved_credits: number; total_purchased: number; total_consumed: number; created_at: string; updated_at: string }
-        Insert: { production_id: string; available_credits?: number; reserved_credits?: number; total_purchased?: number; total_consumed?: number; created_at?: string; updated_at?: string }
-        Update: { production_id?: string; available_credits?: number; reserved_credits?: number; total_purchased?: number; total_consumed?: number; created_at?: string; updated_at?: string }
-        Relationships: [
-          { foreignKeyName: "storyboard_audio_wallets_production_id_fkey"; columns: ["production_id"]; isOneToOne: true; referencedRelation: "productions"; referencedColumns: ["id"] },
-        ]
-      }
-      storyboard_audio_cues: {
-        Row: {
-          audio_path: string | null
-          created_at: string
-          created_by: string
-          duration_seconds: number | null
-          generation_error: string | null
-          id: string
-          kind: string
-          label: string
-          production_id: string
-          prompt: string | null
-          shot_id: string | null
-          sort_order: number
-          start_offset_seconds: number
-          status: string
-          updated_at: string
-          volume: number
-        }
-        Insert: {
-          audio_path?: string | null
-          created_at?: string
-          created_by?: string
-          duration_seconds?: number | null
-          generation_error?: string | null
-          id?: string
-          kind: string
-          label?: string
-          production_id: string
-          prompt?: string | null
-          shot_id?: string | null
-          sort_order?: number
-          start_offset_seconds?: number
-          status?: string
-          updated_at?: string
-          volume?: number
-        }
-        Update: {
-          audio_path?: string | null
-          created_at?: string
-          created_by?: string
-          duration_seconds?: number | null
-          generation_error?: string | null
-          id?: string
-          kind?: string
-          label?: string
-          production_id?: string
-          prompt?: string | null
-          shot_id?: string | null
-          sort_order?: number
-          start_offset_seconds?: number
-          status?: string
-          updated_at?: string
-          volume?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "storyboard_audio_cues_production_id_fkey"
-            columns: ["production_id"]
-            isOneToOne: false
-            referencedRelation: "productions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "storyboard_audio_cues_shot_id_fkey"
-            columns: ["shot_id"]
-            isOneToOne: false
-            referencedRelation: "storyboard_shots"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      storyboard_audio_cue_versions: {
-        Row: {
-          audio_path: string
-          created_at: string
-          created_by: string
-          cue_id: string
-          id: string
-          production_id: string
-          prompt: string | null
-        }
-        Insert: {
-          audio_path: string
-          created_at?: string
-          created_by?: string
-          cue_id: string
-          id?: string
-          production_id: string
-          prompt?: string | null
-        }
-        Update: {
-          audio_path?: string
-          created_at?: string
-          created_by?: string
-          cue_id?: string
-          id?: string
-          production_id?: string
-          prompt?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "storyboard_audio_cue_versions_cue_id_fkey"
-            columns: ["cue_id"]
-            isOneToOne: false
-            referencedRelation: "storyboard_audio_cues"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "storyboard_audio_cue_versions_production_id_fkey"
-            columns: ["production_id"]
-            isOneToOne: false
-            referencedRelation: "productions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      storyboard_generations: {
-        Row: {
-          cost_usd: number | null
-          created_at: string
-          created_by: string
-          id: string
-          kind: string
-          model: string | null
-          production_id: string
-          provider: string
-          shot_id: string | null
-          status: string
-        }
-        Insert: {
-          cost_usd?: number | null
-          created_at?: string
-          created_by?: string
-          id?: string
-          kind?: string
-          model?: string | null
-          production_id: string
-          provider: string
-          shot_id?: string | null
-          status?: string
-        }
-        Update: {
-          cost_usd?: number | null
-          created_at?: string
-          created_by?: string
-          id?: string
-          kind?: string
-          model?: string | null
-          production_id?: string
-          provider?: string
-          shot_id?: string | null
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "storyboard_generations_production_id_fkey"
-            columns: ["production_id"]
-            isOneToOne: false
-            referencedRelation: "productions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "storyboard_generations_shot_id_fkey"
-            columns: ["shot_id"]
-            isOneToOne: false
-            referencedRelation: "storyboard_shots"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      storyboard_exports: {
-        Row: {
-          created_at: string
-          created_by: string
-          duration_seconds: number | null
-          id: string
-          production_id: string
-          video_path: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string
-          duration_seconds?: number | null
-          id?: string
-          production_id: string
-          video_path: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string
-          duration_seconds?: number | null
-          id?: string
-          production_id?: string
-          video_path?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "storyboard_exports_production_id_fkey"
-            columns: ["production_id"]
-            isOneToOne: false
-            referencedRelation: "productions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      storyboard_shots: {
-        Row: {
-          created_at: string
-          created_by: string
-          description: string
-          duration_seconds: number
-          generation_error: string | null
-          id: string
-          image_path: string | null
-          production_id: string
-          scene_number: number
-          shot_number: number
-          sort_order: number
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string
-          description?: string
-          duration_seconds?: number
-          generation_error?: string | null
-          id?: string
-          image_path?: string | null
-          production_id: string
-          scene_number?: number
-          shot_number?: number
-          sort_order?: number
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string
-          description?: string
-          duration_seconds?: number
-          generation_error?: string | null
-          id?: string
-          image_path?: string | null
-          production_id?: string
-          scene_number?: number
-          shot_number?: number
-          sort_order?: number
-          status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "storyboard_shots_production_id_fkey"
-            columns: ["production_id"]
-            isOneToOne: false
-            referencedRelation: "productions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       site_tasks: {
         Row: {
           assigned_crew_id: string | null
@@ -3605,6 +3292,478 @@ export type Database = {
           },
         ]
       }
+      storyboard_audio_cue_versions: {
+        Row: {
+          audio_path: string
+          created_at: string
+          created_by: string
+          cue_id: string
+          id: string
+          production_id: string
+          prompt: string | null
+        }
+        Insert: {
+          audio_path: string
+          created_at?: string
+          created_by?: string
+          cue_id: string
+          id?: string
+          production_id: string
+          prompt?: string | null
+        }
+        Update: {
+          audio_path?: string
+          created_at?: string
+          created_by?: string
+          cue_id?: string
+          id?: string
+          production_id?: string
+          prompt?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storyboard_audio_cue_versions_cue_id_fkey"
+            columns: ["cue_id"]
+            isOneToOne: false
+            referencedRelation: "storyboard_audio_cues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storyboard_audio_cue_versions_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      storyboard_audio_cues: {
+        Row: {
+          audio_path: string | null
+          created_at: string
+          created_by: string
+          duration_seconds: number | null
+          generation_error: string | null
+          id: string
+          kind: string
+          label: string
+          production_id: string
+          prompt: string | null
+          shot_id: string | null
+          sort_order: number
+          start_offset_seconds: number
+          status: string
+          updated_at: string
+          volume: number
+        }
+        Insert: {
+          audio_path?: string | null
+          created_at?: string
+          created_by?: string
+          duration_seconds?: number | null
+          generation_error?: string | null
+          id?: string
+          kind: string
+          label?: string
+          production_id: string
+          prompt?: string | null
+          shot_id?: string | null
+          sort_order?: number
+          start_offset_seconds?: number
+          status?: string
+          updated_at?: string
+          volume?: number
+        }
+        Update: {
+          audio_path?: string | null
+          created_at?: string
+          created_by?: string
+          duration_seconds?: number | null
+          generation_error?: string | null
+          id?: string
+          kind?: string
+          label?: string
+          production_id?: string
+          prompt?: string | null
+          shot_id?: string | null
+          sort_order?: number
+          start_offset_seconds?: number
+          status?: string
+          updated_at?: string
+          volume?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storyboard_audio_cues_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storyboard_audio_cues_shot_id_fkey"
+            columns: ["shot_id"]
+            isOneToOne: false
+            referencedRelation: "storyboard_shots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      storyboard_audio_packages: {
+        Row: {
+          active: boolean
+          credits: number
+          currency: string
+          key: string
+          name: string
+          price_cents: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          credits: number
+          currency?: string
+          key: string
+          name: string
+          price_cents: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          credits?: number
+          currency?: string
+          key?: string
+          name?: string
+          price_cents?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      storyboard_audio_pricing: {
+        Row: {
+          credits_per_generation: number
+          generation_kind: string
+          updated_at: string
+        }
+        Insert: {
+          credits_per_generation: number
+          generation_kind: string
+          updated_at?: string
+        }
+        Update: {
+          credits_per_generation?: number
+          generation_kind?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      storyboard_audio_purchases: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          created_by: string
+          credits: number
+          currency: string
+          id: string
+          package_key: string
+          paid_at: string | null
+          paystack_reference: string
+          production_id: string
+          status: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          created_by?: string
+          credits: number
+          currency?: string
+          id?: string
+          package_key: string
+          paid_at?: string | null
+          paystack_reference: string
+          production_id: string
+          status?: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          created_by?: string
+          credits?: number
+          currency?: string
+          id?: string
+          package_key?: string
+          paid_at?: string | null
+          paystack_reference?: string
+          production_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storyboard_audio_purchases_package_key_fkey"
+            columns: ["package_key"]
+            isOneToOne: false
+            referencedRelation: "storyboard_audio_packages"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "storyboard_audio_purchases_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      storyboard_audio_transactions: {
+        Row: {
+          balance_after: number
+          created_at: string
+          created_by: string
+          credits: number
+          cue_id: string | null
+          id: string
+          idempotency_key: string
+          kind: string
+          note: string | null
+          production_id: string
+          purchase_id: string | null
+        }
+        Insert: {
+          balance_after: number
+          created_at?: string
+          created_by?: string
+          credits: number
+          cue_id?: string | null
+          id?: string
+          idempotency_key: string
+          kind: string
+          note?: string | null
+          production_id: string
+          purchase_id?: string | null
+        }
+        Update: {
+          balance_after?: number
+          created_at?: string
+          created_by?: string
+          credits?: number
+          cue_id?: string | null
+          id?: string
+          idempotency_key?: string
+          kind?: string
+          note?: string | null
+          production_id?: string
+          purchase_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storyboard_audio_transactions_cue_id_fkey"
+            columns: ["cue_id"]
+            isOneToOne: false
+            referencedRelation: "storyboard_audio_cues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storyboard_audio_transactions_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storyboard_audio_transactions_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "storyboard_audio_purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      storyboard_audio_wallets: {
+        Row: {
+          available_credits: number
+          created_at: string
+          production_id: string
+          reserved_credits: number
+          total_consumed: number
+          total_purchased: number
+          updated_at: string
+        }
+        Insert: {
+          available_credits?: number
+          created_at?: string
+          production_id: string
+          reserved_credits?: number
+          total_consumed?: number
+          total_purchased?: number
+          updated_at?: string
+        }
+        Update: {
+          available_credits?: number
+          created_at?: string
+          production_id?: string
+          reserved_credits?: number
+          total_consumed?: number
+          total_purchased?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storyboard_audio_wallets_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: true
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      storyboard_exports: {
+        Row: {
+          created_at: string
+          created_by: string
+          duration_seconds: number | null
+          id: string
+          production_id: string
+          video_path: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          duration_seconds?: number | null
+          id?: string
+          production_id: string
+          video_path: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          duration_seconds?: number | null
+          id?: string
+          production_id?: string
+          video_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storyboard_exports_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      storyboard_generations: {
+        Row: {
+          cost_usd: number | null
+          created_at: string
+          created_by: string
+          id: string
+          kind: string
+          model: string | null
+          production_id: string
+          provider: string
+          shot_id: string | null
+          status: string
+        }
+        Insert: {
+          cost_usd?: number | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          kind?: string
+          model?: string | null
+          production_id: string
+          provider: string
+          shot_id?: string | null
+          status?: string
+        }
+        Update: {
+          cost_usd?: number | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          kind?: string
+          model?: string | null
+          production_id?: string
+          provider?: string
+          shot_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storyboard_generations_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storyboard_generations_shot_id_fkey"
+            columns: ["shot_id"]
+            isOneToOne: false
+            referencedRelation: "storyboard_shots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      storyboard_shots: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string
+          duration_seconds: number
+          generation_error: string | null
+          id: string
+          image_path: string | null
+          production_id: string
+          scene_number: number
+          shot_number: number
+          sort_order: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          description?: string
+          duration_seconds?: number
+          generation_error?: string | null
+          id?: string
+          image_path?: string | null
+          production_id: string
+          scene_number?: number
+          shot_number?: number
+          sort_order?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string
+          duration_seconds?: number
+          generation_error?: string | null
+          id?: string
+          image_path?: string | null
+          production_id?: string
+          scene_number?: number
+          shot_number?: number
+          sort_order?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storyboard_shots_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -3666,6 +3825,14 @@ export type Database = {
         Args: { p_notification_id: string }
         Returns: undefined
       }
+      allocate_storyboard_audio_credits: {
+        Args: { _purchase_id: string }
+        Returns: {
+          allocated: boolean
+          credits: number
+          production_id: string
+        }[]
+      }
       apply_checklist_template: {
         Args: {
           p_crew_id?: string
@@ -3720,6 +3887,10 @@ export type Database = {
       }
       email_domain_of: { Args: { _email: string }; Returns: string }
       expire_pencils: { Args: never; Returns: undefined }
+      finalize_storyboard_audio_charge: {
+        Args: { _idempotency_key: string }
+        Returns: boolean
+      }
       flag_due_equipment_today: { Args: never; Returns: undefined }
       generate_invoice: { Args: { _booking: string }; Returns: string }
       get_invite: {
@@ -3783,11 +3954,24 @@ export type Database = {
       }
       register_native_push_device: { Args: never; Returns: Json }
       release_payment: { Args: { _booking: string }; Returns: string }
+      release_storyboard_audio_reservation: {
+        Args: { _idempotency_key: string }
+        Returns: boolean
+      }
       report_booking_no_show: {
         Args: { p_booking_id: string }
         Returns: string
       }
       report_gig_no_show: { Args: { _gig: string }; Returns: number }
+      reserve_storyboard_audio_credits: {
+        Args: {
+          _credits: number
+          _cue_id: string
+          _idempotency_key: string
+          _production_id: string
+        }
+        Returns: number
+      }
       revoke_native_push_device: { Args: { p_id: string }; Returns: undefined }
       secure_gig: { Args: { _gig: string }; Returns: undefined }
       secure_gig_paid: {

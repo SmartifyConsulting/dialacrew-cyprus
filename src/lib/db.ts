@@ -16,7 +16,7 @@ const toProduction = (r: any): Production => ({
 const toCrew = (r: any): Crew & { pencilled: boolean } => ({
   id: r.id, name: r.name, role: r.role, department: r.department, location: r.location,
   rating: Number(r.rating), dayRate: Number(r.day_rate), available: r.available,
-  experience: r.experience, kit: r.kit ?? undefined, skills: r.skills ?? [], pencilled: r.pencilled,
+  experience: r.experience, kit: r.kit ?? undefined, skills: r.skills ?? [], pencilled: r.pencilled, country: r.country ?? "ZA",
 });
 const toBooking = (r: any): Booking => ({
   id: r.id, productionId: r.production_id, crewId: r.crew_id, role: r.role, status: r.status,
@@ -288,13 +288,14 @@ export const useRespondToBooking = () => {
 
 const PAGE_SIZE = 24;
 
-export const useCrewSearch = (f: { q: string; department: string; availableOnly: boolean; favouriteIds?: string[] | undefined; favouritesOnly: boolean; page: number }) => useQuery({
+export const useCrewSearch = (f: { q: string; department: string; country?: string; availableOnly: boolean; favouriteIds?: string[] | undefined; favouritesOnly: boolean; page: number }) => useQuery({
   queryKey: ["crew-search", f],
   queryFn: async () => {
     let query = supabase.from("crew_members").select("*", { count: "exact" }).order("name");
     if (f.q) query = query.or(`name.ilike.%${f.q}%,role.ilike.%${f.q}%,location.ilike.%${f.q}%`);
     if (f.department !== "All") query = query.eq("department", f.department);
     if (f.availableOnly) query = query.eq("available", true);
+    if (f.country && f.country !== "ALL") query = query.eq("country", f.country);
     if (f.favouritesOnly) query = query.in("id", f.favouriteIds?.length ? f.favouriteIds : ["__none__"]);
     const from = f.page * PAGE_SIZE, to = from + PAGE_SIZE - 1;
     const { data, error, count } = await query.range(from, to);

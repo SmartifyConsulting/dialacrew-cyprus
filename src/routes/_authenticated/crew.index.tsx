@@ -9,6 +9,8 @@ import { useRole, useSession } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { zar } from "@/lib/demo-data";
 import { useTranslation } from "react-i18next";
+import { CREW_COUNTRIES } from "@/lib/crew-country";
+import { useVisitorCountry } from "@/lib/country-logos";
 import { useCreateCrewGroup, useCreatePencil, useCrewSearch, useDeleteCrewGroup, useCrewGroups, useDepartments, useFavourites, useProductions, useProductionTypes, useToggleFavourite } from "@/lib/db";
 
 function monthMatrix(year: number, month: number) {
@@ -107,6 +109,9 @@ function CrewPage() {
   const [q, setQ] = useState("");
   const [dept, setDept] = useState("All");
   const [availOnly, setAvailOnly] = useState(false);
+  const localCountry = useVisitorCountry();
+  const [country, setCountry] = useState<string>("local");
+  const countryCode = country === "local" ? localCountry : country;
   const [favOnly, setFavOnly] = useState(false);
   const [page, setPage] = useState(0);
   const [pencilling, setPencilling] = useState<{ id: string; name: string; role: string; dayRate: number } | null>(null);
@@ -123,11 +128,11 @@ function CrewPage() {
   const groups = useCrewGroups();
   const createGroup = useCreateCrewGroup();
   const deleteGroup = useDeleteCrewGroup();
-  const search = useCrewSearch({ q, department: dept, availableOnly: availOnly, favouritesOnly: favOnly, favouriteIds: favourites.data, page });
+  const search = useCrewSearch({ q, department: dept, country: countryCode, availableOnly: availOnly, favouritesOnly: favOnly, favouriteIds: favourites.data, page });
   const list = search.data?.rows ?? [];
   const total = search.data?.total ?? 0;
 
-  useEffect(() => { setPage(0); }, [q, dept, availOnly, favOnly]);
+  useEffect(() => { setPage(0); }, [q, dept, country, availOnly, favOnly]);
 
   async function toggleFavourite(id: string) {
     const on = !(favourites.data ?? []).includes(id);
@@ -152,6 +157,11 @@ function CrewPage() {
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("directory.search")} className="min-w-64 flex-1 rounded-sm border border-input bg-card px-3 py-2 text-sm outline-none focus:border-ring" />
         <select value={dept} onChange={(e) => setDept(e.target.value)} className="rounded-sm border border-input bg-card px-3 py-2 text-sm">
           {departments.map((d) => <option key={d} value={d}>{d === "All" ? t("directory.all") : t(`roles.${d}`, d)}</option>)}
+        </select>
+        <select value={country} onChange={(e) => setCountry(e.target.value)} aria-label="Crew country" className="rounded-sm border border-input bg-card px-3 py-2 text-sm">
+          <option value="local">Local ({CREW_COUNTRIES.find((c) => c.code === localCountry)?.label ?? localCountry})</option>
+          {CREW_COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
+          <option value="ALL">All countries</option>
         </select>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={availOnly} onChange={(e) => setAvailOnly(e.target.checked)} className="accent-primary" /> {t("directory.availableOnly")}</label>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={favOnly} onChange={(e) => setFavOnly(e.target.checked)} className="accent-primary" /> {t("directory.favouritesOnly")}</label>
