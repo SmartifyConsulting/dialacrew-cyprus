@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ChevronLeft, ChevronRight, MapPin } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Columns2, MapPin, PanelTop } from "lucide-react";
 import { Badge, ClientBadge, Page } from "@/components/AppShell";
 import { confirmDialog } from "@/components/ConfirmDialog";
 import { useRole, useSession } from "@/lib/auth";
@@ -38,6 +38,11 @@ export const Route = createFileRoute("/_authenticated/productions/$id")({
 const CREW_TABS = ["Posts", "Tasks", "Photos"] as const;
 const MANAGER_TABS = ["Posts", "Crew", "Checklists", "Tasks", "Documents", "Photos", "Budget", "Review", "Audit"] as const;
 type Tab = (typeof MANAGER_TABS)[number];
+type LayoutView = "workspace" | "focus";
+const LAYOUT_KEY = "production-layout-view";
+function getStoredLayout(): LayoutView {
+  try { return window.localStorage.getItem(LAYOUT_KEY) === "focus" ? "focus" : "workspace"; } catch { return "workspace"; }
+}
 
 function ProductionSite() {
   const { t: translate } = useTranslation();
@@ -57,6 +62,11 @@ function ProductionSite() {
   const [tab, setTab] = useState<Tab>(tabParam === "find-crew" ? "Crew" : isValidTab(tabParam) ? tabParam : "Posts");
   useEffect(() => { if (tabParam === "find-crew") setTab("Crew"); else if (isValidTab(tabParam)) setTab(tabParam); }, [tabParam]);
   const [asideOpen, setAsideOpen] = useState(true);
+  const [focusPanelOpen, setFocusPanelOpen] = useState(true);
+  // Workspace (two-column) vs Focus (compact top info panel, full-width tabs) — a per-browser
+  // preference, not tied to this production, remembered across sessions.
+  const [layout, setLayout] = useState<LayoutView>(getStoredLayout);
+  useEffect(() => { try { window.localStorage.setItem(LAYOUT_KEY, layout); } catch { /* preference just won't persist */ } }, [layout]);
   // Crew is the busiest tab (Crew Role Required + the Sandbox scenario planner) — collapse the
   // overview/location panel to give it room once the producer switches there, but never on the
   // page's first render, so a freshly created production still opens with the panel expanded.
@@ -86,6 +96,16 @@ function ProductionSite() {
 
   const actions = (
     <div className="flex items-center gap-2">
+      <div role="group" aria-label="Workspace layout" className="inline-flex overflow-hidden rounded-sm border border-border text-xs font-semibold">
+        <button type="button" onClick={() => setLayout("workspace")} aria-pressed={layout === "workspace"} title="Workspace — the two-column layout"
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 ${layout === "workspace" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+          <Columns2 className="h-3.5 w-3.5" /><span className="hidden sm:inline">Workspace</span>
+        </button>
+        <button type="button" onClick={() => setLayout("focus")} aria-pressed={layout === "focus"} title="Focus — a compact info panel on top, full-width workspace below"
+          className={`inline-flex items-center gap-1.5 border-l border-border px-2.5 py-1.5 ${layout === "focus" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+          <PanelTop className="h-3.5 w-3.5" /><span className="hidden sm:inline">Focus</span>
+        </button>
+      </div>
       <Badge>{translate(`productionList.status.${p.status}`, p.status)}</Badge>
       {isProducer && !closed && <button type="button" disabled={closing} onClick={completeJob} className="rounded border border-primary px-3 py-1.5 text-xs font-semibold text-primary disabled:opacity-50">{closing ? translate("workspace.closing") : translate("workspace.complete")}</button>}
     </div>
@@ -95,18 +115,50 @@ function ProductionSite() {
     <Page open title={<span className="inline-flex items-center gap-4"><ProductionCover p={p} isProducer={isProducer} />{p.name}</span>} subtitle={<span className="inline-flex items-center gap-2"><ClientBadge name={p.client} /> {p.type} · {p.date} · {p.days} day(s)</span>} actions={actions}>
       {closeError && <p role="alert" className="mb-3 text-sm text-destructive">{closeError}</p>}
       {closed && <div className="mb-4 rounded border border-border bg-muted p-3 text-sm font-semibold">Completed — read-only archive. No new activity or invoices can be added.</div>}
-      <div className="-mt-3 mb-4 flex items-center gap-1 text-sm text-muted-foreground"><MapPin className="h-4 w-4 text-primary" /> {p.address || p.location}</div>
-      <div className={`grid gap-5 ${asideOpen ? "lg:grid-cols-[380px_minmax(0,1fr)]" : "lg:grid-cols-[auto_minmax(0,1fr)]"}`}>
-        <button onClick={() => setAsideOpen(true)} aria-label="Expand overview panel"
-          className={`${asideOpen ? "hidden" : "hidden lg:flex"} h-9 w-9 items-center justify-center rounded-sm border border-border bg-card text-muted-foreground hover:text-primary lg:sticky lg:top-28 lg:self-start`}>
-          <ChevronRight className="h-4 w-4" />
-        </button>
-        <aside className={`space-y-5 lg:sticky lg:top-28 lg:self-start ${asideOpen ? "" : "lg:hidden"}`}>
-          <button onClick={() => setAsideOpen(false)} className="hidden items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-primary lg:flex">
-            <ChevronLeft className="h-4 w-4" /> {translate("workspace.collapse")}
+      {layout === "workspace" && (
+        <div className="-mt-3 mb-4 flex items-center gap-1 text-sm text-muted-foreground"><MapPin className="h-4 w-4 text-primary" /> {p.address || p.location}</div>
+      )}
+      {layout === "focus" && !focusPanelOpen && (
+        <div className="sticky top-16 z-20 mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-sm border border-border bg-card px-4 py-2.5 text-sm shadow-sm">
+          <span className="font-semibold">{p.name}</span>
+          <span className="text-muted-foreground">{p.date || "Date TBC"}</span>
+          <span className="flex min-w-0 items-center gap-1 text-muted-foreground"><MapPin className="h-3.5 w-3.5 shrink-0 text-primary" /> <span className="truncate">{p.address || p.location}</span></span>
+          <button onClick={() => setFocusPanelOpen(true)} className="ml-auto inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-primary hover:underline">
+            <ChevronDown className="h-3.5 w-3.5" /> Expand
           </button>
+        </div>
+      )}
+      {/* Same OverviewTab / tab-nav / tab-content tree in both layouts — only the surrounding grid
+          changes, so switching layouts never remounts a component or loses in-progress form input. */}
+      <div className={layout === "workspace" ? `grid gap-5 ${asideOpen ? "lg:grid-cols-[380px_minmax(0,1fr)]" : "lg:grid-cols-[auto_minmax(0,1fr)]"}` : "block"}>
+        {layout === "workspace" && (
+          <button onClick={() => setAsideOpen(true)} aria-label="Expand overview panel"
+            className={`${asideOpen ? "hidden" : "hidden lg:flex"} h-9 w-9 items-center justify-center rounded-sm border border-border bg-card text-muted-foreground hover:text-primary lg:sticky lg:top-28 lg:self-start`}>
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        )}
+        <aside className={
+          layout === "workspace"
+            ? `space-y-5 lg:sticky lg:top-28 lg:self-start ${asideOpen ? "" : "lg:hidden"}`
+            : focusPanelOpen ? "mb-5 space-y-3 rounded-sm border border-border bg-card p-4" : "hidden"
+        }>
+          {layout === "workspace" ? (
+            <button onClick={() => setAsideOpen(false)} className="hidden items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-primary lg:flex">
+              <ChevronLeft className="h-4 w-4" /> {translate("workspace.collapse")}
+            </button>
+          ) : (
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-display text-sm font-semibold">Production info</span>
+              <button onClick={() => setFocusPanelOpen(false)} aria-label="Collapse production info" title="Collapse"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-primary">
+                <ChevronDown className="h-3.5 w-3.5 rotate-180" /> Collapse
+              </button>
+            </div>
+          )}
           {myCrewId && <CrewOvertimePanel productionId={p.id} crewId={myCrewId} rate={rates[myCrewId] ?? 0} date={p.date || null} />}
-          <fieldset disabled={closed} className="min-w-0"><OverviewTab {...ctx} /></fieldset>
+          <fieldset disabled={closed} className={layout === "focus" ? "min-w-0 [&>div]:grid [&>div]:gap-3 [&>div]:space-y-0 md:[&>div]:grid-cols-2" : "min-w-0"}>
+            <OverviewTab {...ctx} />
+          </fieldset>
           {isProducer && tab === "Crew" && <EquipmentAvailability p={p} />}
         </aside>
         <section className="flex min-w-0 flex-col">

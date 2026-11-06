@@ -17,6 +17,7 @@ import appCss from "../styles.css?url";
 import { reportAppError } from "../lib/error-reporting";
 import { isDespiaRuntime, syncNativeAppearance } from "@/lib/native";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
+import { themeBootScript } from "@/lib/theme";
 
 function NotFoundComponent() {
   return (
@@ -107,6 +108,8 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+        {/* eslint-disable-next-line react/no-danger -- sets the .dark class before paint so there's no flash of the wrong theme */}
+        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
       </head>
       <body>
         {children}

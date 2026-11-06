@@ -12,6 +12,7 @@ import { NativePushSession } from "@/components/NativePush";
 import { disableNativePush } from "@/lib/native-push";
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const navKeys: Record<string, string> = {
   Dashboard: "dashboard", Home: "home", Calendar: "calendar", Productions: "productions",
@@ -137,6 +138,7 @@ export function TopNav() {
       )}
       {signedIn && (
         <div className="fixed right-6 top-4 z-40 hidden items-center gap-3 text-foreground md:flex">
+          <ThemeToggle className="border-border bg-card text-foreground shadow-sm" />
           <LanguageSwitcher compact className="border-border bg-card text-foreground shadow-sm" />
           <div className="grid h-10 w-10 place-items-center rounded-full border border-border bg-card shadow-sm"><NotificationBell userId={session.user.id} requireAcknowledgement={role.data === "crew"} /></div>
         </div>
@@ -146,6 +148,7 @@ export function TopNav() {
           <div className={`flex items-center gap-4 px-4 py-8 ${signedIn ? "" : "mx-auto max-w-7xl"}`}>
             {signedIn && <Link to="/dashboard" className="shrink-0"><img src={navLogo} alt="Book a Crew" className="h-[7.5rem] w-auto rounded-lg object-contain" /></Link>}
             <div className="ml-auto flex items-center gap-3">
+              <ThemeToggle className="border-nav-foreground/30 bg-transparent text-nav-foreground" />
               <LanguageSwitcher compact className="border-nav-foreground/30 bg-transparent text-nav-foreground" />
               {signedIn && <NotificationBell userId={session.user.id} requireAcknowledgement={role.data === "crew"} />}
               {signedIn && <button onClick={signOut} className="rounded-sm border border-nav-foreground/30 px-3 py-1 font-display text-xs font-semibold text-nav-foreground">{t("common.signOut")}</button>}
