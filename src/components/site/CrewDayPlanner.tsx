@@ -1,7 +1,7 @@
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { CREW_COUNTRIES, matchesCountry, productionCountry, setCrewCountryFilter, useCrewCountryFilter } from "@/lib/crew-country";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeftRight, Copy, Pencil, Plus, Sparkles, Trash2, UserPlus } from "lucide-react";
+import { ArrowLeftRight, Copy, Plus, Sparkles, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { supabase } from "@/integrations/supabase/client";
@@ -406,8 +406,6 @@ function DaySummaryRow({ p, date, dayIndex, roleList, maxCols }: {
   const sc = useScenarios(p, date, roleList);
   const countryFilter = useCrewCountryFilter();
   const localCountry = productionCountry(p.currency);
-  const [pencilFor, setPencilFor] = useState<number | null>(null);
-  const [pencilRole, setPencilRole] = useState<string | null>(null);
 
   const s1Candidates = (role: string, matches: CrewRequiredMatch[]): Candidate[] =>
     toCandidates(req.candidatesFor(role, matches), countryFilter, localCountry);
@@ -433,7 +431,6 @@ function DaySummaryRow({ p, date, dayIndex, roleList, maxCols }: {
   const colKeys = ["s1", ...sc.scenarios.map((s) => s.id)];
   while (cols.length < maxCols) cols.push(null);
 
-  function closePencil() { setPencilFor(null); setPencilRole(null); }
 
   return (
     <tr className="border-t border-border">
