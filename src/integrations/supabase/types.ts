@@ -792,6 +792,62 @@ export type Database = {
           },
         ]
       }
+      crew_banking_details: {
+        Row: {
+          account_holder_name: string
+          account_number_enc: string | null
+          bank_address: string
+          bank_country: string
+          bank_name: string
+          crew_id: string
+          currency: string
+          iban_enc: string | null
+          notes_enc: string | null
+          routing_or_sort_code_enc: string | null
+          swift_bic_enc: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          account_holder_name?: string
+          account_number_enc?: string | null
+          bank_address?: string
+          bank_country?: string
+          bank_name?: string
+          crew_id: string
+          currency?: string
+          iban_enc?: string | null
+          notes_enc?: string | null
+          routing_or_sort_code_enc?: string | null
+          swift_bic_enc?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          account_holder_name?: string
+          account_number_enc?: string | null
+          bank_address?: string
+          bank_country?: string
+          bank_name?: string
+          crew_id?: string
+          currency?: string
+          iban_enc?: string | null
+          notes_enc?: string | null
+          routing_or_sort_code_enc?: string | null
+          swift_bic_enc?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crew_banking_details_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: true
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crew_checklist_items: {
         Row: {
           checklist_id: string
@@ -1120,6 +1176,41 @@ export type Database = {
             columns: ["replacement_booking_id"]
             isOneToOne: true
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crew_passport_details: {
+        Row: {
+          crew_id: string
+          expiry_date: string | null
+          passport_name: string
+          passport_number_enc: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          crew_id: string
+          expiry_date?: string | null
+          passport_name?: string
+          passport_number_enc?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          crew_id?: string
+          expiry_date?: string | null
+          passport_name?: string
+          passport_number_enc?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crew_passport_details_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: true
+            referencedRelation: "crew_members"
             referencedColumns: ["id"]
           },
         ]
@@ -3894,6 +3985,9 @@ export type Database = {
       }
       approve_job: { Args: { _booking: string }; Returns: undefined }
       auto_approve_reviews: { Args: never; Returns: undefined }
+      banking_key: { Args: never; Returns: string }
+      can_access_banking: { Args: { _crew_id: string }; Returns: boolean }
+      can_access_passport: { Args: { _crew_id: string }; Returns: boolean }
       cancel_booking: {
         Args: { _booking: string; _postponed_to?: string; _reason: string }
         Returns: undefined
@@ -3944,6 +4038,22 @@ export type Database = {
       }
       flag_due_equipment_today: { Args: never; Returns: undefined }
       generate_invoice: { Args: { _booking: string }; Returns: string }
+      get_banking_details: {
+        Args: { _crew_id: string }
+        Returns: {
+          account_holder_name: string
+          account_number: string
+          bank_address: string
+          bank_country: string
+          bank_name: string
+          currency: string
+          iban: string
+          notes: string
+          routing_or_sort_code: string
+          swift_bic: string
+          updated_at: string
+        }[]
+      }
       get_invite: {
         Args: { _token: string }
         Returns: {
@@ -3951,6 +4061,15 @@ export type Database = {
           company_role: Database["public"]["Enums"]["company_role"]
           email: string
           valid: boolean
+        }[]
+      }
+      get_passport_details: {
+        Args: { _crew_id: string }
+        Returns: {
+          expiry_date: string
+          passport_name: string
+          passport_number: string
+          updated_at: string
         }[]
       }
       gig_negotiate: {
@@ -4003,6 +4122,7 @@ export type Database = {
           role: string
         }[]
       }
+      passport_key: { Args: never; Returns: string }
       register_native_push_device: { Args: never; Returns: Json }
       release_payment: { Args: { _booking: string }; Returns: string }
       release_storyboard_audio_reservation: {
@@ -4045,6 +4165,31 @@ export type Database = {
           role: string
           user_id: string
         }[]
+      }
+      upsert_banking_details: {
+        Args: {
+          _account_holder_name: string
+          _account_number: string
+          _bank_address: string
+          _bank_country: string
+          _bank_name: string
+          _crew_id: string
+          _currency: string
+          _iban: string
+          _notes: string
+          _routing_or_sort_code: string
+          _swift_bic: string
+        }
+        Returns: undefined
+      }
+      upsert_passport_details: {
+        Args: {
+          _crew_id: string
+          _expiry_date: string
+          _passport_name: string
+          _passport_number: string
+        }
+        Returns: undefined
       }
       withdraw_from_gig: { Args: { _gig: string }; Returns: number }
     }
