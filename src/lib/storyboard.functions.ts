@@ -62,15 +62,19 @@ export const generateShotImage = createServerFn({ method: "POST" })
 
     // Continuity: every panel is drawn with the whole sequence in view, plus the shot right before
     // it, so characters, wardrobe, setting, props and time of day stay consistent from panel to panel.
-    const { data: seq } = await supabaseAdmin.from("storyboard_shots").select("id, scene_number, shot_number, description").eq("production_id", data.productionId).order("sort_order");
+    const { data: seq } = await supabaseAdmin.from("storyboard_shots").select("id, scene_number, shot_number, description, is_anchor").eq("production_id", data.productionId).order("sort_order");
     const list = seq ?? [];
     const idx = list.findIndex((s) => s.id === data.shotId);
     const prev = idx > 0 ? list[idx - 1] : null;
+    if (idx < 0) throw new Error("Shot not found in this production.");
+    let anchor: (typeof list)[number] | null = null;
+    for (let i = idx - 1; i >= 0; i--) { const s = list[i]; if (s?.is_anchor) { anchor = s; break; } }
     const story = list.map((s) => `S${s.scene_number}.${s.shot_number}: ${s.description}`).join(" | ").slice(0, 2500);
     const prompt = [
       "Black-and-white graphite pencil storyboard panel, hand-drawn film storyboard art style, rough sketchy pencil shading, no color, no text or captions in the image.",
       "Strict continuity: this panel belongs to one continuous film sequence. Keep the same characters (faces, age, build, hairstyle, wardrobe), the same locations, props, vehicles, weather and time of day as the rest of the sequence, unless this shot explicitly changes them. Same drawing style and line weight in every panel.",
       `Full sequence for reference: ${story}`,
+      anchor ? `PRIMARY VISUAL ANCHOR (Scene ${anchor.scene_number} · Shot ${anchor.shot_number}): keep exact fidelity to this reference shot — identical character faces, hairstyle, build, wardrobe, lighting and environment style: ${anchor.description}` : "",
       prev ? `Previous shot (match its characters and setting): ${prev.description}` : "",
       `Draw THIS shot: ${data.description}`,
     ].filter(Boolean).join("\n");

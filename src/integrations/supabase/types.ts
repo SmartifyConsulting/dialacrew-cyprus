@@ -3859,6 +3859,7 @@ export type Database = {
           generation_error: string | null
           id: string
           image_path: string | null
+          is_anchor: boolean
           production_id: string
           scene_number: number
           shot_number: number
@@ -3874,6 +3875,7 @@ export type Database = {
           generation_error?: string | null
           id?: string
           image_path?: string | null
+          is_anchor?: boolean
           production_id: string
           scene_number?: number
           shot_number?: number
@@ -3889,6 +3891,7 @@ export type Database = {
           generation_error?: string | null
           id?: string
           image_path?: string | null
+          is_anchor?: boolean
           production_id?: string
           scene_number?: number
           shot_number?: number

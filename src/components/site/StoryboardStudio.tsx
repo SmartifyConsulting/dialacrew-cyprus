@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Pencil as PencilIcon, RefreshCw, Sparkles, Trash2 } from "lucide-react";
+import { Anchor, Pencil as PencilIcon, RefreshCw, Sparkles, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { friendlyError } from "@/lib/errors";
 import { useSignedUrl } from "@/lib/site";
@@ -18,7 +18,7 @@ const btn = "inline-flex items-center gap-1.5 rounded-sm bg-primary px-3 py-2 te
 type Shot = {
   id: string; production_id: string; scene_number: number; shot_number: number; description: string;
   duration_seconds: number; image_path: string | null; status: "draft" | "generating" | "generated" | "approved" | "failed";
-  generation_error: string | null; sort_order: number; created_by: string;
+  generation_error: string | null; sort_order: number; created_by: string; is_anchor?: boolean;
 };
 
 const MODES = ["Illustrate", "Sound Design", "Animatic"] as const;
@@ -102,7 +102,7 @@ function IllustrateMode({ p, isProducer }: { p: Production; isProducer: boolean 
     refresh();
   }
 
-  async function updateShot(id: string, patch: Partial<Pick<Shot, "description" | "duration_seconds" | "status">>) {
+  async function updateShot(id: string, patch: Partial<Pick<Shot, "description" | "duration_seconds" | "status" | "is_anchor">>) {
     const { error } = await supabase.from("storyboard_shots").update(patch).eq("id", id);
     if (error) { toast.error(friendlyError(error)); return; }
     refresh();
@@ -183,9 +183,12 @@ function IllustrateMode({ p, isProducer }: { p: Production; isProducer: boolean 
               onDragOver={(e) => { e.preventDefault(); setDragOverId(shot.id); }}
               onDrop={(e) => { e.preventDefault(); if (dragId) reorder(dragId, shot.id); setDragId(null); setDragOverId(null); }}
               onDragEnd={() => { setDragId(null); setDragOverId(null); }}
-              className={`cursor-grab space-y-2 rounded-sm border border-border bg-card p-3 ${dragOverId === shot.id && dragId && dragId !== shot.id ? "bg-muted" : ""} ${shot.status === "approved" ? "ring-2 ring-success" : ""}`}>
+              className={`cursor-grab space-y-2 rounded-sm border border-border bg-card p-3 ${dragOverId === shot.id && dragId && dragId !== shot.id ? "bg-muted" : ""} ${shot.status === "approved" ? "ring-2 ring-success" : shot.is_anchor ? "ring-2 ring-info" : ""}`}>
               <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
-                <span>Scene {shot.scene_number} · Shot {shot.shot_number}</span>
+                <span className="flex items-center gap-1.5">Scene {shot.scene_number} · Shot {shot.shot_number}
+                  <button onClick={() => updateShot(shot.id, { is_anchor: !shot.is_anchor })} aria-label={shot.is_anchor ? "Remove anchor" : "Anchor this shot"} title={shot.is_anchor ? "Anchor shot — following shots match it" : "Anchor: make following shots match this one"}
+                    className={shot.is_anchor ? "text-info" : "text-muted-foreground/50 hover:text-info"}><Anchor className="h-3.5 w-3.5" /></button>
+                  {shot.is_anchor && <span className="rounded-sm bg-info/15 px-1.5 py-0.5 text-[10px] text-info">Anchor</span>}</span>
                 <button onClick={() => deleteShot(shot.id)} aria-label="Delete shot" className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
               </div>
               <ShotImage path={shot.image_path} />
