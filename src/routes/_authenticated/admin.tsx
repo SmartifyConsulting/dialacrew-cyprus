@@ -840,7 +840,7 @@ function BookingsTab() {
                     <td className="px-4">
                       <StatusPill value={b.status as (typeof BOOKING_STATUSES)[number]} options={BOOKING_STATUSES} label={(s) => t(`workflowStatuses.${s}`)} onChange={(s) => setStatus(b.id, s)} />
                     </td>
-                    <td className="px-4 text-xs text-muted-foreground">{b.payment_status}</td>
+                    <td className="whitespace-nowrap px-4 text-xs text-muted-foreground">{t(`workflowStatuses.${b.payment_status}`)}</td>
                     <td className="px-4"><button onClick={() => removeBooking(b.id)} className="text-xs text-destructive hover:underline">Delete</button></td>
                   </tr>
                 ))}</tbody>
