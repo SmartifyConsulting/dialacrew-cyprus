@@ -9,7 +9,7 @@ export const getUsdZarRate = createServerFn({ method: "GET" }).handler(async () 
     const res = await fetch("https://open.er-api.com/v6/latest/USD");
     if (!res.ok) throw new Error(String(res.status));
     const json = (await res.json()) as { rates?: Record<string, number>; time_last_update_utc?: string };
-    const rate = Number(json.rates?.ZAR);
+    const rate = Number(json.rates?.["ZAR"]);
     if (!Number.isFinite(rate) || rate < 5 || rate > 100) throw new Error("implausible rate");
     const asOf = json.time_last_update_utc ? new Date(json.time_last_update_utc).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
     cache = { rate, asOf, at: Date.now() };
