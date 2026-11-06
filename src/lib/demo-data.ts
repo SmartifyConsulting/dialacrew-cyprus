@@ -6,6 +6,7 @@ export type Production = {
   timezone?: string | null; recceStart?: string | null; recceEnd?: string | null;
   gearPickupDate?: string | null; gearPickupTime?: string | null; gearDropoffDate?: string | null; gearDropoffTime?: string | null;
   travelRequired?: boolean;
+  createdAt?: string;
 };
 
 export type Crew = {

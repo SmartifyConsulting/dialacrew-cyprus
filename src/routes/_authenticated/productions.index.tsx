@@ -34,6 +34,7 @@ export const Route = createFileRoute("/_authenticated/productions/")({
 
 const field = "w-full rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
 const labelCls = "block text-xs font-medium text-muted-foreground";
+const createdLabel = (iso?: string) => iso ? new Date(iso).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" }) : "—";
 
 type ClientRow = { id: string; name: string; company: string };
 
@@ -382,6 +383,7 @@ function Productions() {
               </div>
             </div>
             <div className="mt-2 text-xs text-muted-foreground">{p.date || "Date TBC"} · {p.days} day(s) · {p.location}</div>
+            <div className="text-xs text-muted-foreground">Created {createdLabel(p.createdAt)}</div>
             <div className="mt-3 flex items-center justify-between text-sm"><span>{fmtMoney(p.budget, p.currency)}</span><span className="text-xs text-muted-foreground">Crew {p.crewBooked}/{p.crewNeeded}</span></div>
             <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary" style={{ width: `${p.crewNeeded ? Math.min(100, (p.crewBooked / p.crewNeeded) * 100) : 0}%` }} /></div>
           </div>
@@ -390,10 +392,10 @@ function Productions() {
       <div className="hidden md:block"><Panel title={t("productionList.all")}>
         <table className="w-full text-sm">
           <thead className="text-left text-[11px] text-muted-foreground">
-            <tr>{["Production", "Job ID", "Type", "Location", "Date", "Days", "Budget", "Status", ""].map((h) => <th key={h} className="px-4 py-2 font-medium">{h ? t(`productionList.columns.${h}`) : ""}</th>)}</tr>
+            <tr>{["Production", "Job ID", "Type", "Location", "Date", "Days", "Budget", "Created", "Status", ""].map((h) => <th key={h} className="px-4 py-2 font-medium">{h === "Created" ? "Created" : h ? t(`productionList.columns.${h}`) : ""}</th>)}</tr>
           </thead>
           <tbody>
-            {filteredList.length === 0 && <tr><td colSpan={9} className="px-4 py-6 text-center text-muted-foreground">No productions match "{search}".</td></tr>}
+            {filteredList.length === 0 && <tr><td colSpan={10} className="px-4 py-6 text-center text-muted-foreground">No productions match "{search}".</td></tr>}
             {filteredList.map((p) => (
               <tr key={p.id} className="border-t border-border hover:bg-muted/50">
                 <td className="px-4 py-2.5 font-medium">
@@ -408,6 +410,7 @@ function Productions() {
                 <td className="px-4 text-muted-foreground">{p.date}</td>
                 <td className="px-4">{p.days}</td>
                 <td className="px-4">{fmtMoney(p.budget, p.currency)}</td>
+                <td className="px-4 text-muted-foreground">{createdLabel(p.createdAt)}</td>
                 <td className="px-4"><Badge>{t(`productionList.status.${p.status}`, p.status)}</Badge></td>
                 <td className="px-4">
                   {isProducer && (
