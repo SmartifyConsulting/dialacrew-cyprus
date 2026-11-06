@@ -40,7 +40,7 @@ export const Route = createFileRoute("/_authenticated/productions/$id")({
 // Crew see only Posts, Tasks and Photos (Overview is the fixed left widget).
 // The Crew tab is a live workspace: Crew Role Required on top, the Sandbox scenario planner below.
 const CREW_TABS = ["Posts", "Tasks", "Photos"] as const;
-const MANAGER_TABS = ["Posts", "Crew", "Storyboard", "Checklists", "Tasks", "Photos", "Budget", "Review", "Audit"] as const;
+const MANAGER_TABS = ["Posts", "Crew", "Storyboard", "Checklists", "Tasks", "Photos", "Files", "Budget", "Review", "Audit"] as const;
 type Tab = (typeof MANAGER_TABS)[number];
 function ProductionSite() {
   const { t: translate } = useTranslation();
@@ -126,7 +126,8 @@ function ProductionSite() {
           {tab === "Checklists" && <ChecklistsPanel p={p} isProducer={isProducer} />}
           {tab === "Tasks" && <TasksTab {...ctx} />}
           {tab === "Audit" && isProducer && <AuditTab p={p} />}
-          {tab === "Photos" && <div className="space-y-5"><PhotosTab p={p} userId={userId} isProducer={isProducer} />{isProducer && <DocumentsTab p={p} userId={userId} myName={myName} isProducer={isProducer} />}</div>}
+          {tab === "Photos" && <PhotosTab p={p} userId={userId} isProducer={isProducer} />}
+          {tab === "Files" && isProducer && <DocumentsTab p={p} userId={userId} myName={myName} isProducer={isProducer} />}
           {tab === "Storyboard" && <StoryboardStudio p={p} isProducer={isProducer} />}
                     {tab === "Budget" && isProducer && <CommercialsTab {...ctx} bookings={bookings} crewNames={crewNames} requests={requests} />}
           {tab === "Review" && isProducer && <RetroTab p={p} />}

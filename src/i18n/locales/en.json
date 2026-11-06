@@ -45,7 +45,7 @@
     "closing": "Closing…", "complete": "Mark completed", "collapse": "Collapse", "overview": "Overview", "summary": "Production summary",
     "share": "Share an update with everyone on this job…", "audio": "Audio", "camera": "Camera", "attach": "Attach", "post": "Post", "posting": "Posting…",
     "noPosts": "No posts yet. Start the conversation.", "teamMember": "Team member", "deletePost": "Delete post",
-    "tabs": { "Posts": "Posts", "Crew": "Crew", "Checklists": "Checklists", "Tasks": "Tasks", "Documents": "Documents", "Photos": "Files", "Storyboard": "Storyboard", "Budget": "Budget", "Review": "Review", "Audit": "Audit" }
+    "tabs": { "Posts": "Posts", "Crew": "Crew", "Checklists": "Checklists", "Tasks": "Tasks", "Documents": "Documents", "Photos": "Photos", "Files": "Files", "Storyboard": "Storyboard", "Budget": "Budget", "Review": "Review", "Audit": "Audit" }
   },
   "productionList": {
     "subtitle": "Start from the client brief, then break it down into crew and resources.", "search": "Search by Job ID or name", "all": "All productions",
