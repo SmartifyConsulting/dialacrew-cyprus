@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronLeft, ChevronRight, MapPin } from "lucide-react";
@@ -57,8 +57,13 @@ function ProductionSite() {
   useEffect(() => { if (tabParam === "find-crew") setTab("Crew"); else if (isValidTab(tabParam)) setTab(tabParam); }, [tabParam]);
   const [asideOpen, setAsideOpen] = useState(true);
   // Crew is the busiest tab (Crew Role Required + the Sandbox scenario planner) — collapse the
-  // overview/location panel to give it room, then bring it back once the producer looks elsewhere.
-  useEffect(() => { setAsideOpen(tab !== "Crew"); }, [tab]);
+  // overview/location panel to give it room once the producer switches there, but never on the
+  // page's first render, so a freshly created production still opens with the panel expanded.
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    if (!mountedRef.current) { mountedRef.current = true; return; }
+    setAsideOpen(tab !== "Crew");
+  }, [tab]);
   const p = prods.data?.find((x) => x.id === id);
   const rates = useBookingRates(p?.id ?? "");
   const qc = useQueryClient();

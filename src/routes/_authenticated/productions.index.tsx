@@ -170,7 +170,6 @@ function Productions() {
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [cropSource, setCropSource] = useState<File | null>(null); // picture waiting to be cropped
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [search, setSearch] = useState("");
 
   const filteredList = list.filter((p) => !search.trim() || (p.jobId ?? "").toLowerCase().includes(search.trim().toLowerCase()) || (p.externalRef ?? "").toLowerCase().includes(search.trim().toLowerCase()) || p.name.toLowerCase().includes(search.trim().toLowerCase()));
@@ -180,7 +179,7 @@ function Productions() {
   const addDays = (ymd: string, n: number) => { const d = new Date(`${ymd}T00:00:00`); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
   // Ignore the production being edited and the draft this form autosaved itself.
 
-  const resetForm = () => { setF(blankForm); setEditingId(null); setDraftId(null); setSaveState("idle"); setDuplicating(false); setCoverFile(null); setCoverPreview(null); setCropSource(null); };
+  const resetForm = () => { setF(blankForm); setEditingId(null); setDraftId(null); setDuplicating(false); setCoverFile(null); setCoverPreview(null); setCropSource(null); };
   // A chosen picture is cropped first; the cropped square is what gets saved as the cover.
   const pickCover = (file: File | undefined) => { if (file) setCropSource(file); };
   const applyCrop = (cropped: File) => {
@@ -200,8 +199,8 @@ function Productions() {
       setAddingType(false);
     } catch (e) { toast.error(friendlyError(e)); }
   }
-  // A Job ID is immutable and database-generated on insert, so start a Draft the moment the form
-  // opens — the Job ID is visible right away instead of only appearing once other fields are filled in.
+  // A Production ID is immutable and database-generated on insert, so start a Draft the moment the
+  // form opens — the ID exists right away instead of only appearing once other fields are filled in.
   const openNew = async () => {
     resetForm();
     setOpen(true);
@@ -214,7 +213,6 @@ function Productions() {
     setF({ name: p.name, client: p.client, jobId: p.jobId ?? "", externalRef: p.externalRef ?? "", type: p.type, location: p.location, recceDate: p.recceDate ?? "", recceTime: p.recceStart ?? "", startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget, description: p.summary ?? "" });
     setEditingId(p.id);
     setDraftId(null);
-    setSaveState("idle");
     setDuplicating(false);
     setOpen(true);
   };
@@ -222,7 +220,6 @@ function Productions() {
     setF({ name: `${p.name} (copy)`, client: p.client, jobId: "", externalRef: "", type: p.type, location: p.location, recceDate: p.recceDate ?? "", recceTime: p.recceStart ?? "", startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget, description: p.summary ?? "" });
     setEditingId(null);
     setDraftId(null);
-    setSaveState("idle");
     setDuplicating(true);
     setOpen(true);
     const { data, error } = await supabase.from("productions").insert({ name: `${p.name} (copy)`, client: p.client, status: "Draft" } as never).select("id, job_id").single();
@@ -230,31 +227,6 @@ function Productions() {
     setDraftId(data.id);
     setF((prev) => ({ ...prev, jobId: data.job_id }));
   };
-
-  // Autosave a Draft as the user fills in the new-production form, so an abandoned form isn't lost —
-  // only while creating (not while editing an existing production, which saves explicitly). Needs a
-  // unique Job ID before it will persist anything.
-  useEffect(() => {
-    if (!open || editingId) return;
-    if (!f.name.trim() || !f.client.trim()) return;
-    const t = setTimeout(async () => {
-      setSaveState("saving");
-      const payload = { name: f.name, client: f.client, external_ref: f.externalRef.trim() || null, type: f.type, location: f.location, budget: f.budget, recce_date: f.recceDate || null, recce_start_time: f.recceTime || null, date: f.startDate || null, end_date: f.endDate || null, days, summary: f.description };
-      if (draftId) {
-        const { error } = await supabase.from("productions").update(payload).eq("id", draftId);
-        if (error) { toast.error(friendlyError(error)); return; }
-      } else {
-        const { data, error } = await supabase.from("productions").insert({ ...payload, status: "Draft" } as never).select("id").single();
-        if (error) { toast.error(friendlyError(error)); return; }
-        setDraftId(data.id);
-      }
-      qc.invalidateQueries({ queryKey: ["productions"] });
-      setSaveState("saved");
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, 800);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [f.name, f.client, f.jobId, f.type, f.location, f.recceDate, f.recceTime, f.startDate, f.endDate, f.budget, f.description, open, editingId]);
 
   async function deleteProduction(p: (typeof list)[number]) {
     if (!(await confirmDialog(`Delete "${p.name}"? This can't be undone.`, { destructive: true }))) return;
@@ -265,8 +237,8 @@ function Productions() {
   }
 
   // New productions start as a Draft so the team can sandbox crew groups against the budget before committing;
-  // editing an existing one keeps its current status. Client, Job ID, name, start/end date and budget are
-  // all compulsory, and a Job ID can never repeat one already in use.
+  // editing an existing one keeps its current status. Client, Production ID, name, start/end date and budget
+  // are all compulsory, and a Production ID can never repeat one already in use.
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!f.client.trim()) { toast.error("Client is required"); return; }
@@ -306,12 +278,7 @@ function Productions() {
           <form onSubmit={submit} onClick={(e) => e.stopPropagation()} className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-sm border border-border bg-card p-5 shadow-lg">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="font-display text-lg font-semibold">{editingId ? "Edit production" : duplicating ? "Duplicate production" : "New production"}</h2>
-              <div className="flex items-center gap-3">
-                {!editingId && saveState !== "idle" && (
-                  <span className="text-xs text-muted-foreground">{saveState === "saving" ? "Saving draft…" : "Draft saved"}</span>
-                )}
-                <button type="button" onClick={closeModal} className="text-muted-foreground hover:text-foreground" aria-label="Close">✕</button>
-              </div>
+              <button type="button" onClick={closeModal} className="text-muted-foreground hover:text-foreground" aria-label="Close">✕</button>
             </div>
             <div className="rounded-sm border border-border p-4">
               <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Production info</h3>
@@ -323,8 +290,6 @@ function Productions() {
                 <p className="text-xs text-muted-foreground">Square picture shown beside the production name. You can change it later from the production site.</p>
               </div>
               <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
-                <label className={labelCls}>Job ID
-                  <input className={`${field} mt-1 bg-muted`} readOnly value={f.jobId || "Generating…"} /></label>
                 <label className={labelCls}>Ref Number (optional)
                   <input className={`${field} mt-1`} placeholder="External system reference" value={f.externalRef} onChange={(e) => setF({ ...f, externalRef: e.target.value })} /></label>
                 <label className={labelCls}>Client *
@@ -389,7 +354,7 @@ function Productions() {
       )}
       <div className="relative mb-4 max-w-sm">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <input className={`${field} pl-9`} placeholder="Search by Job ID or name" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <input className={`${field} pl-9`} placeholder="Search by Production ID or name" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
       <div className="grid gap-3 md:hidden">
         {filteredList.length === 0 && <p className="text-sm text-muted-foreground">No productions match "{search}".</p>}
@@ -399,7 +364,7 @@ function Productions() {
               <ProductionAvatar name={p.name} imagePath={p.imagePath} className="h-12 w-12 text-sm" />
               <Link to="/productions/$id" params={{ id: p.id }} className="min-w-0 flex-1">
                 <div className="truncate font-semibold text-primary underline-offset-2 hover:underline">{p.name}</div>
-                {p.jobId && <div className="text-xs text-muted-foreground">Job ID: {p.jobId}</div>}
+                {p.jobId && <div className="text-xs text-muted-foreground">Production ID: {p.jobId}</div>}
                 <div className="mt-1 flex items-center gap-2"><ClientBadge name={p.client} /><span className="text-xs text-muted-foreground">{p.type}</span></div>
               </Link>
               <div className="flex shrink-0 items-center gap-2">
@@ -422,7 +387,7 @@ function Productions() {
       <div className="hidden md:block"><Panel title="All productions">
         <table className="w-full text-sm">
           <thead className="text-left text-[11px] text-muted-foreground">
-            <tr>{["Production", "Job ID", "Type", "Location", "Date", "Days", "Budget", "Status", ""].map((h) => <th key={h} className="px-4 py-2 font-medium">{h}</th>)}</tr>
+            <tr>{["Production", "Production ID", "Type", "Location", "Date", "Days", "Budget", "Status", ""].map((h) => <th key={h} className="px-4 py-2 font-medium">{h}</th>)}</tr>
           </thead>
           <tbody>
             {filteredList.length === 0 && <tr><td colSpan={9} className="px-4 py-6 text-center text-muted-foreground">No productions match "{search}".</td></tr>}

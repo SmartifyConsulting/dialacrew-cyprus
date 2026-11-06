@@ -993,7 +993,7 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
             <p className="whitespace-pre-wrap">{p.summary || "No summary yet."}</p>
           )}
           <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground [&>dt]:font-bold [&>dt]:text-foreground">
-            <dt>Job ID</dt><dd className="text-foreground">{p.jobId || "—"}</dd>
+            <dt>Production ID</dt><dd className="text-foreground">{p.jobId || "—"}</dd>
             <dt>Client</dt><dd className="text-foreground">{p.client}</dd>
             <dt>Type</dt><dd className="text-foreground">{p.type}</dd>
             <dt>Shoot</dt><dd className="text-foreground">{p.date || "TBC"} · {p.days} day(s)</dd>
