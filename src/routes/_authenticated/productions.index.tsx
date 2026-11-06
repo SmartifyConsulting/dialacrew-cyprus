@@ -49,7 +49,7 @@ function TypeIcon({ type, label }: { type: string; label: string }) {
   const Icon = TYPE_ICONS[type] ?? Film;
   return <span title={label} aria-label={label} className="inline-flex text-muted-foreground"><Icon className="h-4 w-4" /></span>;
 }
-const JobBadge = ({ id }: { id: string | null }) => id ? <span className="whitespace-nowrap rounded-sm bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">{id}</span> : <span className="text-muted-foreground">—</span>;
+const JobBadge = ({ id }: { id?: string | null }) => id ? <span className="whitespace-nowrap rounded-sm bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">{id}</span> : <span className="text-muted-foreground">—</span>;
 
 type ClientRow = { id: string; name: string; company: string };
 
