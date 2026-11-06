@@ -375,6 +375,10 @@ function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
     <Panel title={`${t("adminNav.labels.Users")} (${users.data?.length ?? 0})`} right={
       <button onClick={() => setShowImport(!showImport)} className="text-xs font-semibold text-primary hover:underline">{t(showImport ? "adminUsers.hideImport" : "adminUsers.import")}</button>
     }>
+      <div className="flex flex-wrap items-center gap-4 border-b border-border px-4 py-2 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1"><Star className="h-3.5 w-3.5 fill-destructive text-destructive" /> Happy to be featured on social media</span>
+        <span className="inline-flex items-center gap-1"><Star className="h-3.5 w-3.5 fill-foreground text-foreground" /> Already featured</span>
+      </div>
       <table className="w-full text-sm">
         <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">{t("signup.firstName")}</th><th className="px-4">{t("signup.lastName")}</th><th className="px-4">{t("common.email")}</th><th className="px-4">{t("adminUsers.roles")}</th><th className="px-4">{t("common.status")}</th><th className="px-4">{t("common.actions")}</th></tr></thead>
         <tbody>
@@ -384,7 +388,9 @@ function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
             return (
             <tr key={u.id} className="border-t border-border">
               <td className="px-4 py-2 font-medium">
-                <span className="inline-flex items-center gap-1">{first || "—"}{u.social_opt_in && <Star className="h-3.5 w-3.5 fill-destructive text-destructive" aria-label="Happy to be featured on social media" />}</span>
+                <span className="inline-flex items-center gap-1">{first || "—"}{u.social_opt_in && (u.spotlight_featured_at
+                  ? <Star className="h-3.5 w-3.5 fill-foreground text-foreground" aria-label="Featured on social media" />
+                  : <Star className="h-3.5 w-3.5 fill-destructive text-destructive" aria-label="Happy to be featured on social media" />)}</span>
                 {u.social_opt_in && <SpotlightCell id={u.id} featuredAt={u.spotlight_featured_at} links={(u.spotlight_links as string[] | null) ?? []} />}
               </td>
               <td className="px-4 font-medium">{last || "—"}</td>
