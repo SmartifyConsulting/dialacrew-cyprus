@@ -51,8 +51,8 @@ export const navByRole: Record<string, NavItem[]> = {
     { to: "/calendar", label: "Calendar", icon: CalendarDays },
     { to: "/productions", label: "Productions", icon: Briefcase },
     { to: "/crew", label: "Crew", icon: Search },
-    { to: "/payments", label: "Payments", icon: Wallet },
     { to: "/gigs", hash: "post", label: "Post a Gig", icon: Megaphone },
+    { to: "/payments", label: "Payments", icon: Wallet },
   ],
   crew: [
     { to: "/dashboard", label: "Home", icon: Home },
@@ -69,8 +69,8 @@ export const navByRole: Record<string, NavItem[]> = {
     { to: "/calendar", label: "Calendar", icon: CalendarDays },
     { to: "/productions", label: "Productions", icon: Briefcase },
     { to: "/crew", label: "Crew", icon: Search },
-    { to: "/payments", label: "Payments", icon: Wallet },
     { to: "/gigs", hash: "post", label: "Post a Gig", icon: Megaphone },
+    { to: "/payments", label: "Payments", icon: Wallet },
     { to: "/admin", label: "Admin", icon: Shield },
   ],
 };
