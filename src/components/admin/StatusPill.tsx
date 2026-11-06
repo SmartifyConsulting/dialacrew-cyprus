@@ -4,7 +4,7 @@ import { ChevronDown } from "lucide-react";
 export function statusTone(s: string) {
   if (/(released|confirmed|completed|paid|received|secured|authorised|approved)/.test(s)) return "bg-success/15 text-success";
   if (/(failed|disputed|cancelled|rejected|expired)/.test(s)) return "bg-destructive/10 text-destructive";
-  if (/(required|held|awaiting|pending|pencil|draft|sent)/.test(s)) return "bg-warning/15 text-warning-foreground";
+  if (/(required|held|awaiting|pending|pencil|draft|sent)/.test(s)) return "bg-accent text-accent-foreground";
   if (/(open|in_progress|review)/.test(s)) return "bg-primary/10 text-primary";
   return "bg-muted text-muted-foreground";
 }
