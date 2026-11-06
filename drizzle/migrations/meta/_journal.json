@@ -176,6 +176,13 @@
       "when": 1794004329591,
       "tag": "0024_ai_usage_ledger",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1794008202230,
+      "tag": "0025_storyboard_anchor",
+      "breakpoints": true
     }
   ]
 }

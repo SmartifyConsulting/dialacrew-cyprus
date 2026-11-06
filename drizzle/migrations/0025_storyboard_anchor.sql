@@ -1,0 +1,1 @@
+ALTER TABLE public.storyboard_shots ADD COLUMN IF NOT EXISTS is_anchor boolean NOT NULL DEFAULT false;
