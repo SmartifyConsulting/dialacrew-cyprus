@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PasswordInput, fieldClass, labelClass, submitClass } from "@/components/PasswordInput";
 import { mapAuthError, passwordChecks, usePlatformSetting } from "@/lib/auth";
 import { SERVICE_SKILLS } from "@/lib/skills";
-import { COUNTRIES } from "@/lib/countries";
+import { useCountries } from "@/lib/use-countries";
 import { useTranslation } from "react-i18next";
 
 function isDespia() {
@@ -204,7 +204,7 @@ export function AuthForm() {
           {role === "producer" && (
             <div><label className={labelClass} htmlFor="producerCountry">{t("signup.country")}</label>
               <select id="producerCountry" required value={country} onChange={(e) => setCountry(e.target.value)} className={fieldClass}>
-                {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name} ({c.currency})</option>)}
+                {countries.map((c) => <option key={c.code} value={c.code}>{c.name} ({c.currency})</option>)}
               </select>
               <p className="mt-1 text-[11px] text-muted-foreground">{t("signup.currency")}</p></div>
           )}
