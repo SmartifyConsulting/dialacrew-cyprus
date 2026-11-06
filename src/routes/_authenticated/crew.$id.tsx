@@ -7,6 +7,7 @@ import { Award, Briefcase, Camera, Eye, EyeOff, Lock, Mail, MapPin, Package, Pho
 import { supabase } from "@/integrations/supabase/client";
 import { CrewRateCard } from "@/components/CrewRateCard";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { AccountSettings } from "@/components/AccountSettings";
 import { CrewEmergencySettings } from "@/components/CrewEmergencyDetails";
 import { CrewPersonalChecklists } from "@/components/CrewPersonalChecklists";
 import { Page, Panel } from "@/components/AppShell";
@@ -39,7 +40,7 @@ export const Route = createFileRoute("/_authenticated/crew/$id")({
 
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
 const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground";
-const TABS = ["About", "Projects", "Portfolio", "Equipment", "Checklists", "Reviews", "Banking", "Travel", "Emergency"] as const;
+const TABS = ["About", "Projects", "Portfolio", "Equipment", "Checklists", "Reviews", "Banking", "Travel", "Emergency", "Account"] as const;
 
 function CrewProfile() {
   const { id } = Route.useParams();
@@ -124,7 +125,7 @@ function CrewProfile() {
 
         <nav className="flex gap-1 overflow-x-auto border-y border-border px-4">
           {TABS.filter((t) => {
-            if (t === "Banking" || t === "Checklists" || t === "Emergency") return isOwnProfile;
+            if (t === "Banking" || t === "Checklists" || t === "Emergency" || t === "Account") return isOwnProfile;
             if (t === "Travel") return canEdit;
             return true;
           }).map((t) => <button key={t} onClick={() => setTab(t)} className={`whitespace-nowrap border-b-2 px-3 py-3 text-sm font-semibold ${tab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}>{t}</button>)}
@@ -170,6 +171,7 @@ function CrewProfile() {
           {tab === "Banking" && isOwnProfile && <BankingTab crewId={id} />}
           {tab === "Travel" && canEdit && <PassportTab crewId={id} canEdit={canEdit} />}
           {tab === "Emergency" && isOwnProfile && <CrewEmergencySettings crewId={id} />}
+          {tab === "Account" && isOwnProfile && <AccountSettings userId={session?.user.id} email={session?.user.email} />}
         </div>
       </div>
     </Page>

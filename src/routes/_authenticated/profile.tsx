@@ -10,6 +10,7 @@ import { useMyCrewId, uploadFile } from "@/lib/site";
 import { Avatar } from "@/components/site/SiteTabs";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { AccountSettings } from "@/components/AccountSettings";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 export const Route = createFileRoute("/_authenticated/profile")({
@@ -45,6 +46,7 @@ function MyProfile() {
           {role.isLoading || crewId.isLoading ? "Loading…" : "Profiles are for crew and service providers."}
         </p>
       </div>
+      <div className="mt-6"><AccountSettings userId={session?.user.id} email={session?.user.email} /></div>
     </Page>
   );
 }
@@ -228,6 +230,8 @@ function CompanyPanel({ userId }: { userId: string | undefined }) {
             </div>
           </Panel>
         )}
+
+        <div className="lg:col-span-2"><AccountSettings userId={userId} email={undefined} /></div>
 
         {companyId && <div className="lg:col-span-2"><TeamPanel companyId={companyId} canManage={isOwner} domain={company.data.companies?.email_domain ?? null} /></div>}
 
