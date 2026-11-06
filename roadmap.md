@@ -43,3 +43,4 @@
 - [x] Storyboard tab after Crew; locations in 3 columns
 - [x] Sandbox: selected sandbox highlighted, others greyed; no pencil icons in summary
 - [x] Remove Focus/Workspace toggle; restore two-column production page
+- [ ] Production site: fix storyboard error, Overview collapsed, frame alignment, hide template manager link, Document category in template dropdown, Documents moved into Files (renamed Photos)
