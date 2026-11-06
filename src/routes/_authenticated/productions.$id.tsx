@@ -116,12 +116,9 @@ function ProductionSite() {
   );
 
   return (
-    <Page open title={<span className="inline-flex items-center gap-3"><ProductionCover p={p} isProducer={isProducer} />{p.name}</span>} subtitle={<span className="inline-flex items-center gap-2"><ClientBadge name={p.client} /> {p.type} · {p.date} · {p.days} day(s)</span>} actions={actions}>
+    <Page open compact title={<span className="inline-flex items-center gap-3"><ProductionCover p={p} isProducer={isProducer} />{p.name}</span>} subtitle={<span className="inline-flex items-center gap-2"><ClientBadge name={p.client} /> {p.type} · {p.date} · {p.days} day(s) · <MapPin className="h-3 w-3 text-primary" />{p.address || p.location}</span>} actions={actions}>
       {closeError && <p role="alert" className="mb-3 text-sm text-destructive">{closeError}</p>}
       {closed && <div className="mb-4 rounded border border-border bg-muted p-3 text-sm font-semibold">Completed — read-only archive. No new activity or invoices can be added.</div>}
-      {layout === "workspace" && (
-        <div className="-mt-3 mb-4 flex items-center gap-1 text-sm text-muted-foreground"><MapPin className="h-4 w-4 text-primary" /> {p.address || p.location}</div>
-      )}
       {layout === "focus" && !focusPanelOpen && (
         <div className="sticky top-16 z-20 mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-sm border border-border bg-card px-3 py-1.5 text-xs shadow-sm">
           <span className="font-semibold">{p.name}</span>
