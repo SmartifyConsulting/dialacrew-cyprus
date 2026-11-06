@@ -2,12 +2,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Film, Music, Pencil as PencilIcon, RefreshCw, Sparkles, Trash2 } from "lucide-react";
+import { Film, Pencil as PencilIcon, RefreshCw, Sparkles, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { friendlyError } from "@/lib/errors";
 import { useSignedUrl } from "@/lib/site";
 import { Panel } from "@/components/AppShell";
 import { breakdownScript, generateShotImage } from "@/lib/storyboard.functions";
+import { SoundDesignStudio } from "@/components/site/SoundDesignStudio";
 import type { Production } from "@/lib/demo-data";
 
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring min-w-0";
@@ -35,7 +36,7 @@ export function StoryboardStudio({ p, isProducer }: { p: Production; isProducer:
         ))}
       </nav>
       {mode === "Illustrate" && <IllustrateMode p={p} isProducer={isProducer} />}
-      {mode === "Sound Design" && <ComingSoon icon={<Music className="h-5 w-5" />} title="Sound Design" stage="Stage 2" note="AI music, sound effects, narration and a multitrack timeline, built on these same shots." />}
+      {mode === "Sound Design" && <SoundDesignStudio p={p} isProducer={isProducer} />}
       {mode === "Animatic" && <ComingSoon icon={<Film className="h-5 w-5" />} title="Animatic" stage="Stage 3" note="Synchronized playback of the illustrations and audio, with MP4 export." />}
     </div>
   );

@@ -3180,6 +3180,123 @@ export type Database = {
           },
         ]
       }
+      storyboard_audio_cues: {
+        Row: {
+          audio_path: string | null
+          created_at: string
+          created_by: string
+          duration_seconds: number | null
+          generation_error: string | null
+          id: string
+          kind: string
+          label: string
+          production_id: string
+          prompt: string | null
+          shot_id: string | null
+          sort_order: number
+          start_offset_seconds: number
+          status: string
+          updated_at: string
+          volume: number
+        }
+        Insert: {
+          audio_path?: string | null
+          created_at?: string
+          created_by?: string
+          duration_seconds?: number | null
+          generation_error?: string | null
+          id?: string
+          kind: string
+          label?: string
+          production_id: string
+          prompt?: string | null
+          shot_id?: string | null
+          sort_order?: number
+          start_offset_seconds?: number
+          status?: string
+          updated_at?: string
+          volume?: number
+        }
+        Update: {
+          audio_path?: string | null
+          created_at?: string
+          created_by?: string
+          duration_seconds?: number | null
+          generation_error?: string | null
+          id?: string
+          kind?: string
+          label?: string
+          production_id?: string
+          prompt?: string | null
+          shot_id?: string | null
+          sort_order?: number
+          start_offset_seconds?: number
+          status?: string
+          updated_at?: string
+          volume?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storyboard_audio_cues_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storyboard_audio_cues_shot_id_fkey"
+            columns: ["shot_id"]
+            isOneToOne: false
+            referencedRelation: "storyboard_shots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      storyboard_audio_cue_versions: {
+        Row: {
+          audio_path: string
+          created_at: string
+          created_by: string
+          cue_id: string
+          id: string
+          production_id: string
+          prompt: string | null
+        }
+        Insert: {
+          audio_path: string
+          created_at?: string
+          created_by?: string
+          cue_id: string
+          id?: string
+          production_id: string
+          prompt?: string | null
+        }
+        Update: {
+          audio_path?: string
+          created_at?: string
+          created_by?: string
+          cue_id?: string
+          id?: string
+          production_id?: string
+          prompt?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storyboard_audio_cue_versions_cue_id_fkey"
+            columns: ["cue_id"]
+            isOneToOne: false
+            referencedRelation: "storyboard_audio_cues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storyboard_audio_cue_versions_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       storyboard_generations: {
         Row: {
           cost_usd: number | null
