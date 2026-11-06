@@ -161,7 +161,7 @@ function CrewProfile() {
         {activeTab === "Account" && isOwnProfile && <div className="p-6"><AccountSettings userId={session?.user.id} email={session?.user.email} /></div>}
 
 
-        {!["Portfolio", "Rates", "Account"].includes(activeTab ?? "") && <div className="p-6">
+        {!(["Portfolio", "Rates", "Account"] as string[]).includes(activeTab ?? "") && <div className="p-6">
           {activeTab === "Equipment" && <Kit crewId={id} items={assets.data ?? []} canEdit={canEdit} onChange={refresh} />}
           {activeTab === "Checklists" && isOwnProfile && <CrewPersonalChecklists crewId={id} />}
           {activeTab === "Reviews" && <ReviewsTab crewId={id} />}
