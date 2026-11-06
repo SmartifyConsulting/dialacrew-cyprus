@@ -4,7 +4,9 @@ import { RateDialog } from "@/components/site/RateDialog";
 import { gearValid } from "@/lib/calendar-events";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
+import { geocodeSearch } from "@/lib/geocode.functions";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { nativeFeedback } from "@/lib/native";
@@ -91,21 +93,23 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder, cl
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
+  const search = useServerFn(geocodeSearch);
 
   useEffect(() => {
     if (!open || value.trim().length < 3) { setSuggestions([]); return; }
     const t = setTimeout(async () => {
       setLoading(true);
       try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${encodeURIComponent(value)}`);
-        const data = (await res.json()) as { display_name: string; name?: string; lat: string; lon: string; address?: NominatimAddress }[];
-        setSuggestions(data.map((d) => ({ label: shortAddress(d.address, d.name, d.display_name), exactAddress: d.display_name, place: placeFromAddress(d.address, d.display_name.split(",")[0] ?? d.display_name), lat: d.lat, lon: d.lon })));
-      } catch { setSuggestions([]); }
+        const { results } = await search({ data: { q: value } });
+        setSuggestions(results.map((d) => ({ label: shortAddress(d.address, d.name, d.display_name), exactAddress: d.display_name, place: placeFromAddress(d.address, d.display_name.split(",")[0] ?? d.display_name), lat: d.lat, lon: d.lon })));
+        setFailed(false);
+      } catch { setSuggestions([]); setFailed(true); }
       setLoading(false);
     }, 400);
     return () => clearTimeout(t);
-  }, [value, open]);
+  }, [value, open, search]);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) { if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false); }
@@ -123,9 +127,10 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder, cl
         onFocus={() => setOpen(true)}
         autoComplete="off"
       />
-      {open && (loading || suggestions.length > 0) && (
+      {open && (loading || suggestions.length > 0 || (failed && value.trim().length >= 3)) && (
         <div className="absolute z-20 mt-1 w-full rounded-sm border border-border bg-card shadow-md">
           {loading && <div className="px-3 py-2 text-xs text-muted-foreground">Searching…</div>}
+          {!loading && failed && suggestions.length === 0 && <div className="px-3 py-2 text-xs text-destructive">Address lookup failed — you can still type the address in manually.</div>}
           {!loading && suggestions.map((s, i) => (
             <button key={i} type="button" onClick={() => { onSelect(s); setOpen(false); setSuggestions([]); }}
               className="block w-full px-3 py-2 text-left text-xs hover:bg-muted">
@@ -285,8 +290,7 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
       startsAt = `${p.date}T00:00`;
     }
     const endsAt = startsAt ? addHoursLocal(startsAt, 8) : "";
-    const recceDate = startsAt ? addDays(startsAt.slice(0, 10), -1) : "";
-    setLf({ ...blankLocationForm, startsAt, endsAt, recceDate });
+    setLf({ ...blankLocationForm, startsAt, endsAt });
     setEditingId(null);
     setAdding(true);
   }
@@ -343,7 +347,7 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
     toast.success(editingId ? "Location point updated" : "Location point added");
     const wasAdding = !editingId;
     const savedDay = lf.startsAt.slice(0, 10);
-    const savedRecceDate = lf.recceDate, savedRecceStart = lf.recceStart, savedRecceEnd = lf.recceEnd;
+    const savedRecceStart = lf.recceStart, savedRecceEnd = lf.recceEnd;
     // Days that already have a location (including the one just saved) — used below to avoid
     // staging a day that's already covered, e.g. when locations are saved out of day order.
     const assignedDays = new Set([...points.map((pt) => pt.starts_at ? localYmd(pt.starts_at) : null).filter((d): d is string => !!d), savedDay].filter(Boolean));
@@ -351,14 +355,14 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
     inv(["location-points", p.id]);
     await syncProductionRecce();
     // Shoot spans more than one day — automatically stage the next day's location so the
-    // producer doesn't have to click "Add Location" again for every day of the shoot. Recce
-    // date/time default to the same as the location just saved, since most shoots recce once
-    // for the whole run rather than per location.
+    // producer doesn't have to click "Add Location" again for every day of the shoot. Recce time
+    // carries over as a convenience, but the recce date itself is left blank: it's only filled in
+    // when the producer sets it, so the same date isn't force-repeated across every location.
     const spansMultipleDays = !!p.date && !!p.endDate && p.endDate !== p.date;
     const nextDate = savedDay ? addDays(savedDay, 1) : "";
     if (wasAdding && savedDay && spansMultipleDays && p.endDate && savedDay < p.endDate && nextDate && !assignedDays.has(nextDate)) {
       const startsAt = `${nextDate}T00:00`;
-      setLf({ ...blankLocationForm, startsAt, endsAt: addHoursLocal(startsAt, 8), recceDate: savedRecceDate, recceStart: savedRecceStart, recceEnd: savedRecceEnd });
+      setLf({ ...blankLocationForm, startsAt, endsAt: addHoursLocal(startsAt, 8), recceStart: savedRecceStart, recceEnd: savedRecceEnd });
       setAdding(true);
     }
   }
@@ -501,10 +505,8 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
                 <input type="datetime-local" className={`${input} mt-1 w-full min-w-0`} value={lf.startsAt}
                   onChange={(e) => {
                     const startsAt = e.target.value;
-                    const startDay = startsAt.slice(0, 10);
                     const endsAt = !lf.endsAt && startsAt ? addHoursLocal(startsAt, 8) : lf.endsAt;
-                    const recceDate = !lf.recceDate && startDay ? addDays(startDay, -1) : lf.recceDate;
-                    setLf({ ...lf, startsAt, endsAt, recceDate });
+                    setLf({ ...lf, startsAt, endsAt });
                   }} /></label>
               <label className="block min-w-0"><span className="text-xs text-muted-foreground">{t("locationsUi.ends")}</span>
                 <input type="datetime-local" className={`${input} mt-1 w-full min-w-0`} value={lf.endsAt} onChange={(e) => setLf({ ...lf, endsAt: e.target.value })} /></label>
@@ -1021,6 +1023,17 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
           {p.recceDate && <p className="font-semibold text-foreground">Production recce · {dayLabel(`${p.recceDate}T00:00:00`)}</p>}
           {(() => {
             const withRecce = locationPoints.filter((pt) => pt.recce_date);
+            // When every location shares the same recce date, it's already shown once above as
+            // "Production recce" — list the shared locations without repeating that date per entry.
+            const sameDateForAll = withRecce.length > 1 && withRecce.every((pt) => pt.recce_date === withRecce[0]!.recce_date);
+            if (sameDateForAll) {
+              return (
+                <p className="text-xs text-muted-foreground">
+                  {withRecce.map((pt) => canSeeRecceAddress ? pt.address || pt.label : pt.label || p.location).join(" · ")}
+                  {" · "}{recceRange(withRecce[0]!.recce_start_time, withRecce[0]!.recce_end_time)}
+                </p>
+              );
+            }
             return withRecce.map((pt) => {
               const n = locationPoints.findIndex((point) => point.id === pt.id) + 1;
               const label = withRecce.length > 1 ? `Recce Location ${n} Date` : "Recce Date";
