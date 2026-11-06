@@ -39,7 +39,7 @@ export const Route = createFileRoute("/_authenticated/crew/$id")({
 
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
 const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground";
-const TABS = ["Profile", "Emergency", "Travel", "Equipment", "Checklists", "Reviews"] as const;
+const TABS = ["Portfolio", "Rates", "Travel", "Equipment", "Checklists", "Emergency", "Account", "Reviews"] as const;
 
 function CrewProfile() {
   const { id } = Route.useParams();
@@ -77,7 +77,7 @@ function CrewProfile() {
   const canEdit = role.data === "producer" || role.data === "admin" || m.user_id === session?.user.id;
   const isOwnProfile = m.user_id === session?.user.id;
   const visibleTabs = TABS.filter((t) => {
-    if (t === "Checklists" || t === "Emergency") return isOwnProfile;
+    if (t === "Checklists" || t === "Emergency" || t === "Account") return isOwnProfile;
     if (t === "Travel") return canEdit;
     return true;
   });
@@ -103,10 +103,7 @@ function CrewProfile() {
   return (
     <Page open title="Profile" >
       <div className="mx-auto max-w-3xl rounded-sm border border-border bg-card">
-        <nav className="flex gap-1 overflow-x-auto border-b border-border px-4">
-          {visibleTabs.map((t) => <button key={t} onClick={() => setTab(t)} className={`whitespace-nowrap border-b-2 px-3 py-3 text-sm font-semibold ${activeTab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}>{t}</button>)}
-        </nav>
-        {activeTab === "Profile" && <div className="p-6">
+        <div className="p-6">
           <div className="flex items-center gap-5">
             <div className="relative">
               <Avatar name={m.name} path={m.photo_url} size={88} />
@@ -128,9 +125,12 @@ function CrewProfile() {
               <div className="flex items-center gap-3"><MapPin className="h-4 w-4" /> {m.location || "No location"}</div>
             </div>
           )}
-          <CrewRateCard crewId={id} canEdit={isOwnProfile} />
-          {canEdit && <section className="mt-6 border-t border-border pt-5"><h3 className="mb-3 font-semibold">Banking details</h3><BankingTab crewId={id} /></section>}
-          <div className="mt-6 space-y-6 border-t border-border pt-5">
+        </div>
+        <nav className="flex gap-1 overflow-x-auto border-b border-border px-4">
+          {visibleTabs.map((t) => <button key={t} onClick={() => setTab(t)} className={`whitespace-nowrap border-b-2 px-3 py-3 text-sm font-semibold ${activeTab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}>{t}</button>)}
+        </nav>
+        {activeTab === "Portfolio" && <div className="p-6">
+          <div className="space-y-6">
               <section><h3 className="mb-2 flex items-center gap-2 font-semibold"><Award className="h-4 w-4" /> Skills & Expertise</h3>
                 {m.skills.length ? <div className="flex flex-wrap gap-2">{m.skills.map((s) => <span key={s} className="rounded-sm bg-primary/15 px-2 py-1 text-xs text-primary">{s}</span>)}</div> : <p className="text-sm text-muted-foreground">No skills added yet</p>}
               </section>
@@ -153,11 +153,15 @@ function CrewProfile() {
             ) : <p className="text-sm text-muted-foreground">No portfolio links added yet.</p>}
             </section>
           </div>
-          {isOwnProfile && <div className="mt-6 border-t border-border pt-5"><AccountSettings userId={session?.user.id} email={session?.user.email} /></div>}
         </div>}
+        {activeTab === "Rates" && <div className="p-6">
+          <CrewRateCard crewId={id} canEdit={isOwnProfile} />
+          {canEdit && <section className="mt-6 border-t border-border pt-5"><h3 className="mb-3 font-semibold">Banking details</h3><BankingTab crewId={id} /></section>}
+        </div>}
+        {activeTab === "Account" && isOwnProfile && <div className="p-6"><AccountSettings userId={session?.user.id} email={session?.user.email} /></div>}
 
 
-        {activeTab !== "Profile" && <div className="p-6">
+        {!["Portfolio", "Rates", "Account"].includes(activeTab) && <div className="p-6">
           {activeTab === "Equipment" && <Kit crewId={id} items={assets.data ?? []} canEdit={canEdit} onChange={refresh} />}
           {activeTab === "Checklists" && isOwnProfile && <CrewPersonalChecklists crewId={id} />}
           {activeTab === "Reviews" && <ReviewsTab crewId={id} />}
