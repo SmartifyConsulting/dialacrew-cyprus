@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { friendlyError } from "@/lib/errors";
 import { useSignedUrl } from "@/lib/site";
 import { Panel } from "@/components/AppShell";
-import { breakdownScript, generateShotImage } from "@/lib/storyboard.functions";
+import { breakdownScript, generateShotImage, saveStoryboardCharacters } from "@/lib/storyboard.functions";
 import { SoundDesignStudio } from "@/components/site/SoundDesignStudio";
 import { AnimaticStudio } from "@/components/site/AnimaticStudio";
 import type { Production } from "@/lib/demo-data";
@@ -68,6 +68,20 @@ function IllustrateMode({ p, isProducer }: { p: Production; isProducer: boolean 
 
   const breakdown = useServerFn(breakdownScript);
   const generateImage = useServerFn(generateShotImage);
+  const saveChars = useServerFn(saveStoryboardCharacters);
+  const chars = useQuery({
+    queryKey: ["storyboard-characters", p.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("productions").select("storyboard_characters").eq("id", p.id).maybeSingle();
+      if (error) throw error;
+      return data?.storyboard_characters ?? "";
+    },
+  });
+  async function storeChars(v: string) {
+    if (v === (chars.data ?? "")) return;
+    try { await saveChars({ data: { productionId: p.id, characters: v } }); toast.success("Characters saved"); qc.invalidateQueries({ queryKey: ["storyboard-characters", p.id] }); }
+    catch (e) { toast.error(friendlyError(e)); }
+  }
   const [brief, setBrief] = useState("");
   const [breakingDown, setBreakingDown] = useState(false);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
@@ -78,7 +92,9 @@ function IllustrateMode({ p, isProducer }: { p: Production; isProducer: boolean 
     if (!brief.trim()) { toast.error("Describe the scene or script first"); return; }
     setBreakingDown(true);
     try {
-      const { shots: newShots } = await breakdown({ data: { productionId: p.id, brief } });
+      const { shots: newShots, improvedBrief } = await breakdown({ data: { productionId: p.id, brief } });
+      setBrief(improvedBrief);
+      qc.invalidateQueries({ queryKey: ["storyboard-characters", p.id] });
       const startOrder = shots.length;
       const rows = newShots.map((s, i) => ({
         production_id: p.id, scene_number: s.scene_number, shot_number: s.shot_number,
@@ -87,7 +103,6 @@ function IllustrateMode({ p, isProducer }: { p: Production; isProducer: boolean 
       const { error } = await supabase.from("storyboard_shots").insert(rows);
       if (error) throw error;
       toast.success(`${rows.length} shot${rows.length === 1 ? "" : "s"} added`);
-      setBrief("");
       refresh();
     } catch (e) { toast.error(friendlyError(e)); }
     finally { setBreakingDown(false); }
@@ -171,6 +186,13 @@ function IllustrateMode({ p, isProducer }: { p: Production; isProducer: boolean 
               {bulk ? `Generating ${Math.min(bulk.done + 1, bulk.total)} of ${bulk.total}…` : "Generate all"}
             </button>}
           </div>
+        </div>
+      </Panel>
+
+      <Panel title="Character references">
+        <div className="space-y-2 p-4">
+          <p className="text-xs text-muted-foreground">Each character has a #REF number. Shots that mention #REF1, #REF2… always draw that person the same way. One character per line, e.g. "#REF1 (Father): …".</p>
+          <textarea key={chars.data ?? ""} rows={4} className={`${input} w-full font-mono text-xs`} placeholder="#REF1 (Father): Black South African man, mid-30s, short cropped hair, light blue shirt" defaultValue={chars.data ?? ""} onBlur={(e) => storeChars(e.target.value)} />
         </div>
       </Panel>
 
