@@ -173,19 +173,16 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 const ADMIN_GROUPS = [
   { name: "People & Organisations", tabs: ["Users", "Crew", "Companies", "Countries", "Subscriptions"] },
-  { name: "Reporting", tabs: ["Finance", "Bookings", "Gigs"] },
   { name: "Equipment", tabs: ["Equipment"] },
   { name: "Disputes", tabs: ["Disputes"] },
   { name: "Reviews", tabs: ["Reviews"] },
   { name: "Templates", tabs: ["Checklists"] },
-  { name: "Platform Management", tabs: ["Configuration", "System Settings", "Audit Log"] },
 ] as const;
 // Producers get everything Super Admin has, except Platform Management (super-admin only) and
 // with the raw Crew roster swapped for Crew Types — producers group crew into reusable, typed
 // templates rather than editing crew records directly.
 const PRODUCER_ADMIN_GROUPS = [
   { name: "People & Organisations", tabs: ["Users", "Crew"] },
-  { name: "Reporting", tabs: ["Finance", "Bookings"] },
   { name: "Disputes", tabs: ["Disputes"] },
   { name: "Reviews", tabs: ["Reviews"] },
   { name: "Templates", tabs: ["Checklists"] },
@@ -250,15 +247,6 @@ function AdminPage() {
       {tab === "Users" && <UsersTab canManageAdmins={isSuperAdmin} />}
       {tab === "Crew" && <CrewTab />}
       {tab === "Companies" && <CompaniesTab />}
-      {tab === "Bookings" && <BookingsTab />}
-      {tab === "Gigs" && <GigsTab />}
-      {tab === "Finance" && (
-        <div className="space-y-5">
-          <FinanceStatement includeAi={isSuperAdmin} />
-          {isSuperAdmin && <details className="rounded-sm border border-border bg-card"><summary className="cursor-pointer px-4 py-3 text-sm font-semibold">AI usage — full Token Ledger</summary><TokenLedger /></details>}
-          <details className="rounded-sm border border-border bg-card"><summary className="cursor-pointer px-4 py-3 text-sm font-semibold">Gig fee and penalty settings</summary><GigFeesTab /></details>
-        </div>
-      )}
       {tab === "Equipment" && <EquipmentAdmin />}
       {tab === "Disputes" && <DisputesTab />}
       {tab === "Reviews" && <ReviewsTab />}
@@ -273,9 +261,6 @@ function AdminPage() {
         </div>
       )}
       {tab === "Countries" && <CountriesAdmin />}
-      {tab === "Audit Log" && <AuditLogTab />}
-      {tab === "Configuration" && <PlaceholderTab name="Configuration" />}
-      {tab === "System Settings" && <PlaceholderTab name="System Settings" />}
     </Page>
   );
 }
