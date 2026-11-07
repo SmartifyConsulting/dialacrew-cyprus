@@ -16,6 +16,7 @@ import { EquipmentAdmin } from "@/components/admin/EquipmentAdmin";
 import { CountriesAdmin } from "@/components/admin/CountriesAdmin";
 import { StatusPill } from "@/components/admin/StatusPill";
 import { TokenLedger } from "@/components/admin/TokenLedger";
+import { FinanceStatement } from "@/components/admin/FinanceStatement";
 import { getUsdZarRate } from "@/lib/token-ledger.functions";
 import { ChecklistTemplateManager } from "@/components/ChecklistTemplateManager";
 import { confirmDialog, promptDialog } from "@/components/ConfirmDialog";
@@ -172,7 +173,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 const ADMIN_GROUPS = [
   { name: "People & Organisations", tabs: ["Users", "Crew", "Companies", "Countries", "Subscriptions"] },
-  { name: "Reporting", tabs: ["Finance", "Token Ledger", "Payments", "Invoices", "Gig Fees", "Bookings", "Gigs"] },
+  { name: "Reporting", tabs: ["Finance", "Bookings", "Gigs"] },
   { name: "Equipment", tabs: ["Equipment"] },
   { name: "Disputes", tabs: ["Disputes"] },
   { name: "Reviews", tabs: ["Reviews"] },
@@ -184,7 +185,7 @@ const ADMIN_GROUPS = [
 // templates rather than editing crew records directly.
 const PRODUCER_ADMIN_GROUPS = [
   { name: "People & Organisations", tabs: ["Users", "Crew"] },
-  { name: "Reporting", tabs: ["Finance", "Payments", "Invoices", "Gig Fees", "Bookings"] },
+  { name: "Reporting", tabs: ["Finance", "Bookings"] },
   { name: "Disputes", tabs: ["Disputes"] },
   { name: "Reviews", tabs: ["Reviews"] },
   { name: "Templates", tabs: ["Checklists"] },
@@ -251,11 +252,13 @@ function AdminPage() {
       {tab === "Companies" && <CompaniesTab />}
       {tab === "Bookings" && <BookingsTab />}
       {tab === "Gigs" && <GigsTab />}
-      {tab === "Finance" && <CashFlowTab includeAi={isSuperAdmin} />}
-      {tab === "Token Ledger" && isSuperAdmin && <TokenLedger />}
-      {tab === "Payments" && <PaymentsTab />}
-      {tab === "Invoices" && <InvoicesTab />}
-      {tab === "Gig Fees" && <GigFeesTab />}
+      {tab === "Finance" && (
+        <div className="space-y-5">
+          <FinanceStatement includeAi={isSuperAdmin} />
+          {isSuperAdmin && <details className="rounded-sm border border-border bg-card"><summary className="cursor-pointer px-4 py-3 text-sm font-semibold">AI usage — full Token Ledger</summary><TokenLedger /></details>}
+          <details className="rounded-sm border border-border bg-card"><summary className="cursor-pointer px-4 py-3 text-sm font-semibold">Gig fee and penalty settings</summary><GigFeesTab /></details>
+        </div>
+      )}
       {tab === "Equipment" && <EquipmentAdmin />}
       {tab === "Disputes" && <DisputesTab />}
       {tab === "Reviews" && <ReviewsTab />}
