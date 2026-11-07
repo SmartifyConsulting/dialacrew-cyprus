@@ -66,7 +66,7 @@ function ProductionSite() {
   const mountedRef = useRef(false);
   useEffect(() => {
     if (!mountedRef.current) { mountedRef.current = true; return; }
-    setAsideOpen(tab !== "Crew");
+    setAsideOpen(tab !== "Crew" && tab !== "Storyboard");
   }, [tab]);
   const p = prods.data?.find((x) => x.id === id);
   const rates = useBookingRates(p?.id ?? "");
