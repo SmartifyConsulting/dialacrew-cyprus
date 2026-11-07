@@ -14,6 +14,13 @@ async function assertProducerSiteMember(context: { supabase: unknown; userId: st
   if (!member.data) throw new Error("Not a member of this production");
 }
 
+// Platform admins (developers/testers) generate audio without spending Storyboard Audio Credits.
+async function isCreditExempt(context: { supabase: unknown; userId: string }) {
+  const db = context.supabase as { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> };
+  const { data, error } = await db.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+  return !error && data === true;
+}
+
 // The AI Sound Director: reads the storyboard's scenes/shots and proposes an emotional soundtrack
 // journey — a music bed per scene, key SFX per shot, and where narration would help. The producer
 // reviews this and picks what to actually generate; nothing is created here.
@@ -59,7 +66,8 @@ export const proposeSoundtrack = createServerFn({ method: "POST" })
 export const getAudioGenerationCost = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ productionId: z.string().min(1), kind: z.enum(["music", "sfx", "ambience", "narration"]) }).parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    if (await isCreditExempt(context)) return { credits: 0, available: 0 };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [{ data: pricing }, { data: wallet }] = await Promise.all([
       supabaseAdmin.from("storyboard_audio_pricing").select("credits_per_generation").eq("generation_kind", data.kind).maybeSingle(),
@@ -100,7 +108,7 @@ export const generateAudioCue = createServerFn({ method: "POST" })
     if (!claimed) throw new Error("This cue is already generating.");
 
     const { data: pricing } = await supabaseAdmin.from("storyboard_audio_pricing").select("credits_per_generation").eq("generation_kind", data.kind).maybeSingle();
-    const creditsNeeded = pricing?.credits_per_generation ?? 0;
+    const creditsNeeded = (await isCreditExempt(context)) ? 0 : pricing?.credits_per_generation ?? 0;
     const idempotencyKey = crypto.randomUUID();
     if (creditsNeeded > 0) {
       try {
