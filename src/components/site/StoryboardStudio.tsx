@@ -7,10 +7,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { friendlyError } from "@/lib/errors";
 import { useSignedUrl } from "@/lib/site";
 import { Panel } from "@/components/AppShell";
-import { breakdownScript, generateShotImage, saveStoryboardCharacters } from "@/lib/storyboard.functions";
+import { breakdownScript, enhanceStoryboardReferences, generateShotImage, saveStoryboardCharacters } from "@/lib/storyboard.functions";
 import { SoundDesignStudio } from "@/components/site/SoundDesignStudio";
 import { AnimaticStudio } from "@/components/site/AnimaticStudio";
 import type { Production } from "@/lib/demo-data";
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const input = "rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring min-w-0";
 const btn = "inline-flex items-center gap-1.5 rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50";
@@ -79,9 +80,21 @@ function IllustrateMode({ p, isProducer }: { p: Production; isProducer: boolean 
   });
   async function storeChars(v: string) {
     if (v === (chars.data ?? "")) return;
-    try { await saveChars({ data: { productionId: p.id, characters: v } }); toast.success("Characters saved"); qc.invalidateQueries({ queryKey: ["storyboard-characters", p.id] }); }
+    try { await saveChars({ data: { productionId: p.id, characters: v } }); toast.success("References saved"); qc.invalidateQueries({ queryKey: ["storyboard-characters", p.id] }); }
     catch (e) { toast.error(friendlyError(e)); }
   }
+  const enhance = useServerFn(enhanceStoryboardReferences);
+  const [enhancing, setEnhancing] = useState(false);
+  async function enhanceRefs() {
+    setEnhancing(true);
+    try { await enhance({ data: { productionId: p.id, references: chars.data ?? "", brief } }); toast.success("References enhanced"); qc.invalidateQueries({ queryKey: ["storyboard-characters", p.id] }); }
+    catch (e) { toast.error(friendlyError(e)); }
+    finally { setEnhancing(false); }
+  }
+  type Choice = { label: string; value: string; tone?: "primary" | "destructive" | "outline" };
+  const [ask, setAsk] = useState<{ title: string; body: string; choices: Choice[]; resolve: (v: string) => void } | null>(null);
+  const askUser = (title: string, body: string, choices: Choice[]) => new Promise<string>((resolve) => setAsk({ title, body, choices, resolve }));
+  const answer = (v: string) => { ask?.resolve(v); setAsk(null); };
   const [brief, setBrief] = useState("");
   const [breakingDown, setBreakingDown] = useState(false);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
@@ -92,7 +105,11 @@ function IllustrateMode({ p, isProducer }: { p: Production; isProducer: boolean 
     if (!brief.trim()) { toast.error("Describe the scene or script first"); return; }
     let replace = false;
     if (shots.length > 0) {
-      replace = window.confirm(`Replace the ${shots.length} existing shot${shots.length === 1 ? "" : "s"} with a new breakdown?\n\nOK = replace them · Cancel = add the new shots after them`);
+      const n = shots.length;
+      const c = await askUser("You already have shots", `There ${n === 1 ? "is 1 shot" : `are ${n} shots`} on this storyboard. Replace them with the new breakdown, or add the new shots after them?`,
+        [{ label: "Cancel", value: "cancel", tone: "outline" }, { label: "Add after", value: "append", tone: "outline" }, { label: "Replace all", value: "replace", tone: "destructive" }]);
+      if (c === "cancel") return;
+      replace = c === "replace";
     }
     setBreakingDown(true);
     try {
@@ -132,7 +149,9 @@ function IllustrateMode({ p, isProducer }: { p: Production; isProducer: boolean 
   }
 
   async function deleteAllShots() {
-    if (!window.confirm(`Delete all ${shots.length} shots and their pictures? This cannot be undone.`)) return;
+    const c = await askUser("Delete all shots?", `This removes all ${shots.length} shots and their pictures. It cannot be undone.`,
+      [{ label: "Cancel", value: "cancel", tone: "outline" }, { label: "Delete all", value: "ok", tone: "destructive" }]);
+    if (c !== "ok") return;
     const { error } = await supabase.from("storyboard_shots").delete().eq("production_id", p.id);
     if (error) { toast.error(friendlyError(error)); return; }
     toast.success("All shots deleted");
@@ -197,21 +216,30 @@ function IllustrateMode({ p, isProducer }: { p: Production; isProducer: boolean 
           <div className="flex gap-2">
             <button onClick={runBreakdown} disabled={breakingDown} className={btn}><Sparkles className="h-3.5 w-3.5" /> {breakingDown ? "Breaking down…" : "Break down into shots"}</button>
             <button onClick={addBlankShot} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold hover:border-primary hover:text-primary">+ Add shot manually</button>
-            {shots.length > 0 && <button onClick={deleteAllShots} disabled={!!bulk} className="ml-auto inline-flex items-center gap-1.5 rounded-sm border border-destructive px-3 py-2 text-xs font-semibold text-destructive disabled:opacity-50"><Trash2 className="h-3.5 w-3.5" /> Delete all shots</button>}
-            {shots.length > 0 && <button onClick={generateAll} disabled={!!bulk} className={btn}>
-              {bulk ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <PencilIcon className="h-3.5 w-3.5" />}
-              {bulk ? `Generating ${Math.min(bulk.done + 1, bulk.total)} of ${bulk.total}…` : "Generate all"}
-            </button>}
           </div>
         </div>
       </Panel>
 
-      <Panel title="Character references">
+      <Panel title="References">
         <div className="space-y-2 p-4">
-          <p className="text-xs text-muted-foreground">Each character has a #REF number. Shots that mention #REF1, #REF2… always draw that person the same way. One character per line, e.g. "#REF1 (Father): …".</p>
-          <textarea key={chars.data ?? ""} rows={4} className={`${input} w-full font-mono text-xs`} placeholder="#REF1 (Father): Black South African man, mid-30s, short cropped hair, light blue shirt" defaultValue={chars.data ?? ""} onBlur={(e) => storeChars(e.target.value)} />
+          <div className="flex items-start gap-3">
+            <p className="flex-1 text-xs text-muted-foreground">Anything that must look the same in every shot — people, props, objects, vehicles, animals, places — gets a #REF number. Shots that mention #REF1, #REF2… always draw it the same way. One per line, e.g. "#REF1 (Father): …".</p>
+            <button onClick={enhanceRefs} disabled={enhancing} className={btn}>{enhancing ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />} {enhancing ? "Enhancing…" : "Enhance detail with AI"}</button>
+          </div>
+          <textarea key={chars.data ?? ""} rows={8} className={`${input} w-full font-mono text-xs`} placeholder="#REF1 (Father): Black South African man, 36, 1.82 m, lean build, oval face, short cropped black hair with a fade, faint scar on left eyebrow, light blue cotton shirt with rolled sleeves, charcoal chinos, brown leather boots&#10;#REF2 (Prop: silver locket): oval, 3 cm, tarnished silver, engraved rose, thin chain" defaultValue={chars.data ?? ""} onBlur={(e) => storeChars(e.target.value)} />
         </div>
       </Panel>
+
+      {shots.length > 0 && <div className="flex items-center gap-2">
+        <h3 className="text-sm font-semibold">Scenes &amp; shots <span className="font-normal text-muted-foreground">· {shots.length}</span></h3>
+        <div className="ml-auto flex gap-2">
+            {shots.length > 0 && <button onClick={deleteAllShots} disabled={!!bulk} className="inline-flex items-center gap-1.5 rounded-sm border border-destructive px-3 py-2 text-xs font-semibold text-destructive disabled:opacity-50"><Trash2 className="h-3.5 w-3.5" /> Delete all shots</button>}
+            {shots.length > 0 && <button onClick={generateAll} disabled={!!bulk} className={btn}>
+              {bulk ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <PencilIcon className="h-3.5 w-3.5" />}
+              {bulk ? `Generating ${Math.min(bulk.done + 1, bulk.total)} of ${bulk.total}…` : "Generate all"}
+            </button>}
+        </div>
+      </div>}
 
       {shots.length === 0 ? (
         <p className="rounded-sm border border-dashed border-border p-6 text-center text-sm text-muted-foreground">No shots yet — break down a brief above, or add one manually.</p>
@@ -254,6 +282,20 @@ function IllustrateMode({ p, isProducer }: { p: Production; isProducer: boolean 
           ))}
         </div>
       )}
+      <AlertDialog open={!!ask} onOpenChange={(o) => { if (!o) answer("cancel"); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{ask?.title}</AlertDialogTitle>
+            <AlertDialogDescription>{ask?.body}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {ask?.choices.map((c) => (
+              <button key={c.value} onClick={() => answer(c.value)}
+                className={`rounded-sm px-4 py-2 text-sm font-semibold ${c.tone === "destructive" ? "bg-destructive text-destructive-foreground" : c.tone === "outline" ? "border border-border hover:border-primary" : "bg-primary text-primary-foreground"}`}>{c.label}</button>
+            ))}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
