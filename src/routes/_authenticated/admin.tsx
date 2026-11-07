@@ -170,14 +170,12 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 const ADMIN_GROUPS = [
-  { name: "People & Organisations", tabs: ["Users", "Crew", "Companies", "Subscriptions"] },
-  { name: "Reporting", tabs: ["Bookings", "Gigs"] },
+  { name: "People & Organisations", tabs: ["Users", "Crew", "Companies", "Countries", "Subscriptions"] },
+  { name: "Reporting", tabs: ["Finance", "Token Ledger", "Payments", "Invoices", "Gig Fees", "Bookings", "Gigs"] },
   { name: "Equipment", tabs: ["Equipment"] },
   { name: "Disputes", tabs: ["Disputes"] },
   { name: "Reviews", tabs: ["Reviews"] },
   { name: "Templates", tabs: ["Checklists"] },
-  { name: "Countries", tabs: ["Countries"] },
-  { name: "Finance", tabs: ["Finance"] },
   { name: "Platform Management", tabs: ["Configuration", "System Settings", "Audit Log"] },
 ] as const;
 // Producers get everything Super Admin has, except Platform Management (super-admin only) and
@@ -185,11 +183,10 @@ const ADMIN_GROUPS = [
 // templates rather than editing crew records directly.
 const PRODUCER_ADMIN_GROUPS = [
   { name: "People & Organisations", tabs: ["Users", "Crew"] },
-  { name: "Reporting", tabs: ["Bookings"] },
+  { name: "Reporting", tabs: ["Finance", "Payments", "Invoices", "Gig Fees", "Bookings"] },
   { name: "Disputes", tabs: ["Disputes"] },
   { name: "Reviews", tabs: ["Reviews"] },
   { name: "Templates", tabs: ["Checklists"] },
-  { name: "Finance", tabs: ["Finance"] },
 ] as const;
 type AdminGroup = (typeof ADMIN_GROUPS)[number]["name"] | (typeof PRODUCER_ADMIN_GROUPS)[number]["name"];
 type AdminTab = (typeof ADMIN_GROUPS)[number]["tabs"][number] | (typeof PRODUCER_ADMIN_GROUPS)[number]["tabs"][number];
@@ -253,7 +250,11 @@ function AdminPage() {
       {tab === "Companies" && <CompaniesTab />}
       {tab === "Bookings" && <BookingsTab />}
       {tab === "Gigs" && <GigsTab />}
-      {tab === "Finance" && <div className="space-y-6"><PaymentsTab /><InvoicesTab /><GigFeesTab />{isSuperAdmin && <TokenLedger />}</div>}
+      {tab === "Finance" && <CashFlowTab includeAi={isSuperAdmin} />}
+      {tab === "Token Ledger" && isSuperAdmin && <TokenLedger />}
+      {tab === "Payments" && <PaymentsTab />}
+      {tab === "Invoices" && <InvoicesTab />}
+      {tab === "Gig Fees" && <GigFeesTab />}
       {tab === "Equipment" && <EquipmentAdmin />}
       {tab === "Disputes" && <DisputesTab />}
       {tab === "Reviews" && <ReviewsTab />}
@@ -385,21 +386,22 @@ function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
       <button onClick={() => setShowImport(!showImport)} className="text-xs font-semibold text-primary hover:underline">{t(showImport ? "adminUsers.hideImport" : "adminUsers.import")}</button>
     }>
       <div className="flex flex-wrap items-center gap-4 border-b border-border px-4 py-2 text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1"><Star className="h-3.5 w-3.5 fill-destructive text-destructive" /> Happy to be featured on social media</span>
+        <span className="inline-flex items-center gap-1"><Star className="h-3.5 w-3.5 fill-destructive text-destructive" /> Social Spotlight opt-in (not yet featured)</span>
         <span className="inline-flex items-center gap-1"><Star className="h-3.5 w-3.5 fill-foreground text-foreground" /> Already featured</span>
       </div>
       <table className="w-full text-sm">
-        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">{t("signup.firstName")}</th><th className="px-4">{t("signup.lastName")}</th><th className="px-4">{t("common.email")}</th><th className="px-4">{t("adminUsers.roles")}</th><th className="px-4">{t("common.status")}</th><th className="px-4">{t("common.actions")}</th></tr></thead>
+        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="w-8 pl-4 py-2"><span className="sr-only">Social Spotlight</span></th><th className="px-4 py-2">{t("signup.firstName")}</th><th className="px-4">{t("signup.lastName")}</th><th className="px-4">{t("common.email")}</th><th className="px-4">{t("adminUsers.roles")}</th><th className="px-4">{t("common.status")}</th><th className="px-4">{t("common.actions")}</th></tr></thead>
         <tbody>
           {(users.data ?? []).map((u) => {
             const [first, ...rest] = (u.full_name || "").trim().split(/\s+/).filter(Boolean);
             const last = rest.join(" ");
             return (
             <tr key={u.id} className="border-t border-border">
-              <td className="px-4 py-2 font-medium">
-                <span className="inline-flex items-center gap-2"><Avatar name={u.full_name || u.email || "?"} path={u.photo} size={28} />{first || "—"}{u.social_opt_in && (u.spotlight_featured_at
+              <td className="w-8 pl-4 py-2 align-top pt-4">{u.social_opt_in && (u.spotlight_featured_at
                   ? <Star className="h-3.5 w-3.5 fill-foreground text-foreground" aria-label="Featured on social media" />
-                  : <Star className="h-3.5 w-3.5 fill-destructive text-destructive" aria-label="Happy to be featured on social media" />)}</span>
+                  : <Star className="h-3.5 w-3.5 fill-destructive text-destructive" aria-label="Social Spotlight opt-in" />)}</td>
+              <td className="px-4 py-2 font-medium">
+                <span className="inline-flex items-center gap-2"><Avatar name={u.full_name || u.email || "?"} path={u.photo} size={28} />{first || "—"}</span>
                 {u.social_opt_in && <SpotlightCell id={u.id} featuredAt={u.spotlight_featured_at} links={(u.spotlight_links as string[] | null) ?? []} />}
               </td>
               <td className="px-4 font-medium">{last || "—"}</td>
