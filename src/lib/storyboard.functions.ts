@@ -46,7 +46,7 @@ export const breakdownScript = createServerFn({ method: "POST" })
         },
       },
       instructions:
-        "You are a film storyboard artist's assistant. Step 1: identify every recurring character and give each a unique reference number #REF1, #REF2, … (keep any #REF numbers the brief already uses). For each, write a fixed visual identity: ethnicity, age, face, hair, build and signature wardrobe — specific enough that every illustration draws the same person. Step 2: rewrite the brief as improved_brief: start with a 'CHARACTERS' block listing each '#REFn (Name): look', then the story, referring to every character by name plus #REF number. Step 3: break it into a numbered sequence of shots grouped into scenes. Each shot description (camera angle/framing, subject, action, under 2 sentences) must name every visible character with their #REF number, e.g. 'Father (#REF1)'. Give a realistic duration in seconds (2-8). Return 6-20 shots.",
+        "You are a film storyboard artist's assistant and continuity supervisor. Step 1: read the brief and identify EVERY element that must look the same across panels — not just people and vehicles, but whatever matters in THIS story: characters, animals, hero props, objects that are handled or seen repeatedly, wardrobe items, signage, devices, weapons, documents, set pieces, buildings and key locations. Give each a unique reference number #REF1, #REF2, … (keep any #REF numbers the brief already uses). Put the type in the name, e.g. 'Father', 'Prop: grandmother's locket', 'Location: roadside petrol station'. For each write an EXTREMELY detailed fixed visual identity. People: age, height, build, skin tone/ethnicity, face shape, eyes, nose, mouth, eyebrows, facial hair, scars/marks, hair length, colour, texture and exact style, posture, and full head-to-toe wardrobe (each garment, fabric, colour, fit, footwear, jewellery, accessories). Objects/props: exact type, size/dimensions, shape, materials, colours, finish, wear/damage, markings, branding. Vehicles: make, model, year, body type, colour, condition, distinctive marks. Locations: architecture, materials, layout, signage, lighting, weather/time of day. Step 2: rewrite the brief as improved_brief: start with a 'REFERENCES' block listing each '#REFn (Name): look', then the story, referring to every reference by name plus #REF number. Step 3: break it into a numbered sequence of shots grouped into scenes. Each shot description (camera angle/framing, subject, action, under 2 sentences) must tag every visible reference with its #REF number, e.g. 'Father (#REF1) holds the locket (#REF4)'. Give a realistic duration in seconds (2-8). Return 6-20 shots.",
       input: data.brief,
       meta: { userId: context.userId, productionId: data.productionId },
     });
@@ -56,10 +56,33 @@ export const breakdownScript = createServerFn({ method: "POST" })
     return { shots: out.shots, improvedBrief: out.improved_brief, characters: bible };
   });
 
+// Rewrites the producer's references with far more visual detail and adds any key elements the
+// brief needs that are missing. Returns text only; the client saves it.
+export const enhanceStoryboardReferences = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ productionId: z.string().min(1), references: z.string().max(12000), brief: z.string().max(8000).optional() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertProducerSiteMember(context, data.productionId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: shots } = await supabaseAdmin.from("storyboard_shots").select("description").eq("production_id", data.productionId).order("sort_order");
+    const story = (shots ?? []).map((s) => s.description).join(" | ").slice(0, 3000);
+    const { aiJson } = await import("./ai.server");
+    const out = await aiJson<{ references: { ref: string; name: string; look: string }[] }>({
+      name: "storyboard_references",
+      schema: { type: "object", additionalProperties: false, required: ["references"], properties: { references: { type: "array", items: { type: "object", additionalProperties: false, required: ["ref", "name", "look"], properties: { ref: { type: "string" }, name: { type: "string" }, look: { type: "string" } } } } } },
+      instructions: "You are a film continuity supervisor. Keep every existing #REF number and name unchanged. Expand each reference into an EXTREMELY detailed visual identity so an illustrator draws it identically every time. People: age, height, build, skin tone/ethnicity, face shape, eyes, nose, mouth, eyebrows, facial hair, scars/marks, hair length, colour, texture and style, posture, full head-to-toe wardrobe (garments, fabrics, colours, fit, footwear, jewellery, accessories). Objects/props: type, size, shape, materials, colours, finish, wear, markings. Vehicles: make, model, year, colour, condition, marks. Locations: architecture, materials, layout, signage, lighting. Then, from the brief and shots, identify any other key element that must stay consistent (people, objects, props, animals, locations, anything) and is missing, and add it with the next #REF number. Never invent details that contradict the brief.",
+      input: `REFERENCES:\n${data.references || "(none)"}\n\nBRIEF:\n${data.brief ?? ""}\n\nSHOTS:\n${story}`,
+      meta: { userId: context.userId, productionId: data.productionId },
+    });
+    const text = out.references.map((c) => `${c.ref.startsWith("#") ? c.ref : `#${c.ref}`} (${c.name}): ${c.look}`).join("\n");
+    await supabaseAdmin.from("productions").update({ storyboard_characters: text }).eq("id", data.productionId);
+    return { references: text };
+  });
+
 // Saves the producer's edited character reference list (#REF numbers) for this production.
 export const saveStoryboardCharacters = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ productionId: z.string().min(1), characters: z.string().max(6000) }).parse(d))
+  .inputValidator((d) => z.object({ productionId: z.string().min(1), characters: z.string().max(12000) }).parse(d))
   .handler(async ({ data, context }) => {
     await assertProducerSiteMember(context, data.productionId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -99,8 +122,8 @@ export const generateShotImage = createServerFn({ method: "POST" })
     const prompt = [
       "Black-and-white graphite pencil storyboard panel, hand-drawn film storyboard art style, rough sketchy pencil shading, no color, no text or captions in the image.",
       "Strict continuity: this panel belongs to one continuous film sequence. Keep the same characters (faces, age, build, hairstyle, wardrobe), the same locations, props, vehicles, weather and time of day as the rest of the sequence, unless this shot explicitly changes them. Same drawing style and line weight in every panel.",
-      bibleLines.length ? `CHARACTER REFERENCES — each #REF number is ONE specific person and must look identical in every panel (same ethnicity, age, face, hair, build, wardrobe):\n${bibleLines.join("\n")}` : "",
-      castHere.length ? `Characters visible in THIS shot (draw exactly as defined): ${castHere.join(" | ")}` : "",
+      bibleLines.length ? `REFERENCES — each #REF number is ONE specific person, object, vehicle or place and must look identical in every panel (same face, hair, build, wardrobe, shape, materials, colours, markings):\n${bibleLines.join("\n")}` : "",
+      castHere.length ? `References visible in THIS shot (draw exactly as defined): ${castHere.join(" | ")}` : "",
       `Full sequence for reference: ${story}`,
       anchor ? `PRIMARY VISUAL ANCHOR (Scene ${anchor.scene_number} · Shot ${anchor.shot_number}): keep exact fidelity to this reference shot — identical character faces, hairstyle, build, wardrobe, lighting and environment style: ${anchor.description}` : "",
       prev ? `Previous shot (match its characters and setting): ${prev.description}` : "",
