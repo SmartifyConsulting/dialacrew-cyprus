@@ -90,12 +90,20 @@ function IllustrateMode({ p, isProducer }: { p: Production; isProducer: boolean 
 
   async function runBreakdown() {
     if (!brief.trim()) { toast.error("Describe the scene or script first"); return; }
+    let replace = false;
+    if (shots.length > 0) {
+      replace = window.confirm(`Replace the ${shots.length} existing shot${shots.length === 1 ? "" : "s"} with a new breakdown?\n\nOK = replace them · Cancel = add the new shots after them`);
+    }
     setBreakingDown(true);
     try {
+      if (replace) {
+        const { error: delErr } = await supabase.from("storyboard_shots").delete().eq("production_id", p.id);
+        if (delErr) throw delErr;
+      }
       const { shots: newShots, improvedBrief } = await breakdown({ data: { productionId: p.id, brief } });
       setBrief(improvedBrief);
       qc.invalidateQueries({ queryKey: ["storyboard-characters", p.id] });
-      const startOrder = shots.length;
+      const startOrder = replace ? 0 : shots.length;
       const rows = newShots.map((s, i) => ({
         production_id: p.id, scene_number: s.scene_number, shot_number: s.shot_number,
         description: s.description, duration_seconds: s.duration_seconds, sort_order: startOrder + i,
@@ -120,6 +128,14 @@ function IllustrateMode({ p, isProducer }: { p: Production; isProducer: boolean 
   async function updateShot(id: string, patch: Partial<Pick<Shot, "description" | "duration_seconds" | "status" | "is_anchor">>) {
     const { error } = await supabase.from("storyboard_shots").update(patch).eq("id", id);
     if (error) { toast.error(friendlyError(error)); return; }
+    refresh();
+  }
+
+  async function deleteAllShots() {
+    if (!window.confirm(`Delete all ${shots.length} shots and their pictures? This cannot be undone.`)) return;
+    const { error } = await supabase.from("storyboard_shots").delete().eq("production_id", p.id);
+    if (error) { toast.error(friendlyError(error)); return; }
+    toast.success("All shots deleted");
     refresh();
   }
 
@@ -181,7 +197,8 @@ function IllustrateMode({ p, isProducer }: { p: Production; isProducer: boolean 
           <div className="flex gap-2">
             <button onClick={runBreakdown} disabled={breakingDown} className={btn}><Sparkles className="h-3.5 w-3.5" /> {breakingDown ? "Breaking down…" : "Break down into shots"}</button>
             <button onClick={addBlankShot} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold hover:border-primary hover:text-primary">+ Add shot manually</button>
-            {shots.length > 0 && <button onClick={generateAll} disabled={!!bulk} className={`${btn} ml-auto`}>
+            {shots.length > 0 && <button onClick={deleteAllShots} disabled={!!bulk} className="ml-auto inline-flex items-center gap-1.5 rounded-sm border border-destructive px-3 py-2 text-xs font-semibold text-destructive disabled:opacity-50"><Trash2 className="h-3.5 w-3.5" /> Delete all shots</button>}
+            {shots.length > 0 && <button onClick={generateAll} disabled={!!bulk} className={btn}>
               {bulk ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <PencilIcon className="h-3.5 w-3.5" />}
               {bulk ? `Generating ${Math.min(bulk.done + 1, bulk.total)} of ${bulk.total}…` : "Generate all"}
             </button>}
