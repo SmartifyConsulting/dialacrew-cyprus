@@ -2,7 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { FrameHeaderControls, useFramePinned } from "@/lib/frame-controls";
-import { Briefcase, ChevronDown, Home, Search, Shield, Star, User, type LucideIcon, Wallet, ReceiptText, CalendarDays, Megaphone } from "lucide-react";
+import { BarChart3, Briefcase, ChevronDown, Home, Search, Shield, Star, User, type LucideIcon, Wallet, ReceiptText, CalendarDays, Megaphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany, useRole, useSession } from "@/lib/auth";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -18,7 +18,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 const navKeys: Record<string, string> = {
   Dashboard: "dashboard", Home: "home", Calendar: "calendar", Productions: "productions",
   Crew: "crew", Payments: "payments", "Find Gigs": "findGigs", Earnings: "earnings",
-  Invoices: "invoices", Profile: "profile", "My Profile": "myProfile", Admin: "admin", "Post a Gig": "postGig",
+  Invoices: "invoices", Profile: "profile", "My Profile": "myProfile", Admin: "admin", "Post a Gig": "postGig", Reports: "reports",
 };
 
 function useMyProfile(userId: string | undefined) {
@@ -53,6 +53,7 @@ export const navByRole: Record<string, NavItem[]> = {
     { to: "/crew", label: "Crew", icon: Search },
     { to: "/gigs", hash: "post", label: "Post a Gig", icon: Megaphone },
     { to: "/payments", label: "Payments", icon: Wallet },
+    { to: "/reports", label: "Reports", icon: BarChart3 },
   ],
   crew: [
     { to: "/dashboard", label: "Home", icon: Home },
@@ -69,6 +70,7 @@ export const navByRole: Record<string, NavItem[]> = {
     { to: "/crew", label: "Crew", icon: Search },
     { to: "/gigs", hash: "post", label: "Post a Gig", icon: Megaphone },
     { to: "/payments", label: "Payments", icon: Wallet },
+    { to: "/reports", label: "Reports", icon: BarChart3 },
     { to: "/admin", label: "Admin", icon: Shield },
   ],
 };

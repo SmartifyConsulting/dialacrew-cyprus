@@ -31,6 +31,7 @@ import { Route as AuthenticatedMemoryRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedMobileSetupRouteImport } from './routes/_authenticated/mobile-setup'
 import { Route as AuthenticatedPaymentsRouteImport } from './routes/_authenticated/payments'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedCrewIndexRouteImport } from './routes/_authenticated/crew.index'
 import { Route as AuthenticatedCrewIdRouteImport } from './routes/_authenticated/crew.$id'
 import { Route as AuthenticatedInvoicesIdRouteImport } from './routes/_authenticated/invoices.$id'
@@ -150,6 +151,11 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCrewIndexRoute = AuthenticatedCrewIndexRouteImport.update({
   id: '/crew/',
   path: '/crew/',
@@ -216,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/mobile-setup': typeof AuthenticatedMobileSetupRoute
   '/payments': typeof AuthenticatedPaymentsRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/reports': typeof AuthenticatedReportsRoute
   '/crew/$id': typeof AuthenticatedCrewIdRoute
   '/invoices/$id': typeof AuthenticatedInvoicesIdRoute
   '/productions/$id': typeof AuthenticatedProductionsIdRoute
@@ -247,6 +254,7 @@ export interface FileRoutesByTo {
   '/mobile-setup': typeof AuthenticatedMobileSetupRoute
   '/payments': typeof AuthenticatedPaymentsRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/reports': typeof AuthenticatedReportsRoute
   '/crew/$id': typeof AuthenticatedCrewIdRoute
   '/invoices/$id': typeof AuthenticatedInvoicesIdRoute
   '/productions/$id': typeof AuthenticatedProductionsIdRoute
@@ -280,6 +288,7 @@ export interface FileRoutesById {
   '/_authenticated/mobile-setup': typeof AuthenticatedMobileSetupRoute
   '/_authenticated/payments': typeof AuthenticatedPaymentsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/crew/$id': typeof AuthenticatedCrewIdRoute
   '/_authenticated/invoices/$id': typeof AuthenticatedInvoicesIdRoute
   '/_authenticated/productions/$id': typeof AuthenticatedProductionsIdRoute
@@ -313,6 +322,7 @@ export interface FileRouteTypes {
     | '/mobile-setup'
     | '/payments'
     | '/profile'
+    | '/reports'
     | '/crew/$id'
     | '/invoices/$id'
     | '/productions/$id'
@@ -344,6 +354,7 @@ export interface FileRouteTypes {
     | '/mobile-setup'
     | '/payments'
     | '/profile'
+    | '/reports'
     | '/crew/$id'
     | '/invoices/$id'
     | '/productions/$id'
@@ -376,6 +387,7 @@ export interface FileRouteTypes {
     | '/_authenticated/mobile-setup'
     | '/_authenticated/payments'
     | '/_authenticated/profile'
+    | '/_authenticated/reports'
     | '/_authenticated/crew/$id'
     | '/_authenticated/invoices/$id'
     | '/_authenticated/productions/$id'
@@ -560,6 +572,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/reports': {
+      id: '/_authenticated/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AuthenticatedReportsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/crew/': {
       id: '/_authenticated/crew/'
       path: '/crew'
@@ -643,6 +662,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMobileSetupRoute: typeof AuthenticatedMobileSetupRoute
   AuthenticatedPaymentsRoute: typeof AuthenticatedPaymentsRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedCrewIdRoute: typeof AuthenticatedCrewIdRoute
   AuthenticatedProductionsIdRoute: typeof AuthenticatedProductionsIdRoute
   AuthenticatedCrewIndexRoute: typeof AuthenticatedCrewIndexRoute
@@ -660,6 +680,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMobileSetupRoute: AuthenticatedMobileSetupRoute,
   AuthenticatedPaymentsRoute: AuthenticatedPaymentsRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedCrewIdRoute: AuthenticatedCrewIdRoute,
   AuthenticatedProductionsIdRoute: AuthenticatedProductionsIdRoute,
   AuthenticatedCrewIndexRoute: AuthenticatedCrewIndexRoute,
