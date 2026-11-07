@@ -20,7 +20,7 @@ type Cue = {
   label: string; prompt: string | null; audio_path: string | null; duration_seconds: number | null;
   start_offset_seconds: number; volume: number; status: "draft" | "generating" | "generated" | "failed"; generation_error: string | null; sort_order: number;
 };
-type Shot = { id: string; scene_number: number; shot_number: number; description: string };
+type Shot = { id: string; scene_number: number; shot_number: number; description: string; duration_seconds: number | null };
 type Proposal = { kind: "music" | "sfx" | "ambience" | "narration"; scene_number: number; shot_number: number | null; label: string; prompt: string; duration_seconds: number };
 
 const KIND_LABELS: Record<Cue["kind"], string> = { music: "Music", sfx: "SFX", ambience: "Ambience", narration: "Narration", upload: "Uploads" };
@@ -72,12 +72,34 @@ export function SoundDesignStudio({ p, isProducer }: { p: Production; isProducer
   const refresh = () => qc.invalidateQueries({ queryKey: ["storyboard-audio-cues", p.id] });
   const shots = useQuery({
     queryKey: ["storyboard-shots", p.id],
-    queryFn: async () => { const { data, error } = await supabase.from("storyboard_shots").select("id, scene_number, shot_number, description").eq("production_id", p.id).order("sort_order"); if (error) throw error; return (data ?? []) as Shot[]; },
+    queryFn: async () => { const { data, error } = await supabase.from("storyboard_shots").select("id, scene_number, shot_number, description, duration_seconds").eq("production_id", p.id).order("sort_order"); if (error) throw error; return (data ?? []) as Shot[]; },
   }).data ?? [];
   const cues = useQuery({
     queryKey: ["storyboard-audio-cues", p.id],
     queryFn: async () => { const { data, error } = await supabase.from("storyboard_audio_cues").select("*").eq("production_id", p.id).order("sort_order"); if (error) throw error; return (data ?? []) as Cue[]; },
   }).data ?? [];
+
+  // Cumulative start time of each shot along the storyboard timeline.
+  const shotStart = new Map<string, number>();
+  { let t = 0; for (const s of shots) { shotStart.set(s.id, t); t += s.duration_seconds || 1; } }
+
+  async function alignToStoryboard() {
+    const nextFree: Record<string, number> = {};
+    const updates: { id: string; start: number }[] = [];
+    for (const c of [...cues].sort((a, b) => a.sort_order - b.sort_order)) {
+      const linked = c.shot_id ? shotStart.get(c.shot_id) : undefined;
+      const start = linked ?? nextFree[c.kind] ?? 0;
+      nextFree[c.kind] = Math.max(nextFree[c.kind] ?? 0, start + (c.duration_seconds ?? 10));
+      if (start !== c.start_offset_seconds) updates.push({ id: c.id, start });
+    }
+    if (!updates.length) { toast.info("Cues already line up with the storyboard"); return; }
+    for (const u of updates) {
+      const { error } = await supabase.from("storyboard_audio_cues").update({ start_offset_seconds: u.start }).eq("id", u.id);
+      if (error) { toast.error(friendlyError(error)); return; }
+    }
+    toast.success(`${updates.length} cue${updates.length === 1 ? "" : "s"} moved to match the storyboard`);
+    refresh();
+  }
 
   const propose = useServerFn(proposeSoundtrack);
   const generate = useServerFn(generateAudioCue);
@@ -101,8 +123,9 @@ export function SoundDesignStudio({ p, isProducer }: { p: Production; isProducer
     if (!proposals) return;
     const rows = [...picked].map((i) => {
       const prop = proposals[i]!;
-      const shot = prop.shot_number ? shots.find((s) => s.scene_number === prop.scene_number && s.shot_number === prop.shot_number) : undefined;
-      return { production_id: p.id, shot_id: shot?.id ?? null, kind: prop.kind, label: prop.label, prompt: prop.prompt, duration_seconds: prop.duration_seconds, sort_order: cues.length };
+      const shot = (prop.shot_number ? shots.find((s) => s.scene_number === prop.scene_number && s.shot_number === prop.shot_number) : undefined)
+        ?? shots.find((s) => s.scene_number === prop.scene_number);
+      return { production_id: p.id, shot_id: shot?.id ?? null, start_offset_seconds: shot ? shotStart.get(shot.id) ?? 0 : 0, kind: prop.kind, label: prop.label, prompt: prop.prompt, duration_seconds: prop.duration_seconds, sort_order: cues.length };
     });
     if (!rows.length) return;
     const { error } = await supabase.from("storyboard_audio_cues").insert(rows);
@@ -221,6 +244,7 @@ export function SoundDesignStudio({ p, isProducer }: { p: Production; isProducer
 
       <div className="flex flex-wrap items-center justify-end gap-2">
         {bulk && <span className="text-xs text-muted-foreground">Generating {Math.min(bulk.done + 1, bulk.total)} of {bulk.total}…</span>}
+        <button onClick={alignToStoryboard} disabled={!!bulk} className="inline-flex items-center gap-1.5 rounded-sm border border-border px-3 py-2 text-xs font-semibold disabled:opacity-50">Align to storyboard</button>
         <button onClick={() => runAll(false)} disabled={!!bulk} className={btn}><Sparkles className="h-3.5 w-3.5" /> Generate all</button>
         <button onClick={() => runAll(true)} disabled={!!bulk} className="inline-flex items-center gap-1.5 rounded-sm border border-primary px-3 py-2 text-xs font-semibold text-primary disabled:opacity-50"><RefreshCw className="h-3.5 w-3.5" /> Regenerate all</button>
       </div>
