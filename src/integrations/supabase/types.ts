@@ -2780,7 +2780,6 @@ export type Database = {
       }
       productions: {
         Row: {
-          storyboard_characters: string | null
           address: string
           budget: number
           client: string
@@ -2820,7 +2819,6 @@ export type Database = {
           type: string
         }
         Insert: {
-          storyboard_characters?: string | null
           address?: string
           budget?: number
           client: string
@@ -2860,7 +2858,6 @@ export type Database = {
           type?: string
         }
         Update: {
-          storyboard_characters?: string | null
           address?: string
           budget?: number
           client?: string
