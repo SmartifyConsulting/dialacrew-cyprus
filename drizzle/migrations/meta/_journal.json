@@ -183,6 +183,13 @@
       "when": 1794008202230,
       "tag": "0025_storyboard_anchor",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1794012000000,
+      "tag": "0026_storyboard_characters",
+      "breakpoints": true
     }
   ]
 }
