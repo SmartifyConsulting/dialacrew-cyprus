@@ -130,6 +130,32 @@ export function SoundDesignStudio({ p, isProducer }: { p: Production; isProducer
     refresh();
   }
 
+  const [bulk, setBulk] = useState<{ done: number; total: number } | null>(null);
+  async function runAll(regenerate: boolean) {
+    const targets = cues.filter((c) => c.kind !== "upload" && c.prompt?.trim() && c.status !== "generating" && (regenerate || !c.audio_path));
+    if (!targets.length) { toast.info(regenerate ? "No cues with prompts to regenerate" : "Every cue with a prompt already has audio"); return; }
+    let totalCost = 0, available = 0;
+    try {
+      for (const c of targets) { const r = await getCost({ data: { productionId: p.id, kind: c.kind as Exclude<Cue["kind"], "upload"> } }); totalCost += r.credits; available = r.available; }
+    } catch (e) { toast.error(friendlyError(e)); return; }
+    if (totalCost > 0 && available < totalCost) { toast.error(`You need ${totalCost} credits for all of these, but you have ${available}. Top up to continue.`); return; }
+    const ok = await confirmDialog(`${regenerate ? "Regenerate" : "Generate"} ${targets.length} cue${targets.length === 1 ? "" : "s"}?${totalCost > 0 ? `\n\nCredits required: ${totalCost}` : ""}`, { confirmLabel: regenerate ? "Regenerate all" : "Generate all" });
+    if (!ok) return;
+    let failed = 0;
+    setBulk({ done: 0, total: targets.length });
+    for (let i = 0; i < targets.length; i++) {
+      const c = targets[i]!;
+      setGeneratingId(c.id);
+      try { await generate({ data: { productionId: p.id, cueId: c.id, kind: c.kind as Exclude<Cue["kind"], "upload">, prompt: c.prompt!, durationSeconds: c.duration_seconds ?? undefined } }); }
+      catch { failed++; }
+      setBulk({ done: i + 1, total: targets.length });
+      refresh();
+    }
+    setGeneratingId(null); setBulk(null);
+    qc.invalidateQueries({ queryKey: ["storyboard-audio-wallet", p.id] });
+    if (failed) toast.error(`${failed} of ${targets.length} cues failed — see the error under each one.`); else toast.success(`${targets.length} cues ready`);
+  }
+
   async function runGenerate(cue: Cue) {
     if (!cue.prompt?.trim()) { toast.error("Write a prompt for this cue first"); return; }
     const kind = cue.kind === "upload" ? "sfx" : cue.kind;
@@ -192,6 +218,12 @@ export function SoundDesignStudio({ p, isProducer }: { p: Production; isProducer
           )}
         </div>
       </Panel>
+
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {bulk && <span className="text-xs text-muted-foreground">Generating {Math.min(bulk.done + 1, bulk.total)} of {bulk.total}…</span>}
+        <button onClick={() => runAll(false)} disabled={!!bulk} className={btn}><Sparkles className="h-3.5 w-3.5" /> Generate all</button>
+        <button onClick={() => runAll(true)} disabled={!!bulk} className="inline-flex items-center gap-1.5 rounded-sm border border-primary px-3 py-2 text-xs font-semibold text-primary disabled:opacity-50"><RefreshCw className="h-3.5 w-3.5" /> Regenerate all</button>
+      </div>
 
       <div className="space-y-3">
         {TRACKS.map((kind) => {
