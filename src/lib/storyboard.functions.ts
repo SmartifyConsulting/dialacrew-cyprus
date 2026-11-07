@@ -22,11 +22,18 @@ export const breakdownScript = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertProducerSiteMember(context, data.productionId);
     const { aiJson } = await import("./ai.server");
-    const out = await aiJson<{ shots: { scene_number: number; shot_number: number; description: string; duration_seconds: number }[] }>({
+    const out = await aiJson<{ improved_brief: string; characters: { ref: string; name: string; look: string }[]; shots: { scene_number: number; shot_number: number; description: string; duration_seconds: number }[] }>({
       name: "storyboard_breakdown",
       schema: {
-        type: "object", additionalProperties: false, required: ["shots"],
+        type: "object", additionalProperties: false, required: ["improved_brief", "characters", "shots"],
         properties: {
+          improved_brief: { type: "string" },
+          characters: {
+            type: "array", items: {
+              type: "object", additionalProperties: false, required: ["ref", "name", "look"],
+              properties: { ref: { type: "string" }, name: { type: "string" }, look: { type: "string" } },
+            },
+          },
           shots: {
             type: "array", items: {
               type: "object", additionalProperties: false, required: ["scene_number", "shot_number", "description", "duration_seconds"],
@@ -39,11 +46,26 @@ export const breakdownScript = createServerFn({ method: "POST" })
         },
       },
       instructions:
-        "You are a film storyboard artist's assistant. Break the given creative brief into a numbered sequence of shots, grouped into scenes. For each shot give a concise visual description (camera angle/framing, subject, action — written so a pencil-sketch illustrator could draw it directly) and a realistic duration in seconds (typically 2-8). Keep descriptions under 2 sentences. Return 6-20 shots depending on the brief's length.",
+        "You are a film storyboard artist's assistant. Step 1: identify every recurring character and give each a unique reference number #REF1, #REF2, … (keep any #REF numbers the brief already uses). For each, write a fixed visual identity: ethnicity, age, face, hair, build and signature wardrobe — specific enough that every illustration draws the same person. Step 2: rewrite the brief as improved_brief: start with a 'CHARACTERS' block listing each '#REFn (Name): look', then the story, referring to every character by name plus #REF number. Step 3: break it into a numbered sequence of shots grouped into scenes. Each shot description (camera angle/framing, subject, action, under 2 sentences) must name every visible character with their #REF number, e.g. 'Father (#REF1)'. Give a realistic duration in seconds (2-8). Return 6-20 shots.",
       input: data.brief,
       meta: { userId: context.userId, productionId: data.productionId },
     });
-    return { shots: out.shots };
+    const bible = out.characters.map((c) => `${c.ref.startsWith("#") ? c.ref : `#${c.ref}`} (${c.name}): ${c.look}`).join("\n");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin.from("productions").update({ storyboard_characters: bible }).eq("id", data.productionId);
+    return { shots: out.shots, improvedBrief: out.improved_brief, characters: bible };
+  });
+
+// Saves the producer's edited character reference list (#REF numbers) for this production.
+export const saveStoryboardCharacters = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ productionId: z.string().min(1), characters: z.string().max(6000) }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertProducerSiteMember(context, data.productionId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("productions").update({ storyboard_characters: data.characters }).eq("id", data.productionId);
+    if (error) throw new Error("Could not save the characters.");
+    return { ok: true };
   });
 
 // Generates one shot's graphite pencil storyboard illustration via OpenAI's image API, uploads it to
@@ -69,10 +91,16 @@ export const generateShotImage = createServerFn({ method: "POST" })
     if (idx < 0) throw new Error("Shot not found in this production.");
     let anchor: (typeof list)[number] | null = null;
     for (let i = idx - 1; i >= 0; i--) { const s = list[i]; if (s?.is_anchor) { anchor = s; break; } }
+    const { data: prod } = await supabaseAdmin.from("productions").select("storyboard_characters").eq("id", data.productionId).maybeSingle();
+    const bibleLines = (prod?.storyboard_characters ?? "").split("\n").map((l) => l.trim()).filter(Boolean);
+    const refsInShot = new Set((data.description.match(/#REF\d+/gi) ?? []).map((r) => r.toUpperCase()));
+    const castHere = bibleLines.filter((l) => refsInShot.has((l.match(/#REF\d+/i)?.[0] ?? "").toUpperCase()));
     const story = list.map((s) => `S${s.scene_number}.${s.shot_number}: ${s.description}`).join(" | ").slice(0, 2500);
     const prompt = [
       "Black-and-white graphite pencil storyboard panel, hand-drawn film storyboard art style, rough sketchy pencil shading, no color, no text or captions in the image.",
       "Strict continuity: this panel belongs to one continuous film sequence. Keep the same characters (faces, age, build, hairstyle, wardrobe), the same locations, props, vehicles, weather and time of day as the rest of the sequence, unless this shot explicitly changes them. Same drawing style and line weight in every panel.",
+      bibleLines.length ? `CHARACTER REFERENCES — each #REF number is ONE specific person and must look identical in every panel (same ethnicity, age, face, hair, build, wardrobe):\n${bibleLines.join("\n")}` : "",
+      castHere.length ? `Characters visible in THIS shot (draw exactly as defined): ${castHere.join(" | ")}` : "",
       `Full sequence for reference: ${story}`,
       anchor ? `PRIMARY VISUAL ANCHOR (Scene ${anchor.scene_number} · Shot ${anchor.shot_number}): keep exact fidelity to this reference shot — identical character faces, hairstyle, build, wardrobe, lighting and environment style: ${anchor.description}` : "",
       prev ? `Previous shot (match its characters and setting): ${prev.description}` : "",

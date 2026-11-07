@@ -47,3 +47,4 @@
 - [x] Our Equipment: search, seeded 2/3 free units, book from production
 - [x] Address picker: local-country results + use typed address
 - [x] Crew profile: remove Projects, Portfolio into About, Banking under Account, Account after About then Travel
+- [x] Storyboard: #REF character numbers; breakdown rewrites brief first
