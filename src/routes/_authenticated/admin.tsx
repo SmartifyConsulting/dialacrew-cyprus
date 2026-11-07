@@ -16,6 +16,7 @@ import { EquipmentAdmin } from "@/components/admin/EquipmentAdmin";
 import { CountriesAdmin } from "@/components/admin/CountriesAdmin";
 import { StatusPill } from "@/components/admin/StatusPill";
 import { TokenLedger } from "@/components/admin/TokenLedger";
+import { getUsdZarRate } from "@/lib/token-ledger.functions";
 import { ChecklistTemplateManager } from "@/components/ChecklistTemplateManager";
 import { confirmDialog, promptDialog } from "@/components/ConfirmDialog";
 import { useAddCrewGroupMember, useCreateCrewGroup, useCreateProductionType, useCrew, useCrewGroups, useDeleteCrewGroup, useProductionTypes, useRemoveCrewGroupMember } from "@/lib/db";
@@ -893,6 +894,61 @@ function PaymentsTab() {
         ))}</tbody>
       </table>
     </Panel>
+  );
+}
+
+// Cash flow = money in (paid invoices + gig securing fees) less money out (crew payouts released + AI usage cost).
+function CashFlowTab({ includeAi }: { includeAi: boolean }) {
+  const rateFn = useServerFn(getUsdZarRate);
+  const rate = useQuery({ queryKey: ["usd-zar"], queryFn: () => rateFn(), staleTime: 3600_000 }).data?.rate ?? 18.5;
+  const q = useQuery({
+    queryKey: ["admin-cashflow", includeAi],
+    queryFn: async () => {
+      const [inv, gigs, pay, ai] = await Promise.all([
+        supabase.from("invoices").select("total").eq("status", "paid"),
+        supabase.from("community_gigs").select("secure_fee, status").in("status", ["secured", "completed"]),
+        supabase.from("bookings").select("crew_rate, days").eq("payment_status", "payment_released"),
+        includeAi ? supabase.from("ai_usage_events").select("cost_usd") : Promise.resolve({ data: [] as { cost_usd: number | null }[], error: null }),
+      ]);
+      const sum = <T,>(rows: T[] | null, f: (r: T) => number) => (rows ?? []).reduce((a, r) => a + (Number(f(r)) || 0), 0);
+      return {
+        invoices: sum(inv.data, (r) => r.total),
+        gigFees: sum(gigs.data, (r) => r.secure_fee),
+        payouts: sum(pay.data, (r) => r.crew_rate * r.days),
+        aiUsd: sum(ai.data as { cost_usd: number | null }[], (r) => r.cost_usd ?? 0),
+      };
+    },
+  });
+  const d = q.data ?? { invoices: 0, gigFees: 0, payouts: 0, aiUsd: 0 };
+  const ai = d.aiUsd * rate;
+  const income = d.invoices + d.gigFees;
+  const expenses = d.payouts + ai;
+  const net = income - expenses;
+  const Row = ({ label, v, neg }: { label: string; v: number; neg?: boolean }) => (
+    <tr className="border-t border-border"><td className="px-4 py-2">{label}</td><td className={`px-4 text-right tabular-nums ${neg ? "text-destructive" : ""}`}>{neg ? "−" : ""}{zar(v)}</td></tr>
+  );
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-3 sm:grid-cols-3">
+        {[["Income", income, ""], ["Expenses", expenses, "text-destructive"], ["Net cash flow", net, net < 0 ? "text-destructive" : "text-success"]].map(([l, v, c]) => (
+          <div key={l as string} className="rounded-sm border border-border bg-card p-4">
+            <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{l as string}</div>
+            <div className={`mt-1 font-display text-2xl font-semibold ${c}`}>{zar(v as number)}</div>
+          </div>
+        ))}
+      </div>
+      <Panel title="Cash flow (income less expenses)">
+        <table className="w-full text-sm"><tbody>
+          <tr><td colSpan={2} className="px-4 pt-3 text-[11px] font-semibold uppercase text-muted-foreground">Income</td></tr>
+          <Row label="Paid invoices" v={d.invoices} />
+          <Row label="Gig securing fees" v={d.gigFees} />
+          <tr><td colSpan={2} className="px-4 pt-3 text-[11px] font-semibold uppercase text-muted-foreground">Expenses</td></tr>
+          <Row label="Crew payouts released" v={d.payouts} neg />
+          {includeAi && <Row label="AI usage (Token Ledger)" v={ai} neg />}
+          <tr className="border-t-2 border-border font-semibold"><td className="px-4 py-2">Net cash flow</td><td className="px-4 text-right tabular-nums">{zar(net)}</td></tr>
+        </tbody></table>
+      </Panel>
+    </div>
   );
 }
 
