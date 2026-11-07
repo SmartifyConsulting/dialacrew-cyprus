@@ -2814,6 +2814,7 @@ export type Database = {
           recce_start_time: string | null
           secured_funds: number
           status: string
+          storyboard_characters: string | null
           summary: string
           timezone: string
           type: string
@@ -2853,6 +2854,7 @@ export type Database = {
           recce_start_time?: string | null
           secured_funds?: number
           status?: string
+          storyboard_characters?: string | null
           summary?: string
           timezone?: string
           type?: string
@@ -2892,6 +2894,7 @@ export type Database = {
           recce_start_time?: string | null
           secured_funds?: number
           status?: string
+          storyboard_characters?: string | null
           summary?: string
           timezone?: string
           type?: string
