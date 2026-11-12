@@ -13,6 +13,9 @@ import { useLocationPoints } from "@/lib/site";
 import { fmtMoney, zar, type Production } from "@/lib/demo-data";
 import { crewFitsRole, useCrewRequiredDay, useCrewRoleList, type CrewRequiredMatch } from "@/components/site/SiteTabs";
 import { useScenarios, scenarioKey, type Scenario } from "@/components/site/ScenarioPlanner";
+import { RecceSandbox, useReccePlans } from "@/components/site/RecceSandbox";
+import { reccePlannerDates } from "@/lib/crew-recce-planner";
+import { useCountries } from "@/lib/use-countries";
 
 const addDays = (ymd: string, n: number) => { const d = new Date(`${ymd}T00:00:00`); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 const localYmd = (iso: string) => { const d = new Date(iso); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
@@ -452,6 +455,8 @@ function DaySummaryRow({ p, date, dayIndex, roleList, maxCols }: {
 // its own (crew can differ day to day); Copy to: carries one day's pencils and scenarios across
 // to whichever other days are ticked, instead of starting from scratch every time.
 export function CrewDayPlanner({ p }: { p: Production }) {
+  const countries = useCountries();
+  const reccePlans = useReccePlans(p.id);
   const crewCountry = useCrewCountryFilter();
   const qc = useQueryClient();
   const locationPoints = useLocationPoints(p.id).data ?? [];
@@ -474,7 +479,9 @@ export function CrewDayPlanner({ p }: { p: Production }) {
 
   const productionBookings = allBookings.filter((b) => b.productionId === p.id && b.status !== "cancelled");
   const costOf = (b: (typeof productionBookings)[number]) => b.crewRate * Math.max(1, b.days || 1);
-  const totalPencilled = productionBookings.reduce((sum, b) => sum + costOf(b), 0);
+  const recceDays = reccePlannerDates(p.recceDate, locationPoints);
+  const recceExpense = (reccePlans.data ?? []).filter((plan) => recceDays.includes(plan.recce_date)).reduce((sum, plan) => sum + Number(plan.total), 0);
+  const totalPencilled = productionBookings.reduce((sum, b) => sum + costOf(b), 0) + recceExpense;
   const variance = p.budget - totalPencilled;
 
   // Select Crew Type (a size tier) applies at the day level: pencil each member of that tier's
@@ -540,19 +547,19 @@ export function CrewDayPlanner({ p }: { p: Production }) {
   const scenarioCounts = useScenarioCountsByDay(p, shootDays).data ?? {};
   const maxCols = 1 + Math.max(0, ...Object.values(scenarioCounts));
 
-  if (shootDays.length === 0) {
+  if (shootDays.length === 0 && recceDays.length === 0) {
     return <p className="rounded-sm border border-dashed border-border p-4 text-sm text-muted-foreground">Set this production's start date (or add a location with a date) to start planning crew by shoot day.</p>;
   }
 
   return (
     <div className="space-y-4">
       <div className="rounded-sm border border-border bg-card p-3 text-sm">
-        <span className="text-muted-foreground">Pencilled across the whole production:</span> <b>{fmtMoney(totalPencilled, p.currency)}</b>{" "}
+        <span className="text-muted-foreground">Pencilled crew + planned recce expense:</span> <b>{fmtMoney(totalPencilled, p.currency)}</b>{" "}
         <span className={variance < 0 ? "text-destructive" : "text-success"}>({variance < 0 ? `${fmtMoney(-variance, p.currency)} over` : `${fmtMoney(variance, p.currency)} under`} budget of {fmtMoney(p.budget, p.currency)})</span>
         <label className="ml-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground">Crew from
           <select value={crewCountry} onChange={(e) => setCrewCountryFilter(e.target.value)} className="rounded-sm border border-input bg-background px-2 py-1 text-xs text-foreground">
             <option value="local">Local ({CREW_COUNTRIES.find((c) => c.code === productionCountry(p.currency))?.label})</option>
-            {CREW_COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
+            {countries.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
             <option value="ALL">All countries</option>
           </select>
         </label>
@@ -580,6 +587,7 @@ export function CrewDayPlanner({ p }: { p: Production }) {
           </table>
         </div>
       </section>
+      {recceDays.map((day) => <RecceSandbox key={`${p.id}:${day}`} p={p} date={day} />)}
       {shootDays.map((day, i) => {
         const dayTotal = productionBookings.filter((b) => b.bookingDate === day).reduce((sum, b) => sum + costOf(b), 0);
         const otherDays = shootDays.filter((d) => d !== day);

@@ -51,7 +51,7 @@ export function EquipmentAdmin() {
     if (!newItem.name.trim()) { toast.error("Name the item first"); return; }
     const { error } = await supabase.from("inventory_items").insert({ name: newItem.name.trim(), category: newItem.category, total_count: Math.max(1, Number(newItem.total_count) || 1), notes: newItem.notes.trim(), serial_code: newItem.serial_code.trim() || null });
     if (error) { toast.error(friendlyError(error)); return; }
-    toast.success("Equipment added");
+    toast.success("Inventory item added");
     setNewItem(blankItem);
     refresh();
   }
@@ -63,7 +63,7 @@ export function EquipmentAdmin() {
     if (!draft.name.trim()) { toast.error("Name the item first"); return; }
     const { error } = await supabase.from("inventory_items").update({ name: draft.name.trim(), category: draft.category, total_count: Math.max(1, Number(draft.total_count) || 1), notes: draft.notes.trim(), serial_code: draft.serial_code.trim() || null }).eq("id", id);
     if (error) { toast.error(friendlyError(error)); return; }
-    toast.success("Equipment updated");
+    toast.success("Inventory item updated");
     setEditingId(null);
     refresh();
   }
@@ -103,7 +103,7 @@ export function EquipmentAdmin() {
         </div>
       </div>
       {shown.length === 0 && (
-        <p className="rounded-sm border border-dashed border-border p-4 text-sm text-muted-foreground">{items.length === 0 ? "No equipment yet. Add the first item above." : `Nothing matches "${search}".`}</p>
+        <p className="rounded-sm border border-dashed border-border p-4 text-sm text-muted-foreground">{items.length === 0 ? "No inventory yet. Add the first item above." : `Nothing matches "${search}".`}</p>
       )}
       {categoriesShown.map((category) => {
         const catItems = shown.filter((it) => it.category === category);

@@ -1,4 +1,6 @@
 {
+  "productionViews": {"Upcoming":"Upcoming","Active":"Active","Draft":"Drafts","Wrapped":"Wrapped","Completed":"Completed","All":"All productions"},
+  "library": {"documents":"Documents","up":"Up","newFolder":"New folder","folderName":"Folder name","invalidName":"Folder names cannot contain a slash.","rename":"Rename","move":"Move","delete":"Delete","deleteConfirm":"Delete the selected items and everything inside selected folders? This cannot be undone.","loadError":"The document library could not be loaded. Check that the database update has been applied.","retry":"Try again","loading":"Loading…","selectAll":"Select all","selected":"selected","destination":"Destination folder","root":"Library root","selectItem":"Select {{name}}","download":"Download"},
   "workflowStatuses": {
     "draft": "Draft",
     "open": "Open",
@@ -90,7 +92,7 @@
     "quantity": "How many",
     "serial": "Serial/Asset ID",
     "notes": "Notes (condition…)",
-    "search": "Search equipment",
+    "search": "Search inventory",
     "whoRequired": "Say who is taking it",
     "quantityError": "Choose between 1 and {{maximum}}",
     "dueRequired": "Set the date it is due back",
@@ -220,7 +222,7 @@
       "Operations": "Operations",
       "Bookings": "Bookings",
       "Gigs": "Gigs",
-      "Equipment": "Equipment",
+      "Equipment": "Inventory",
       "Finance": "Finance",
       "Payments": "Payments",
       "Invoices": "Invoices",
@@ -440,9 +442,9 @@
     "by": "By {{name}}"
   },
   "equipment": {
-    "add": "Add equipment",
+    "add": "Add inventory item",
     "name": "Item name",
-    "inventory": "Our equipment ({{count}} items)",
+    "inventory": "Our inventory ({{count}} items)",
     "item": "Item",
     "owned": "Owned",
     "out": "Out",
@@ -556,7 +558,7 @@
     "budgetOf": "{{spent}} of {{total}}",
     "open": "Open",
     "openCount": "{{count}} open",
-    "recce": "Recce day",
+    "recce": "Recce",
     "gear": "Gear check",
     "previousMonth": "Previous month",
     "nextMonth": "Next month",

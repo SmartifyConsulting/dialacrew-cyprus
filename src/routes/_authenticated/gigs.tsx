@@ -127,7 +127,7 @@ function GigsPage() {
             className={`border-b-2 px-4 py-2 text-sm font-semibold ${view === k ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}>{l}</button>
         ))}
       </div>
-      {view === "find" && <Panel title={t("gigs.open")}><div className="p-4"><FindGigsTab canClaim={!!crewId} /></div></Panel>}
+      {view === "find" && <Panel title={t("gigs.open")}><div className="p-4"><FindGigsTab canClaim={role === "crew" && !!crewId} canManage={role === "producer" || role === "admin"} /></div></Panel>}
 
       <div className={view === "find" ? "mt-8" : ""}>
         <Panel title={view === "post" ? "Post a Gig" : t("gigs.community")}>

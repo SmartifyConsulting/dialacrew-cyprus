@@ -26,3 +26,5 @@
 - Ratings use role-based rubrics in src/lib/rating-frameworks.ts; eligibility, self-rating and producer-ratee rules are enforced by the crew_reviews trigger — the UI gate is cosmetic.
 - AI calls are logged to `ai_usage_events` via `logAiUsage()` (src/lib/ai-usage.server.ts) inside `aiJson` and image calls; the admin Token Ledger reads it (admin-only RLS) — one cost record for every AI feature.
 - The country list is admin-editable in `platform_settings` key `countries`, read through `useCountries()` with the built-in list as fallback.
+- Recce crew expense plans persist separately in `production_recce_plans`; they contribute planned costs without manufacturing shoot bookings. Document folders persist as production-scoped paths, with atomic rename/move/delete through `manage_document_library`; storage object paths remain stable.
+- Storyboard generation persists shot replacement, the original prompt and the improved working prompt in one transaction. AI balances use USD micro-units, service-only atomic ledger functions, verified payment references and explicit per-action prices in `storyboard_ai_prices_usd`.

@@ -33,6 +33,11 @@ export const Route = createFileRoute("/api/public/paystack-webhook")({
 
     const reference = event.data.reference;
     try {
+      if (reference.startsWith("aib_")) {
+        const { settleAiTopup } = await import("@/lib/ai-balance.functions");
+        await settleAiTopup(reference);
+        return new Response(null, { status: 200 });
+      }
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { data: purchase } = await supabaseAdmin.from("storyboard_audio_purchases").select("*").eq("paystack_reference", reference).maybeSingle();
       if (!purchase) return new Response(null, { status: 200 }); // not a Storyboard Audio Credits purchase
@@ -55,7 +60,7 @@ export const Route = createFileRoute("/api/public/paystack-webhook")({
       return new Response(null, { status: 200 });
     } catch (e) {
       console.error("Paystack webhook processing error", e instanceof Error ? e.message : e);
-      return new Response(null, { status: 200 }); // ack anyway; allocate is idempotent and safe to retry via the redirect-verify path
+      return new Response("Retry payment verification", { status: 500 });
     }
   } } },
 });

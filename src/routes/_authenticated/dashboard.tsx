@@ -268,7 +268,7 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
                 <span className="flex min-h-3.5 max-w-full flex-wrap items-center justify-center gap-0.5">
                   {items.map((item) => (
                     <CalPop key={item.id} label={`${item.client} · ${item.name} · ${item.location} · ${item.time}`} align={align}
-                      trigger={<span className={`max-w-full truncate rounded-sm px-1 py-0.5 text-[9px] font-semibold leading-none ${item.kind === "shoot" ? item.color : EVENT_CHIP[item.kind]}`}>{item.kind === "recce" ? `${t("dashboard.recce")}${item.time.startsWith("Time TBC") ? "" : ` ${item.time.split(" · ")[0]}`}` : item.kind === "gear" ? t("dashboard.gear") : item.client}</span>}>
+                      trigger={<span className={`max-w-full truncate rounded-sm px-1 py-0.5 text-[9px] font-semibold leading-none ${item.kind === "shoot" ? item.color : EVENT_CHIP[item.kind]}`}>{item.kind === "recce" ? `${t("dashboard.recce")}${item.time.startsWith("Time TBC") ? "" : ` ${item.time.split(" · ")[0]}`}` : item.kind === "gear" ? t("dashboard.gear") : `${item.client} · ${item.name}`}</span>}>
                       {item.client} · {item.name} · {item.location} · {item.time}
                       {item.details && <span className="mt-1 block whitespace-pre-line font-normal text-muted-foreground">{item.details}</span>}
                     </CalPop>

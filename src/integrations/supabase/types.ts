@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_balances: {
+        Row: { user_id: string; balance_micros: number };
+        Insert: { user_id: string; balance_micros?: number };
+        Update: { balance_micros?: number };
+        Relationships: [];
+      };
+      ai_balance_purchases: {
+        Row: { id: string; user_id: string; reference: string; amount_minor: number; currency: string; usd_micros: number; fx_rate: number; status: string; created_at: string };
+        Insert: { user_id: string; reference: string; amount_minor: number; currency: string; usd_micros: number; fx_rate: number };
+        Update: { status?: string };
+        Relationships: [];
+      };
+      storyboard_briefs: {
+        Row: { production_id: string; original_prompt: string; working_prompt: string; pdf_summary: string; extracted_text: string; source_path: string | null; updated_at: string };
+        Insert: { production_id: string; original_prompt?: string; working_prompt?: string; pdf_summary?: string; extracted_text?: string; source_path?: string | null; updated_at?: string };
+        Update: { original_prompt?: string; working_prompt?: string; pdf_summary?: string; extracted_text?: string; source_path?: string | null; updated_at?: string };
+        Relationships: [];
+      };
+      production_recce_plans: {
+        Row: { production_id: string; recce_date: string; selection: Json; total: number };
+        Insert: { production_id: string; recce_date: string; selection: Json; total: number };
+        Update: { selection?: Json; total?: number };
+        Relationships: [];
+      };
+      site_document_folders: {
+        Row: { production_id: string; path: string };
+        Insert: { production_id: string; path: string };
+        Update: { path?: string };
+        Relationships: [];
+      };
       ai_usage_events: {
         Row: {
           cost_usd: number | null
@@ -3965,6 +3995,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      change_ai_balance: { Args: { p_user: string; p_operation: string; p_kind: string; p_amount: number; p_activity: string }; Returns: number };
+      credit_ai_purchase: { Args: { p_reference: string }; Returns: undefined };
+      save_storyboard_breakdown: {
+        Args: { p_production: string; p_shots: Json; p_original: string; p_improved: string; p_characters: string; p_replace: boolean; p_user: string };
+        Returns: undefined;
+      };
+      manage_document_library: {
+        Args: { p_production: string; p_action: string; p_files?: string[]; p_folders?: string[]; p_destination?: string; p_name?: string };
+        Returns: undefined;
+      };
       accept_booking_with_terms: {
         Args: { p_booking_id: string; p_terms_version: string }
         Returns: undefined

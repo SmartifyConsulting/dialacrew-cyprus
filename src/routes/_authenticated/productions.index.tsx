@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Camera, Clapperboard, Copy, Film, Megaphone, Pencil, Search, Trash2, Tv, Upload } from "lucide-react";
 import { Badge, ClientBadge, Page, Panel } from "@/components/AppShell";
 import { fmtMoney } from "@/lib/demo-data";
@@ -185,20 +185,18 @@ function Productions() {
   const blankForm = { name: "", client: "", jobId: "", externalRef: "", type: "Commercial", location: "", recceDate: "", recceTime: "", startDate: "", endDate: "", budget: 0, description: "" };
   const [f, setF] = useState(blankForm);
   const [editingId, setEditingId] = useState<string | null>(null); // editing an existing production
-  const [draftId, setDraftId] = useState<string | null>(null); // autosaved draft while creating a new one
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [cropSource, setCropSource] = useState<File | null>(null); // picture waiting to be cropped
   const [search, setSearch] = useState("");
+  const [view, setView] = useState("Upcoming");
 
-  const filteredList = list.filter((p) => !search.trim() || (p.jobId ?? "").toLowerCase().includes(search.trim().toLowerCase()) || (p.externalRef ?? "").toLowerCase().includes(search.trim().toLowerCase()) || p.name.toLowerCase().includes(search.trim().toLowerCase()));
+  const filteredList = list.filter((p) => (view === "All" || p.status === view) && (!search.trim() || (p.jobId ?? "").toLowerCase().includes(search.trim().toLowerCase()) || (p.externalRef ?? "").toLowerCase().includes(search.trim().toLowerCase()) || p.name.toLowerCase().includes(search.trim().toLowerCase())));
 
   // Shoot days is inclusive of both the start and end date.
   const days = f.startDate && f.endDate ? Math.max(1, Math.round((+new Date(f.endDate) - +new Date(f.startDate)) / 86400000) + 1) : 1;
   const addDays = (ymd: string, n: number) => { const d = new Date(`${ymd}T00:00:00`); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
-  // Ignore the production being edited and the draft this form autosaved itself.
-
-  const resetForm = () => { setF(blankForm); setEditingId(null); setDraftId(null); setDuplicating(false); setCoverFile(null); setCoverPreview(null); setCropSource(null); };
+  const resetForm = () => { setF(blankForm); setEditingId(null); setDuplicating(false); setCoverFile(null); setCoverPreview(null); setCropSource(null); };
   // A chosen picture is cropped first; the cropped square is what gets saved as the cover.
   const pickCover = (file: File | undefined) => { if (file) setCropSource(file); };
   const applyCrop = (cropped: File) => {
@@ -218,33 +216,23 @@ function Productions() {
       setAddingType(false);
     } catch (e) { toast.error(friendlyError(e)); }
   }
-  // A Production ID is immutable and database-generated on insert, so start a Draft the moment the
-  // form opens — the ID exists right away instead of only appearing once other fields are filled in.
-  const openNew = async () => {
+  // Keep new productions in the form until explicitly saved; the database assigns their ID on insert.
+  const openNew = () => {
     resetForm();
     setOpen(true);
-    const { data, error } = await supabase.from("productions").insert({ name: "", client: "", status: "Draft" } as never).select("id, job_id").single();
-    if (error) { toast.error(friendlyError(error)); return; }
-    setDraftId(data.id);
-    setF((prev) => ({ ...prev, jobId: data.job_id }));
   };
   const openEdit = (p: (typeof list)[number]) => {
     setF({ name: p.name, client: p.client, jobId: p.jobId ?? "", externalRef: p.externalRef ?? "", type: p.type, location: p.location, recceDate: p.recceDate ?? "", recceTime: p.recceStart ?? "", startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget, description: p.summary ?? "" });
     setEditingId(p.id);
-    setDraftId(null);
     setDuplicating(false);
     setOpen(true);
   };
-  const openDuplicate = async (p: (typeof list)[number]) => {
+  const openDuplicate = (p: (typeof list)[number]) => {
+    resetForm();
     setF({ name: `${p.name} (copy)`, client: p.client, jobId: "", externalRef: "", type: p.type, location: p.location, recceDate: p.recceDate ?? "", recceTime: p.recceStart ?? "", startDate: p.date ?? "", endDate: p.endDate ?? "", budget: p.budget, description: p.summary ?? "" });
     setEditingId(null);
-    setDraftId(null);
     setDuplicating(true);
     setOpen(true);
-    const { data, error } = await supabase.from("productions").insert({ name: `${p.name} (copy)`, client: p.client, status: "Draft" } as never).select("id, job_id").single();
-    if (error) { toast.error(friendlyError(error)); return; }
-    setDraftId(data.id);
-    setF((prev) => ({ ...prev, jobId: data.job_id }));
   };
 
   async function deleteProduction(p: (typeof list)[number]) {
@@ -268,7 +256,7 @@ function Productions() {
     if (!f.budget) { toast.error("Budget is required"); return; }
     // job_id is database-generated and immutable — never sent from the client.
     const payload = { name: f.name, client: f.client, external_ref: f.externalRef.trim() || null, type: f.type, location: f.location, budget: f.budget, recce_date: f.recceDate || null, recce_start_time: f.recceTime || null, date: f.startDate || null, end_date: f.endDate || null, days, summary: f.description };
-    const targetId = editingId ?? draftId;
+    const targetId = editingId;
     const { data, error } = targetId
       ? await supabase.from("productions").update(payload).eq("id", targetId).select("id").single()
       : await supabase.from("productions").insert({ ...payload, status: "Draft" } as never).select("id").single();
@@ -375,10 +363,13 @@ function Productions() {
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <input className={`${field} pl-9`} placeholder={t("productionList.search")} value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
+      <nav role="tablist" aria-label={t("productionList.all")} className="mb-3 flex flex-wrap gap-1">
+        {["Upcoming", "Active", "Draft", "Wrapped", "Completed", "All"].map((value) => <button key={value} role="tab" aria-selected={view === value} onClick={() => setView(value)} className={`rounded px-3 py-1.5 text-xs font-semibold ${view === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}>{t(`productionViews.${value}`)}</button>)}
+      </nav>
       <div className="grid gap-3 md:hidden">
         {filteredList.length === 0 && <p className="text-sm text-muted-foreground">No productions match "{search}".</p>}
         {filteredList.map((p) => (
-          <div key={p.id} className="rounded-sm border border-border bg-card p-4">
+          <div key={p.id} className="rounded-sm border border-border bg-card p-3">
             <div className="flex items-start justify-between gap-3">
               <ProductionAvatar name={p.name} imagePath={p.imagePath} className="h-12 w-12 text-sm" />
               <Link to="/productions/$id" params={{ id: p.id }} className="min-w-0 flex-1">
@@ -404,8 +395,8 @@ function Productions() {
           </div>
         ))}
       </div>
-      <div className="hidden md:block"><Panel title={t("productionList.all")}>
-        <table className="w-full text-sm">
+      <div className="hidden md:block"><Panel title={t(`productionViews.${view}`)}>
+        <table className="w-full text-xs [&_td]:px-2 [&_td]:py-1.5 [&_th]:px-2">
           <thead className="text-left text-[11px] text-muted-foreground">
             <tr>{["Production", "Job ID", "Type", "Location", "Date", "Days", "Budget", "Created", "Status", ""].map((h) => <th key={h} className={`${h === "Type" ? "px-2 text-center" : "px-4"} whitespace-nowrap py-2 font-medium`}>{h === "Created" ? "Created" : h ? t(`productionList.columns.${h}`) : ""}</th>)}</tr>
           </thead>
@@ -415,8 +406,8 @@ function Productions() {
               <tr key={p.id} className="border-t border-border hover:bg-muted/50">
                 <td className="px-4 py-2.5 font-medium">
                   <div className="flex items-center gap-3">
-                    <ProductionAvatar name={p.name} imagePath={p.imagePath} className="h-12 w-12 text-sm" />
-                    <div className="min-w-0"><Link to="/productions/$id" params={{ id: p.id }} className="text-primary underline-offset-2 hover:underline">{p.name}</Link><div className="mt-1"><ClientBadge name={p.client} /></div></div>
+                    <ProductionAvatar name={p.name} imagePath={p.imagePath} className="h-8 w-8 text-xs" />
+                    <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5"><Link to="/productions/$id" params={{ id: p.id }} className="max-w-44 truncate text-primary underline-offset-2 hover:underline">{p.name}</Link><ClientBadge name={p.client} /></div>
                   </div>
                 </td>
                 <td className="px-4"><JobBadge id={p.jobId} /></td>

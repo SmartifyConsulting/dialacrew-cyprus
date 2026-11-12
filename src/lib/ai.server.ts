@@ -13,7 +13,7 @@ const ACTIVITY: Record<string, string> = {
   company_memory: "MemoryBank relearn",
 };
 
-export async function aiJson<T>(opts: { name: string; schema: Record<string, unknown>; instructions: string; input: string; meta?: UsageMeta }): Promise<T> {
+export async function aiJson<T>(opts: { name: string; schema: Record<string, unknown>; instructions: string; input: string | { role: "user"; content: ({ type: "input_file"; filename: string; file_data: string } | { type: "input_text"; text: string })[] }[]; meta?: UsageMeta }): Promise<T> {
   const key = process.env["OPENAI_API_KEY"];
   if (!key) throw new Error("AI is not configured.");
   const meta: UsageMeta = { ...opts.meta, activity: opts.meta?.activity ?? ACTIVITY[opts.name] ?? opts.name.replace(/_/g, " ") };

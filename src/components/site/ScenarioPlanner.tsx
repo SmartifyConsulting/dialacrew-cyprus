@@ -9,6 +9,8 @@ import { providerTotal } from "@/lib/costing";
 import { type Production } from "@/lib/demo-data";
 import { crewFitsRole } from "@/components/site/SiteTabs";
 
+import { plannerScenarioKey, type PlannerDayKind } from "@/lib/crew-recce-planner";
+
 type Selection = Record<string, string[]>; // crewId -> selected asset ids
 type SelectionByDay = Record<string, Selection>; // YYYY-MM-DD -> that day's selection
 export type Scenario = { id: string; name: string; selByDay: SelectionByDay; total: number; created_at: string };
@@ -16,7 +18,7 @@ export type Scenario = { id: string; name: string; selByDay: SelectionByDay; tot
 const addDays = (iso: string, n: number) => { const d = new Date(iso + "T00:00:00"); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 
 /** Scenario key: a shoot day's drafts are stored as brief_matches rows under this client key. */
-export const scenarioKey = (productionId: string, date: string) => `scenario:${productionId}:${date}`;
+export const scenarioKey = plannerScenarioKey;
 
 /** Cost of one day's selection: each chosen crew member's day rate × days plus their chosen kit fees × days. */
 export function scenarioCost(sel: Selection, days: number, rates: Record<string, number>, fees: Record<string, number>) {
@@ -33,7 +35,7 @@ function scenarioCostAllDays(selByDay: SelectionByDay, rates: Record<string, num
 // scenario 1 for all practical purposes). A pure data hook (no JSX) so CrewDayPlanner can render
 // each scenario as a column of a shared role×scenario table. Every action writes straight to the
 // saved scenario — there's no separate draft/save step, it's a live workspace.
-export function useScenarios(p: Production, date: string, roleList: string[]) {
+export function useScenarios(p: Production, date: string, roleList: string[], kind: PlannerDayKind = "shoot") {
   const qc = useQueryClient();
   const crew = useCrew().data ?? [];
   const allBookings = useBookings().data ?? [];
@@ -41,8 +43,8 @@ export function useScenarios(p: Production, date: string, roleList: string[]) {
   const shootDays = useMemo(() => [date], [date]);
   const blankSelByDay = (): SelectionByDay => ({ [date]: {} });
 
-  const rangeStart = p.date || null;
-  const rangeEnd = p.endDate || (p.date ? addDays(p.date, days - 1) : null);
+  const rangeStart = kind === "recce" ? date : p.date || null;
+  const rangeEnd = kind === "recce" ? date : p.endDate || (p.date ? addDays(p.date, days - 1) : null);
   const availableForRange = useMemo(() => {
     const busy = new Set<string>();
     if (rangeStart && rangeEnd) {
@@ -59,9 +61,9 @@ export function useScenarios(p: Production, date: string, roleList: string[]) {
     queryFn: async () => { const { data, error } = await supabase.from("crew_assets").select("id, crew_id, name, category, daily_fee"); if (error) throw error; return (data ?? []).map((a) => ({ ...a, daily_fee: Number(a.daily_fee) })); },
   });
   const scenarios = useQuery({
-    queryKey: ["scenarios", p.id, date],
+    queryKey: ["scenarios", p.id, date, kind],
     queryFn: async () => {
-      const { data, error } = await supabase.from("brief_matches").select("id, brief, result, created_at").eq("client", scenarioKey(p.id, date)).order("created_at");
+      const { data, error } = await supabase.from("brief_matches").select("id, brief, result, created_at").eq("client", scenarioKey(p.id, date, kind)).order("created_at");
       if (error) throw error;
       return (data ?? []).map((r) => {
         const result = r.result as { selection?: Selection; selByDay?: SelectionByDay; total: number };
@@ -96,7 +98,7 @@ export function useScenarios(p: Production, date: string, roleList: string[]) {
     const total = scenarioCostAllDays(nextSelByDay, rates, fees);
     const { error } = await supabase.from("brief_matches").update({ result: { selByDay: nextSelByDay, total } }).eq("id", s.id);
     if (error) { toast.error(friendlyError(error)); return; }
-    qc.invalidateQueries({ queryKey: ["scenarios", p.id, date] });
+    qc.invalidateQueries({ queryKey: ["scenarios", p.id, date, kind] });
   }
   async function selectForRole(s: Scenario, role: string, newId: string, oldId: string | null) {
     const next = withEveryDay(s, (day) => { if (oldId) delete day[oldId]; day[newId] = day[newId] ?? []; return day; });
@@ -128,23 +130,25 @@ export function useScenarios(p: Production, date: string, roleList: string[]) {
     if (dup) { toast.error(`"${clean}" already exists.`); return; }
     const { error } = await supabase.from("brief_matches").update({ brief: clean }).eq("id", s.id);
     if (error) { toast.error(friendlyError(error)); return; }
-    qc.invalidateQueries({ queryKey: ["scenarios", p.id, date] });
+    qc.invalidateQueries({ queryKey: ["scenarios", p.id, date, kind] });
   }
   async function createScenario() {
     const nextNum = (scenarios.data?.length ?? 0) + 2;
-    const { error } = await supabase.from("brief_matches").insert({ client: scenarioKey(p.id, date), brief: `Sandbox ${nextNum}`, result: { selByDay: blankSelByDay(), total: 0 } });
+    const { error } = await supabase.from("brief_matches").insert({ client: scenarioKey(p.id, date, kind), brief: `Sandbox ${nextNum}`, result: { selByDay: blankSelByDay(), total: 0 } });
     if (error) { toast.error(friendlyError(error)); return; }
-    qc.invalidateQueries({ queryKey: ["scenarios", p.id, date] });
+    qc.invalidateQueries({ queryKey: ["scenarios", p.id, date, kind] });
   }
   async function deleteScenario(id: string) {
     if (!(await confirmDialog("Delete this scenario?", { destructive: true }))) return;
     const { error } = await supabase.from("brief_matches").delete().eq("id", id);
     if (error) { toast.error(friendlyError(error)); return; }
-    qc.invalidateQueries({ queryKey: ["scenarios", p.id, date] });
+    qc.invalidateQueries({ queryKey: ["scenarios", p.id, date, kind] });
   }
   // Pencil: commit the chosen scenario's crew (one booking per contiguous run of days a crew
   // member is on, since different days can carry different people), then drop the alternatives.
   async function commit(s: Scenario) {
+    // Recce expenses stay separate from shoot bookings.
+    if (kind === "recce") return;
     if (!(await confirmDialog(`Pencil "${s.name}"? Its crew will be pencilled in and the other scenarios removed.`))) return;
     setCommitting(true);
     try {

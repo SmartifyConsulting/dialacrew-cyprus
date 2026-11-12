@@ -27,6 +27,37 @@ describe("calendar events", () => {
     expect(ev).toHaveLength(1);
     expect(ev[0]!.timeLabel).toBe("08:00–12:00");
   });
+  it("uses location recce dates instead of a stale production summary in calendars and ICS", () => {
+    const locations = ["2026-11-03", "2026-11-04"].map((day, i) => ({
+      id: `l${i}`, production_id: "p1", label: `Location ${i + 1}`, recce_date: day,
+      recce_start_time: "09:00", recce_end_time: "10:00", latitude: null, longitude: null, starts_at: null,
+    }));
+    for (const recceDate of ["2026-11-02", "2026-11-03", null]) {
+      const events = buildCalendarEvents([prod({ recceDate })], locations, [], all);
+      expect(events.map((e) => e.day)).toEqual(["2026-11-03", "2026-11-04"]);
+      expect(events.every((e) => e.kind === "recce")).toBe(true);
+      const ics = toICS(events);
+      expect(ics.match(/BEGIN:VEVENT/g)).toHaveLength(2);
+      expect(ics).not.toContain("UID:recce-p1-2026-11-02@bookacrew");
+    }
+  });
+  it("keeps a production-only recce visible when locations have no recce dates", () => {
+    const events = buildCalendarEvents([prod({ recceDate: "2026-11-02", recceStart: "08:30" })], [{
+      id: "l1", production_id: "p1", label: "Studio", recce_date: null,
+      latitude: null, longitude: null, starts_at: null,
+    }], [], all);
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({ uid: "recce-p1-2026-11-02", kind: "recce", day: "2026-11-02", timeLabel: "From 08:30" });
+  });
+  it("keeps distinct productions and shoot events on the same recce date", () => {
+    const events = buildCalendarEvents([
+      prod({ date: "2026-11-02", recceDate: "2026-11-02" }),
+      prod({ id: "p2", recceDate: "2026-11-02" }),
+    ], [], [], all);
+    expect(events.map((e) => e.uid).sort()).toEqual([
+      "recce-p1-2026-11-02", "recce-p2-2026-11-02", "shoot-p1-2026-11-02",
+    ]);
+  });
   it("detects overlaps across event types of different productions only", () => {
     const ev = buildCalendarEvents([
       prod({ gearPickupDate: "2026-11-02", gearPickupTime: "09:00", gearDropoffDate: "2026-11-02", gearDropoffTime: "12:00", date: "2026-11-02" }),

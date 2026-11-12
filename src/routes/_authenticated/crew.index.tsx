@@ -9,7 +9,7 @@ import { useRole, useSession } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { zar } from "@/lib/demo-data";
 import { useTranslation } from "react-i18next";
-import { CREW_COUNTRIES } from "@/lib/crew-country";
+import { useCountries } from "@/lib/use-countries";
 import { useVisitorCountry } from "@/lib/country-logos";
 import { useCreateCrewGroup, useCreatePencil, useCrewSearch, useDeleteCrewGroup, useCrewGroups, useDepartments, useFavourites, useProductions, useProductionTypes, useToggleFavourite } from "@/lib/db";
 
@@ -110,6 +110,7 @@ function CrewPage() {
   const [dept, setDept] = useState("All");
   const [availOnly, setAvailOnly] = useState(false);
   const localCountry = useVisitorCountry();
+  const countries = useCountries();
   const [country, setCountry] = useState<string>("local");
   const countryCode = country === "local" ? localCountry : country;
   const [favOnly, setFavOnly] = useState(false);
@@ -159,8 +160,8 @@ function CrewPage() {
           {departments.map((d) => <option key={d} value={d}>{d === "All" ? t("directory.all") : t(`roles.${d}`, d)}</option>)}
         </select>
         <select value={country} onChange={(e) => setCountry(e.target.value)} aria-label="Crew country" className="rounded-sm border border-input bg-card px-3 py-2 text-sm">
-          <option value="local">Local ({CREW_COUNTRIES.find((c) => c.code === localCountry)?.label ?? localCountry})</option>
-          {CREW_COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
+          <option value="local">Local ({countries.find((c) => c.code === localCountry)?.name ?? localCountry})</option>
+          {countries.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
           <option value="ALL">All countries</option>
         </select>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={availOnly} onChange={(e) => setAvailOnly(e.target.checked)} className="accent-primary" /> {t("directory.availableOnly")}</label>
@@ -253,7 +254,7 @@ function CrewPage() {
                 <div key={l} className="rounded-lg bg-muted p-3"><dt className="text-[11px] text-muted-foreground">{l}</dt><dd className="mt-1 font-semibold">{v}</dd></div>
               ))}
             </dl>
-            {open.kit && <div className="mt-5"><div className="text-xs font-semibold text-muted-foreground">Equipment</div><p className="mt-1 text-sm">{open.kit}</p></div>}
+            {open.kit && <div className="mt-5"><div className="text-xs font-semibold text-muted-foreground">{t("adminNav.labels.Equipment")}</div><p className="mt-1 text-sm">{open.kit}</p></div>}
             <div className="mt-6 flex gap-2">
               <button onClick={() => { setPencilling({ id: open.id, name: open.name, role: open.role, dayRate: open.dayRate }); setOpen(null); }} className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Pencil</button>
               <Link to="/crew/$id" params={{ id: open.id }} className="flex-1 rounded-md border border-border px-4 py-2 text-center text-sm font-semibold">{t("directory.fullProfile")}</Link>

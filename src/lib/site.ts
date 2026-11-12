@@ -11,10 +11,10 @@ export async function uploadFile(folder: string, file: Blob, name: string) {
   return path;
 }
 
-export async function signedUrl(path: string) {
+export async function signedUrl(path: string, downloadName?: string) {
   // Already a full URL (e.g. a sample avatar from an external placeholder service) — use it as-is.
   if (/^https?:\/\//.test(path)) return path;
-  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, 3600);
+  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, 3600, downloadName ? { download: downloadName } : undefined);
   if (error) throw error;
   return data.signedUrl;
 }

@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Anchor, Pencil as PencilIcon, RefreshCw, Sparkles, Trash2 } from "lucide-react";
@@ -8,7 +8,10 @@ import { friendlyError } from "@/lib/errors";
 import { useSignedUrl } from "@/lib/site";
 import { Panel } from "@/components/AppShell";
 import { breakdownScript, enhanceStoryboardReferences, generateShotImage, saveStoryboardCharacters } from "@/lib/storyboard.functions";
-import { SoundDesignStudio } from "@/components/site/SoundDesignStudio";
+import { OperationProgress } from "@/components/site/OperationProgress";
+import { AiBalance } from "@/components/site/AiBalance";
+import { extractStoryboardPdf } from "@/lib/storyboard-pdf.functions";
+import { uploadFile } from "@/lib/site";
 import { AnimaticStudio } from "@/components/site/AnimaticStudio";
 import type { Production } from "@/lib/demo-data";
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -22,13 +25,14 @@ type Shot = {
   generation_error: string | null; sort_order: number; created_by: string; is_anchor?: boolean;
 };
 
-const MODES = ["Illustrate", "Sound Design", "Animatic"] as const;
+const MODES = ["Illustrate", "Animatic"] as const;
 type Mode = (typeof MODES)[number];
 
 export function StoryboardStudio({ p, isProducer }: { p: Production; isProducer: boolean }) {
   const [mode, setMode] = useState<Mode>("Illustrate");
   return (
     <div className="space-y-4">
+      {isProducer && <AiBalance production={p} />}
       <nav role="tablist" aria-label="Storyboard Studio mode" className="inline-flex rounded-sm border border-border text-xs font-semibold">
         {MODES.map((m) => (
           <button key={m} role="tab" aria-selected={mode === m} onClick={() => setMode(m)}
@@ -38,7 +42,6 @@ export function StoryboardStudio({ p, isProducer }: { p: Production; isProducer:
         ))}
       </nav>
       {mode === "Illustrate" && <IllustrateMode p={p} isProducer={isProducer} />}
-      {mode === "Sound Design" && <SoundDesignStudio p={p} isProducer={isProducer} />}
       {mode === "Animatic" && <AnimaticStudio p={p} isProducer={isProducer} />}
     </div>
   );
@@ -57,14 +60,16 @@ function ShotImage({ path }: { path: string | null }) {
 
 function IllustrateMode({ p, isProducer }: { p: Production; isProducer: boolean }) {
   const qc = useQueryClient();
-  const shots = useQuery({
+  const shotsQuery = useQuery({
     queryKey: ["storyboard-shots", p.id],
     queryFn: async () => {
       const { data, error } = await supabase.from("storyboard_shots").select("*").eq("production_id", p.id).order("sort_order");
       if (error) throw error;
       return (data ?? []) as Shot[];
     },
-  }).data ?? [];
+    refetchInterval: (query) => (query.state.data as Shot[] | undefined)?.some((shot) => shot.status === "generating") ? 2500 : false,
+  });
+  const shots = shotsQuery.data ?? [];
   const refresh = () => qc.invalidateQueries({ queryKey: ["storyboard-shots", p.id] });
 
   const breakdown = useServerFn(breakdownScript);
@@ -89,19 +94,83 @@ function IllustrateMode({ p, isProducer }: { p: Production; isProducer: boolean 
     setEnhancing(true);
     try { await enhance({ data: { productionId: p.id, references: chars.data ?? "", brief } }); toast.success("References enhanced"); qc.invalidateQueries({ queryKey: ["storyboard-characters", p.id] }); }
     catch (e) { toast.error(friendlyError(e)); }
-    finally { setEnhancing(false); }
+    finally { setEnhancing(false); void qc.invalidateQueries({ queryKey: ["ai-balance"] }); }
   }
   type Choice = { label: string; value: string; tone?: "primary" | "destructive" | "outline" };
   const [ask, setAsk] = useState<{ title: string; body: string; choices: Choice[]; resolve: (v: string) => void } | null>(null);
   const askUser = (title: string, body: string, choices: Choice[]) => new Promise<string>((resolve) => setAsk({ title, body, choices, resolve }));
   const answer = (v: string) => { ask?.resolve(v); setAsk(null); };
   const [brief, setBrief] = useState("");
+  const [promptTab, setPromptTab] = useState("Working prompt");
+  const [promptDirty, setPromptDirty] = useState(false);
+  const [savingPrompt, setSavingPrompt] = useState(false);
+  const [promptError, setPromptError] = useState("");
+  const initialized = useRef(false);
+  const revision = useRef(0);
+  const saveQueue = useRef(Promise.resolve());
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const extractPdf = useServerFn(extractStoryboardPdf);
+  const briefs = useQuery({ queryKey: ["storyboard-brief", p.id], queryFn: async () => {
+    const { data, error } = await supabase.from("storyboard_briefs").select("*").eq("production_id", p.id).maybeSingle();
+    if (error) throw error;
+    return data;
+  } });
+  useEffect(() => {
+    if (!briefs.isSuccess || initialized.current) return;
+    initialized.current = true;
+    let draft: { text: string; at: string } | null = null;
+    try { draft = JSON.parse(localStorage.getItem("storyboard-draft:" + p.id) ?? "null"); } catch {}
+    const newer = draft && (!briefs.data || draft.at > briefs.data.updated_at);
+    setBrief(newer ? draft!.text : briefs.data?.working_prompt ?? "");
+    setPromptDirty(!!newer);
+  }, [briefs.isSuccess, briefs.data, p.id]);
+  function editBrief(value: string) {
+    revision.current++;
+    setBrief(value); setPromptDirty(true);
+    try { localStorage.setItem("storyboard-draft:" + p.id, JSON.stringify({ text: value, at: new Date().toISOString() })); } catch {}
+  }
+  function savePrompt() {
+    const text = brief, version = revision.current;
+    setSavingPrompt(true); setPromptError("");
+    saveQueue.current = saveQueue.current.then(async () => {
+      const result = await supabase.from("storyboard_briefs").upsert({ production_id: p.id, working_prompt: text, updated_at: new Date().toISOString() }, { onConflict: "production_id" }).select("production_id").single();
+      if (result.error || !result.data) throw result.error ?? new Error("Prompt was not saved");
+      setPromptError("");
+      if (version === revision.current) { setPromptDirty(false); try { localStorage.removeItem("storyboard-draft:" + p.id); } catch {} }
+      await qc.invalidateQueries({ queryKey: ["storyboard-brief", p.id] });
+    }).catch(() => setPromptError("Prompt could not be saved to the server. A draft is retained on this device.")).finally(() => setSavingPrompt(false));
+    return saveQueue.current;
+  }
+  useEffect(() => {
+    if (!promptDirty || !initialized.current) return;
+    const timer = setTimeout(() => { void savePrompt(); }, 800);
+    return () => clearTimeout(timer);
+  }, [brief, promptDirty]);
+  async function uploadPdf(file: File | undefined) {
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".pdf") || file.size > 8 * 1024 * 1024) { toast.error("Choose a PDF of 8 MB or smaller"); return; }
+    setPdfBusy(true);
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth.user) throw new Error("Please sign in again");
+      const path = await uploadFile(p.id + "/docs", file, file.name);
+      const document = await supabase.from("site_documents").insert({ production_id: p.id, name: file.name, path, category: "General", size: file.size, uploaded_by: auth.user.id, uploader_name: auth.user.email ?? "", checklist_item_id: null }).select("id").single();
+      if (document.error || !document.data) throw document.error ?? new Error("PDF was not saved");
+      await qc.invalidateQueries({ queryKey: ["docs", p.id] });
+      toast.success("PDF saved in Documents");
+      await extractPdf({ data: { productionId: p.id, documentId: document.data.id } });
+      await qc.invalidateQueries({ queryKey: ["storyboard-brief", p.id] });
+      setPromptTab("PDF summary");
+    } catch (error) { toast.error(friendlyError(error)); }
+    finally { setPdfBusy(false); void qc.invalidateQueries({ queryKey: ["ai-balance"] }); }
+  }
   const [breakingDown, setBreakingDown] = useState(false);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   async function runBreakdown() {
+    if (shotsQuery.isLoading || shotsQuery.isError || briefs.isLoading || briefs.isError) { toast.error("Wait for the saved storyboard to load before generating"); return; }
     if (!brief.trim()) { toast.error("Describe the scene or script first"); return; }
     let replace = false;
     if (shots.length > 0) {
@@ -113,24 +182,17 @@ function IllustrateMode({ p, isProducer }: { p: Production; isProducer: boolean 
     }
     setBreakingDown(true);
     try {
-      if (replace) {
-        const { error: delErr } = await supabase.from("storyboard_shots").delete().eq("production_id", p.id);
-        if (delErr) throw delErr;
-      }
-      const { shots: newShots, improvedBrief } = await breakdown({ data: { productionId: p.id, brief } });
+      await savePrompt();
+      const { shots: newShots, improvedBrief } = await breakdown({ data: { productionId: p.id, brief, replace } });
       setBrief(improvedBrief);
+      setPromptDirty(false);
+      try { localStorage.removeItem("storyboard-draft:" + p.id); } catch {}
       qc.invalidateQueries({ queryKey: ["storyboard-characters", p.id] });
-      const startOrder = replace ? 0 : shots.length;
-      const rows = newShots.map((s, i) => ({
-        production_id: p.id, scene_number: s.scene_number, shot_number: s.shot_number,
-        description: s.description, duration_seconds: s.duration_seconds, sort_order: startOrder + i,
-      }));
-      const { error } = await supabase.from("storyboard_shots").insert(rows);
-      if (error) throw error;
-      toast.success(`${rows.length} shot${rows.length === 1 ? "" : "s"} added`);
+      qc.invalidateQueries({ queryKey: ["storyboard-brief", p.id] });
+      toast.success(`${newShots.length} shot${newShots.length === 1 ? "" : "s"} added`);
       refresh();
     } catch (e) { toast.error(friendlyError(e)); }
-    finally { setBreakingDown(false); }
+    finally { setBreakingDown(false); void qc.invalidateQueries({ queryKey: ["ai-balance"] }); }
   }
 
   async function addBlankShot() {
@@ -143,7 +205,7 @@ function IllustrateMode({ p, isProducer }: { p: Production; isProducer: boolean 
   }
 
   async function updateShot(id: string, patch: Partial<Pick<Shot, "description" | "duration_seconds" | "status" | "is_anchor">>) {
-    const { error } = await supabase.from("storyboard_shots").update(patch).eq("id", id);
+    const { error } = await supabase.from("storyboard_shots").update(patch).eq("id", id).eq("production_id", p.id).select("id").single();
     if (error) { toast.error(friendlyError(error)); return; }
     refresh();
   }
@@ -185,7 +247,7 @@ function IllustrateMode({ p, isProducer }: { p: Production; isProducer: boolean 
       await generateImage({ data: { productionId: p.id, shotId: shot.id, description: shot.description } });
       toast.success("Illustration generated");
     } catch (e) { toast.error(friendlyError(e)); }
-    finally { setGeneratingId(null); refresh(); }
+    finally { setGeneratingId(null); refresh(); void qc.invalidateQueries({ queryKey: ["ai-balance"] }); }
   }
 
   const [bulk, setBulk] = useState<{ done: number; total: number } | null>(null);
@@ -203,6 +265,7 @@ function IllustrateMode({ p, isProducer }: { p: Production; isProducer: boolean 
       refresh();
     }
     setGeneratingId(null); setBulk(null); refresh();
+    void qc.invalidateQueries({ queryKey: ["ai-balance"] });
     failed ? toast.error(`${failed} of ${todo.length} illustrations failed — retry them individually`) : toast.success(`${todo.length} illustrations generated`);
   }
 
@@ -210,9 +273,23 @@ function IllustrateMode({ p, isProducer }: { p: Production; isProducer: boolean 
 
   return (
     <div className="space-y-4">
+      {shotsQuery.isError && <p role="alert" className="rounded border border-destructive p-3 text-sm">Saved storyboard could not be loaded. <button className="underline" onClick={() => void refresh()}>Retry</button></p>}
+      {(breakingDown || generatingId || enhancing || pdfBusy) && <OperationProgress label={pdfBusy ? "Extracting and saving PDF" : breakingDown ? "Creating and saving storyboard" : enhancing ? "Enhancing references" : "Generating illustration"} {...(bulk ? { completed: bulk.done, total: bulk.total } : {})} />}
       <Panel title="AI shot breakdown">
         <div className="space-y-2 p-4">
-          <textarea rows={3} className={`${input} w-full`} placeholder="Paste the creative brief or script excerpt to break down into shots…" value={brief} onChange={(e) => setBrief(e.target.value)} />
+          <div role="tablist" aria-label="Storyboard prompt" className="flex flex-wrap gap-2">
+            {["Working prompt", "Original prompt", "PDF summary", "Extracted text"].map((tab) => <button key={tab} role="tab" aria-selected={promptTab === tab} onClick={() => setPromptTab(tab)} className={`rounded border px-3 py-1 text-xs ${promptTab === tab ? "border-primary text-primary" : "border-border"}`}>{tab}</button>)}
+          </div>
+          {(briefs.isError || promptError) && <p role="alert" className="text-xs text-destructive">{promptError || "Saved prompt could not be loaded. Try again before editing."}<button className="ml-2 underline" onClick={() => void briefs.refetch()}>Retry</button></p>}
+          {promptTab === "Working prompt" && <textarea aria-label="Storyboard working prompt" rows={3} className={`${input} w-full`} placeholder="Paste the creative brief or script excerpt…" value={brief} disabled={briefs.isLoading || briefs.isError || breakingDown || pdfBusy} onChange={(e) => editBrief(e.target.value)} />}
+          {promptTab === "Original prompt" && <div className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded border border-border p-3 text-xs">{briefs.data?.original_prompt || "The original prompt is preserved when you first generate a storyboard."}</div>}
+          {promptTab === "PDF summary" && <><div className="max-h-48 overflow-y-auto whitespace-pre-wrap p-3 text-xs">{briefs.data?.pdf_summary || "No PDF summary yet."}</div>{briefs.data?.pdf_summary && <button className={btn} onClick={() => { editBrief(briefs.data!.pdf_summary.slice(0, 8000)); setPromptTab("Working prompt"); }}>Use summary as working prompt</button>}</>}
+          {promptTab === "Extracted text" && <div className="max-h-48 overflow-y-auto whitespace-pre-wrap p-3 text-xs">{briefs.data?.extracted_text || "No PDF text extracted yet."}</div>}
+          <div className="flex flex-wrap items-center gap-3 text-xs">
+            <label className="cursor-pointer rounded border border-border px-3 py-2">Upload PDF<input type="file" accept="application/pdf,.pdf" hidden disabled={pdfBusy} onChange={(e) => { void uploadPdf(e.target.files?.[0]); e.target.value = ""; }} /></label>
+            <button disabled={!promptDirty || savingPrompt} onClick={() => void savePrompt()} className="rounded border border-border px-3 py-2">Save prompt</button>
+            <span>{savingPrompt ? "Saving prompt…" : promptDirty ? "Device draft" : "Saved"}</span>
+          </div>
           <div className="flex gap-2">
             <button onClick={runBreakdown} disabled={breakingDown} className={btn}><Sparkles className="h-3.5 w-3.5" /> {breakingDown ? "Breaking down…" : "Break down into shots"}</button>
             <button onClick={addBlankShot} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold hover:border-primary hover:text-primary">+ Add shot manually</button>

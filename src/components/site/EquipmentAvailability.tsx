@@ -57,15 +57,15 @@ export function EquipmentAvailability({ p }: { p: { id: string; date: string; na
   }
 
   return (
-    <Panel title="Our equipment" collapsible defaultCollapsed right={items.length > 0 ? <span className="text-xs text-muted-foreground">{rows.filter((r) => r.free > 0 || r.mine > 0).length} of {items.length} usable</span> : undefined}>
+    <Panel title="Our inventory" collapsible defaultCollapsed right={items.length > 0 ? <span className="text-xs text-muted-foreground">{rows.filter((r) => r.free > 0 || r.mine > 0).length} of {items.length} usable</span> : undefined}>
       {items.length === 0 ? (
-        <p className="p-4 text-sm text-muted-foreground">No company equipment has been listed yet. An admin can add it under Admin, Equipment.</p>
+        <p className="p-4 text-sm text-muted-foreground">No company inventory has been listed yet. An admin can add it under Admin, Inventory.</p>
       ) : (
         <>
           <div className="border-b border-border px-4 py-2.5">
             <div className="relative">
               <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search equipment" aria-label="Search equipment"
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search inventory" aria-label="Search inventory"
                 className="w-full rounded-sm border border-input bg-background py-1.5 pl-7 pr-2 text-sm outline-none focus:border-ring" />
             </div>
           </div>
@@ -75,7 +75,7 @@ export function EquipmentAvailability({ p }: { p: { id: string; date: string; na
               : "Everything we own is free for this shoot."}
           </div>
           <ul className="max-h-96 divide-y divide-border overflow-y-auto">
-            {shown.length === 0 && <li className="px-4 py-3 text-sm text-muted-foreground">No equipment matches “{q}”.</li>}
+            {shown.length === 0 && <li className="px-4 py-3 text-sm text-muted-foreground">No inventory matches “{q}”.</li>}
             {shown.map(({ item, active, mine, mineRows, blockedBy, free }) => (
               <li key={item.id} className="px-4 py-2.5 text-sm">
                 <div className="flex items-start justify-between gap-3">

@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/calendar")({
 
 const iso = isoDay;
 
-type DayItem = { id: string; key: string; productionId: string; name: string; client: string; location: string; crew: number; lat: number | null; lon: number | null; kind: "shoot" | "recce" | "gear"; time: string; details?: string | undefined; clash: boolean };
+type DayItem = { id: string; key: string; productionId: string; productionName: string; name: string; client: string; location: string; crew: number; lat: number | null; lon: number | null; kind: "shoot" | "recce" | "gear"; time: string; details?: string | undefined; clash: boolean };
 
 function CalendarPage() {
   const { t: translate, i18n } = useTranslation();
@@ -40,7 +40,7 @@ function CalendarPage() {
   const byDay = new Map<string, DayItem[]>();
   for (const [k, list] of evByDay) {
     byDay.set(k, list.map((e) => ({
-      id: e.productionId, key: e.uid, productionId: e.productionId, name: e.title, client: e.client, location: e.location,
+      id: e.productionId, key: e.uid, productionId: e.productionId, productionName: e.productionName, name: e.title, client: e.client, location: e.location,
       crew: isCrewOnly ? 0 : crewCount(e.productionId), lat: e.lat ?? null, lon: e.lon ?? null, kind: e.kind,
       time: e.timeLabel, details: e.details, clash: conflicts.has(e.uid),
     })));
@@ -91,7 +91,7 @@ function CalendarPage() {
               {items.map((it) => (
                 <Link key={it.key} to="/productions/$id" params={{ id: it.productionId }} title={`${it.name} · ${it.time} · ${it.location}${it.details ? `\n${it.details}` : ""}${it.clash ? "\nOverlaps another production" : ""}`}
                   className={`mb-1 block rounded-xl px-1.5 py-0.5 text-xs font-medium hover:opacity-90 ${it.kind === "shoot" ? clientColor(it.client) : EVENT_CHIP[it.kind]} ${it.clash ? "ring-2 ring-destructive" : ""}`}>
-                  <span className="block truncate">{it.kind === "recce" ? translate("dashboard.recce") : it.kind === "gear" ? translate("dashboard.gear") : it.name}{it.crew && it.kind === "shoot" ? ` · ${it.crew} ${translate("nav.crew")}` : ""}</span>
+                  <span className="block truncate">{it.kind === "recce" ? `${translate("dashboard.recce")} · ${it.productionName}` : it.kind === "gear" ? translate("dashboard.gear") : it.name}{it.crew && it.kind === "shoot" ? ` · ${it.crew} ${translate("nav.crew")}` : ""}</span>
                   <span className="block truncate text-[10px] font-semibold">{it.time === "Time TBC" ? translate("calendar.timeTbc") : it.time}{it.clash ? ` · ${translate("calendar.overlap")}` : ""}</span>
                   {it.location && <span className="block truncate text-[10px] font-normal opacity-90">{it.location}</span>}
                 </Link>

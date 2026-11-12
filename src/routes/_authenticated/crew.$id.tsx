@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { Award, Briefcase, Camera, Eye, EyeOff, Lock, Mail, MapPin, Package, Phone, Plus, Star, Trash2 } from "lucide-react";
@@ -42,6 +43,7 @@ const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-
 const TABS = ["Portfolio", "Rates", "Travel", "Equipment", "Checklists", "Emergency", "Account", "Reviews"] as const;
 
 function CrewProfile() {
+  const { t: translate } = useTranslation();
   const { id } = Route.useParams();
   const { session } = useSession();
   const role = useRole(session?.user.id);
@@ -127,7 +129,7 @@ function CrewProfile() {
           )}
         </div>
         <nav className="flex gap-1 overflow-x-auto border-b border-border px-4">
-          {visibleTabs.map((t) => <button key={t} onClick={() => setTab(t)} className={`whitespace-nowrap border-b-2 px-3 py-3 text-sm font-semibold ${activeTab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}>{t}</button>)}
+          {visibleTabs.map((t) => <button key={t} onClick={() => setTab(t)} className={`whitespace-nowrap border-b-2 px-3 py-3 text-sm font-semibold ${activeTab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}>{t === "Equipment" ? translate("adminNav.labels.Equipment") : t}</button>)}
         </nav>
         {activeTab === "Portfolio" && <div className="p-6">
           <div className="space-y-6">
@@ -572,8 +574,8 @@ function Kit({ crewId, items, canEdit, onChange }: { crewId: string; items: { id
   async function remove(id: string) { const { error } = await supabase.from("crew_assets").delete().eq("id", id); if (error) toast.error(friendlyError(error)); onChange(); }
   return (
     <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">Equipment and props this provider can bring. Dial a Crew selects items per job and the fees are added to the provider's total.</p>
-      {items.length === 0 && <p className="text-sm text-muted-foreground">No equipment or props captured yet.</p>}
+      <p className="text-sm text-muted-foreground">Inventory this provider can bring. Dial a Crew selects items per job and the fees are added to the provider's total.</p>
+      {items.length === 0 && <p className="text-sm text-muted-foreground">No inventory captured yet.</p>}
       {items.map((a) => (
         <div key={a.id} className="flex items-center gap-3 rounded-sm border border-border p-3">
           <Package className="h-4 w-4 text-primary" /><span className="flex-1 text-sm">{a.name} <span className="text-xs text-muted-foreground">· {a.category}</span></span>
@@ -584,7 +586,7 @@ function Kit({ crewId, items, canEdit, onChange }: { crewId: string; items: { id
       {canEdit && (
         <div className="flex flex-wrap gap-2">
           <input className={`${input} flex-1`} placeholder="Item (e.g. ARRI Alexa Mini)" value={n.name} onChange={(e) => setN({ ...n, name: e.target.value })} />
-          <select className={input} value={n.category} onChange={(e) => setN({ ...n, category: e.target.value })}>{["Equipment", "Prop", "Vehicle", "Lighting", "Sound", "Wardrobe"].map((c) => <option key={c}>{c}</option>)}</select>
+          <select className={input} value={n.category} onChange={(e) => setN({ ...n, category: e.target.value })}>{["Equipment", "Prop", "Vehicle", "Lighting", "Sound", "Wardrobe"].map((c) => <option key={c} value={c}>{c === "Equipment" ? "Inventory" : c}</option>)}</select>
           <input type="number" className={`${input} w-32`} placeholder="Fee / day (R)" value={n.fee} onChange={(e) => setN({ ...n, fee: e.target.value })} />
           <button className={btn} onClick={add}>Add</button>
         </div>

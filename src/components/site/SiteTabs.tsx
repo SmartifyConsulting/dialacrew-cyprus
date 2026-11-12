@@ -7,6 +7,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
 import { geocodeSearch } from "@/lib/geocode.functions";
+import { persistLocation } from "@/lib/location-save";
+import { locationLocalInput, locationUtc } from "@/lib/location-time";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { nativeFeedback } from "@/lib/native";
@@ -14,7 +16,7 @@ import { Camera, Check, CheckCircle2, CalendarDays, Circle, Cloud, CloudDrizzle,
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { GigNegotiation } from "@/components/GigNegotiation";
+import { EquipmentAvailability } from "@/components/site/EquipmentAvailability";
 import { ChecklistTemplateManager } from "@/components/ChecklistTemplateManager";
 import { Badge, Panel } from "@/components/AppShell";
 import { SortableFrames } from "@/lib/frame-controls";
@@ -27,7 +29,7 @@ import {
   signedUrl, uploadFile, useBookingAssets, useChecklists, useCrewAssets, useDefaultCrewRoles, useDocs, useInvalidate, useLocationPoints, useMessages, usePosts,
   useProductionCrewRoles, useRegister, useReviews, useSignedUrl, useSiteMembers, useTasks,
 } from "@/lib/site";
-import { useBookings, useCancelBooking, useCreateOpenGig, useCrew, useCrewGroups, useRequests, useSetRequestState } from "@/lib/db";
+import { useBookings, useCancelBooking, useCrew, useCrewGroups, useRequests, useSetRequestState } from "@/lib/db";
 import { LocationRisks, ProjectWideRisks } from "@/components/site/ProjectInsights";
 import { Guidelines } from "@/components/site/Guidelines";
 import { LocationFee, LocationPhotos } from "@/components/site/LocationExtras";
@@ -86,8 +88,6 @@ function placeFromAddress(a: NominatimAddress | undefined, fallback: string) {
   return [...new Set(parts)].join(", ") || displayAddress(fallback);
 }
 
-// Debounced address lookup against OpenStreetMap's free Nominatim search — no API key needed.
-// Falls back to a plain text input (with no suggestions) if the request fails.
 export function AddressAutocomplete({ value, onChange, onSelect, placeholder, className, country }: {
   value: string; onChange: (v: string) => void; onSelect: (s: AddressSuggestion) => void; placeholder?: string; className?: string; country?: string;
 }) {
@@ -99,17 +99,19 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder, cl
   const search = useServerFn(geocodeSearch);
 
   useEffect(() => {
+    let current = true;
     if (!open || value.trim().length < 3) { setSuggestions([]); return; }
     const t = setTimeout(async () => {
       setLoading(true);
       try {
         const { results } = await search({ data: country ? { q: value, country } : { q: value } });
+        if (!current) return;
         setSuggestions(results.map((d) => ({ label: shortAddress(d.address, d.name, d.display_name), exactAddress: d.display_name, place: placeFromAddress(d.address, d.display_name.split(",")[0] ?? d.display_name), lat: d.lat, lon: d.lon })));
         setFailed(false);
-      } catch { setSuggestions([]); setFailed(true); }
-      setLoading(false);
+      } catch { if (current) { setSuggestions([]); setFailed(true); } }
+      if (current) setLoading(false);
     }, 400);
-    return () => clearTimeout(t);
+    return () => { current = false; clearTimeout(t); };
   }, [value, open, search, country]);
 
   useEffect(() => {
@@ -136,13 +138,14 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder, cl
           </button>
           {!loading && !failed && suggestions.length === 0 && <div className="px-3 py-2 text-xs text-muted-foreground">No matching places — keep typing the street and suburb, or use it as typed.</div>}
           {loading && <div className="px-3 py-2 text-xs text-muted-foreground">Searching…</div>}
-          {!loading && failed && suggestions.length === 0 && <div className="px-3 py-2 text-xs text-destructive">Address lookup failed — you can still type the address in manually.</div>}
+          {!loading && failed && suggestions.length === 0 && <div role="alert" className="px-3 py-2 text-xs text-destructive">Google Maps search is unavailable. A manually entered address has no verified coordinates.</div>}
           {!loading && suggestions.map((s, i) => (
             <button key={i} type="button" onClick={() => { onSelect(s); setOpen(false); setSuggestions([]); }}
               className="block w-full px-3 py-2 text-left text-xs hover:bg-muted">
               {s.label}
             </button>
           ))}
+          {suggestions.length > 0 && <div className="border-t border-border px-3 py-2 text-xs text-muted-foreground">Powered by Google Maps</div>}
         </div>
       )}
     </div>
@@ -160,7 +163,6 @@ function FileLink({ path, name }: { path: string; name: string }) {
 
 /* ---------------- Location points (multi-stop schedule) — lives inside Site information ---------------- */
 const blankLocationForm = { label: "", address: "", latitude: "", longitude: "", recceDate: "", recceStart: "", recceEnd: "", startsAt: "", endsAt: "" };
-const toLocalInput = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(0, 16) : "");
 const dayLabel = (iso: string) => new Date(iso).toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
 const clockLabel = (iso: string) => new Date(iso).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" });
 const hasTime = (iso: string) => { const d = new Date(iso); return d.getHours() !== 0 || d.getMinutes() !== 0; };
@@ -271,6 +273,7 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
   const { t, i18n } = useTranslation();
   const localDay = (value: string) => new Date(value).toLocaleDateString(i18n.language, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
   const inv = useInvalidate();
+  const qc = useQueryClient();
   const bookings = useBookings().data ?? [];
   const canSeeExactAddress = isProducer || bookings.some((booking) => booking.productionId === p.id && booking.crewId === myCrewId && ["confirmed", "in_progress", "awaiting_review", "payment_released", "completed"].includes(booking.status));
   const points = useLocationPoints(p.id).data ?? [];
@@ -306,7 +309,7 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
     setLf({
       label: pt.label, address: pt.address ?? "", latitude: pt.latitude?.toString() ?? "", longitude: pt.longitude?.toString() ?? "",
       recceDate: pt.recce_date ?? "", recceStart: hhmm(pt.recce_start_time) ?? "", recceEnd: hhmm(pt.recce_end_time) ?? "",
-      startsAt: toLocalInput(pt.starts_at), endsAt: toLocalInput(pt.ends_at),
+      startsAt: locationLocalInput(pt.starts_at, p.timezone ?? undefined), endsAt: locationLocalInput(pt.ends_at, p.timezone ?? undefined),
     });
     setEditingId(pt.id);
     setAdding(true);
@@ -317,22 +320,24 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
   // recce date set across this production's locations, so the two can't drift apart.
   async function syncProductionRecce() {
     const { data, error } = await supabase.from("production_locations").select("recce_date").eq("production_id", p.id);
-    if (error) return;
+    if (error) throw error;
     const earliest = (data ?? []).map((r) => r.recce_date).filter((d): d is string => !!d).sort()[0] ?? null;
+    if (!earliest && !points.some((point) => point.recce_date && point.recce_date === p.recceDate)) return;
     if (earliest !== (p.recceDate ?? null)) {
-      await supabase.from("productions").update({ recce_date: earliest }).eq("id", p.id);
+      const saved = await supabase.from("productions").update({ recce_date: earliest }).eq("id", p.id).select("id").single();
+      if (saved.error || !saved.data) throw saved.error ?? new Error("Recce date was not saved");
       inv(["productions"], ["production", p.id]);
     }
   }
 
   async function saveRecce(id: string, patch: { recce_date?: string | null; recce_start_time?: string | null; recce_end_time?: string | null }, msg: string, start?: string | null, end?: string | null) {
     if (!validRecceTimes(start, end)) { toast.error("Recce end time must be after the start time"); return; }
-    const { error } = await supabase.from("production_locations").update(patch).eq("id", id);
+    const { error } = await supabase.from("production_locations").update(patch).eq("id", id).eq("production_id", p.id).select("id").single();
     if (error) { toast.error(friendlyError(error)); return; }
     inv(["location-points", p.id]);
     inv(["calendar-locations"]);
     inv(["dashboard-location-recces"]);
-    if ("recce_date" in patch) await syncProductionRecce();
+    if ("recce_date" in patch) { try { await syncProductionRecce(); } catch (error) { toast.error(friendlyError(error)); return; } }
     toast.success(msg);
   }
 
@@ -344,14 +349,14 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
       label: lf.label.trim() || lf.address.split(",").slice(0, 2).join(",").trim(), address: lf.address.trim(),
       latitude: lf.latitude ? Number(lf.latitude) : null, longitude: lf.longitude ? Number(lf.longitude) : null,
       recce_date: lf.recceDate || null, recce_start_time: lf.recceStart || null, recce_end_time: lf.recceEnd || null,
-      starts_at: lf.startsAt ? new Date(lf.startsAt).toISOString() : null,
-      ends_at: lf.endsAt ? new Date(lf.endsAt).toISOString() : null,
+      starts_at: locationUtc(lf.startsAt, p.timezone ?? undefined),
+      ends_at: locationUtc(lf.endsAt, p.timezone ?? undefined),
     };
-    const { error } = editingId
-      ? await supabase.from("production_locations").update(payload).eq("id", editingId)
-      : await supabase.from("production_locations").insert({ production_id: p.id, sort_order: points.length, ...payload });
-    setBusy(false);
-    if (error) { toast.error(friendlyError(error)); return; }
+    try {
+      const saved = await persistLocation(p.id, editingId, { ...payload, ...(!editingId ? { sort_order: points.length } : {}) });
+      qc.setQueryData<typeof points>(["location-points", p.id], (previous = []) => [...previous.filter((point) => point.id !== saved.id), saved].sort((a, b) => a.sort_order - b.sort_order));
+    } catch (error) { toast.error(friendlyError(error)); return; }
+    finally { setBusy(false); }
     toast.success(editingId ? "Location point updated" : "Location point added");
     const wasAdding = !editingId;
     const savedDay = lf.startsAt.slice(0, 10);
@@ -361,7 +366,8 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
     const assignedDays = new Set([...points.map((pt) => pt.starts_at ? localYmd(pt.starts_at) : null).filter((d): d is string => !!d), savedDay].filter(Boolean));
     cancelForm();
     inv(["location-points", p.id]);
-    await syncProductionRecce();
+    inv(["calendar-locations"], ["dashboard-location-recces"]);
+    try { await syncProductionRecce(); } catch (error) { toast.error(friendlyError(error)); }
     // Shoot spans more than one day — automatically stage the next day's location so the
     // producer doesn't have to click "Add Location" again for every day of the shoot. Recce time
     // carries over as a convenience, but the recce date itself is left blank: it's only filled in
@@ -516,7 +522,7 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
             <span className="text-sm font-bold text-foreground">{editingId ? `Edit location` : `Location ${points.length + 1}`}</span>
           </div>
           <AddressAutocomplete className={`${input} w-full`} placeholder={t("locationsUi.address")} value={lf.address} country={productionCountry(p.currency)}
-            onChange={(v) => setLf({ ...lf, address: v })}
+            onChange={(v) => setLf({ ...lf, address: v, label: "", latitude: "", longitude: "" })}
             onSelect={(s) => setLf({ ...lf, label: s.place, address: s.exactAddress, latitude: s.lat, longitude: s.lon })} />
           <div className="space-y-3">
             {(() => {
@@ -967,71 +973,32 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
   const locationPoints = useLocationPoints(p.id).data ?? [];
   const overviewBookings = useBookings().data ?? [];
   const canSeeRecceAddress = isProducer || overviewBookings.some((booking) => booking.productionId === p.id && booking.crewId === myCrewId && ["confirmed", "in_progress", "awaiting_review", "payment_released", "completed"].includes(booking.status));
-  const [f, setF] = useState({ address: p.address ?? "", summary: p.summary ?? "", latitude: p.latitude?.toString() ?? "", longitude: p.longitude?.toString() ?? "", geofence: String(p.geofenceM ?? 10) });
-  const [posting, setPosting] = useState(false);
-  const [editing, setEditing] = useState(() => !(p.address || p.latitude));
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
-  const dirty = useRef(false);
-  const update = (patch: Partial<typeof f>) => { setF((prev) => ({ ...prev, ...patch })); dirty.current = true; };
-  const createGig = useCreateOpenGig();
-  const [gf, setGf] = useState({ role: "", date: p.date ?? "", callTime: "", wrapTime: "", rate: "" });
-  const openGigs = useQuery({
-    queryKey: ["production-open-gigs", p.id],
-    queryFn: async () => { const { data, error } = await supabase.from("bookings").select("id, role, booking_date, crew_rate").eq("production_id", p.id).eq("status", "open"); if (error) throw error; return data ?? []; },
-    enabled: isProducer,
-  });
-
-  async function postGig() {
-    if (!gf.role.trim() || !gf.date) { toast.error("Role and date are required"); return; }
-    const rate = Number(gf.rate) || 0;
+  const [summary, setSummary] = useState(p.summary ?? "");
+  const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const updateSummary = (value: string) => { setSummary(value); setDirty(true); };
+  async function saveSummary() {
+    setSaving(true);
     try {
-      await createGig.mutateAsync({ productionId: p.id, role: gf.role.trim(), bookingDate: gf.date, callTime: gf.callTime, wrapTime: gf.wrapTime, crewRate: rate, clientCharge: rate, days: 1 });
-      toast.success("Open gig posted — any crew member can grab it");
-      setGf({ role: "", date: p.date ?? "", callTime: "", wrapTime: "", rate: "" });
-      setPosting(false);
-      inv(["production-open-gigs", p.id]);
-    } catch (e) { toast.error(friendlyError(e)); }
+      const { data, error } = await supabase.from("productions").update({ summary }).eq("id", p.id).select("id").single();
+      if (error || !data) throw error ?? new Error("The production was not saved. Check your access and try again.");
+      inv(["productions"]);
+      setDirty(false);
+      toast.success(t("common.saved"));
+    } catch (error) { toast.error(friendlyError(error)); }
+    finally { setSaving(false); }
   }
-
-  async function save() {
-    const { error } = await supabase.from("productions").update({
-      address: f.address, summary: f.summary, geofence_m: Number(f.geofence) || 10,
-      latitude: f.latitude ? Number(f.latitude) : null, longitude: f.longitude ? Number(f.longitude) : null,
-    }).eq("id", p.id);
-    if (error) { toast.error(friendlyError(error)); throw error; }
-    inv(["productions"]);
-  }
-  async function useHere() {
-    try { const pos = await getPosition(); update({ latitude: pos.coords.latitude.toFixed(6), longitude: pos.coords.longitude.toFixed(6) }); }
-    catch (e) { toast.error(friendlyError(e)); }
-  }
-
-  // Autosave: once the producer edits any field here, persist it a moment after they stop typing —
-  // no explicit Save button needed.
-  useEffect(() => {
-    if (!isProducer || !dirty.current) return;
-    setSaveState("saving");
-    const t = setTimeout(async () => {
-      try { await save(); dirty.current = false; setSaveState("saved"); }
-      catch { setSaveState("idle"); }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, 900);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [f.address, f.summary, f.latitude, f.longitude, f.geofence]);
 
   return (
-    <SortableFrames storageKey={`sidebar-frames:${p.id}`} frames={[
+    <SortableFrames storageKey={`sidebar-frames:v2:${p.id}`} frames={[
       { id: "overview", node: (
-      <Panel title={t("workspace.overview")} collapsible defaultCollapsed right={isProducer && saveState !== "idle" ? (
-        <span className="text-xs text-muted-foreground">{saveState === "saving" ? "Saving…" : "Saved"}</span>
-      ) : undefined}>
+      <Panel title={t("workspace.overview")} collapsible defaultCollapsed>
         <div className="space-y-3 p-4 text-sm">
           {isProducer ? (
             <>
             <label className="block"><span className="text-xs text-muted-foreground">{t("workspace.summary")}</span>
-              <textarea rows={4} className={`${input} mt-1 w-full`} value={f.summary} onChange={(e) => update({ summary: e.target.value })} /></label>
-              <div className="flex justify-end"><PolishDescription text={f.summary} name={p.name} type={p.type} client={p.client} onPolished={(v) => update({ summary: v })} /></div>
+              <textarea rows={4} className={`${input} mt-1 w-full`} value={summary} onChange={(e) => updateSummary(e.target.value)} /></label>
+              <div className="flex items-center justify-end gap-3"><PolishDescription text={summary} name={p.name} type={p.type} client={p.client} onPolished={updateSummary} /><button type="button" disabled={saving || !dirty} onClick={saveSummary} className={btn}>{saving ? t("recovery.saving") : t("common.save")}</button></div>
             </>
           ) : (
             <p className="whitespace-pre-wrap">{p.summary || "No summary yet."}</p>
@@ -1092,8 +1059,8 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
         </div>
       </Panel>) },
       { id: "gear", node: <ProductionSchedule p={p} isProducer={isProducer} /> },
-      ...(isProducer ? [{ id: "negotiations", node: <Panel title="Open gig rate negotiations" collapsible defaultCollapsed><div className="space-y-3 p-4">{(openGigs.data ?? []).map(g => <div key={g.id} className="rounded border border-border p-3 text-sm"><strong>{g.role}</strong> · {fmtMoney(Number(g.crew_rate),p.currency)} / day<GigNegotiation bookingId={g.id} role="producer" offeredRate={Number(g.crew_rate)} productionId={p.id} /></div>)}{!openGigs.data?.length && <p className="text-xs text-muted-foreground">No open gigs.</p>}</div></Panel> }] : []),
-    ]} />
+      ...(isProducer ? [{ id: "inventory", node: <EquipmentAvailability p={p} /> }] : []),
+    ].sort((a, b) => ["overview", "recce", "gear", "locations", "inventory"].indexOf(a.id) - ["overview", "recce", "gear", "locations", "inventory"].indexOf(b.id))} />
   );
 }
 
@@ -1168,7 +1135,7 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
 
   async function wrapCrew(m: { crew_id: string; name: string; role?: string | null }) {
     if (!(await confirmDialog(`Wrap ${m.name}? They'll be told they're no longer required. Pack-down time is paid until they check out.`))) return;
-    const source = (await promptDialog("Equipment used for this crew member's wrap-up? Enter: own, producer, mixed, none, or unknown", "unknown"))?.trim().toLowerCase();
+    const source = (await promptDialog("Inventory used for this crew member's wrap-up? Enter: own, producer, mixed, none, or unknown", "unknown"))?.trim().toLowerCase();
     if (source == null) return;
     if (!["own","producer","mixed","none","unknown"].includes(source)) { toast.error("Choose own, producer, mixed, none or unknown"); return; }
     const { error } = await supabase.from("site_wraps").insert({ production_id: p.id, crew_id: m.crew_id, equipment_source: source, wrap_role: m.role || null } as any);

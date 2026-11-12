@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
-import { useOpenGigs } from "@/lib/db";
+import { useOpenGigs, type OpenGig } from "@/lib/db";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { GigNegotiation } from "@/components/GigNegotiation";
@@ -14,10 +14,11 @@ const btn = "rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-
 /** Country of a gig = last comma-separated part of its address (or location). */
 export const gigCountry = (g: { address: string; location: string }) => ((g.address || g.location || "").split(",").pop() ?? "").trim();
 
-export function FindGigsTab({ canClaim }: { canClaim: boolean }) {
+export function FindGigsTab({ canClaim, canManage = false }: { canClaim: boolean; canManage?: boolean }) {
   const gigs = useOpenGigs();
   const qc = useQueryClient();
-  const [pendingGig, setPendingGig] = useState<{ id: string; role: string; name: string } | null>(null);
+  const [pendingGig, setPendingGig] = useState<OpenGig | null>(null);
+  const [reviewGig, setReviewGig] = useState<OpenGig | null>(null);
   const [claimBusy, setClaimBusy] = useState(false);
   const [q, setQ] = useState("");
   const [near, setNear] = useState<{ lat: number; lng: number } | null>(null);
@@ -66,7 +67,19 @@ export function FindGigsTab({ canClaim }: { canClaim: boolean }) {
 
   return (
     <div className="space-y-4">
-      {pendingGig && <JobTermsDialog jobName={pendingGig.name} role={pendingGig.role} busy={claimBusy} onClose={() => setPendingGig(null)} onAccept={grab} />}
+      {pendingGig && <JobTermsDialog jobName={pendingGig.production_name} role={pendingGig.role} busy={claimBusy} onClose={() => setPendingGig(null)} onAccept={grab} />}
+      {reviewGig && <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/65 p-4">
+        <section role="dialog" aria-modal="true" aria-labelledby="gig-rate-title" className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-card p-5 shadow-2xl">
+          <h2 id="gig-rate-title" className="text-xl font-bold">Review rate & accept gig</h2>
+          <p className="mt-2 text-sm">{reviewGig.role} · {reviewGig.production_name} · {reviewGig.booking_date || "Date TBC"}</p>
+          <p className="mt-2 text-sm text-muted-foreground">Accept the advertised rate and review the job terms, or send a counter-offer. A counter-offer does not reserve the gig. Once a rate is agreed, accept the reserved booking’s terms from Home.</p>
+          <GigNegotiation bookingId={reviewGig.id} role="crew" offeredRate={Number(reviewGig.crew_rate)} productionId={reviewGig.production_id} onBusyChange={setClaimBusy} onReserved={() => setReviewGig(null)} />
+          <div className="mt-4 flex flex-wrap justify-end gap-3">
+            <button disabled={claimBusy} onClick={() => setReviewGig(null)} className="rounded border border-border px-3 py-2 text-sm">Close</button>
+            <button disabled={claimBusy} onClick={() => { setPendingGig(reviewGig); setReviewGig(null); }} className="rounded bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-60">Accept {zar(reviewGig.crew_rate)}/day & review terms</button>
+          </div>
+        </section>
+      </div>}
       <p className="text-sm text-muted-foreground">Open gigs aren't assigned to anyone specific yet — first to grab it gets it. Available anywhere in the world; filter by location below.</p>
       <div className="flex flex-wrap gap-2">
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search role, production, city, country…" className={`${input} min-w-56 flex-1`} />
@@ -81,7 +94,8 @@ export function FindGigsTab({ canClaim }: { canClaim: boolean }) {
         {near && <button onClick={() => setNear(null)} className="text-xs text-muted-foreground hover:underline">Clear location filter</button>}
       </div>
       {gigs.isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
-      {!gigs.isLoading && list.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">No open gigs match these filters right now.</p>}
+      {gigs.isError && <p role="alert" className="text-sm text-destructive">Could not load open gigs. <button onClick={() => void gigs.refetch()} className="underline">Try again</button></p>}
+      {!gigs.isLoading && !gigs.isError && list.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">No open gigs match these filters right now.</p>}
       <ul className="divide-y divide-border">
         {list.map((g) => (
           <li key={g.id} className="flex items-center justify-between py-3">
@@ -91,9 +105,9 @@ export function FindGigsTab({ canClaim }: { canClaim: boolean }) {
                 {g.address || g.location || "Location TBC"}{near && g.latitude != null && g.longitude != null ? ` · ${distanceKm(g.latitude, g.longitude)}km away` : ""}
                 {g.booking_date ? ` · ${g.booking_date}` : ""}{g.call_time ? ` · call ${g.call_time}` : ""} · {zar(g.crew_rate)}/day
               </div>
-              {canClaim && <GigNegotiation bookingId={g.id} role="crew" offeredRate={Number(g.crew_rate)} productionId={g.production_id} />}
+              {canManage && <GigNegotiation bookingId={g.id} role="producer" offeredRate={Number(g.crew_rate)} productionId={g.production_id} />}
             </div>
-            {canClaim && <button onClick={() => setPendingGig({ id: g.id, role: g.role, name: g.production_name })} disabled={claimBusy} className={`${btn} disabled:opacity-60`}>Grab it</button>}
+            {canClaim && <button onClick={() => setReviewGig(g)} disabled={claimBusy} className={`${btn} disabled:opacity-60`}>Grab it</button>}
           </li>
         ))}
       </ul>

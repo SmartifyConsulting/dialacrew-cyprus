@@ -15,7 +15,6 @@ import { StoryboardStudio } from "@/components/site/StoryboardStudio";
 import { AuditTab } from "@/components/site/AuditTab";
 import { ProductionCover } from "@/components/site/ProductionCover";
 import { DocumentsTab } from "@/components/site/DocumentsTab";
-import { EquipmentAvailability } from "@/components/site/EquipmentAvailability";
 import { CrewOvertimePanel, useBookingRates } from "@/components/site/Overtime";
 import { ChecklistsPanel, CommercialsTab, CONFIRMED_BOOKING_STATUSES, MembersList, OverviewTab, PostsTab, RegisterTab, TasksTab } from "@/components/site/SiteTabs";
 
@@ -103,9 +102,8 @@ function ProductionSite() {
         <aside className={`relative space-y-5 lg:sticky lg:top-28 lg:self-start ${asideOpen ? "" : "lg:hidden"}`}>
           {myCrewId && <CrewOvertimePanel productionId={p.id} crewId={myCrewId} rate={rates[myCrewId] ?? 0} date={p.date || null} />}
           <fieldset disabled={closed} className="min-w-0">
-            <OverviewTab {...ctx} />
+            <OverviewTab key={p.id} {...ctx} />
           </fieldset>
-          {isProducer && <EquipmentAvailability p={p} />}
         </aside>
         <section className="flex min-w-0 flex-col">
           <nav className="mb-4 flex w-full gap-1 overflow-x-auto rounded-sm border border-border bg-card">
@@ -127,8 +125,8 @@ function ProductionSite() {
           {tab === "Tasks" && <TasksTab {...ctx} />}
           {tab === "Audit" && isProducer && <AuditTab p={p} />}
           {tab === "Photos" && <PhotosTab p={p} userId={userId} isProducer={isProducer} />}
-          {tab === "Files" && isProducer && <DocumentsTab p={p} userId={userId} myName={myName} isProducer={isProducer} />}
-          {tab === "Storyboard" && <StoryboardStudio p={p} isProducer={isProducer} />}
+          {tab === "Files" && isProducer && <DocumentsTab key={p.id} p={p} userId={userId} myName={myName} isProducer={isProducer} />}
+          {tab === "Storyboard" && <StoryboardStudio key={p.id} p={p} isProducer={isProducer} />}
                     {tab === "Budget" && isProducer && <CommercialsTab {...ctx} bookings={bookings} crewNames={crewNames} requests={requests} />}
           {tab === "Review" && isProducer && <RetroTab p={p} />}
           </fieldset>

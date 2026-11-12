@@ -2,25 +2,28 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-async function assertProducerSiteMember(context: { supabase: unknown; userId: string }, productionId: string) {
+export async function assertProducerSiteMember(context: { supabase: unknown; userId: string }, productionId: string) {
   const db = (context.supabase as { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> });
   const rpc = (fn: string, args: Record<string, unknown>) => db.rpc(fn, args);
-  const [role, member] = await Promise.all([
+  const [role, member, admin] = await Promise.all([
     rpc("has_role", { _user_id: context.userId, _role: "producer" }),
     rpc("is_site_member", { _prod: productionId }),
+    rpc("has_role", { _user_id: context.userId, _role: "admin" }),
   ]);
-  if (role.error || member.error) throw new Error("Could not verify access to this production");
-  if (!role.data) throw new Error("Only producers can use Storyboard Studio");
-  if (!member.data) throw new Error("Not a member of this production");
+  if (role.error || member.error || admin.error) throw new Error("Could not verify access to this production");
+  if (!role.data && !admin.data) throw new Error("Only producers can use Storyboard Studio");
+  if (!member.data && !admin.data) throw new Error("Not a member of this production");
 }
 
 // Breaks a creative brief into a scene/shot list. Returns shots only — the client inserts them as
 // storyboard_shots rows (via the user's own session, so normal RLS applies to the write).
 export const breakdownScript = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ productionId: z.string().min(1), brief: z.string().min(10).max(8000) }).parse(d))
+  .inputValidator((d) => z.object({ productionId: z.string().min(1), brief: z.string().min(10).max(8000), replace: z.boolean().default(false) }).parse(d))
   .handler(async ({ data, context }) => {
     await assertProducerSiteMember(context, data.productionId);
+    const { billStoryboardAction } = await import("./ai-balance.server");
+    return billStoryboardAction(context.userId, "breakdown", async () => {
     const { aiJson } = await import("./ai.server");
     const out = await aiJson<{ improved_brief: string; characters: { ref: string; name: string; look: string }[]; shots: { scene_number: number; shot_number: number; description: string; duration_seconds: number }[] }>({
       name: "storyboard_breakdown",
@@ -52,8 +55,10 @@ export const breakdownScript = createServerFn({ method: "POST" })
     });
     const bible = out.characters.map((c) => `${c.ref.startsWith("#") ? c.ref : `#${c.ref}`} (${c.name}): ${c.look}`).join("\n");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin.from("productions").update({ storyboard_characters: bible }).eq("id", data.productionId);
+    const { error: saveError } = await supabaseAdmin.rpc("save_storyboard_breakdown", { p_production: data.productionId, p_shots: out.shots, p_original: data.brief, p_improved: out.improved_brief, p_characters: bible, p_replace: data.replace, p_user: context.userId });
+    if (saveError) throw new Error("The storyboard could not be saved. Your previous shots have been preserved.");
     return { shots: out.shots, improvedBrief: out.improved_brief, characters: bible };
+    });
   });
 
 // Rewrites the producer's references with far more visual detail and adds any key elements the
@@ -63,6 +68,8 @@ export const enhanceStoryboardReferences = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ productionId: z.string().min(1), references: z.string().max(12000), brief: z.string().max(8000).optional() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertProducerSiteMember(context, data.productionId);
+    const { billStoryboardAction } = await import("./ai-balance.server");
+    return billStoryboardAction(context.userId, "references", async () => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: shots } = await supabaseAdmin.from("storyboard_shots").select("description").eq("production_id", data.productionId).order("sort_order");
     const story = (shots ?? []).map((s) => s.description).join(" | ").slice(0, 3000);
@@ -75,8 +82,10 @@ export const enhanceStoryboardReferences = createServerFn({ method: "POST" })
       meta: { userId: context.userId, productionId: data.productionId },
     });
     const text = out.references.map((c) => `${c.ref.startsWith("#") ? c.ref : `#${c.ref}`} (${c.name}): ${c.look}`).join("\n");
-    await supabaseAdmin.from("productions").update({ storyboard_characters: text }).eq("id", data.productionId);
+    const { error: saveError } = await supabaseAdmin.from("productions").update({ storyboard_characters: text }).eq("id", data.productionId).select("id").single();
+    if (saveError) throw new Error("Could not save enhanced references");
     return { references: text };
+    });
   });
 
 // Saves the producer's edited character reference list (#REF numbers) for this production.
@@ -99,15 +108,17 @@ export const generateShotImage = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ productionId: z.string().min(1), shotId: z.string().min(1), description: z.string().min(1).max(2000) }).parse(d))
   .handler(async ({ data, context }) => {
     await assertProducerSiteMember(context, data.productionId);
+    const { billStoryboardAction } = await import("./ai-balance.server");
+    return billStoryboardAction(context.userId, "image", async () => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const key = process.env["OPENAI_API_KEY"];
     if (!key) throw new Error("AI is not configured.");
 
-    await supabaseAdmin.from("storyboard_shots").update({ status: "generating", generation_error: null }).eq("id", data.shotId);
 
     // Continuity: every panel is drawn with the whole sequence in view, plus the shot right before
     // it, so characters, wardrobe, setting, props and time of day stay consistent from panel to panel.
-    const { data: seq } = await supabaseAdmin.from("storyboard_shots").select("id, scene_number, shot_number, description, is_anchor").eq("production_id", data.productionId).order("sort_order");
+    const { data: seq, error: sequenceError } = await supabaseAdmin.from("storyboard_shots").select("id, scene_number, shot_number, description, is_anchor").eq("production_id", data.productionId).order("sort_order");
+    if (sequenceError) throw new Error("Could not load the saved storyboard");
     const list = seq ?? [];
     const idx = list.findIndex((s) => s.id === data.shotId);
     const prev = idx > 0 ? list[idx - 1] : null;
@@ -130,6 +141,8 @@ export const generateShotImage = createServerFn({ method: "POST" })
       `Draw THIS shot: ${data.description}`,
     ].filter(Boolean).join("\n");
     try {
+      const started = await supabaseAdmin.from("storyboard_shots").update({ status: "generating", generation_error: null, updated_at: new Date().toISOString() }).eq("id", data.shotId).eq("production_id", data.productionId).select("id").single();
+      if (started.error || !started.data) throw new Error("The storyboard shot could not be saved");
       const res = await fetch("https://api.openai.com/v1/images/generations", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
@@ -154,17 +167,19 @@ export const generateShotImage = createServerFn({ method: "POST" })
       const { error: uploadError } = await supabaseAdmin.storage.from("site-files").upload(path, bytes, { contentType: "image/png", upsert: true });
       if (uploadError) throw uploadError;
 
-      await supabaseAdmin.from("storyboard_shots").update({ image_path: path, status: "generated" }).eq("id", data.shotId);
+      const saved = await supabaseAdmin.from("storyboard_shots").update({ image_path: path, status: "generated", updated_at: new Date().toISOString() }).eq("id", data.shotId).eq("production_id", data.productionId).select("id").single();
+      if (saved.error || !saved.data) throw new Error("The illustration could not be saved to this production");
       await supabaseAdmin.from("storyboard_generations").insert({
         production_id: data.productionId, shot_id: data.shotId, kind: "image", provider: "openai", model: "gpt-image-1-mini", status: "succeeded", created_by: context.userId,
       });
       return { path };
     } catch (e) {
       const message = e instanceof Error ? e.message : "The AI could not generate this illustration.";
-      await supabaseAdmin.from("storyboard_shots").update({ status: "failed", generation_error: message }).eq("id", data.shotId);
+      await supabaseAdmin.from("storyboard_shots").update({ status: "failed", generation_error: message }).eq("id", data.shotId).eq("production_id", data.productionId);
       await supabaseAdmin.from("storyboard_generations").insert({
         production_id: data.productionId, shot_id: data.shotId, kind: "image", provider: "openai", model: "gpt-image-1-mini", status: "failed", created_by: context.userId,
       });
       throw new Error(message);
     }
+    });
   });
