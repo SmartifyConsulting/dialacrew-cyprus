@@ -14,4 +14,40 @@ describe("App routing", () => {
 
     expect(matches.at(-1)?.routeId).not.toBe(rootRouteId);
   });
+
+  it.each([
+    ["/auth", "/auth"],
+    ["/book", "/book"],
+    ["/casting", "/casting"],
+    ["/forgot-password", "/forgot-password"],
+    ["/join", "/join"],
+    ["/locations", "/locations"],
+    ["/privacy", "/privacy"],
+    ["/rates", "/rates"],
+    ["/reset-password", "/reset-password"],
+    ["/terms", "/terms"],
+    ["/admin", "/_authenticated/admin"],
+    ["/calendar", "/_authenticated/calendar"],
+    ["/dashboard", "/_authenticated/dashboard"],
+    ["/earnings", "/_authenticated/earnings"],
+    ["/gigs", "/_authenticated/gigs"],
+    ["/invoices", "/_authenticated/invoices"],
+    ["/invoices/test-invoice", "/_authenticated/invoices/$id"],
+    ["/memory", "/_authenticated/memory"],
+    ["/mobile-setup", "/_authenticated/mobile-setup"],
+    ["/payments", "/_authenticated/payments"],
+    ["/profile", "/_authenticated/profile"],
+    ["/reports", "/_authenticated/reports"],
+    ["/crew", "/_authenticated/crew/"],
+    ["/crew/test-crew", "/_authenticated/crew/$id"],
+    ["/productions", "/_authenticated/productions/"],
+    ["/productions/test-production", "/_authenticated/productions/$id"],
+  ])("matches %s to its intended screen", (path, routeId) => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+    const matches = router.matchRoutes(path);
+    expect(matches.at(-1)?.routeId).toBe(routeId);
+    if (routeId.startsWith("/_authenticated/")) {
+      expect(matches.some((match) => match.routeId === "/_authenticated")).toBe(true);
+    }
+  });
 });

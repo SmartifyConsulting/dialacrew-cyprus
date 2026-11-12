@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useMatch } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Page, Badge } from "@/components/AppShell";
 import { CrewInvoiceSettings } from "@/components/CrewInvoiceSettings";
@@ -11,8 +11,13 @@ export const Route = createFileRoute("/_authenticated/invoices")({
     { title: "My invoices — Book a Crew" }, { name: "description", content: "Review and issue your Book a Crew booking invoices." },
     { property: "og:title", content: "My invoices — Book a Crew" }, { property: "og:description", content: "Crew draft and issued invoices." },
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
-  ] }), component: InvoicesPage,
+  ] }), component: InvoicesRoute,
 });
+
+function InvoicesRoute() {
+  const detail = useMatch({ from: "/_authenticated/invoices/$id", shouldThrow: false });
+  return detail ? <Outlet /> : <InvoicesPage />;
+}
 
 function InvoicesPage() {
   const { t, i18n } = useTranslation();
