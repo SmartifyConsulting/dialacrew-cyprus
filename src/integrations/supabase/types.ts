@@ -14,36 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
-      ai_balances: {
-        Row: { user_id: string; balance_micros: number };
-        Insert: { user_id: string; balance_micros?: number };
-        Update: { balance_micros?: number };
-        Relationships: [];
-      };
+      ai_balance_ledger: {
+        Row: {
+          activity: string
+          amount_micros: number
+          created_at: string
+          id: string
+          kind: string
+          operation_id: string
+          user_id: string
+        }
+        Insert: {
+          activity: string
+          amount_micros: number
+          created_at?: string
+          id?: string
+          kind: string
+          operation_id: string
+          user_id: string
+        }
+        Update: {
+          activity?: string
+          amount_micros?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          operation_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_balance_purchases: {
-        Row: { id: string; user_id: string; reference: string; amount_minor: number; currency: string; usd_micros: number; fx_rate: number; status: string; created_at: string };
-        Insert: { user_id: string; reference: string; amount_minor: number; currency: string; usd_micros: number; fx_rate: number };
-        Update: { status?: string };
-        Relationships: [];
-      };
-      storyboard_briefs: {
-        Row: { production_id: string; original_prompt: string; working_prompt: string; pdf_summary: string; extracted_text: string; source_path: string | null; updated_at: string };
-        Insert: { production_id: string; original_prompt?: string; working_prompt?: string; pdf_summary?: string; extracted_text?: string; source_path?: string | null; updated_at?: string };
-        Update: { original_prompt?: string; working_prompt?: string; pdf_summary?: string; extracted_text?: string; source_path?: string | null; updated_at?: string };
-        Relationships: [];
-      };
-      production_recce_plans: {
-        Row: { production_id: string; recce_date: string; selection: Json; total: number };
-        Insert: { production_id: string; recce_date: string; selection: Json; total: number };
-        Update: { selection?: Json; total?: number };
-        Relationships: [];
-      };
-      site_document_folders: {
-        Row: { production_id: string; path: string };
-        Insert: { production_id: string; path: string };
-        Update: { path?: string };
-        Relationships: [];
-      };
+        Row: {
+          amount_minor: number
+          created_at: string
+          currency: string
+          fx_rate: number
+          id: string
+          reference: string
+          status: string
+          usd_micros: number
+          user_id: string
+        }
+        Insert: {
+          amount_minor: number
+          created_at?: string
+          currency: string
+          fx_rate: number
+          id?: string
+          reference: string
+          status?: string
+          usd_micros: number
+          user_id: string
+        }
+        Update: {
+          amount_minor?: number
+          created_at?: string
+          currency?: string
+          fx_rate?: number
+          id?: string
+          reference?: string
+          status?: string
+          usd_micros?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_balances: {
+        Row: {
+          balance_micros: number
+          user_id: string
+        }
+        Insert: {
+          balance_micros?: number
+          user_id: string
+        }
+        Update: {
+          balance_micros?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_usage_events: {
         Row: {
           cost_usd: number | null
@@ -2722,6 +2773,35 @@ export type Database = {
           },
         ]
       }
+      production_recce_plans: {
+        Row: {
+          production_id: string
+          recce_date: string
+          selection: Json
+          total: number
+        }
+        Insert: {
+          production_id: string
+          recce_date: string
+          selection?: Json
+          total?: number
+        }
+        Update: {
+          production_id?: string
+          recce_date?: string
+          selection?: Json
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_recce_plans_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_retrospectives: {
         Row: {
           client: string
@@ -3141,6 +3221,29 @@ export type Database = {
           },
           {
             foreignKeyName: "site_attendance_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_document_folders: {
+        Row: {
+          path: string
+          production_id: string
+        }
+        Insert: {
+          path: string
+          production_id: string
+        }
+        Update: {
+          path?: string
+          production_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_document_folders_production_id_fkey"
             columns: ["production_id"]
             isOneToOne: false
             referencedRelation: "productions"
@@ -3812,6 +3915,44 @@ export type Database = {
           },
         ]
       }
+      storyboard_briefs: {
+        Row: {
+          extracted_text: string
+          original_prompt: string
+          pdf_summary: string
+          production_id: string
+          source_path: string | null
+          updated_at: string
+          working_prompt: string
+        }
+        Insert: {
+          extracted_text?: string
+          original_prompt?: string
+          pdf_summary?: string
+          production_id: string
+          source_path?: string | null
+          updated_at?: string
+          working_prompt?: string
+        }
+        Update: {
+          extracted_text?: string
+          original_prompt?: string
+          pdf_summary?: string
+          production_id?: string
+          source_path?: string | null
+          updated_at?: string
+          working_prompt?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storyboard_briefs_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: true
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       storyboard_exports: {
         Row: {
           created_at: string
@@ -4057,6 +4198,16 @@ export type Database = {
         Args: { _booking: string; _postponed_to?: string; _reason: string }
         Returns: undefined
       }
+      change_ai_balance: {
+        Args: {
+          p_activity: string
+          p_amount: number
+          p_kind: string
+          p_operation: string
+          p_user: string
+        }
+        Returns: number
+      }
       claim_crew_profile: { Args: never; Returns: string }
       claim_gig: { Args: { _booking: string }; Returns: undefined }
       claim_gig_with_terms: {
@@ -4090,6 +4241,7 @@ export type Database = {
         Args: { p_acknowledge_wrap: boolean; p_invoice_id: string }
         Returns: undefined
       }
+      credit_ai_purchase: { Args: { p_reference: string }; Returns: undefined }
       crew_on_time_pct: { Args: { _crew_id: string }; Returns: number }
       decide_join_request: {
         Args: { _approve: boolean; _request: string }
@@ -4168,6 +4320,17 @@ export type Database = {
         Returns: boolean
       }
       is_site_member: { Args: { _prod: string }; Returns: boolean }
+      manage_document_library: {
+        Args: {
+          p_action: string
+          p_destination?: string
+          p_files?: string[]
+          p_folders?: string[]
+          p_name?: string
+          p_production: string
+        }
+        Returns: undefined
+      }
       mark_payment_received: { Args: { _booking: string }; Returns: undefined }
       my_crew_id: { Args: never; Returns: string }
       open_gigs: {
@@ -4209,6 +4372,18 @@ export type Database = {
         Returns: number
       }
       revoke_native_push_device: { Args: { p_id: string }; Returns: undefined }
+      save_storyboard_breakdown: {
+        Args: {
+          p_characters: string
+          p_improved: string
+          p_original: string
+          p_production: string
+          p_replace: boolean
+          p_shots: Json
+          p_user: string
+        }
+        Returns: undefined
+      }
       secure_gig: { Args: { _gig: string }; Returns: undefined }
       secure_gig_paid: {
         Args: { _gig: string; _user: string }
