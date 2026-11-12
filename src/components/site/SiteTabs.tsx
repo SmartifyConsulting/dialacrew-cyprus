@@ -1,3 +1,5 @@
+import { taskAssignees } from "@/lib/task-assignees";
+import { AssignmentStamp } from "@/components/site/AssignmentStamp";
 import { ProducerCrewEmergency } from "@/components/CrewEmergencyDetails";
 import { hhmm, recceRange, validRecceTimes } from "@/lib/recce";
 import { RateDialog } from "@/components/site/RateDialog";
@@ -755,7 +757,8 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
   const { t } = useTranslation();
   const inv = useInvalidate();
   const checklists = (useChecklists(p.id).data ?? []) as Array<{ id: string; title: string; production_checklist_items: ChecklistItem[] }>;
-  const members = useSiteMembers(p.id).data ?? [];
+  const memberQuery = useSiteMembers(p.id);
+  const members = taskAssignees(memberQuery.data ?? []);
   const [view, setView] = useState<"Checklist" | "Done">("Checklist");
   const [addingList, setAddingList] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -893,24 +896,6 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
                         {item.done_at && <span className="block text-[11px] text-muted-foreground">Done {when(item.done_at)}</span>}
                       </span>
                     : <span className="min-w-0 flex-1">{item.label}</span>}
-                  {isProducer ? (
-                    <>
-                      <select aria-label={`Assign ${item.label}`} value={item.assigned_to ?? ""} onChange={(e) => assignItem(item.id, e.target.value)}
-                        className="shrink-0 rounded-sm border border-input bg-background px-1.5 py-1 text-[11px] max-w-24">
-                        <option value="">{t("tasks.unassigned")}</option>
-                        {members.filter((m) => crewRelevantToChecklist(m, c.title)).map((m) => <option key={m.crew_id} value={m.crew_id}>{m.name}</option>)}
-                      </select>
-                      {item.assigned_to && (
-                        <input type="date" aria-label={`Due date for ${item.label}`} value={item.due_date ?? ""} onChange={(e) => setDueDate(item.id, e.target.value)}
-                          className="shrink-0 rounded-sm border border-input bg-background px-1.5 py-1 text-[11px]" />
-                      )}
-                    </>
-                  ) : item.assigned_to && (
-                    <span className="shrink-0 text-[11px] text-muted-foreground">
-                      {members.find((m) => m.crew_id === item.assigned_to)?.name ?? "Assigned"}
-                      {item.due_date && ` · due ${dayLabel(`${item.due_date}T00:00:00`)}`}
-                    </span>
-                  )}
                   {isProducer && uploadingItem === item.id && <span className="text-xs text-muted-foreground">Uploading…</span>}
                   {isProducer && uploadingItem !== item.id && (
                     <>
@@ -926,6 +911,27 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
                   )}
                   {isProducer && <button onClick={() => removeItem(item.id)} className="text-muted-foreground hover:text-destructive" aria-label={`Remove ${item.label}`}><Trash2 className="h-3.5 w-3.5" /></button>}
                 </div>
+                <div className="ml-7 mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  {isProducer ? (
+                    <>
+                      <select aria-label={`Assign ${item.label}`} value={item.assigned_to ?? ""} onChange={(e) => assignItem(item.id, e.target.value)}
+                        className="shrink-0 rounded-sm border border-input bg-background px-1.5 py-1 text-[11px] max-w-full">
+                        <option value="">{t("tasks.unassigned")}</option>
+                        {members.map((m) => <option key={m.crew_id} value={m.crew_id}>{m.name} · {m.role}</option>)}
+                      </select>
+                      {item.assigned_to && (
+                        <input type="date" aria-label={`Due date for ${item.label}`} value={item.due_date ?? ""} onChange={(e) => setDueDate(item.id, e.target.value)}
+                          className="shrink-0 rounded-sm border border-input bg-background px-1.5 py-1 text-[11px]" />
+                      )}
+                    </>
+                  ) : item.assigned_to && (
+                    <span className="shrink-0 text-[11px] text-muted-foreground">
+                      {members.find((m) => m.crew_id === item.assigned_to)?.name ?? "Assigned"}
+                      {item.due_date && ` · due ${dayLabel(`${item.due_date}T00:00:00`)}`}
+                    </span>
+                  )}
+                </div>
+                <div className="ml-7"><AssignmentStamp value={item} /></div>
                 {item.production_checklist_item_photos.length > 0 && (() => {
                   const photos = [...item.production_checklist_item_photos].sort((a, b) => a.sort_order - b.sort_order);
                   return (
@@ -1580,10 +1586,11 @@ export function RegisterTab({ p, isProducer, userId, myName, myCrewId }: Ctx) {
 }
 
 /* ---------------- Tasks ---------------- */
-export function TasksTab({ p, userId }: Ctx) {
+export function TasksTab({ p, userId, isProducer }: Ctx) {
   const { t: translate } = useTranslation();
   const tasks = useTasks(p.id).data ?? [];
-  const members = useSiteMembers(p.id).data ?? [];
+  const memberQuery = useSiteMembers(p.id);
+  const members = taskAssignees(memberQuery.data ?? []);
   const inv = useInvalidate();
   const [f, setF] = useState({ title: "", crew: "", due: "" });
   const assigneeLabel = (crewId: string | null) => {
@@ -1602,12 +1609,18 @@ export function TasksTab({ p, userId }: Ctx) {
     setF({ title: "", crew: "", due: "" }); inv(["tasks", p.id]);
   }
   async function toggle(id: string, done: boolean) { await supabase.from("site_tasks").update({ done }).eq("id", id); inv(["tasks", p.id]); }
+  async function assignTask(id: string, crewId: string) {
+    const { error } = await supabase.from("site_tasks").update({ assigned_crew_id: crewId || null }).eq("id", id).select("id").single();
+    if (error) { toast.error(friendlyError(error)); return; }
+    inv(["tasks", p.id]);
+  }
   async function remove(id: string) { const { error } = await supabase.from("site_tasks").delete().eq("id", id); if (error) toast.error(friendlyError(error)); inv(["tasks", p.id]); }
   return (
     <Panel title={translate("workspace.tabs.Tasks")}>
+      {memberQuery.isError && <p role="alert" className="p-3 text-xs text-destructive">Could not load production members. <button className="underline" onClick={() => void memberQuery.refetch()}>Retry</button></p>}
       <div className="flex flex-wrap gap-2 border-b border-border p-4">
         <input className={`${input} min-w-56 flex-1`} placeholder={translate("tasks.new")} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} onKeyDown={(e) => e.key === "Enter" && add()} />
-        <select className={input} value={f.crew} onChange={(e) => setF({ ...f, crew: e.target.value })}><option value="">{translate("tasks.unassigned")}</option>{members.map((m) => <option key={m.crew_id} value={m.crew_id}>{m.user_id === userId ? translate("tasks.self") : m.name}</option>)}</select>
+        <select className={input} value={f.crew} onChange={(e) => setF({ ...f, crew: e.target.value })}><option value="">{translate("tasks.unassigned")}</option>{members.map((m) => <option key={m.crew_id} value={m.crew_id}>{m.name} · {m.role}{m.user_id === userId ? ` (${translate("tasks.self")})` : ""}</option>)}</select>
         <input type="date" className={input} value={f.due} onChange={(e) => setF({ ...f, due: e.target.value })} />
         <button onClick={add} className={btn}>{translate("tasks.add")}</button>
       </div>
@@ -1616,12 +1629,21 @@ export function TasksTab({ p, userId }: Ctx) {
         {tasks.map((t) => (
           <li key={t.id} className="flex items-center gap-3 px-4 py-2.5">
             <button aria-label={translate(t.done ? "tasks.undo" : "gigs.done")} onClick={() => toggle(t.id, !t.done)}>{t.done ? <CheckCircle2 className="h-5 w-5 text-success" /> : <Circle className="h-5 w-5 text-muted-foreground" />}</button>
-            <span className={`flex-1 text-sm ${t.done ? "text-muted-foreground line-through" : ""}`}>{t.title}</span>
+            <div className="min-w-0 flex-1">
+              <span className={`block text-sm ${t.done ? "text-muted-foreground line-through" : ""}`}>{t.title}</span>
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                {isProducer ? <select aria-label={`Assign ${t.title}`} className="max-w-full rounded-sm border border-input bg-background px-1.5 py-1" value={t.assigned_crew_id ?? ""} onChange={e => assignTask(t.id, e.target.value)}>
+                  <option value="">{translate("tasks.unassigned")}</option>
+                  {members.map(m => <option key={m.crew_id} value={m.crew_id}>{m.name} · {m.role}</option>)}
+                </select> : <span>{assigneeLabel(t.assigned_crew_id)}</span>}
+                {t.due_date && <span>Due {t.due_date}</span>}
+              </div>
+              <AssignmentStamp value={t} />
+            </div>
             <button onClick={() => togglePublic(t.id, !t.is_public)} aria-label={translate(t.is_public ? "tasks.makePrivate" : "tasks.share")}
               className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${t.is_public ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground"}`}>
               {translate(t.is_public ? "tasks.public" : "tasks.private")}
             </button>
-            <span className="text-xs text-muted-foreground">{assigneeLabel(t.assigned_crew_id)}{t.due_date ? ` · due ${t.due_date}` : ""}</span>
             <button aria-label={translate("tasks.delete")} onClick={() => remove(t.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
           </li>
         ))}
