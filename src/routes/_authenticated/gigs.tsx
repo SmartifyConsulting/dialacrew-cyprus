@@ -34,7 +34,7 @@ export const Route = createFileRoute("/_authenticated/gigs")({
 });
 
 const rand = (n: number) => `R ${Math.round(n).toLocaleString("en-ZA")}`;
-const field = "w-full rounded-xl border border-input bg-background px-3 py-2 text-sm [&:required]:border-primary [&:required]:ring-1 [&:required]:ring-primary/25";
+const field = "w-full rounded-xl border border-input bg-background px-3 py-2 text-sm";
 
 type Gig = Database["public"]["Tables"]["community_gigs"]["Row"];
 
@@ -94,7 +94,10 @@ function GigsPage() {
     if (!uid || !["crew", "producer", "admin"].includes(role ?? "")) return void toast.error("Sign in as crew or a producer to post a gig.");
     const required: (keyof typeof empty)[] = ["title", "role", "department", "description", "event_date", "call_time", "venue", "country", "amount", "contact_phone", "expires_at"];
     const missing = required.filter((k) => !String(form[k]).trim());
-    if (missing.length) return void toast.error("Please fill in every required field.");
+    if (missing.length) {
+      const labels: Record<string,string> = { title: "Gig title", role: "Role needed", department: "Department", description: "Description", event_date: "Event date", call_time: "Call time", venue: "Venue / address", country: "Country", amount: "Amount", contact_phone: "Contact phone", expires_at: "Posting expiry" };
+      return void toast.error(`Please complete: ${missing.map(k => labels[k] ?? k).join(", ")}.`);
+    }
     if (new Date(form.expires_at) > new Date(`${form.event_date}T${form.call_time}`)) return void toast.error("The posting must expire before the event starts.");
     let contactPhone: string;
     try { contactPhone = internationalPhone(form.contact_phone, phonePrefix); } catch (e) { return void toast.error((e as Error).message); }
@@ -167,7 +170,7 @@ function GigsPage() {
                   <label className="text-sm">End date<input type="date" className={field} value={form.end_date} onChange={set("end_date")} /></label>
                   <label className="text-sm">Call time *<input required type="time" className={field} value={form.call_time} onChange={set("call_time")} /></label>
                   <label className="text-sm">Posting expires *<input required type="datetime-local" className={field} value={form.expires_at} onChange={set("expires_at")} /></label>
-                  <div className="text-sm md:col-span-2">Venue / address<AddressAutocomplete required className={`${field} border-primary ring-1 ring-primary/25`} placeholder="Start typing the venue or street address" country={countries.find(c => c.name === form.country)?.code.toLowerCase() ?? ""} value={form.venue} onChange={venue => setForm(f => ({ ...f, venue }))} onSelect={place => setForm(f => ({ ...f, venue: place.exactAddress }))} /></div>
+                  <div className="text-sm md:col-span-2">Venue / address<AddressAutocomplete required className={field} placeholder="Start typing the venue or street address" country={countries.find(c => c.name === form.country)?.code.toLowerCase() ?? ""} value={form.venue} onChange={venue => setForm(f => ({ ...f, venue }))} onSelect={place => setForm(f => ({ ...f, venue: place.exactAddress }))} /></div>
                   <label className="text-sm">Country *<select required className={field} value={form.country} onChange={set("country")}>{countries.map((c) => <option key={c.code} value={c.name}>{c.name}</option>)}</select></label>
                   <label className="text-sm">Inventory required<select className={field} value={form.kit_required} onChange={set("kit_required")}><option value="">None required</option>{[...new Set([...EQUIPMENT_CATEGORIES, ...equipment.map(i => i.name)])].map(name => <option key={name}>{name}</option>)}</select></label>
                   <label className="text-sm">Pay type *<select required className={field} value={form.pay_type} onChange={set("pay_type")}><option value="day_rate">Day rate</option><option value="fixed">Fixed price</option></select></label>

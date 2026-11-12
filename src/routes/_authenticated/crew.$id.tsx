@@ -24,7 +24,7 @@ import {
 } from "@/lib/db";
 
 export const Route = createFileRoute("/_authenticated/crew/$id")({
-  validateSearch: (s: Record<string, unknown>): { tab?: string } => (typeof s["tab"] === "string" ? { tab: s["tab"] } : {}),
+  validateSearch: (s: Record<string, unknown>): { tab?: string; ai_topup?: string } => ({ ...(typeof s["tab"] === "string" ? { tab: s["tab"] } : {}), ...(typeof s["ai_topup"] === "string" ? { ai_topup: s["ai_topup"] } : {}) }),
   head: () => ({
     meta: [
       { title: "Crew profile — Book a Crew" },

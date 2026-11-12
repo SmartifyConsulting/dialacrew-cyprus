@@ -11,6 +11,8 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
+import { validationFieldName } from "@/lib/form-validation";
 import { ConfirmDialogHost } from "@/components/ConfirmDialog";
 import { supabase } from "@/integrations/supabase/client";
 import appCss from "../styles.css?url";
@@ -123,6 +125,25 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 function RootComponent() {
+  useEffect(() => {
+    const invalidFields = new Set<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const onInvalid = (event: Event) => {
+      const field = event.target;
+      if (!(field instanceof HTMLInputElement || field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement)) return;
+      event.preventDefault();
+      invalidFields.add(field);
+      if (timer) return;
+      timer = setTimeout(() => {
+        const fields = [...invalidFields];
+        const missing = fields.filter(field => field.validity.valueMissing);
+        toast.error(missing.length ? `Please complete: ${[...new Set(missing.map(validationFieldName))].join(", ")}.` : fields.map(field => `${validationFieldName(field)}: ${field.validationMessage}`).join(" "));
+        fields[0]?.focus(); invalidFields.clear(); timer = undefined;
+      }, 0);
+    };
+    document.addEventListener("invalid", onInvalid, true);
+    return () => { document.removeEventListener("invalid", onInvalid, true); if (timer) clearTimeout(timer); };
+  }, []);
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   useEffect(() => {

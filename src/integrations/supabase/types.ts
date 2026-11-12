@@ -2908,6 +2908,7 @@ export type Database = {
       }
       productions: {
         Row: {
+          travel_required: boolean
           address: string
           budget: number
           client: string
@@ -2948,6 +2949,7 @@ export type Database = {
           type: string
         }
         Insert: {
+          travel_required?: boolean
           address?: string
           budget?: number
           client: string
@@ -2988,6 +2990,7 @@ export type Database = {
           type?: string
         }
         Update: {
+          travel_required?: boolean
           address?: string
           budget?: number
           client?: string

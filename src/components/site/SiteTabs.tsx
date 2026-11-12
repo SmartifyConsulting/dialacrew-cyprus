@@ -998,7 +998,7 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
   }
 
   return (
-    <SortableFrames storageKey={`sidebar-frames:v2:${p.id}`} frames={[
+    <SortableFrames storageKey={`sidebar-frames:v3:${p.id}`} frames={[
       { id: "overview", node: (
       <Panel title={t("workspace.overview")} collapsible defaultCollapsed>
         <div className="space-y-3 p-4 text-sm">
@@ -1023,6 +1023,19 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
           </dl>
         </div>
       </Panel>) },
+      { id: "travel", node: (
+        <Panel title="Travel" collapsible defaultCollapsed>
+          <div className="space-y-3 p-4 text-sm">
+            <label className="flex items-center justify-between gap-3">Travel required
+              <select aria-label="Travel required" disabled={!isProducer} className={input} value={p.travelRequired ? "yes" : "no"} onChange={async e => {
+                const { error } = await supabase.from("productions").update({ travel_required: e.target.value === "yes" }).eq("id", p.id).select("id").single();
+                if (error) { toast.error(friendlyError(error)); return; } inv(["productions"]);
+              }}><option value="no">No</option><option value="yes">Yes</option></select>
+            </label>
+            {p.travelRequired && <p className="text-xs text-muted-foreground">Travel costs are recorded in Budget for each crew booking.</p>}
+          </div>
+        </Panel>
+      ) },
       { id: "locations", node: (
       <Panel title={t("overview.locations", "Locations")} collapsible defaultCollapsed>
         <LocationPoints p={p} isProducer={isProducer} myCrewId={myCrewId} />
@@ -1068,7 +1081,7 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
       </Panel>) },
       { id: "gear", node: <ProductionSchedule p={p} isProducer={isProducer} /> },
       ...(isProducer ? [{ id: "inventory", node: <EquipmentAvailability p={p} /> }] : []),
-    ].sort((a, b) => ["overview", "recce", "gear", "locations", "inventory"].indexOf(a.id) - ["overview", "recce", "gear", "locations", "inventory"].indexOf(b.id))} />
+    ].sort((a, b) => ["overview", "recce", "gear", "travel", "locations", "inventory"].indexOf(a.id) - ["overview", "recce", "gear", "travel", "locations", "inventory"].indexOf(b.id))} />
   );
 }
 

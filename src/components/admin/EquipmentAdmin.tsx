@@ -247,7 +247,8 @@ function CheckoutDialog({ item, free, onClose, onDone }: { item: EquipmentItem; 
     const quantity = Math.floor(Number(f.quantity));
     if (canManage && !f.who.trim()) { toast.error(t("checkout.whoRequired")); return; }
     if (!quantity || quantity < 1 || quantity > free) { toast.error(t("checkout.quantityError", { maximum: free })); return; }
-    if (!f.productionId || !f.outAt) { toast.error("Select a production and collection date"); return; }
+    if (!f.productionId) { toast.error("Production is required"); return; }
+    if (!f.outAt) { toast.error("Collection date is required"); return; }
     if (!f.dueAt) { toast.error(t("checkout.dueRequired")); return; }
     if (f.dueAt < f.outAt) { toast.error(t("checkout.dateError")); return; }
     setBusy(true);
@@ -275,22 +276,22 @@ function CheckoutDialog({ item, free, onClose, onDone }: { item: EquipmentItem; 
         </DialogHeader>
         <div className="grid gap-3">
           {canManage && <label className="block"><span className="text-xs text-muted-foreground">Crew member</span>
-            <select required className={`${field} mt-1 w-full border-primary`} value={f.who} onChange={(e) => setF({ ...f, who: e.target.value })}>
+            <select required className={`${field} mt-1 w-full`} value={f.who} onChange={(e) => setF({ ...f, who: e.target.value })}>
               <option value="">Select crew member</option>{crew.map((c) => <option key={c.id} value={c.id}>{c.name} · {c.role} ({c.id.slice(-6)})</option>)}
             </select></label>}
           <label className="block"><span className="text-xs text-muted-foreground">{t("checkout.production")}</span>
-            <select required className={`${field} mt-1 w-full border-primary`} value={f.productionId} onChange={(e) => chooseProduction(e.target.value)}>
+            <select required className={`${field} mt-1 w-full`} value={f.productionId} onChange={(e) => chooseProduction(e.target.value)}>
               <option value="">Select production</option>
               {[...productions].sort((a, b) => a.name.localeCompare(b.name)).map((p) => <option key={p.id} value={p.id}>{p.name.trim() || `Unnamed production (${p.id})`}{p.date ? ` · ${p.date}` : ""}</option>)}
             </select></label>
           <div className="grid grid-cols-3 gap-3">
             <label className="block"><span className="text-xs text-muted-foreground">{t("checkout.quantity")}</span>
-              <input required type="number" min="1" max={free} className={`${field} mt-1 w-full border-primary`} value={f.quantity} onChange={(e) => setF({ ...f, quantity: e.target.value })} /></label>
+              <input required type="number" min="1" max={free} className={`${field} mt-1 w-full`} value={f.quantity} onChange={(e) => setF({ ...f, quantity: e.target.value })} /></label>
             <label className="col-span-2 block"><span className="text-xs text-muted-foreground">Collection date</span>
-              <input required type="date" className={`${field} mt-1 w-full border-primary`} value={f.outAt} onChange={(e) => setF({ ...f, outAt: e.target.value })} /></label>
+              <input required type="date" className={`${field} mt-1 w-full`} value={f.outAt} onChange={(e) => setF({ ...f, outAt: e.target.value })} /></label>
           </div>
           <label className="block"><span className="text-xs text-muted-foreground">{t("checkout.dueDate")}</span>
-            <input required type="date" min={f.outAt} className={`${field} mt-1 w-full border-primary`} value={f.dueAt} onChange={(e) => setF({ ...f, dueAt: e.target.value })} /></label>
+            <input required type="date" min={f.outAt} className={`${field} mt-1 w-full`} value={f.dueAt} onChange={(e) => setF({ ...f, dueAt: e.target.value })} /></label>
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose}>{t("common.cancel")}</Button>

@@ -118,8 +118,8 @@ export function AuditTab({ p }: { p: { id: string } }) {
         <p className="px-4 pb-3 text-xs text-muted-foreground">{t("audit.count", { shown: filtered.length, total: events.length })}</p>
       </Panel>
       {days.length === 0 && <Panel title={t("audit.noMatch")}><p className="p-4 text-sm text-muted-foreground">{t("audit.empty")}</p></Panel>}
-      {days.map((day, index) => (
-        <details key={day} open={index === 0} className="overflow-hidden rounded-md border border-border bg-card">
+      {days.map((day) => (
+        <details key={day} className="overflow-hidden rounded-md border border-border bg-card">
           <summary className="cursor-pointer px-4 py-3 font-semibold">{new Date(`${day}T12:00:00`).toLocaleDateString(i18n.language, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} <span className="ml-2 text-xs font-normal text-muted-foreground">({t("audit.activities", { count: [...groups.get(day)!.values()].reduce((total, entries) => total + entries.length, 0) })})</span></summary>
           <div className="divide-y divide-border">
             {[...groups.get(day)!.entries()].map(([loc, items]) => (

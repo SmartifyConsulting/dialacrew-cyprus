@@ -14,7 +14,7 @@ import { AccountSettings } from "@/components/AccountSettings";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 export const Route = createFileRoute("/_authenticated/profile")({
-  validateSearch: (s: Record<string, unknown>): { tab?: string } => (typeof s["tab"] === "string" ? { tab: s["tab"] } : {}),
+  validateSearch: (s: Record<string, unknown>): { tab?: string; ai_topup?: string } => ({ ...(typeof s["tab"] === "string" ? { tab: s["tab"] } : {}), ...(typeof s["ai_topup"] === "string" ? { ai_topup: s["ai_topup"] } : {}) }),
   head: () => ({
     meta: [
       { title: "My profile — Book a Crew" },
@@ -32,26 +32,25 @@ function MyProfile() {
   const { session } = useSession();
   const role = useRole(session?.user.id);
   const crewId = useMyCrewId(role.data === "crew");
-  const { tab } = Route.useSearch();
-  if (role.data === "crew" && crewId.data) return <Navigate to="/crew/$id" params={{ id: crewId.data }} search={tab ? { tab } : {}} replace />;
+  const { tab, ai_topup } = Route.useSearch();
+  if (role.data === "crew" && crewId.data) return <Navigate to="/crew/$id" params={{ id: crewId.data }} search={{ ...(tab ? { tab } : {}), ...(ai_topup ? { ai_topup } : {}) }} replace />;
 
   if (role.data === "producer") return <CompanyPanel userId={session?.user.id} />;
 
   return (
     <Page open title="My profile">
-      <div className="mx-auto max-w-md">
-        <div className="mb-4"><LanguageSwitcher /></div>
-        <AvatarCard userId={session?.user.id} />
-        <p className="mt-5 text-center text-muted-foreground">
+      <section className="overflow-hidden rounded-sm border border-border bg-card">
+        <AvatarCard userId={session?.user.id} embedded />
+        <p className="px-4 pb-4 text-xs text-muted-foreground">
           {role.isLoading || crewId.isLoading ? "Loading…" : "Profiles are for crew and service providers."}
         </p>
-      </div>
-      <div className="mt-6"><AccountSettings userId={session?.user.id} email={session?.user.email} /></div>
+        <AccountSettings userId={session?.user.id} email={session?.user.email} embedded />
+      </section>
     </Page>
   );
 }
 
-function AvatarCard({ userId }: { userId: string | undefined }) {
+function AvatarCard({ userId, embedded = false }: { userId: string | undefined; embedded?: boolean }) {
   const qc = useQueryClient();
   const me = useQuery({
     queryKey: ["my-avatar", userId], enabled: !!userId,
@@ -69,6 +68,7 @@ function AvatarCard({ userId }: { userId: string | undefined }) {
       if (error) throw error;
       toast.success("Profile picture updated");
       qc.invalidateQueries({ queryKey: ["my-avatar", userId] });
+      qc.invalidateQueries({ queryKey: ["nav-avatar", userId] });
     } catch (e) { toast.error(friendlyError(e)); }
   }
 
@@ -81,10 +81,11 @@ function AvatarCard({ userId }: { userId: string | undefined }) {
     toast.success("Name updated");
     setEditingName(false);
     qc.invalidateQueries({ queryKey: ["my-avatar", userId] });
+      qc.invalidateQueries({ queryKey: ["nav-avatar", userId] });
   }
 
   return (
-    <div className="flex items-center gap-4 rounded-sm border border-border bg-card p-4">
+    <div className={`flex items-center gap-4 p-4 ${embedded ? "" : "rounded-sm border border-border bg-card"}`}>
       <div className="relative">
         <Avatar name={me.data?.full_name || "?"} path={me.data?.avatar_url ?? null} size={64} />
         <label className="absolute bottom-0 right-0 grid h-6 w-6 cursor-pointer place-items-center rounded-full bg-primary text-primary-foreground" aria-label="Change photo">

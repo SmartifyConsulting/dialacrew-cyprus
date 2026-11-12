@@ -21,7 +21,14 @@ export const getAiBalance = createServerFn({ method: "GET" }).middleware([requir
     const [rates, prices, balance] = await Promise.all([usdRates(), storyboardPrices(), supabaseAdmin.from("ai_balances").select("balance_micros").eq("user_id", context.userId).maybeSingle()]);
     if (balance.error) throw new Error("Could not load AI balance");
     if (!(rates[data.currency]! > 0)) throw new Error("That currency is unavailable");
-    return { usd: Number(balance.data?.balance_micros ?? 0) / 1_000_000, minimumUsd: Math.ceil(200 / rates['ZAR']! * 100) / 100, localPerUsd: rates[data.currency]!, currency: data.currency, prices, paymentsConnected: !!process.env["PAYSTACK_SECRET_KEY"] };
+    let contributedMicros = 0;
+    for (let offset = 0; ; offset += 1000) {
+      const purchases = await supabaseAdmin.from("ai_balance_purchases").select("usd_micros").eq("user_id", context.userId).eq("status", "paid").order("created_at").order("id").range(offset, offset + 999);
+      if (purchases.error) throw new Error("Could not load paid contributions");
+      contributedMicros += (purchases.data ?? []).reduce((total, row) => total + Number(row.usd_micros), 0);
+      if ((purchases.data?.length ?? 0) < 1000) break;
+    }
+    return { contributedUsd: contributedMicros / 1_000_000, usd: Number(balance.data?.balance_micros ?? 0) / 1_000_000, minimumUsd: Math.ceil(200 / rates['ZAR']! * 100) / 100, localPerUsd: rates[data.currency]!, currency: data.currency, prices, paymentsConnected: !!process.env["PAYSTACK_SECRET_KEY"] };
   });
 
 async function paystack(path: string, body?: unknown) {
@@ -33,7 +40,7 @@ async function paystack(path: string, body?: unknown) {
   return result.data;
 }
 export const startAiTopup = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ productionId: z.string().min(1), currency: currencyInput, usd: z.number().finite().positive().max(10000) }).parse(input))
+  .inputValidator((input) => z.object({ productionId: z.string().min(1).optional(), currency: currencyInput, usd: z.number().finite().positive().max(10000) }).parse(input))
   .handler(async ({ data, context }) => {
     const rates = await usdRates();
     const rate = rates[data.currency];
@@ -48,7 +55,7 @@ export const startAiTopup = createServerFn({ method: "POST" }).middleware([requi
     if (error) throw new Error("Could not start AI top-up");
     const origin = process.env["APP_URL"] || getRequestHeader("origin");
     if (!origin || !/^https?:\/\//.test(origin)) throw new Error("Payment return URL is not configured");
-    const callback = `${origin}/productions/${encodeURIComponent(data.productionId)}?tab=Storyboard&ai_topup=${reference}`;
+    const callback = data.productionId ? `${origin}/productions/${encodeURIComponent(data.productionId)}?tab=Storyboard&ai_topup=${reference}` : `${origin}/profile?tab=Account&ai_topup=${reference}`;
     const tx = await paystack("/transaction/initialize", { email, amount, currency: data.currency, reference, callback_url: callback, metadata: { purpose: "ai_balance", user_id: context.userId } });
     if (!tx.authorization_url || new URL(tx.authorization_url).hostname !== "checkout.paystack.com") throw new Error("Invalid checkout destination");
     return { url: tx.authorization_url, reference, amount, currency: data.currency };

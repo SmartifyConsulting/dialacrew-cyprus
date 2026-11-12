@@ -250,7 +250,8 @@ function Productions() {
     e.preventDefault();
     if (!f.client.trim()) { toast.error("Client is required"); return; }
     if (!f.name.trim()) { toast.error("Production name is required"); return; }
-    if (!f.startDate || !f.endDate) { toast.error("Start and end date are required"); return; }
+    if (!f.startDate) { toast.error("Start date is required"); return; }
+    if (!f.endDate) { toast.error("End date is required"); return; }
     if (f.endDate < f.startDate) { toast.error("End date can't be before the start date"); return; }
     if (f.recceDate && f.recceDate > f.startDate) { toast.error("Recce date can't be after the start date"); return; }
     if (!f.budget) { toast.error("Budget is required"); return; }
