@@ -106,10 +106,10 @@ function ProductionSite() {
           </fieldset>
         </aside>
         <section className="flex min-w-0 flex-col">
-          <nav className="mb-4 flex w-full gap-1 overflow-x-auto rounded-sm border border-border bg-card">
+          <nav className="mb-4 flex w-full gap-1 overflow-x-auto rounded-sm border border-border bg-card p-1">
             {tabs.map((t) => (
               <button key={t} onClick={() => setTab(t)}
-                className={`whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-semibold ${tab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>{translate(`workspace.tabs.${t}`)}</button>
+                className={`whitespace-nowrap rounded-sm px-4 py-2 text-sm font-semibold ${tab === t ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"}`}>{translate(`workspace.tabs.${t}`)}</button>
             ))}
           </nav>
           <fieldset disabled={closed} className="min-w-0 w-full [&>*]:w-full">

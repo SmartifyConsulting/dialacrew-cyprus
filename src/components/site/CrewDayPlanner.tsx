@@ -35,7 +35,7 @@ function useSelectedSandbox(productionId: string, date: string): string | null {
   try { return (JSON.parse(raw) as Record<string, string>)[`${productionId}:${date}`] ?? null; } catch { return null; }
 }
 const selCls = (selected: string | null, key: string) =>
-  !selected ? "" : selected === key ? "bg-card ring-2 ring-inset ring-primary shadow-lg" : "opacity-50 grayscale bg-muted/40";
+  !selected ? "" : selected === key ? "bg-primary/5" : "opacity-50 grayscale";
 const ghost = "inline-flex items-center gap-1 rounded-sm border border-border px-2 py-1 text-xs hover:border-primary hover:text-primary disabled:opacity-50";
 const SIZE_TIERS = ["Small", "Medium", "Large", "Extra-Large"] as const;
 
@@ -316,12 +316,12 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
             </td>
             <td className={`space-y-2 border-l-2 border-border px-2 py-2 align-top sm:px-3 sm:py-3 ${selCls(selected, "s1")}`}>
               <div className="text-xs"><span className="text-muted-foreground">Total:</span> <b>{fmtMoney(req.dayTotal, p.currency)}</b></div>
-              <button onClick={() => { setSelectedSandbox(p.id, date, "s1"); toast.success("Crew Required is already pencilled — Find/Swap updates it instantly."); }} className={`${ghost} w-full justify-center`}>Pencil this Crew</button>
+              <button onClick={() => { setSelectedSandbox(p.id, date, "s1"); toast.success("Crew Required is already pencilled — Find/Swap updates it instantly."); }} className="inline-flex w-full items-center justify-center rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50">Pencil this Crew</button>
             </td>
             {sc.scenarios.map((s) => (
               <td key={s.id} className={`space-y-2 border-l-2 border-border px-2 py-2 align-top sm:px-3 sm:py-3 ${selCls(selected, s.id)}`}>
                 <div className="text-xs"><span className="text-muted-foreground">Total:</span> <b>{fmtMoney(sc.totalFor(s), p.currency)}</b></div>
-                <button onClick={() => { setSelectedSandbox(p.id, date, s.id); sc.commit(s); }} disabled={sc.committing} className={`${ghost} w-full justify-center`}>Pencil this Crew</button>
+                <button onClick={() => { setSelectedSandbox(p.id, date, s.id); sc.commit(s); }} disabled={sc.committing} className="inline-flex w-full items-center justify-center rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50">Pencil this Crew</button>
               </td>
             ))}
             <td />

@@ -147,7 +147,7 @@ function RootComponent() {
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <ConfirmDialogHost />
-      <Toaster closeButton={false} toastOptions={{ classNames: { toast: "!bg-[#4169E1] !border-[#4169E1] !text-white", title: "!text-white", description: "!text-white/90", icon: "!text-white" } }} />
+      <Toaster closeButton={false} toastOptions={{ classNames: { toast: "!bg-card !text-foreground !border !border-border !border-l-4 !border-l-primary !rounded-md !shadow-md", title: "!text-foreground !font-medium", description: "!text-muted-foreground", icon: "!text-primary" } }} />
       </LanguageProvider>
     </QueryClientProvider>
   );
