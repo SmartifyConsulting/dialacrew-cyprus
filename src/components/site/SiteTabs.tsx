@@ -88,8 +88,8 @@ function placeFromAddress(a: NominatimAddress | undefined, fallback: string) {
   return [...new Set(parts)].join(", ") || displayAddress(fallback);
 }
 
-export function AddressAutocomplete({ value, onChange, onSelect, placeholder, className, country }: {
-  value: string; onChange: (v: string) => void; onSelect: (s: AddressSuggestion) => void; placeholder?: string; className?: string; country?: string;
+export function AddressAutocomplete({ value, onChange, onSelect, placeholder, className, country, required }: {
+  value: string; onChange: (v: string) => void; onSelect: (s: AddressSuggestion) => void; placeholder?: string; className?: string; country?: string; required?: boolean;
 }) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [open, setOpen] = useState(false);
@@ -123,6 +123,8 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder, cl
   return (
     <div ref={boxRef} className="relative">
       <input
+        required={required}
+        aria-label={placeholder || "Address"}
         className={className}
         placeholder={placeholder}
         value={value}

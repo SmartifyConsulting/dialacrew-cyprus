@@ -318,7 +318,7 @@ function IllustrateMode({ p, isProducer }: { p: Production; isProducer: boolean 
         </div>
       </div>}
 
-      {shots.length === 0 ? (
+      {shotsQuery.isPending ? <p role="status" className="p-6 text-center text-sm text-muted-foreground">Loading saved storyboard…</p> : shotsQuery.isError ? null : shots.length === 0 ? (
         <p className="rounded-sm border border-dashed border-border p-6 text-center text-sm text-muted-foreground">No shots yet — break down a brief above, or add one manually.</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -276,12 +276,12 @@ function CheckoutDialog({ item, free, onClose, onDone }: { item: EquipmentItem; 
         <div className="grid gap-3">
           {canManage && <label className="block"><span className="text-xs text-muted-foreground">Crew member</span>
             <select required className={`${field} mt-1 w-full border-primary`} value={f.who} onChange={(e) => setF({ ...f, who: e.target.value })}>
-              <option value="">Select crew member</option>{crew.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              <option value="">Select crew member</option>{crew.map((c) => <option key={c.id} value={c.id}>{c.name} · {c.role} ({c.id.slice(-6)})</option>)}
             </select></label>}
           <label className="block"><span className="text-xs text-muted-foreground">{t("checkout.production")}</span>
             <select required className={`${field} mt-1 w-full border-primary`} value={f.productionId} onChange={(e) => chooseProduction(e.target.value)}>
               <option value="">Select production</option>
-              {[...productions].sort((a, b) => a.name.localeCompare(b.name)).map((p) => <option key={p.id} value={p.id}>{p.name}{p.date ? ` · ${p.date}` : ""}</option>)}
+              {[...productions].sort((a, b) => a.name.localeCompare(b.name)).map((p) => <option key={p.id} value={p.id}>{p.name.trim() || `Unnamed production (${p.id})`}{p.date ? ` · ${p.date}` : ""}</option>)}
             </select></label>
           <div className="grid grid-cols-3 gap-3">
             <label className="block"><span className="text-xs text-muted-foreground">{t("checkout.quantity")}</span>

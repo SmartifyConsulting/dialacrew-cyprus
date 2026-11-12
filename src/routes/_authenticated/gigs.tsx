@@ -4,6 +4,12 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { startGigCheckout, verifyGigCheckout, chargeGigPenalties } from "@/lib/paystack.functions";
 import { toast } from "sonner";
+import { useDepartments } from "@/lib/db";
+import { useCountries } from "@/lib/use-countries";
+import { EQUIPMENT_CATEGORIES, useEquipmentItems } from "@/lib/equipment";
+import { AddressAutocomplete } from "@/components/site/SiteTabs";
+import { PolishDescription } from "@/components/site/PolishDescription";
+import { GIG_DEPARTMENTS, PHONE_CODES, internationalPhone } from "@/lib/gig-form";
 import { Page, Panel } from "@/components/AppShell";
 import { confirmDialog } from "@/components/ConfirmDialog";
 import { FindGigsTab } from "@/components/FindGigs";
@@ -28,20 +34,26 @@ export const Route = createFileRoute("/_authenticated/gigs")({
 });
 
 const rand = (n: number) => `R ${Math.round(n).toLocaleString("en-ZA")}`;
-const field = "w-full rounded-xl border border-input bg-background px-3 py-2 text-sm";
-const COUNTRIES = ["South Africa", "Namibia", "Botswana", "Kenya", "Nigeria", "Cyprus", "United Kingdom"];
+const field = "w-full rounded-xl border border-input bg-background px-3 py-2 text-sm [&:required]:border-primary [&:required]:ring-1 [&:required]:ring-primary/25";
+
 type Gig = Database["public"]["Tables"]["community_gigs"]["Row"];
 
 const empty = { title: "", role: "", department: "", description: "", event_date: "", end_date: "", call_time: "", venue: "", country: "South Africa", kit_required: "", pay_type: "day_rate", amount: "", contact_phone: "", expires_at: "" };
 
 function GigsPage() {
   const { t } = useTranslation();
-  const crewId = useMyCrewId(true).data;
   const { session } = useSession();
   const uid = session?.user.id;
   const role = useRole(uid).data;
+  const crewId = useMyCrewId(role === "crew").data;
   const qc = useQueryClient();
   const [form, setForm] = useState(empty);
+  const countries = useCountries();
+  const departments = [...new Set([...GIG_DEPARTMENTS, ...(useDepartments().data ?? []).filter(d => d && d !== "All")])].sort();
+  const equipment = useEquipmentItems().data ?? [];
+  const [phonePrefix, setPhonePrefix] = useState("+27");
+  const [departmentFilter, setDepartmentFilter] = useState("");
+  const [posting, setPosting] = useState(false);
   const [view, setView] = useState<"find" | "post">("find");
   const showForm = view === "post";
   const setShowForm = (v: boolean | ((s: boolean) => boolean)) => setView((cur) => ((typeof v === "function" ? v(cur === "post") : v) ? "post" : "find"));
@@ -71,24 +83,34 @@ function GigsPage() {
     },
   });
   const all = gigs.data ?? [];
-  const open = all.filter((g) => g.status === "open" && new Date(g.expires_at) > new Date() && g.posted_by !== uid);
+  const open = all.filter((g) => g.status === "open" && new Date(g.expires_at) > new Date() && g.posted_by !== uid && (!departmentFilter || g.department === departmentFilter));
   const mine = all.filter((g) => g.posted_by === uid);
   const secured = all.filter((g) => g.secured_by === uid && g.status === "secured");
   const refresh = () => qc.invalidateQueries({ queryKey: ["community-gigs"] });
   const set = (k: keyof typeof empty) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   async function post() {
+    if (posting) return;
+    if (!uid || !["crew", "producer", "admin"].includes(role ?? "")) return void toast.error("Sign in as crew or a producer to post a gig.");
     const required: (keyof typeof empty)[] = ["title", "role", "department", "description", "event_date", "call_time", "venue", "country", "amount", "contact_phone", "expires_at"];
     const missing = required.filter((k) => !String(form[k]).trim());
     if (missing.length) return void toast.error("Please fill in every required field.");
     if (new Date(form.expires_at) > new Date(`${form.event_date}T${form.call_time}`)) return void toast.error("The posting must expire before the event starts.");
+    let contactPhone: string;
+    try { contactPhone = internationalPhone(form.contact_phone, phonePrefix); } catch (e) { return void toast.error((e as Error).message); }
+    if (!Number.isFinite(Number(form.amount)) || Number(form.amount) <= 0) return void toast.error("Enter a positive amount.");
+    if (form.end_date && form.end_date < form.event_date) return void toast.error("End date cannot be before the event date.");
+    if (new Date(form.expires_at) <= new Date()) return void toast.error("The posting expiry must be in the future.");
+    setPosting(true);
+    try {
     const { data: p } = await supabase.from("profiles").select("full_name, email").eq("id", uid!).maybeSingle();
     const { error } = await supabase.from("community_gigs").insert({
-      ...form, amount: Number(form.amount), end_date: form.end_date || null,
+      ...form, posted_by: uid, status: "open", secured_by: null, contact_phone: contactPhone, amount: Number(form.amount), end_date: form.end_date || null,
       expires_at: new Date(form.expires_at).toISOString(), poster_name: p?.full_name || p?.email || "Crew member",
     });
     if (error) return void toast.error(error.message);
     toast.success("Gig posted to the community"); setForm(empty); setShowForm(false); refresh();
+    } catch (e) { toast.error((e as Error).message); } finally { setPosting(false); }
   }
   async function secure(g: Gig) {
     if (!agree) return void toast.error("Please accept the no-show terms first.");
@@ -137,27 +159,29 @@ function GigsPage() {
             {showForm && (
               <div id="post-gig-form" className="mt-4 rounded-xl border border-border p-4">
                 <div className="grid gap-3 md:grid-cols-2">
-                  <label className="text-sm">Gig title *<input className={field} value={form.title} onChange={set("title")} /></label>
-                  <label className="text-sm">Role needed *<input className={field} placeholder="e.g. Focus puller" value={form.role} onChange={set("role")} /></label>
-                  <label className="text-sm">Department *<input className={field} placeholder="e.g. Camera" value={form.department} onChange={set("department")} /></label>
-                  <label className="text-sm">Contact phone *<input className={field} value={form.contact_phone} onChange={set("contact_phone")} /></label>
-                  <label className="text-sm">Event date *<input type="date" className={field} value={form.event_date} onChange={set("event_date")} /></label>
+                  <label className="text-sm">Gig title *<input required className={field} value={form.title} onChange={set("title")} /></label>
+                  <label className="text-sm">Role needed *<input required className={field} placeholder="e.g. Focus puller" value={form.role} onChange={set("role")} /></label>
+                  <label className="text-sm">Department<select required className={field} value={form.department} onChange={set("department")}><option value="">Select department</option>{departments.map(d => <option key={d}>{d}</option>)}</select></label>
+                  <div className="text-sm"><label htmlFor="gig-contact">Contact phone</label><div className="flex gap-2"><select aria-label="Phone country code" className={`${field} max-w-44`} value={phonePrefix} onChange={e => setPhonePrefix(e.target.value)}>{PHONE_CODES.map(([name, code]) => <option key={name} value={code}>{name} ({code})</option>)}</select><input id="gig-contact" required type="tel" inputMode="tel" className={field} value={form.contact_phone} onChange={set("contact_phone")} /></div></div>
+                  <label className="text-sm">Event date *<input required type="date" className={field} value={form.event_date} onChange={set("event_date")} /></label>
                   <label className="text-sm">End date<input type="date" className={field} value={form.end_date} onChange={set("end_date")} /></label>
-                  <label className="text-sm">Call time *<input type="time" className={field} value={form.call_time} onChange={set("call_time")} /></label>
-                  <label className="text-sm">Posting expires *<input type="datetime-local" className={field} value={form.expires_at} onChange={set("expires_at")} /></label>
-                  <label className="text-sm md:col-span-2">Venue / address *<input className={field} value={form.venue} onChange={set("venue")} /></label>
-                  <label className="text-sm">Country *<select className={field} value={form.country} onChange={set("country")}>{COUNTRIES.map((c) => <option key={c}>{c}</option>)}</select></label>
-                  <label className="text-sm">Equipment required<input className={field} value={form.kit_required} onChange={set("kit_required")} /></label>
-                  <label className="text-sm">Pay type *<select className={field} value={form.pay_type} onChange={set("pay_type")}><option value="day_rate">Day rate</option><option value="fixed">Fixed price</option></select></label>
-                  <label className="text-sm">Amount (R) *<input type="number" min="1" className={field} value={form.amount} onChange={set("amount")} /></label>
-                  <label className="text-sm md:col-span-2">Description *<textarea rows={3} className={field} value={form.description} onChange={set("description")} /></label>
-                  <div className="md:col-span-2"><button onClick={post} className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Post to community</button></div>
+                  <label className="text-sm">Call time *<input required type="time" className={field} value={form.call_time} onChange={set("call_time")} /></label>
+                  <label className="text-sm">Posting expires *<input required type="datetime-local" className={field} value={form.expires_at} onChange={set("expires_at")} /></label>
+                  <div className="text-sm md:col-span-2">Venue / address<AddressAutocomplete required className={`${field} border-primary ring-1 ring-primary/25`} placeholder="Start typing the venue or street address" country={countries.find(c => c.name === form.country)?.code.toLowerCase() ?? ""} value={form.venue} onChange={venue => setForm(f => ({ ...f, venue }))} onSelect={place => setForm(f => ({ ...f, venue: place.exactAddress }))} /></div>
+                  <label className="text-sm">Country *<select required className={field} value={form.country} onChange={set("country")}>{countries.map((c) => <option key={c.code} value={c.name}>{c.name}</option>)}</select></label>
+                  <label className="text-sm">Inventory required<select className={field} value={form.kit_required} onChange={set("kit_required")}><option value="">None required</option>{[...new Set([...EQUIPMENT_CATEGORIES, ...equipment.map(i => i.name)])].map(name => <option key={name}>{name}</option>)}</select></label>
+                  <label className="text-sm">Pay type *<select required className={field} value={form.pay_type} onChange={set("pay_type")}><option value="day_rate">Day rate</option><option value="fixed">Fixed price</option></select></label>
+                  <label className="text-sm">Amount (R) *<input required type="number" min="1" className={field} value={form.amount} onChange={set("amount")} /></label>
+                  <label className="text-sm md:col-span-2">Description *<textarea required rows={3} className={field} value={form.description} onChange={set("description")} /></label>
+                  <div className="md:col-span-2"><PolishDescription text={form.description} name={form.title} type={`Crew gig: ${form.role}`.slice(0,60)} client="" onPolished={description => setForm(f => ({ ...f, description }))} /></div>
+                  <div className="md:col-span-2"><button disabled={posting} onClick={post} className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">{posting ? "Posting…" : "Post to community"}</button></div>
                 </div>
               </div>
             )}
 
             {view === "find" && <>
             <h4 className="mt-6 text-sm font-semibold uppercase tracking-wide text-primary">{t("nav.findGigs")}</h4>
+            <label className="mt-3 block text-sm">Department<select className={field} value={departmentFilter} onChange={e => setDepartmentFilter(e.target.value)}><option value="">All departments</option>{departments.map(d => <option key={d}>{d}</option>)}</select></label>
             {isCrew && (
               <label className="my-4 flex items-start gap-2 rounded-xl border border-border bg-card p-3 text-sm">
                 <input type="checkbox" className="mt-1" checked={agree} onChange={(e) => setAgree(e.target.checked)} />

@@ -2,7 +2,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { useOpenGigs, type OpenGig } from "@/lib/db";
-import { useQueryClient } from "@tanstack/react-query";
+import { useCountries } from "@/lib/use-countries";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { GigNegotiation } from "@/components/GigNegotiation";
 import { JobTermsDialog } from "@/components/JobTermsDialog";
@@ -24,6 +25,11 @@ export function FindGigsTab({ canClaim, canManage = false }: { canClaim: boolean
   const [near, setNear] = useState<{ lat: number; lng: number } | null>(null);
   const [radiusKm, setRadiusKm] = useState("100");
   const [country, setCountry] = useState("");
+  const [department, setDepartment] = useState("");
+  const configuredCountries = useCountries();
+  const roleDepartments = useQuery({ queryKey: ["gig-role-departments"], queryFn: async () => { const { data, error } = await supabase.from("crew_members").select("role, department"); if (error) throw error; return data ?? []; } });
+  const departmentNames = [...new Set((roleDepartments.data ?? []).map(r => r.department).filter(Boolean))].sort();
+  const roleKey = (value: string) => value.trim().toLowerCase().replace(/s$/, "");
 
   async function useMyLocation() {
     try {
@@ -41,11 +47,12 @@ export function FindGigsTab({ canClaim, canManage = false }: { canClaim: boolean
     return Math.round(2 * R * Math.asin(Math.sqrt(a)));
   }
 
-  const countries = [...new Set((gigs.data ?? []).map(gigCountry).filter(Boolean))].sort();
+  const countries = [...new Set([...configuredCountries.map(c => c.name), ...(gigs.data ?? []).map(gigCountry).filter(Boolean)])].sort();
   const list = (gigs.data ?? []).filter((g) => {
     const text = `${g.production_name} ${g.role} ${g.location} ${g.address}`.toLowerCase();
     if (q && !text.includes(q.toLowerCase())) return false;
     if (country && gigCountry(g) !== country) return false;
+    if (department && !(roleDepartments.data ?? []).some(r => roleKey(r.role) === roleKey(g.role) && r.department === department)) return false;
     if (near && g.latitude != null && g.longitude != null) {
       const d = distanceKm(g.latitude, g.longitude);
       if (d > (Number(radiusKm) || 100)) return false;
@@ -83,6 +90,7 @@ export function FindGigsTab({ canClaim, canManage = false }: { canClaim: boolean
       <p className="text-sm text-muted-foreground">Open gigs aren't assigned to anyone specific yet — first to grab it gets it. Available anywhere in the world; filter by location below.</p>
       <div className="flex flex-wrap gap-2">
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search role, production, city, country…" className={`${input} min-w-56 flex-1`} />
+        <select aria-label="Department" value={department} onChange={e => setDepartment(e.target.value)} className={input}><option value="">All departments</option>{departmentNames.map(d => <option key={d}>{d}</option>)}</select>
         <select value={country} onChange={(e) => setCountry(e.target.value)} className={input} aria-label="Country">
           <option value="">All countries</option>
           {countries.map((c) => <option key={c}>{c}</option>)}
