@@ -4155,16 +4155,6 @@ export type Database = {
     }
     Functions: {
       inventory_stock: { Args: Record<PropertyKey, never>; Returns: { item_id: string; reserved: number; collected: number }[] }
-      change_ai_balance: { Args: { p_user: string; p_operation: string; p_kind: string; p_amount: number; p_activity: string }; Returns: number };
-      credit_ai_purchase: { Args: { p_reference: string }; Returns: undefined };
-      save_storyboard_breakdown: {
-        Args: { p_production: string; p_shots: Json; p_original: string; p_improved: string; p_characters: string; p_replace: boolean; p_user: string };
-        Returns: undefined;
-      };
-      manage_document_library: {
-        Args: { p_production: string; p_action: string; p_files?: string[]; p_folders?: string[]; p_destination?: string; p_name?: string };
-        Returns: undefined;
-      };
       accept_booking_with_terms: {
         Args: { p_booking_id: string; p_terms_version: string }
         Returns: undefined
