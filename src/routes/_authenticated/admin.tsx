@@ -12,6 +12,7 @@ import { useRole, useSession } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { zar } from "@/lib/demo-data";
 import { DocumentChecklistsAdmin } from "@/components/admin/DocumentChecklistsAdmin";
+import { PostRulesAdmin } from "@/components/admin/PostRulesAdmin";
 import { EquipmentAdmin } from "@/components/admin/EquipmentAdmin";
 import { CountriesAdmin } from "@/components/admin/CountriesAdmin";
 import { StatusPill } from "@/components/admin/StatusPill";
@@ -176,7 +177,7 @@ const ADMIN_GROUPS = [
   { name: "Equipment", tabs: ["Equipment"] },
   { name: "Disputes", tabs: ["Disputes"] },
   { name: "Reviews", tabs: ["Reviews"] },
-  { name: "Templates", tabs: ["Checklists"] },
+  { name: "Templates", tabs: ["Checklists", "Post Rules"] },
 ] as const;
 // Producers get everything Super Admin has, except Platform Management (super-admin only) and
 // with the raw Crew roster swapped for Crew Types — producers group crew into reusable, typed
@@ -185,7 +186,7 @@ const PRODUCER_ADMIN_GROUPS = [
   { name: "People & Organisations", tabs: ["Users", "Crew"] },
   { name: "Disputes", tabs: ["Disputes"] },
   { name: "Reviews", tabs: ["Reviews"] },
-  { name: "Templates", tabs: ["Checklists"] },
+  { name: "Templates", tabs: ["Checklists", "Post Rules"] },
 ] as const;
 type AdminGroup = (typeof ADMIN_GROUPS)[number]["name"] | (typeof PRODUCER_ADMIN_GROUPS)[number]["name"];
 type AdminTab = (typeof ADMIN_GROUPS)[number]["tabs"][number] | (typeof PRODUCER_ADMIN_GROUPS)[number]["tabs"][number];
@@ -241,13 +242,14 @@ function AdminPage() {
       <nav className="mb-5 flex gap-1 overflow-x-auto">
         {activeGroup.tabs.map((t) => (
           <button key={t} onClick={() => setTab(t)}
-            className={`whitespace-nowrap rounded-sm px-3 py-1.5 text-xs font-semibold ${tab === t ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>{translate(`adminNav.labels.${t}`)}</button>
+            className={`whitespace-nowrap rounded-sm px-3 py-1.5 text-xs font-semibold ${tab === t ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>{translate(`adminNav.labels.${t}`, t)}</button>
         ))}
       </nav>
       {tab === "Users" && <UsersTab canManageAdmins={isSuperAdmin} />}
       {tab === "Crew" && <CrewTab />}
       {tab === "Companies" && <CompaniesTab />}
       {tab === "Equipment" && <EquipmentAdmin />}
+      {tab === "Post Rules" && <PostRulesAdmin />}
       {tab === "Disputes" && <DisputesTab />}
       {tab === "Reviews" && <ReviewsTab />}
       {tab === "Subscriptions" && <SubscriptionsTab />}

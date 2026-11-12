@@ -7,6 +7,8 @@ export type Production = {
   gearPickupDate?: string | null; gearPickupTime?: string | null; gearDropoffDate?: string | null; gearDropoffTime?: string | null;
   travelRequired?: boolean;
   passportRequirements?: string;
+  createdBy?: string | null;
+  postRulesMode?: string;
   createdAt?: string;
 };
 

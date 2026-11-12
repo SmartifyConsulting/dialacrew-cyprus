@@ -11,7 +11,7 @@ const toProduction = (r: any): Production => ({
   address: r.address ?? "", summary: r.summary ?? "", latitude: r.latitude, longitude: r.longitude, geofenceM: r.geofence_m ?? 10, currency: r.currency ?? "ZAR", postRules: r.post_rules ?? "", postRulesHidden: !!r.post_rules_hidden, imagePath: r.image_path ?? null,
   timezone: r.timezone ?? null, recceStart: r.recce_start_time ?? null, recceEnd: r.recce_end_time ?? null,
   gearPickupDate: r.gear_pickup_date ?? null, gearPickupTime: r.gear_pickup_time ?? null, gearDropoffDate: r.gear_dropoff_date ?? null, gearDropoffTime: r.gear_dropoff_time ?? null,
-  passportRequirements: r.passport_requirements ?? "", travelRequired: !!r.travel_required, createdAt: r.created_at ?? undefined,
+  createdBy: r.created_by ?? null, postRulesMode: r.post_rules_mode ?? "custom", passportRequirements: r.passport_requirements ?? "", travelRequired: !!r.travel_required, createdAt: r.created_at ?? undefined,
 });
 const toCrew = (r: any): Crew & { pencilled: boolean } => ({
   id: r.id, name: r.name, role: r.role, department: r.department, location: r.location,

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AutoTranslatedText } from "@/components/AutoTranslatedText";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,7 +23,10 @@ export function Guidelines({ p, isProducer }: { p: Production; isProducer: boole
   const { t } = useTranslation();
   const qc = useQueryClient();
   const { session } = useSession();
-  const isAdmin = useRole(session?.user.id).data === "admin";
+  const settings = useQuery({ queryKey: ["producer-post-rules", p.createdBy], enabled: !!p.createdBy, queryFn: async () => { const { data, error } = await supabase.from("producer_post_rules").select("*").eq("producer_id",p.createdBy!).maybeSingle(); if(error)throw error;return data; } });
+  const forced = !!settings.data?.apply_to_all && !!settings.data.rules.trim();
+  const mode = p.postRulesMode ?? "custom";
+  const effectiveRules = forced || mode === "producer" ? settings.data?.rules || DEFAULT_GUIDELINES : p.postRules || DEFAULT_GUIDELINES;
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(p.postRules || DEFAULT_GUIDELINES);
   const [busy, setBusy] = useState(false);
@@ -50,16 +53,16 @@ export function Guidelines({ p, isProducer }: { p: Production; isProducer: boole
   useEffect(() => { setDismissed(window.localStorage.getItem(dismissKey) === "1"); }, [dismissKey]);
   const dismiss = () => { window.localStorage.setItem(dismissKey, "1"); setDismissed(true); };
 
-  if (dismissed && !editing) return null;
-  if (p.postRulesHidden && !isProducer) return null;
+  if (dismissed && !editing && !forced) return null;
+  if ((p.postRulesHidden || mode === "none") && !isProducer && !forced) return null;
 
-  const hideToggle = isProducer && (
+  const hideToggle = isProducer && !forced && (
     <button onClick={() => setHidden(!p.postRulesHidden)} className="text-xs font-semibold text-muted-foreground hover:text-foreground">
       {p.postRulesHidden ? t("guidelines.show") : t("guidelines.hide")}
     </button>
   );
 
-  if (p.postRulesHidden) {
+  if (p.postRulesHidden && !forced) {
     return (
       <div className="flex items-center justify-between rounded-sm border border-dashed border-border bg-card px-4 py-3">
         <span className="text-xs text-muted-foreground">{t("guidelines.hidden")}</span>
@@ -68,7 +71,7 @@ export function Guidelines({ p, isProducer }: { p: Production; isProducer: boole
     );
   }
 
-  if (editing && isAdmin) {
+  if (editing && isProducer && !forced) {
     return (
       <div className="space-y-2 rounded-sm border border-primary/40 bg-primary/5 p-4">
         <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("guidelines.title")}</div>
@@ -86,12 +89,14 @@ export function Guidelines({ p, isProducer }: { p: Production; isProducer: boole
       <div className="flex items-center justify-between gap-3">
         <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("guidelines.title")}</div>
         <div className="flex items-center gap-3">
-          {isAdmin && <button onClick={() => { setText(p.postRules || DEFAULT_GUIDELINES); setEditing(true); }} className="text-xs font-semibold text-primary hover:underline">{t("common.edit")}</button>}
+          {isProducer && !forced && mode === "custom" && <button onClick={() => { setText(p.postRules || DEFAULT_GUIDELINES); setEditing(true); }} className="text-xs font-semibold text-primary hover:underline">{t("common.edit")}</button>}
+          {isProducer && !forced && <select aria-label="Post rules source" value={mode} className="rounded border border-input bg-background p-1 text-xs" onChange={async e => { const { error } = await supabase.from("productions").update({ post_rules_mode:e.target.value, post_rules_hidden:false }).eq("id",p.id).select("id").single();if(error){toast.error(friendlyError(error));return;}qc.invalidateQueries({queryKey:["productions"]}); }}><option value="custom">This production's rules</option><option value="producer">Producer default</option><option value="none">No rules</option></select>}
+          {forced && <span className="text-xs text-muted-foreground">Producer rules apply to all productions</span>}
           {hideToggle}
-          <button onClick={dismiss} className="text-xs font-semibold text-muted-foreground hover:text-foreground">Don't show again</button>
+          {!forced && <button onClick={dismiss} className="text-xs font-semibold text-muted-foreground hover:text-foreground">Don't show again</button>}
         </div>
       </div>
-      <div className="mt-2 whitespace-pre-wrap text-sm">{p.postRules && p.postRules !== DEFAULT_GUIDELINES ? <AutoTranslatedText text={p.postRules} /> : t("guidelines.defaults")}</div>
+      <div className="mt-2 whitespace-pre-wrap text-sm">{mode === "none" && !forced ? "No post rules applied to this production." : effectiveRules !== DEFAULT_GUIDELINES ? <AutoTranslatedText text={effectiveRules} /> : t("guidelines.defaults")}</div>
     </div>
   );
 }

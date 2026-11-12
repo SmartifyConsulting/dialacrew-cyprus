@@ -14,6 +14,7 @@ export type Database = {
   }
   public: {
     Tables: {
+      producer_post_rules: { Row: { producer_id: string; rules: string; apply_to_all: boolean; updated_at: string }; Insert: { producer_id: string; rules?: string; apply_to_all?: boolean; updated_at?: string }; Update: { producer_id?: string; rules?: string; apply_to_all?: boolean; updated_at?: string }; Relationships: [] }
       ai_balance_ledger: {
         Row: {
           activity: string
@@ -2910,6 +2911,7 @@ export type Database = {
         Row: {
           travel_required: boolean
           passport_requirements: string
+          post_rules_mode: string
           address: string
           budget: number
           client: string
@@ -2952,6 +2954,7 @@ export type Database = {
         Insert: {
           travel_required?: boolean
           passport_requirements?: string
+          post_rules_mode?: string
           address?: string
           budget?: number
           client: string
@@ -2994,6 +2997,7 @@ export type Database = {
         Update: {
           travel_required?: boolean
           passport_requirements?: string
+          post_rules_mode?: string
           address?: string
           budget?: number
           client?: string
