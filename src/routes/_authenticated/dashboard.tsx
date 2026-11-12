@@ -324,7 +324,7 @@ function Dashboard() {
   const budgetPct = totalBudget ? Math.round((secured / totalBudget) * 100) : 0;
   const pendingReqs = reqs.filter((r) => r.state === "Pending");
   const waitingCrew = bookings.filter((b) => b.status === "awaiting_crew_confirmation");
-  const [prodFilter, setProdFilter] = useState<"Active" | "Upcoming" | "Wrapped">("Active");
+  const [prodFilter, setProdFilter] = useState<"Active" | "Upcoming" | "Wrapped">("Upcoming");
   const filteredProductions = productions.filter((p) => p.status === prodFilter);
   const hour = new Date().getHours();
   const greet = t(hour < 12 ? "dashboard.morning" : hour < 18 ? "dashboard.afternoon" : "dashboard.evening");
