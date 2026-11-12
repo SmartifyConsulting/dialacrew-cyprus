@@ -141,13 +141,13 @@ export function TopNav() {
         </aside>
       )}
       {signedIn && (
-        <div className="fixed right-6 top-4 z-40 hidden items-center gap-3 text-foreground md:flex">
+        <div className="relative z-30 hidden items-center justify-end gap-3 px-6 pt-4 text-foreground md:ml-60 md:flex">
           <ThemeToggle className="border-border bg-card text-foreground shadow-sm" />
           <LanguageSwitcher compact className="border-border bg-card text-foreground shadow-sm" />
           <div className="grid h-10 w-10 place-items-center rounded-full border border-border bg-card shadow-sm"><NotificationBell userId={session.user.id} requireAcknowledgement={role.data === "crew"} /></div>
         </div>
       )}
-      <header className={`sticky top-0 z-30 ${signedIn ? "md:pl-60" : ""}`}>
+      <header className={`relative z-30 ${signedIn ? "md:pl-60" : ""}`}>
         <div className={signedIn ? "bg-nav text-nav-foreground md:hidden" : "bg-nav text-nav-foreground"}>
           <div className={`flex items-center gap-4 px-4 py-8 ${signedIn ? "" : "mx-auto max-w-7xl"}`}>
             {signedIn && <Link to="/dashboard" className="shrink-0"><img src={navLogo} alt="Book a Crew" className="h-[7.5rem] w-auto rounded-lg object-contain" /></Link>}
