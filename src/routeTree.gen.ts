@@ -26,6 +26,7 @@ import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedEarningsRouteImport } from './routes/_authenticated/earnings'
 import { Route as AuthenticatedGigsRouteImport } from './routes/_authenticated/gigs'
+import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
 import { Route as AuthenticatedInvoicesRouteImport } from './routes/_authenticated/invoices'
 import { Route as AuthenticatedMemoryRouteImport } from './routes/_authenticated/memory'
 import { Route as AuthenticatedMobileSetupRouteImport } from './routes/_authenticated/mobile-setup'
@@ -125,6 +126,11 @@ const AuthenticatedGigsRoute = AuthenticatedGigsRouteImport.update({
   path: '/gigs',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedInventoryRoute = AuthenticatedInventoryRouteImport.update({
+  id: '/inventory',
+  path: '/inventory',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedInvoicesRoute = AuthenticatedInvoicesRouteImport.update({
   id: '/invoices',
   path: '/invoices',
@@ -217,6 +223,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/earnings': typeof AuthenticatedEarningsRoute
   '/gigs': typeof AuthenticatedGigsRoute
+  '/inventory': typeof AuthenticatedInventoryRoute
   '/invoices': typeof AuthenticatedInvoicesRouteWithChildren
   '/memory': typeof AuthenticatedMemoryRoute
   '/mobile-setup': typeof AuthenticatedMobileSetupRoute
@@ -249,6 +256,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/earnings': typeof AuthenticatedEarningsRoute
   '/gigs': typeof AuthenticatedGigsRoute
+  '/inventory': typeof AuthenticatedInventoryRoute
   '/invoices': typeof AuthenticatedInvoicesRouteWithChildren
   '/memory': typeof AuthenticatedMemoryRoute
   '/mobile-setup': typeof AuthenticatedMobileSetupRoute
@@ -283,6 +291,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/earnings': typeof AuthenticatedEarningsRoute
   '/_authenticated/gigs': typeof AuthenticatedGigsRoute
+  '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
   '/_authenticated/invoices': typeof AuthenticatedInvoicesRouteWithChildren
   '/_authenticated/memory': typeof AuthenticatedMemoryRoute
   '/_authenticated/mobile-setup': typeof AuthenticatedMobileSetupRoute
@@ -317,6 +326,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/earnings'
     | '/gigs'
+    | '/inventory'
     | '/invoices'
     | '/memory'
     | '/mobile-setup'
@@ -349,6 +359,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/earnings'
     | '/gigs'
+    | '/inventory'
     | '/invoices'
     | '/memory'
     | '/mobile-setup'
@@ -382,6 +393,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/earnings'
     | '/_authenticated/gigs'
+    | '/_authenticated/inventory'
     | '/_authenticated/invoices'
     | '/_authenticated/memory'
     | '/_authenticated/mobile-setup'
@@ -537,6 +549,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedGigsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/inventory': {
+      id: '/_authenticated/inventory'
+      path: '/inventory'
+      fullPath: '/inventory'
+      preLoaderRoute: typeof AuthenticatedInventoryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/invoices': {
       id: '/_authenticated/invoices'
       path: '/invoices'
@@ -657,6 +676,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEarningsRoute: typeof AuthenticatedEarningsRoute
   AuthenticatedGigsRoute: typeof AuthenticatedGigsRoute
+  AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
   AuthenticatedInvoicesRoute: typeof AuthenticatedInvoicesRouteWithChildren
   AuthenticatedMemoryRoute: typeof AuthenticatedMemoryRoute
   AuthenticatedMobileSetupRoute: typeof AuthenticatedMobileSetupRoute
@@ -675,6 +695,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEarningsRoute: AuthenticatedEarningsRoute,
   AuthenticatedGigsRoute: AuthenticatedGigsRoute,
+  AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
   AuthenticatedInvoicesRoute: AuthenticatedInvoicesRouteWithChildren,
   AuthenticatedMemoryRoute: AuthenticatedMemoryRoute,
   AuthenticatedMobileSetupRoute: AuthenticatedMobileSetupRoute,

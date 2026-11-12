@@ -1666,6 +1666,12 @@ export type Database = {
       }
       inventory_checkouts: {
         Row: {
+          request_state: string
+          requested_by: string | null
+          approved_by: string | null
+          approved_at: string | null
+          collected_by: string | null
+          collected_at: string | null
           checked_out_at: string
           checked_out_crew_id: string | null
           checked_out_to: string
@@ -1679,6 +1685,12 @@ export type Database = {
           returned_at: string | null
         }
         Insert: {
+          request_state?: string
+          requested_by?: string | null
+          approved_by?: string | null
+          approved_at?: string | null
+          collected_by?: string | null
+          collected_at?: string | null
           checked_out_at?: string
           checked_out_crew_id?: string | null
           checked_out_to?: string
@@ -1692,6 +1704,12 @@ export type Database = {
           returned_at?: string | null
         }
         Update: {
+          request_state?: string
+          requested_by?: string | null
+          approved_by?: string | null
+          approved_at?: string | null
+          collected_by?: string | null
+          collected_at?: string | null
           checked_out_at?: string
           checked_out_crew_id?: string | null
           checked_out_to?: string
@@ -3995,6 +4013,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      inventory_stock: { Args: Record<PropertyKey, never>; Returns: { item_id: string; reserved: number; collected: number }[] }
       change_ai_balance: { Args: { p_user: string; p_operation: string; p_kind: string; p_amount: number; p_activity: string }; Returns: number };
       credit_ai_purchase: { Args: { p_reference: string }; Returns: undefined };
       save_storyboard_breakdown: {

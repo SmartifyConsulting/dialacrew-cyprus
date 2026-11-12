@@ -7,6 +7,8 @@ export type EquipmentItem = { id: string; name: string; category: string; total_
 export type EquipmentCheckout = {
   id: string; item_id: string; quantity: number; production_id: string | null; checked_out_to: string; checked_out_crew_id: string | null;
   checked_out_at: string; expected_return_at: string | null; returned_at: string | null; due_notified_at: string | null; productions: { name: string } | null;
+  request_state: "requested" | "approved" | "declined" | "collected" | "returned";
+  approved_at: string | null; collected_at: string | null;
 };
 
 export const EQUIPMENT_CATEGORIES = ["Equipment", "Lighting", "Sound", "Camera", "Grip", "Wardrobe", "Props", "Vehicle"];
@@ -17,17 +19,28 @@ export const todayYmd = () => {
 };
 export const ymdLabel = (ymd: string) => new Date(`${ymd}T00:00:00`).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" });
 
-export const isOutNow = (c: EquipmentCheckout) => !c.returned_at;
-export const isOverdue = (c: EquipmentCheckout) => !c.returned_at && !!c.expected_return_at && c.expected_return_at < todayYmd();
+export const isOutNow = (c: EquipmentCheckout) => c.request_state === "collected" && !c.returned_at;
+export const isReserved = (c: EquipmentCheckout) => ["approved", "collected"].includes(c.request_state) && !c.returned_at;
+export const isOverdue = (c: EquipmentCheckout) => isOutNow(c) && !!c.expected_return_at && c.expected_return_at < todayYmd();
+export const LOAN_STATES = { requested: "Awaiting approval", approved: "Approved — awaiting collection", declined: "Declined", collected: "Collected", returned: "Returned" };
 
 /** "2× with Sam for Nutella Ad · out 3 Oct 2026 · back 9 Oct 2026" */
 export function checkoutLine(c: EquipmentCheckout) {
   return [
     `${c.quantity}× with ${c.checked_out_to || "someone"}${c.productions?.name ? ` for ${c.productions.name}` : ""}`,
-    `out ${ymdLabel(c.checked_out_at)}`,
+    `${LOAN_STATES[c.request_state] ?? "Collected"} · collection ${ymdLabel(c.checked_out_at)}`,
     c.expected_return_at ? `back ${ymdLabel(c.expected_return_at)}` : "no return date set",
   ].join(" · ");
 }
+
+export const useInventoryStock = () => useQuery({
+  queryKey: ["inventory-stock"],
+  queryFn: async () => {
+    const { data, error } = await supabase.rpc("inventory_stock");
+    if (error) throw error;
+    return data ?? [];
+  },
+});
 
 export const useEquipmentItems = () => useQuery({
   queryKey: ["equipment-items"],

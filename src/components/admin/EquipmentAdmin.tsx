@@ -8,9 +8,11 @@ import { Panel } from "@/components/AppShell";
 import { confirmDialog } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useSession, useRole } from "@/lib/auth";
+import { useMyCrewId } from "@/lib/site";
 import { useCrew, useProductions } from "@/lib/db";
 import {
-  EQUIPMENT_CATEGORIES, checkoutLine, isOverdue, todayYmd, useEquipmentCheckouts, useEquipmentItems, ymdLabel, type EquipmentItem,
+  EQUIPMENT_CATEGORIES, LOAN_STATES, useInventoryStock, isOutNow, checkoutLine, isOverdue, todayYmd, useEquipmentCheckouts, useEquipmentItems, ymdLabel, type EquipmentItem,
 } from "@/lib/equipment";
 
 const field = "rounded-sm border border-input bg-background px-2 py-1.5 text-sm outline-none focus:border-ring";
@@ -25,12 +27,18 @@ const addDays = (ymd: string, n: number) => {
 
 // The production company's own equipment, run like a library: stock, who has each item, for which production, and when it is due back.
 export function EquipmentAdmin() {
+  const { session } = useSession();
+  const role = useRole(session?.user.id);
+  const canManage = role.data === "producer" || role.data === "admin";
+  const stockQuery = useInventoryStock();
+  const stock = stockQuery.data ?? [];
   const { t } = useTranslation();
   const qc = useQueryClient();
   const items = useEquipmentItems().data ?? [];
   const checkouts = useEquipmentCheckouts().data ?? [];
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["equipment-items"] });
+    qc.invalidateQueries({ queryKey: ["inventory-stock"] });
     qc.invalidateQueries({ queryKey: ["equipment-checkouts"] });
   };
   const [newItem, setNewItem] = useState(blankItem);
@@ -38,11 +46,12 @@ export function EquipmentAdmin() {
   const [draft, setDraft] = useState(blankItem);
   const [checkoutFor, setCheckoutFor] = useState<EquipmentItem | null>(null);
   const [search, setSearch] = useState("");
-  const [openCategories, setOpenCategories] = useState<Set<string>>(new Set());
+  const [openCategories, setOpenCategories] = useState<Set<string>>(new Set(EQUIPMENT_CATEGORIES));
   const toggleCategory = (c: string) => setOpenCategories((prev) => { const n = new Set(prev); if (n.has(c)) n.delete(c); else n.add(c); return n; });
 
-  const outNow = (itemId: string) => checkouts.filter((c) => c.item_id === itemId && !c.returned_at);
-  const qtyOut = (itemId: string) => outNow(itemId).reduce((sum, c) => sum + c.quantity, 0);
+  const outNow = (itemId: string) => checkouts.filter((c) => c.item_id === itemId && isOutNow(c));
+  const qtyOut = (itemId: string) => stock.find((c) => c.item_id === itemId)?.collected ?? 0;
+  const reserved = (itemId: string) => stock.find((c) => c.item_id === itemId)?.reserved ?? 0;
   const shown = items.filter((it) => !search.trim() || `${it.name} ${it.category}`.toLowerCase().includes(search.trim().toLowerCase()));
   const overdueCount = checkouts.filter(isOverdue).length;
   const categoriesShown = EQUIPMENT_CATEGORIES.filter((c) => shown.some((it) => it.category === c));
@@ -73,16 +82,16 @@ export function EquipmentAdmin() {
     if (error) { toast.error(friendlyError(error)); return; }
     refresh();
   }
-  async function markReturned(id: string) {
-    const { error } = await supabase.from("inventory_checkouts").update({ returned_at: todayYmd() }).eq("id", id);
+  async function changeState(id: string, state: string) {
+    const { error } = await supabase.from("inventory_checkouts").update({ request_state: state }).eq("id", id).select("id").single();
     if (error) { toast.error(friendlyError(error)); return; }
-    toast.success("Marked as returned");
+    toast.success("Inventory request updated");
     refresh();
   }
 
   return (
     <div className="space-y-5">
-      <Panel title={t("equipment.add")}>
+      {canManage && <Panel title={t("equipment.add")}>
         <div className="flex flex-wrap items-end gap-2 p-4">
           <input placeholder={t("equipment.name")} className={`${field} min-w-48 flex-1`} value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} />
           <select className={field} value={newItem.category} onChange={(e) => setNewItem({ ...newItem, category: e.target.value })} aria-label="Category">
@@ -93,8 +102,9 @@ export function EquipmentAdmin() {
           <input placeholder={t("checkout.notes")} className={`${field} min-w-48`} value={newItem.notes} onChange={(e) => setNewItem({ ...newItem, notes: e.target.value })} />
           <button onClick={addItem} className={addBtn}>{t("equipment.add")}</button>
         </div>
-      </Panel>
+      </Panel>}
 
+      {stockQuery.isError && <p role="alert" className="text-sm text-destructive">Inventory availability could not be loaded. Please retry before requesting equipment.</p>}
       <div className="flex items-center justify-between gap-2">
         <h2 className="font-display text-sm font-semibold uppercase tracking-wide text-primary">{t("equipment.inventory", { count: items.length })}</h2>
         <div className="relative">
@@ -158,11 +168,11 @@ export function EquipmentAdmin() {
                           </td>
                           <td className="px-4 py-2">{it.total_count}</td>
                           <td className="px-4 py-2">{out}</td>
-                          <td className={`px-4 py-2 font-semibold ${it.total_count - out > 0 ? "text-success" : "text-destructive"}`}>{it.total_count - out}</td>
+                          <td className={`px-4 py-2 font-semibold ${it.total_count - reserved(it.id) > 0 ? "text-success" : "text-destructive"}`}>{it.total_count - reserved(it.id)}</td>
                           <td className="px-4 py-2"><div className="flex gap-3 whitespace-nowrap">
-                            <button disabled={it.total_count - out <= 0} onClick={() => setCheckoutFor(it)} className="text-xs font-semibold text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline">{t("equipment.checkout")}</button>
-                            <button onClick={() => startEdit(it)} className="text-xs text-primary hover:underline">{t("common.edit")}</button>
-                            <button onClick={() => removeItem(it)} className="text-xs text-destructive hover:underline">{t("common.delete")}</button>
+                            <button disabled={!stockQuery.isSuccess || it.total_count - reserved(it.id) <= 0} onClick={() => setCheckoutFor(it)} className="text-xs font-semibold text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline">Request equipment</button>
+                            {canManage && <><button onClick={() => startEdit(it)} className="text-xs text-primary hover:underline">{t("common.edit")}</button>
+                            <button onClick={() => removeItem(it)} className="text-xs text-destructive hover:underline">{t("common.delete")}</button></>}
                           </div></td>
                         </tr>
                       );
@@ -179,7 +189,7 @@ export function EquipmentAdmin() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-left text-[11px] text-muted-foreground">
-              <tr><th className="px-4 py-2">Item</th><th className="px-4">Qty</th><th className="px-4">Who</th><th className="px-4">Production</th><th className="px-4">Out</th><th className="px-4">Due back</th><th className="px-4">Status</th><th className="px-4" /></tr>
+              <tr><th className="px-4 py-2">Item</th><th className="px-4">Qty</th><th className="px-4">Who</th><th className="px-4">Production</th><th className="px-4">Collection date</th><th className="px-4">Due back</th><th className="px-4">Status</th><th className="px-4" /></tr>
             </thead>
             <tbody>
               {checkouts.map((c) => (
@@ -193,9 +203,13 @@ export function EquipmentAdmin() {
                   <td className="whitespace-nowrap px-4">
                     {c.returned_at
                       ? <span className="text-success">Returned {ymdLabel(c.returned_at)}</span>
-                      : isOverdue(c) ? <span className="font-semibold text-destructive">Overdue</span> : <span className="text-primary">Out</span>}
+                      : isOverdue(c) ? <span className="font-semibold text-destructive">Overdue</span> : <span className="text-primary">{LOAN_STATES[c.request_state]}</span>}
                   </td>
-                  <td className="px-4">{!c.returned_at && <button onClick={() => markReturned(c.id)} className="whitespace-nowrap text-xs font-semibold text-primary hover:underline">Mark returned</button>}</td>
+                  <td className="px-4">{canManage && <div className="flex gap-3 whitespace-nowrap">
+                    {c.request_state === "requested" && <><button onClick={() => changeState(c.id, "approved")} className="text-xs font-semibold text-primary">Approve</button><button onClick={() => changeState(c.id, "declined")} className="text-xs text-destructive">Decline</button></>}
+                    {c.request_state === "approved" && <button onClick={() => changeState(c.id, "collected")} className="text-xs font-semibold text-primary">Mark collected</button>}
+                    {c.request_state === "collected" && <button onClick={() => changeState(c.id, "returned")} className="text-xs font-semibold text-primary">Mark returned</button>}
+                    </div>}</td>
                 </tr>
               ))}
               {checkouts.length === 0 && <tr><td colSpan={8} className="px-4 py-6 text-center text-muted-foreground">Nothing has been checked out yet.</td></tr>}
@@ -205,7 +219,7 @@ export function EquipmentAdmin() {
       </Panel>
 
       {checkoutFor && (
-        <CheckoutDialog item={checkoutFor} free={checkoutFor.total_count - qtyOut(checkoutFor.id)} onClose={() => setCheckoutFor(null)} onDone={refresh} />
+        <CheckoutDialog item={checkoutFor} free={Math.max(0, checkoutFor.total_count - reserved(checkoutFor.id))} onClose={() => setCheckoutFor(null)} onDone={refresh} />
       )}
     </div>
   );
@@ -213,6 +227,10 @@ export function EquipmentAdmin() {
 
 function CheckoutDialog({ item, free, onClose, onDone }: { item: EquipmentItem; free: number; onClose: () => void; onDone: () => void }) {
   const { t } = useTranslation();
+  const { session } = useSession();
+  const role = useRole(session?.user.id);
+  const canManage = role.data === "producer" || role.data === "admin";
+  const myCrewId = useMyCrewId(role.data === "crew").data;
   const productions = useProductions().data ?? [];
   const crew = useCrew().data ?? [];
   const [f, setF] = useState({ quantity: "1", who: "", productionId: "", outAt: todayYmd(), dueAt: "" });
@@ -227,20 +245,23 @@ function CheckoutDialog({ item, free, onClose, onDone }: { item: EquipmentItem; 
 
   async function submit() {
     const quantity = Math.floor(Number(f.quantity));
-    if (!f.who.trim()) { toast.error(t("checkout.whoRequired")); return; }
+    if (canManage && !f.who.trim()) { toast.error(t("checkout.whoRequired")); return; }
     if (!quantity || quantity < 1 || quantity > free) { toast.error(t("checkout.quantityError", { maximum: free })); return; }
+    if (!f.productionId || !f.outAt) { toast.error("Select a production and collection date"); return; }
     if (!f.dueAt) { toast.error(t("checkout.dueRequired")); return; }
     if (f.dueAt < f.outAt) { toast.error(t("checkout.dateError")); return; }
     setBusy(true);
-    // If the name matches a known crew member, link them so the due-back notification can reach them directly.
-    const matchedCrew = crew.find((c) => c.name.trim().toLowerCase() === f.who.trim().toLowerCase());
+    // Link the selected crew account so approval and collection notifications reach the recipient.
+    const matchedCrew = crew.find((c) => c.id === f.who);
+    const crewId = canManage ? matchedCrew?.id : myCrewId;
+    if (!crewId) { setBusy(false); toast.error("Select a crew member with a linked app account"); return; }
     const { error } = await supabase.from("inventory_checkouts").insert({
-      item_id: item.id, quantity, checked_out_to: f.who.trim(), checked_out_crew_id: matchedCrew?.id ?? null, production_id: f.productionId || null,
+      item_id: item.id, quantity, checked_out_to: matchedCrew?.name ?? session?.user.email ?? "Crew member", checked_out_crew_id: crewId, production_id: f.productionId || null,
       checked_out_at: f.outAt, expected_return_at: f.dueAt,
     });
     setBusy(false);
     if (error) { toast.error(friendlyError(error)); return; }
-    toast.success(t("checkout.success", { item: item.name, name: f.who.trim() }));
+    toast.success("Equipment requested. Awaiting producer approval.");
     onDone();
     onClose();
   }
@@ -249,30 +270,31 @@ function CheckoutDialog({ item, free, onClose, onDone }: { item: EquipmentItem; 
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{t("checkout.title", { item: item.name })}</DialogTitle>
+          <DialogTitle>Request equipment: {item.name}</DialogTitle>
           <DialogDescription>{t("checkout.availability", { free, total: item.total_count })}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-3">
-          <label className="block"><span className="text-xs text-muted-foreground">{t("checkout.who")}</span>
-            <input list="equipment-who" className={`${field} mt-1 w-full`} placeholder={t("checkout.person")} value={f.who} onChange={(e) => setF({ ...f, who: e.target.value })} />
-            <datalist id="equipment-who">{crew.map((c) => <option key={c.id} value={c.name} />)}</datalist></label>
+          {canManage && <label className="block"><span className="text-xs text-muted-foreground">Crew member</span>
+            <select required className={`${field} mt-1 w-full border-primary`} value={f.who} onChange={(e) => setF({ ...f, who: e.target.value })}>
+              <option value="">Select crew member</option>{crew.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select></label>}
           <label className="block"><span className="text-xs text-muted-foreground">{t("checkout.production")}</span>
-            <select className={`${field} mt-1 w-full`} value={f.productionId} onChange={(e) => chooseProduction(e.target.value)}>
-              <option value="">{t("checkout.noProduction")}</option>
+            <select required className={`${field} mt-1 w-full border-primary`} value={f.productionId} onChange={(e) => chooseProduction(e.target.value)}>
+              <option value="">Select production</option>
               {[...productions].sort((a, b) => a.name.localeCompare(b.name)).map((p) => <option key={p.id} value={p.id}>{p.name}{p.date ? ` · ${p.date}` : ""}</option>)}
             </select></label>
           <div className="grid grid-cols-3 gap-3">
             <label className="block"><span className="text-xs text-muted-foreground">{t("checkout.quantity")}</span>
-              <input type="number" min="1" max={free} className={`${field} mt-1 w-full`} value={f.quantity} onChange={(e) => setF({ ...f, quantity: e.target.value })} /></label>
-            <label className="col-span-2 block"><span className="text-xs text-muted-foreground">{t("checkout.outDate")}</span>
-              <input type="date" className={`${field} mt-1 w-full`} value={f.outAt} onChange={(e) => setF({ ...f, outAt: e.target.value })} /></label>
+              <input required type="number" min="1" max={free} className={`${field} mt-1 w-full border-primary`} value={f.quantity} onChange={(e) => setF({ ...f, quantity: e.target.value })} /></label>
+            <label className="col-span-2 block"><span className="text-xs text-muted-foreground">Collection date</span>
+              <input required type="date" className={`${field} mt-1 w-full border-primary`} value={f.outAt} onChange={(e) => setF({ ...f, outAt: e.target.value })} /></label>
           </div>
           <label className="block"><span className="text-xs text-muted-foreground">{t("checkout.dueDate")}</span>
-            <input type="date" min={f.outAt} className={`${field} mt-1 w-full`} value={f.dueAt} onChange={(e) => setF({ ...f, dueAt: e.target.value })} /></label>
+            <input required type="date" min={f.outAt} className={`${field} mt-1 w-full border-primary`} value={f.dueAt} onChange={(e) => setF({ ...f, dueAt: e.target.value })} /></label>
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose}>{t("common.cancel")}</Button>
-          <Button type="button" onClick={submit} disabled={busy}>{busy ? t("recovery.saving") : t("equipment.checkout")}</Button>
+          <Button type="button" onClick={submit} disabled={busy}>{busy ? t("recovery.saving") : "Request equipment"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
