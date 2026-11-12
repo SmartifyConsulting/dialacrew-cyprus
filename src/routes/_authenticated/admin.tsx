@@ -12,6 +12,7 @@ import { useRole, useSession } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { zar } from "@/lib/demo-data";
 import { DocumentChecklistsAdmin } from "@/components/admin/DocumentChecklistsAdmin";
+import { RefeaturePricing } from "@/components/admin/RefeaturePricing";
 import { PostRulesAdmin } from "@/components/admin/PostRulesAdmin";
 import { EquipmentAdmin } from "@/components/admin/EquipmentAdmin";
 import { CountriesAdmin } from "@/components/admin/CountriesAdmin";
@@ -178,6 +179,7 @@ const ADMIN_GROUPS = [
   { name: "Disputes", tabs: ["Disputes"] },
   { name: "Reviews", tabs: ["Reviews"] },
   { name: "Templates", tabs: ["Checklists", "Post Rules"] },
+  { name: "Pricing", tabs: ["Pricing"] },
 ] as const;
 // Producers get everything Super Admin has, except Platform Management (super-admin only) and
 // with the raw Crew roster swapped for Crew Types — producers group crew into reusable, typed
@@ -236,7 +238,7 @@ function AdminPage() {
       <nav className="mb-1 flex gap-1 overflow-x-auto border-b border-border">
         {groups.map((g) => (
           <button key={g.name} onClick={() => selectGroup(g)}
-            className={`whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-semibold ${group === g.name ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>{translate(`adminNav.labels.${g.name}`)}</button>
+            className={`whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-semibold ${group === g.name ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>{translate(`adminNav.labels.${g.name}`, g.name)}</button>
         ))}
       </nav>
       <nav className="mb-5 flex gap-1 overflow-x-auto">
@@ -250,6 +252,7 @@ function AdminPage() {
       {tab === "Companies" && <CompaniesTab />}
       {tab === "Equipment" && <EquipmentAdmin />}
       {tab === "Post Rules" && <PostRulesAdmin />}
+      {tab === "Pricing" && isSuperAdmin && <RefeaturePricing />}
       {tab === "Disputes" && <DisputesTab />}
       {tab === "Reviews" && <ReviewsTab />}
       {tab === "Subscriptions" && <SubscriptionsTab />}

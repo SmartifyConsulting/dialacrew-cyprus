@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import { CrewRefeature } from "@/components/CrewRefeature";
 import { AiBalance } from "@/components/site/AiBalance";
 import { useCountries } from "@/lib/use-countries";
 import { Eye, EyeOff } from "lucide-react";
@@ -27,6 +28,7 @@ export function AccountSettings({ userId, email, embedded = false }: { userId: s
       <BillingPanel userId={userId} embedded={embedded} />
       <SignInPanel email={email} embedded={embedded} />
       {userId === session?.user.id && <div className="lg:col-span-2"><AiBalance currency={currency} embedded={embedded} showLedger /></div>}
+      <div className="lg:col-span-2"><CrewRefeature /></div>
       <div className="lg:col-span-2"><DangerPanel embedded={embedded} /></div>
     </div>
   );

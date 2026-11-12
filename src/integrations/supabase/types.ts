@@ -4164,6 +4164,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      buy_crew_refeature: { Args: { p_operation: string; p_expected_price_micros: number }; Returns: string }
       crew_travel_status: { Args: { p_ids: string[]; p_on?: string }; Returns: { crew_id: string; passport_status: string; featured_at: string | null }[] }
       inventory_stock: { Args: Record<PropertyKey, never>; Returns: { item_id: string; reserved: number; collected: number }[] }
       accept_booking_with_terms: {
