@@ -200,8 +200,8 @@ type MiniCalItem = { id: string; color: string; client: string; name: string; lo
 function CalPop({ label, align, trigger, children }: { label: string; align: "left" | "center" | "right"; trigger: React.ReactNode; children: React.ReactNode }) {
   const pos = align === "left" ? "left-0" : align === "right" ? "right-0" : "left-1/2 -translate-x-1/2";
   return (
-    <span className="group relative inline-flex">
-      <button type="button" aria-label={label} className="inline-flex cursor-pointer items-center rounded-sm outline-none focus-visible:ring-1 focus-visible:ring-ring">{trigger}</button>
+    <span className="group relative inline-flex min-w-0 max-w-full">
+      <button type="button" aria-label={label} className="inline-flex min-w-0 max-w-full cursor-pointer items-center rounded-sm outline-none focus-visible:ring-1 focus-visible:ring-ring">{trigger}</button>
       <span className={`pointer-events-none absolute top-full z-20 mt-1 hidden w-max max-w-56 rounded-xl border border-border bg-card px-3 py-1.5 text-left text-xs font-medium text-foreground shadow-lg group-focus-within:block group-hover:block ${pos}`}>{children}</span>
     </span>
   );
@@ -268,7 +268,7 @@ function MiniCalendar({ productions, bookings }: { productions: Production[]; bo
                 <span className="flex min-h-3.5 max-w-full flex-wrap items-center justify-center gap-0.5">
                   {items.map((item) => (
                     <CalPop key={item.id} label={`${item.client} · ${item.name} · ${item.location} · ${item.time}`} align={align}
-                      trigger={<span className={`max-w-full truncate rounded-sm px-1 py-0.5 text-[9px] font-semibold leading-none ${item.kind === "shoot" ? item.color : EVENT_CHIP[item.kind]}`}>{item.kind === "recce" ? `${t("dashboard.recce")}${item.time.startsWith("Time TBC") ? "" : ` ${item.time.split(" · ")[0]}`}` : item.kind === "gear" ? t("dashboard.gear") : `${item.client} · ${item.name}`}</span>}>
+                      trigger={<span className={`max-w-full truncate rounded-sm px-1 py-0.5 text-[9px] font-semibold leading-none ${item.kind === "shoot" ? item.color : EVENT_CHIP[item.kind]}`}>{item.kind === "recce" ? `${t("dashboard.recce")}${item.time.startsWith("Time TBC") ? "" : ` ${item.time.split(" · ")[0]}`}` : item.kind === "gear" ? t("dashboard.gear") : item.client}</span>}>
                       {item.client} · {item.name} · {item.location} · {item.time}
                       {item.details && <span className="mt-1 block whitespace-pre-line font-normal text-muted-foreground">{item.details}</span>}
                     </CalPop>
