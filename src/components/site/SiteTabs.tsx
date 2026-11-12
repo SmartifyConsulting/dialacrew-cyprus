@@ -982,6 +982,7 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
   const overviewBookings = useBookings().data ?? [];
   const canSeeRecceAddress = isProducer || overviewBookings.some((booking) => booking.productionId === p.id && booking.crewId === myCrewId && ["confirmed", "in_progress", "awaiting_review", "payment_released", "completed"].includes(booking.status));
   const [summary, setSummary] = useState(p.summary ?? "");
+  const [passportRequirements, setPassportRequirements] = useState(p.passportRequirements ?? "");
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const updateSummary = (value: string) => { setSummary(value); setDirty(true); };
@@ -1032,7 +1033,11 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
                 if (error) { toast.error(friendlyError(error)); return; } inv(["productions"]);
               }}><option value="no">No</option><option value="yes">Yes</option></select>
             </label>
-            {p.travelRequired && <p className="text-xs text-muted-foreground">Travel costs are recorded in Budget for each crew booking.</p>}
+            {p.travelRequired && <>
+              <label className="block text-xs">Passport / destination requirements<textarea rows={3} value={passportRequirements} readOnly={!isProducer} onChange={e => setPassportRequirements(e.target.value)} className={`${input} mt-1 w-full`} placeholder="Destination, passport validity, visas and travel dates" /></label>
+              {isProducer && <button type="button" className={btn} onClick={async () => { const { error } = await supabase.from("productions").update({ passport_requirements: passportRequirements.trim() }).eq("id",p.id).select("id").single(); if(error){toast.error(friendlyError(error));return;} inv(["productions"]);toast.success("Travel requirements saved"); }}>Save travel requirements</button>}
+              <p className="text-xs text-muted-foreground">Crew remain selectable if a passport is missing or expired. Check destination entry rules before booking travel. Travel costs are recorded in Budget.</p>
+            </>}
           </div>
         </Panel>
       ) },

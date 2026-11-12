@@ -2909,6 +2909,7 @@ export type Database = {
       productions: {
         Row: {
           travel_required: boolean
+          passport_requirements: string
           address: string
           budget: number
           client: string
@@ -2950,6 +2951,7 @@ export type Database = {
         }
         Insert: {
           travel_required?: boolean
+          passport_requirements?: string
           address?: string
           budget?: number
           client: string
@@ -2991,6 +2993,7 @@ export type Database = {
         }
         Update: {
           travel_required?: boolean
+          passport_requirements?: string
           address?: string
           budget?: number
           client?: string
@@ -4157,6 +4160,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      crew_travel_status: { Args: { p_ids: string[]; p_on?: string }; Returns: { crew_id: string; passport_status: string; featured_at: string | null }[] }
       inventory_stock: { Args: Record<PropertyKey, never>; Returns: { item_id: string; reserved: number; collected: number }[] }
       accept_booking_with_terms: {
         Args: { p_booking_id: string; p_terms_version: string }

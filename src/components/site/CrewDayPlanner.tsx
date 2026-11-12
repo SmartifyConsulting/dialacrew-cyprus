@@ -1,3 +1,4 @@
+import { CrewPassportBadge, PassportBadge, useCrewTravelStatus } from "@/components/PassportStatus";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { CREW_COUNTRIES, matchesCountry, productionCountry, setCrewCountryFilter, useCrewCountryFilter } from "@/lib/crew-country";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -50,7 +51,8 @@ function toCandidates(list: RawCandidate[], filter: string, local: string): Cand
 const onlyAvailable = (l: Candidate[]) => l.filter((c) => !c.unavailable);
 const UnavailableTag = () => <span className="mt-0.5 inline-block rounded-full bg-destructive/15 px-1.5 py-0.5 text-[10px] font-semibold text-destructive">Unavailable · reschedule shoot?</span>;
 
-function CandidatePopover({ candidates, onSelect, currency }: { candidates: Candidate[]; onSelect: (c: Candidate) => void; currency?: string | undefined }) {
+function CandidatePopover({ candidates, onSelect, currency, passportDate }: { candidates: Candidate[]; onSelect: (c: Candidate) => void; currency?: string | undefined; passportDate?: string | undefined }) {
+  const passports = useCrewTravelStatus(passportDate ? candidates.map(c => c.id) : [], passportDate);
   return (
     <div className="absolute right-0 top-full z-20 mt-1 w-64 max-h-64 space-y-1 overflow-y-auto rounded-sm border border-border bg-card p-2 shadow-md">
       {candidates.map((c) => (
@@ -59,6 +61,7 @@ function CandidatePopover({ candidates, onSelect, currency }: { candidates: Cand
             <span className="font-medium">{c.name}</span>{c.role && <span className="text-muted-foreground"> · {c.role}</span>}
             <span className="block text-muted-foreground">{fmtMoney(c.dayRate, currency)} / day · {c.country}</span>
             {c.unavailable && <UnavailableTag />}
+            {passportDate && <PassportBadge status={passports.data?.find(s => s.crew_id === c.id)?.passport_status} />}
           </span>
           <button onClick={() => { if (c.unavailable) toast.warning(`${c.name} is not free on these dates — you will need to reschedule the shoot.`); onSelect(c); }} className="shrink-0 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Select</button>
         </div>
@@ -250,7 +253,7 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
                       <span className="min-w-0 flex-1 text-xs text-muted-foreground">
                         {matches.length === 0 ? "Unassigned" : matches.map((m) => (
                           <span key={m.id} className="mr-3 inline-flex items-center gap-1">
-                            <span className="truncate">{m.name}</span>
+                            <span className="truncate">{m.name}{p.travelRequired && <CrewPassportBadge crewId={m.crewId} date={p.endDate || date} />}</span>
                             <button onClick={() => req.cancelPencil(m.id, m.name)} aria-label={`Remove ${m.name} from ${role}`} className="font-bold text-destructive">−</button>
                           </span>
                         ))}
@@ -263,7 +266,7 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
                           {matches.length === 0 ? <UserPlus className="h-3.5 w-3.5" /> : <ArrowLeftRight className="h-3.5 w-3.5" />}
                         </button>
                         {pickKey === s1Key && (
-                          <CandidatePopover currency={p.currency} candidates={s1Candidates(role, matches)}
+                          <CandidatePopover passportDate={p.travelRequired ? p.endDate || date : undefined} currency={p.currency} candidates={s1Candidates(role, matches)}
                             onSelect={(c) => { req.pencil(role, c.id, matches.map((m) => m.id)); setPickKey(null); }} />
                         )}
                       </div>
@@ -279,7 +282,7 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
                         <span className="min-w-0 flex-1 text-xs text-muted-foreground">
                           {assigned ? (
                             <span className="inline-flex items-center gap-1">
-                              <span className="truncate">{assigned.name}</span>
+                              <span className="truncate">{assigned.name}{p.travelRequired && <CrewPassportBadge crewId={assigned.id} date={p.endDate || date} />}</span>
                               <button onClick={() => sc.removeFromScenario(s, assigned.id, assigned.name)} aria-label={`Remove ${assigned.name} from ${role}`} className="font-bold text-destructive">−</button>
                             </span>
                           ) : "Unassigned"}
@@ -292,7 +295,7 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
                             {assigned ? <ArrowLeftRight className="h-3.5 w-3.5" /> : <UserPlus className="h-3.5 w-3.5" />}
                           </button>
                           {pickKey === key && (
-                            <CandidatePopover currency={p.currency} candidates={scCandidates(s, role, assigned?.id)}
+                            <CandidatePopover passportDate={p.travelRequired ? p.endDate || date : undefined} currency={p.currency} candidates={scCandidates(s, role, assigned?.id)}
                               onSelect={(c) => { sc.selectForRole(s, role, c.id, assigned?.id ?? null); setPickKey(null); }} />
                           )}
                         </div>

@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
-import { Heart, Trash2, Users } from "lucide-react";
+import { PassportBadge, useCrewTravelStatus } from "@/components/PassportStatus";
+import { Heart, Trash2, Users, Star } from "lucide-react";
 import { Page } from "@/components/AppShell";
 import { useRole, useSession } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -107,6 +108,7 @@ function CrewPage() {
   const role = useRole(session?.user.id);
   const isProducer = role.data === "producer" || (role.data as string) === "admin";
   const [q, setQ] = useState("");
+  const [viewMode, setViewMode] = useState<"cards" | "list">("cards");
   const [dept, setDept] = useState("All");
   const [availOnly, setAvailOnly] = useState(false);
   const localCountry = useVisitorCountry();
@@ -132,6 +134,7 @@ function CrewPage() {
   const search = useCrewSearch({ q, department: dept, country: countryCode, availableOnly: availOnly, favouritesOnly: favOnly, favouriteIds: favourites.data, page });
   const list = search.data?.rows ?? [];
   const total = search.data?.total ?? 0;
+  const travelStatus = useCrewTravelStatus(list.map(c => c.id));
 
   useEffect(() => { setPage(0); }, [q, dept, country, availOnly, favOnly]);
 
@@ -200,7 +203,8 @@ function CrewPage() {
           </div>
         )}
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div role="group" aria-label="Crew view" className="mb-3 flex gap-2"><button className={`rounded border px-3 py-1.5 text-xs ${viewMode === "cards" ? "bg-primary text-primary-foreground" : "border-border"}`} aria-pressed={viewMode === "cards"} onClick={() => setViewMode("cards")}>Cards</button><button className={`rounded border px-3 py-1.5 text-xs ${viewMode === "list" ? "bg-primary text-primary-foreground" : "border-border"}`} aria-pressed={viewMode === "list"} onClick={() => setViewMode("list")}>List</button></div>
+      <div className={viewMode === "list" ? "grid gap-2" : "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"}>
         {list.map((c) => {
           const isFav = (favourites.data ?? []).includes(c.id);
           const isPicked = picked.includes(c.id);
@@ -208,7 +212,7 @@ function CrewPage() {
             <div key={c.id} role="button" tabIndex={0}
               onClick={() => picking ? setPicked((s) => isPicked ? s.filter((x) => x !== c.id) : [...s, c.id]) : setOpen(c)}
               onKeyDown={(e) => e.key === "Enter" && (picking ? setPicked((s) => isPicked ? s.filter((x) => x !== c.id) : [...s, c.id]) : setOpen(c))}
-              className={`cursor-pointer rounded-xl border bg-card p-4 shadow-sm transition ${picking ? (isPicked ? "border-primary bg-primary/5" : "border-border hover:border-primary") : "border-border hover:border-primary"}`}>
+              className={`cursor-pointer rounded-xl border bg-card p-4 shadow-sm transition ${viewMode === "list" ? "sm:grid sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:items-center sm:gap-6" : ""} ${picking ? (isPicked ? "border-primary bg-primary/5" : "border-border hover:border-primary") : "border-border hover:border-primary"}`}>
               <div className="flex items-start gap-3">
                 {picking && <input type="checkbox" checked={isPicked} onChange={() => {}} className="mt-1 h-4 w-4 accent-primary" />}
                 <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-primary/10 font-display text-lg font-bold text-primary">
@@ -227,8 +231,9 @@ function CrewPage() {
               </div>
               <div className="mt-3 flex items-center justify-between">
                 <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${c.available ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>● {t(c.available ? "directory.available" : "payments.stage.Booked")}</span>
-                <span className="text-xs text-muted-foreground">★ {c.rating}</span>
+                <span className="flex items-center gap-1 text-xs text-muted-foreground"><Star aria-label={travelStatus.data?.find(s => s.crew_id === c.id)?.featured_at ? "Featured crew member" : "Rating"} className={travelStatus.data?.find(s => s.crew_id === c.id)?.featured_at ? "h-5 w-5 fill-black stroke-[#D4AF37] stroke-2" : "h-4 w-4"} /> {c.rating}</span>
               </div>
+              <PassportBadge status={travelStatus.data?.find(s => s.crew_id === c.id)?.passport_status} />
               <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
                 <div className="text-sm"><span className="font-display text-lg font-semibold">{zar(c.dayRate)}</span><span className="text-muted-foreground"> /day</span></div>
                 {!picking && (
