@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import { TrialAccount } from "@/components/TrialAccount";
 import { CrewRefeature } from "@/components/CrewRefeature";
 import { AiBalance } from "@/components/site/AiBalance";
 import { useCountries } from "@/lib/use-countries";
@@ -25,6 +26,7 @@ export function AccountSettings({ userId, email, embedded = false }: { userId: s
   const currency = countries.find(c => c.code === profile.data?.country || c.name === profile.data?.country)?.currency ?? "USD";
   return (
     <div className={`grid lg:grid-cols-2 ${embedded ? "gap-0" : "gap-5"}`}>
+      <div className="lg:col-span-2"><TrialAccount /></div>
       <BillingPanel userId={userId} embedded={embedded} />
       <SignInPanel email={email} embedded={embedded} />
       {userId === session?.user.id && <div className="lg:col-span-2"><AiBalance currency={currency} embedded={embedded} showLedger /></div>}

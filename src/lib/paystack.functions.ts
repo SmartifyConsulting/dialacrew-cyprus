@@ -52,7 +52,7 @@ export const verifyGigCheckout = createServerFn({ method: "POST" })
     if (tx.status !== "success") throw new Error("The payment was not completed.");
     if (meta.user_id !== context.userId || meta.purpose !== "gig_secure") throw new Error("This payment doesn't belong to you.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: gig } = await supabaseAdmin.from("community_gigs").select("secure_fee, secured_by").eq("id", meta.gig_id).maybeSingle();
+    const { data: gig } = await context.supabase.from("community_gigs").select("secure_fee, secured_by").eq("id", meta.gig_id).maybeSingle();
     if (!gig) throw new Error("Gig not found");
     if (Number(tx.amount) < Math.round(Number(gig.secure_fee) * 100)) throw new Error("The amount paid is too low.");
     const auth = tx.authorization ?? {};
@@ -74,7 +74,7 @@ export const chargeGigPenalties = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ gigId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: gig } = await supabaseAdmin.from("community_gigs").select("posted_by").eq("id", data.gigId).maybeSingle();
+    const { data: gig } = await context.supabase.from("community_gigs").select("posted_by").eq("id", data.gigId).maybeSingle();
     if (!gig) throw new Error("Gig not found");
     const { data: pens } = await supabaseAdmin.from("gig_penalties").select("*").eq("gig_id", data.gigId).eq("status", "pending");
     let charged = 0, failed = 0;

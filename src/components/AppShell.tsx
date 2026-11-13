@@ -13,6 +13,7 @@ import { NativePushSession } from "@/components/NativePush";
 import { disableNativePush } from "@/lib/native-push";
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { TrialBanner } from "@/components/TrialAccount";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const navKeys: Record<string, string> = {
@@ -194,6 +195,7 @@ export function Page({ title, subtitle, actions, children, open, compact }: { ti
       <div className="md:pl-60">
       <main className={`mx-auto max-w-7xl px-4 pb-36 md:pb-6 ${compact ? "py-4 md:pt-6" : "py-8 md:pt-12"}`}>
         <RoleGate open={open}>
+          {!open && <TrialBanner />}
           <div className={`flex flex-wrap items-end justify-between gap-3 border-b border-border ${compact ? "mb-3 pb-2" : "mb-5 pb-4"}`}>
             <div>
               <h1 className={`font-sans font-bold normal-case tracking-tight text-foreground ${compact ? "text-xl md:text-2xl" : "text-3xl md:text-4xl"}`}>{titleKey ? t(`nav.${titleKey}`) : title}</h1>

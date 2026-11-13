@@ -3049,6 +3049,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_stage: "mvp" | "committed"
           avatar_url: string | null
           country: string | null
           created_at: string
@@ -3066,6 +3067,7 @@ export type Database = {
           whatsapp_number: string | null
         }
         Insert: {
+          account_stage?: "mvp" | "committed"
           avatar_url?: string | null
           country?: string | null
           created_at?: string
@@ -3083,6 +3085,7 @@ export type Database = {
           whatsapp_number?: string | null
         }
         Update: {
+          account_stage?: "mvp" | "committed"
           avatar_url?: string | null
           country?: string | null
           created_at?: string

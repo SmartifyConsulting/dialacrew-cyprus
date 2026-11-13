@@ -339,7 +339,7 @@ function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
     queryKey: ["admin-users"],
     queryFn: async () => {
       const [p, r, c] = await Promise.all([
-        supabase.from("profiles").select("id, email, full_name, suspended, created_at, social_opt_in, spotlight_featured_at, spotlight_links, avatar_url"),
+        supabase.from("profiles").select("id, email, full_name, account_stage, suspended, created_at, social_opt_in, spotlight_featured_at, spotlight_links, avatar_url"),
         supabase.from("user_roles").select("user_id, role"),
         supabase.from("crew_members").select("user_id, photo_url").not("user_id", "is", null),
       ]);
@@ -405,12 +405,12 @@ function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
                   {u.roles.map((r) => (
                     <span key={r} className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium capitalize ${ROLE_BADGE[r] ?? "bg-muted text-muted-foreground"}`}>
                       {t(`accountRoles.${r}`, r)}
-                      {(canManageAdmins || r !== "admin") && (
+                      {canManageAdmins && (
                         <button onClick={() => removeRole(u.id, r)} aria-label={`Remove ${r} role`} className="-mr-0.5 text-current opacity-60 hover:opacity-100">×</button>
                       )}
                     </span>
                   ))}
-                  {ROLES.filter((r) => !u.roles.includes(r)).length > 0 && (
+                  {canManageAdmins && ROLES.filter((r) => !u.roles.includes(r)).length > 0 && (
                     <select value="" onChange={(e) => { if (e.target.value) addRole(u.id, e.target.value as (typeof ROLES)[number]); }}
                       aria-label={`Add a role to ${u.full_name || u.email}`}
                       className="rounded-full border border-dashed border-border bg-transparent px-2.5 py-1 text-xs font-medium text-muted-foreground hover:border-primary hover:text-primary">
@@ -420,7 +420,7 @@ function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
                   )}
                 </div>
               </td>
-              <td className="px-4">{u.suspended ? <Badge>Declined</Badge> : <Badge>Confirmed</Badge>}</td>
+              <td className="px-4"><span className="mr-2 rounded bg-muted px-2 py-1 text-xs">{u.account_stage === "mvp" ? "MVP trial" : "Committed"}</span>{u.suspended ? <Badge>Declined</Badge> : <Badge>Confirmed</Badge>}</td>
               <td className="px-4"><button onClick={() => toggleSuspend(u.id, u.suspended)} className="text-xs text-primary hover:underline">{t(u.suspended ? "adminUsers.reactivate" : "adminUsers.suspend")}</button></td>
             </tr>
             );

@@ -36,3 +36,7 @@ See request-audit-2026-11-13.md for earlier omissions and verification limits. M
 - Follow-up: corrected legacy guidelines guard to allow owning producers; 0078 applied after rollback tests for owner permission and unauthorized denial. Added caller-session production visibility before privileged storyboard actions, including admin requests. TypeScript and 156 existing tests plus four access regression tests passed.
 - 0077 trial isolation remains a LOCAL DRAFT, NOT APPLIED. Existing isolation rollback matrix passed; further signup/imported crew and server entrypoint checks remain before activation. Do not describe MVP isolation as live.
 - Remaining: trial UI and final isolation matrix, shared searchable inputs/date pickers, full Greek/30-language coverage, provider/live end-to-end testing and public publishing verification.
+
+## MVP rollout
+
+0077 is now APPLIED after rollback tests for cross-account table/RPC/storage reads, foreign mutations, imported-email crew signup, self conversion and retained data. Existing seven accounts remain committed; future accounts default MVP. Added MVP banner, profile confirmation/commit preserving data, admin list flags; roles and billing remain separate. TypeScript, production build and all 160 tests passed. Caller-session visibility now precedes service reads on gig-payment completion/penalties as well as storyboard generation. Live signup/payment E2E remains unverified; no real fees or paid AI used.
