@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { assertProducerSiteMember } from "@/lib/storyboard-access";
 function session(visible: boolean, roles: { producer?: boolean; admin?: boolean; member?: boolean } = {}) {
- const db = { from: vi.fn(() => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: visible ? { id: "production" } : null, error: null }) }) }) })), rpc: vi.fn(async (fn: string, args: Record<string, unknown>) => ({ data: fn === "is_site_member" ? !!roles.member : args._role === "admin" ? !!roles.admin : !!roles.producer, error: null })) };
+ const db = { from: vi.fn(() => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: visible ? { id: "production" } : null, error: null }) }) }) })), rpc: vi.fn(async (fn: string, args: Record<string, unknown>) => ({ data: fn === "is_site_member" ? !!roles.member : args["_role"] === "admin" ? !!roles.admin : !!roles.producer, error: null })) };
  return { supabase: db, userId: "user" };
 }
 describe("storyboard privileged access", () => {
@@ -21,3 +21,4 @@ describe("storyboard privileged access", () => {
   await expect(assertProducerSiteMember(session(true, { producer: true }), "production")).rejects.toThrow("Not a member");
  });
 });
+
