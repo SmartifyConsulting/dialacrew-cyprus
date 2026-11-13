@@ -2,18 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-export async function assertProducerSiteMember(context: { supabase: unknown; userId: string }, productionId: string) {
-  const db = (context.supabase as { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> });
-  const rpc = (fn: string, args: Record<string, unknown>) => db.rpc(fn, args);
-  const [role, member, admin] = await Promise.all([
-    rpc("has_role", { _user_id: context.userId, _role: "producer" }),
-    rpc("is_site_member", { _prod: productionId }),
-    rpc("has_role", { _user_id: context.userId, _role: "admin" }),
-  ]);
-  if (role.error || member.error || admin.error) throw new Error("Could not verify access to this production");
-  if (!role.data && !admin.data) throw new Error("Only producers can use Storyboard Studio");
-  if (!member.data && !admin.data) throw new Error("Not a member of this production");
-}
+import { assertProducerSiteMember } from "./storyboard-access";
+export { assertProducerSiteMember } from "./storyboard-access";
 
 // Breaks a creative brief into a scene/shot list. Returns shots only — the client inserts them as
 // storyboard_shots rows (via the user's own session, so normal RLS applies to the write).

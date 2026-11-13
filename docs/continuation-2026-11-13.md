@@ -27,3 +27,12 @@ Georgia authorized completion of the entire request audit using Go, solo, withou
 ## Existing source of truth
 
 See request-audit-2026-11-13.md for earlier omissions and verification limits. Main remote is SmartifyConsulting/dialacrew-cyprus. Preserve the untracked searchable-select.tsx prototype until reviewed; never stage unrelated unfinished code blindly. Database project d42b3a01-4a4e-4c1d-b4f3-31f55ff96cf6 is confirmed Book a Crew.
+
+## Further completed batches
+
+- 6259001: passport requirements, status badges, crew card/list toggle and featured star; migration 0073 applied.
+- b44165f: producer post defaults/per-production selection and immutable production audit journal; 0074/0075 applied. Journal records changes from installation onward; historical changes cannot be reconstructed.
+- 736ada6: paid crew re-feature from AI balance with admin pricing; 0076 applied. Price defaults to disabled until configured. Rollback tests verified debit/idempotency; no real charge performed.
+- Follow-up: corrected legacy guidelines guard to allow owning producers; 0078 applied after rollback tests for owner permission and unauthorized denial. Added caller-session production visibility before privileged storyboard actions, including admin requests. TypeScript and 156 existing tests plus four access regression tests passed.
+- 0077 trial isolation remains a LOCAL DRAFT, NOT APPLIED. Existing isolation rollback matrix passed; further signup/imported crew and server entrypoint checks remain before activation. Do not describe MVP isolation as live.
+- Remaining: trial UI and final isolation matrix, shared searchable inputs/date pickers, full Greek/30-language coverage, provider/live end-to-end testing and public publishing verification.

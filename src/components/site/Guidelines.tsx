@@ -18,11 +18,13 @@ const DEFAULT_GUIDELINES = [
   "Be respectful — posts are visible to everyone on this job.",
 ].map((l) => `• ${l}`).join("\n");
 
-// Guidelines for posts on a job. Only admins can write them; producers can hide them from the job.
+// Production owners and admins manage the post rules for a job.
 export function Guidelines({ p, isProducer }: { p: Production; isProducer: boolean }) {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const { session } = useSession();
+  const role = useRole(session?.user.id);
+  const canManage = isProducer && (p.createdBy === session?.user.id || role.data === "admin");
   const settings = useQuery({ queryKey: ["producer-post-rules", p.createdBy], enabled: !!p.createdBy, queryFn: async () => { const { data, error } = await supabase.from("producer_post_rules").select("*").eq("producer_id",p.createdBy!).maybeSingle(); if(error)throw error;return data; } });
   const forced = !!settings.data?.apply_to_all && !!settings.data.rules.trim();
   const mode = p.postRulesMode ?? "custom";
@@ -32,6 +34,7 @@ export function Guidelines({ p, isProducer }: { p: Production; isProducer: boole
   const [busy, setBusy] = useState(false);
 
   async function save() {
+    if (!canManage || forced) return;
     setBusy(true);
     const { error } = await supabase.from("productions").update({ post_rules: text.trim() }).eq("id", p.id);
     setBusy(false);
@@ -42,6 +45,7 @@ export function Guidelines({ p, isProducer }: { p: Production; isProducer: boole
   }
 
   async function setHidden(hidden: boolean) {
+    if (!canManage || forced) return;
     const { error } = await supabase.from("productions").update({ post_rules_hidden: hidden }).eq("id", p.id);
     if (error) { toast.error(friendlyError(error)); return; }
     qc.invalidateQueries({ queryKey: ["productions"] });
@@ -54,9 +58,9 @@ export function Guidelines({ p, isProducer }: { p: Production; isProducer: boole
   const dismiss = () => { window.localStorage.setItem(dismissKey, "1"); setDismissed(true); };
 
   if (dismissed && !editing && !forced) return null;
-  if ((p.postRulesHidden || mode === "none") && !isProducer && !forced) return null;
+  if ((p.postRulesHidden || mode === "none") && !canManage && !forced) return null;
 
-  const hideToggle = isProducer && !forced && (
+  const hideToggle = canManage && !forced && (
     <button onClick={() => setHidden(!p.postRulesHidden)} className="text-xs font-semibold text-muted-foreground hover:text-foreground">
       {p.postRulesHidden ? t("guidelines.show") : t("guidelines.hide")}
     </button>
@@ -71,7 +75,7 @@ export function Guidelines({ p, isProducer }: { p: Production; isProducer: boole
     );
   }
 
-  if (editing && isProducer && !forced) {
+  if (editing && canManage && !forced) {
     return (
       <div className="space-y-2 rounded-sm border border-primary/40 bg-primary/5 p-4">
         <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("guidelines.title")}</div>
@@ -89,8 +93,8 @@ export function Guidelines({ p, isProducer }: { p: Production; isProducer: boole
       <div className="flex items-center justify-between gap-3">
         <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("guidelines.title")}</div>
         <div className="flex items-center gap-3">
-          {isProducer && !forced && mode === "custom" && <button onClick={() => { setText(p.postRules || DEFAULT_GUIDELINES); setEditing(true); }} className="text-xs font-semibold text-primary hover:underline">{t("common.edit")}</button>}
-          {isProducer && !forced && <select aria-label="Post rules source" value={mode} className="rounded border border-input bg-background p-1 text-xs" onChange={async e => { const { error } = await supabase.from("productions").update({ post_rules_mode:e.target.value, post_rules_hidden:false }).eq("id",p.id).select("id").single();if(error){toast.error(friendlyError(error));return;}qc.invalidateQueries({queryKey:["productions"]}); }}><option value="custom">This production's rules</option><option value="producer">Producer default</option><option value="none">No rules</option></select>}
+          {canManage && !forced && mode === "custom" && <button onClick={() => { setText(p.postRules || DEFAULT_GUIDELINES); setEditing(true); }} className="text-xs font-semibold text-primary hover:underline">{t("common.edit")}</button>}
+          {canManage && !forced && <select aria-label="Post rules source" value={mode} className="rounded border border-input bg-background p-1 text-xs" onChange={async e => { const { error } = await supabase.from("productions").update({ post_rules_mode:e.target.value, post_rules_hidden:false }).eq("id",p.id).select("id").single();if(error){toast.error(friendlyError(error));return;}qc.invalidateQueries({queryKey:["productions"]}); }}><option value="custom">This production's rules</option><option value="producer">Producer default</option><option value="none">No rules</option></select>}
           {forced && <span className="text-xs text-muted-foreground">Producer rules apply to all productions</span>}
           {hideToggle}
           {!forced && <button onClick={dismiss} className="text-xs font-semibold text-muted-foreground hover:text-foreground">Don't show again</button>}
