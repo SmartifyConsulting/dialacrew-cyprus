@@ -83,10 +83,10 @@ function BottomNav({ items }: { items: NavItem[] }) {
   const { t } = useTranslation();
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 bg-nav text-nav-foreground md:hidden" aria-label="Main menu">
-      <ul className="flex">
+      <ul className="flex min-w-0">
         {items.map((n) => (
-          <li key={n.label} className="flex-1">
-            <Link to={n.to} {...(n.hash ? { hash: n.hash } : {})} className={`flex flex-col items-center gap-1 py-5 font-sans text-sm font-medium text-nav-foreground/80`} activeProps={{ className: "!text-nav-foreground font-semibold" }}>
+          <li key={n.label} className="min-w-0 flex-1">
+            <Link to={n.to} {...(n.hash ? { hash: n.hash } : {})} className={`flex flex-col items-center gap-1 px-1 py-3 font-sans text-[10px] font-medium text-nav-foreground/80`} activeProps={{ className: "!text-nav-foreground font-semibold" }}>
               <n.icon className="h-[1.6rem] w-[1.6rem]" /><span className="max-w-full break-words text-center">{t(`nav.${navKeys[n.label]}`, { defaultValue: n.label })}</span>
             </Link>
           </li>
@@ -153,9 +153,9 @@ export function TopNav() {
       )}
       <header className={`relative z-30 ${signedIn ? "md:pl-60" : ""}`}>
         <div className={signedIn ? "bg-nav text-nav-foreground md:hidden" : "bg-nav text-nav-foreground"}>
-          <div className={`flex items-center gap-4 px-4 py-8 ${signedIn ? "" : "mx-auto max-w-7xl"}`}>
-            {signedIn && <Link to="/dashboard" className="shrink-0"><img src={navLogo} alt="Book a Crew" className="h-[7.5rem] w-auto rounded-lg object-contain" /></Link>}
-            <div className="ml-auto flex items-center gap-3">
+          <div className={`flex flex-wrap items-center gap-3 px-3 py-4 ${signedIn ? "" : "mx-auto max-w-7xl"}`}>
+            {signedIn && <Link to="/dashboard" className="shrink-0"><img src={navLogo} alt="Book a Crew" className="h-20 w-20 rounded-lg object-contain sm:h-24 sm:w-24" /></Link>}
+            <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-2">
               <ThemeToggle className="border-nav-foreground/30 bg-transparent text-nav-foreground" />
               <LanguageSwitcher compact className="border-nav-foreground/30 bg-transparent text-nav-foreground" />
               {signedIn && <NotificationBell userId={session.user.id} requireAcknowledgement={role.data === "crew"} />}

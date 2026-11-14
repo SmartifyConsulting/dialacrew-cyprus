@@ -57,7 +57,7 @@ export const startAiTopup = createServerFn({ method: "POST" }).middleware([requi
     if (!origin || !/^https?:\/\//.test(origin)) throw new Error("Payment return URL is not configured");
     const callback = data.productionId ? `${origin}/productions/${encodeURIComponent(data.productionId)}?tab=Storyboard&ai_topup=${reference}` : `${origin}/profile?tab=Account&ai_topup=${reference}`;
     const tx = await paystack("/transaction/initialize", { email, amount, currency: data.currency, reference, callback_url: callback, metadata: { purpose: "ai_balance", user_id: context.userId } });
-    if (!tx.authorization_url || new URL(tx.authorization_url).hostname !== "checkout.paystack.com") throw new Error("Invalid checkout destination");
+    if (!tx.authorization_url || new URL(tx.authorization_url).protocol !== "https:" || new URL(tx.authorization_url).hostname !== "checkout.paystack.com") throw new Error("Invalid checkout destination");
     return { url: tx.authorization_url, reference, amount, currency: data.currency };
   });
 
