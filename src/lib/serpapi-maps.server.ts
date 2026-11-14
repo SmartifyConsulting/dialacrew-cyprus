@@ -6,7 +6,12 @@ const fail = (error:string):SearchResult => ({provider:"serpapi",results:[],erro
 /** Google Maps search through SerpAPI. Credentials and provider raw errors stay server-side. */
 export async function serpMapsSearch(q:string,country?:string):Promise<SearchResult> {
  // Match the existing Book a Crew project secret; retain standard aliases for other environments.
- const key=[process.env["SERPAPI_AI_KEY"],process.env["SERPAPI_API_KEY"],process.env["SERP_API_KEY"]].map(value=>value?.trim()).find(Boolean) ?? "";
+ const configured=[
+  {name:"SERPAPI_AI_KEY",value:process.env["SERPAPI_AI_KEY"]},
+  {name:"SERPAPI_API_KEY",value:process.env["SERPAPI_API_KEY"]},
+  {name:"SERP_API_KEY",value:process.env["SERP_API_KEY"]},
+ ].find(item=>item.value?.trim());
+ const key=configured?.value?.trim() ?? "";
  if(!key)return fail("Maps search is not configured. Ask your administrator to add the SERPAPI_AI_KEY or SERPAPI_API_KEY server secret.");
  const region=country?.toUpperCase();
  const cacheKey=(region??"")+":"+q.trim().toLowerCase();const cached=cache.get(cacheKey);
@@ -22,7 +27,7 @@ export async function serpMapsSearch(q:string,country?:string):Promise<SearchRes
   const detail=typeof body?.error==="string"?body.error.toLowerCase():"";
   if(/run out|quota|searches.*(left|limit)|credits|allowance/.test(detail))return fail("The SerpAPI search allowance has been reached. Ask your administrator to review the plan or try again later.");
   if(/verif/.test(detail))return fail("SerpAPI requires account verification. Ask your administrator to complete verification in the SerpAPI dashboard.");
-  if(response.status===401 || /invalid.*key/.test(detail))return fail("SerpAPI rejected the configured key. Ask your administrator to replace the server secret with the current SerpAPI API key.");
+  if(response.status===401 || /invalid.*key/.test(detail))return fail(`SerpAPI rejected the key saved as ${configured?.name}. Ask your administrator to replace that secret with the current SerpAPI API key.`);
   if(response.status===403)return fail("SerpAPI denied access to Maps search. Ask your administrator to check that the key and SerpAPI account are active.");
   if(response.status===429)return fail("The SerpAPI search allowance has been reached. Ask your administrator to review the plan or try again later.");
   return fail("SerpAPI could not complete this Maps search. Please try again or ask your administrator to check the account.");
