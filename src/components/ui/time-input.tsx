@@ -209,6 +209,7 @@ export function DateTimeInput({
   className,
   ...props
 }: InputHTMLAttributes<HTMLInputElement>) {
+  const {t}=useTranslation();
   const saved = useRef<HTMLInputElement>(null);
   const [local, setLocal] = useState(String(defaultValue ?? ""));
   const raw = String(value ?? local);
@@ -236,7 +237,7 @@ export function DateTimeInput({
       <input ref={saved} type="hidden" name={name} value={raw} disabled={props.disabled} />
       <DateInput
         {...props}
-        aria-label={`${label} date`}
+        aria-label={`${label} ${t("dateTime.date",{defaultValue:"date"})}`}
         value={datePart}
         min={String(props.min ?? "").slice(0, 10) || undefined}
         max={String(props.max ?? "").slice(0, 10) || undefined}
@@ -246,7 +247,7 @@ export function DateTimeInput({
       <TimeInput
         {...props}
         id={props.id ? `${props.id}-time` : undefined}
-        aria-label={`${label} time`}
+        aria-label={`${label} ${t("dateTime.time",{defaultValue:"time"})}`}
         min={
           datePart === String(props.min ?? "").slice(0, 10)
             ? String(props.min).slice(11, 16)

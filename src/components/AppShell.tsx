@@ -19,7 +19,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 
 const navKeys: Record<string, string> = {
   Dashboard: "dashboard", Home: "home", Calendar: "calendar", Productions: "productions",
-  Crew: "crew", Payments: "payments", "Find Gigs": "findGigs", Earnings: "earnings",
+  Crew: "crew", Inventory: "inventory", Payments: "payments", "Find Gigs": "findGigs", Earnings: "earnings",
   Invoices: "invoices", Profile: "profile", "My Profile": "myProfile", Admin: "admin", "Post a Gig": "postGig", Reports: "reports",
 };
 

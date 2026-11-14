@@ -740,7 +740,9 @@
     "invoices": "Invoices",
     "profile": "Profile",
     "myProfile": "My Profile",
-    "admin": "Admin"
+    "admin": "Admin",
+    "inventory": "Inventory",
+    "reports": "Reports"
   },
   "continuation": {
     "trialBadge": "MVP trial",
@@ -881,6 +883,12 @@
     "show": "Show times",
     "showFor": "Show times for {{field}}",
     "times": "Times",
-    "placeholder": "Select time"
+    "placeholder": "Select time",
+    "date": "Date",
+    "time": "Time"
+  },
+  "theme": {
+    "light": "Switch to light mode",
+    "dark": "Switch to dark mode"
   }
 }
