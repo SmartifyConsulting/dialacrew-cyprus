@@ -28,3 +28,11 @@ Language work is paused in Git stash `Paused translation drafts while completing
 - Producer-side live checks: creation/update without autosave; location save/reopen, recce/calendar duplicate behavior, assignment/audit UI, document rename/move/bulk operations, inventory approve/collect, travel/passport presentation and post-rule controls.
 - Real notification delivery, Paystack payment/callback behavior and paid storyboard/PDF operations remain unverified. No real payment or external notification sent in this audit.
 - Verify latest synchronization and public deployment independently. Preview source was confirmed synced through b70ddd2 before this batch.
+
+## SerpAPI change requested by Georgia
+
+The shared authenticated address lookup now uses SerpAPI's Google Maps engine. Server secret names supported: SERPAPI_API_KEY or SERP_API_KEY. Direct Google Places is no longer called by geocodeSearch. Addresses and coordinate fields preserve the existing save contract; invalid/missing coordinates are excluded, and suggestions display full addresses. Successful repeated queries are cached for five minutes (maximum 100 entries per server instance). No key or raw provider errors are returned to the browser. Reference: https://serpapi.com/google-maps-api .
+
+All 181 tests, TypeScript and production build passed. Live SerpAPI verification is pending synchronization after this commit.
+
+Additional rollback tests passed: nested document folder rename/move, bulk file moves and deletes, cycle rejection, location updates and authenticated audit-edit rejection. No fixture changes persisted. The producer/admin preview session is active. Open/cancel of the new-production dialog was checked without saving. Public deployment 93d88961-44c1-4924-a671-9fa6d17dbadd reported completion in Lovable's publish panel before the SerpAPI change; that does not include this subsequent integration yet.

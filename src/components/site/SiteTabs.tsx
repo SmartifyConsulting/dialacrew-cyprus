@@ -109,9 +109,9 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder, cl
       try {
         const { results, error: searchError } = await search({ data: country ? { q: value, country } : { q: value } });
         if (!current) return;
-        setSuggestions(results.map((d) => ({ label: shortAddress(d.address, d.name, d.display_name), exactAddress: d.display_name, place: placeFromAddress(d.address, d.display_name.split(",")[0] ?? d.display_name), lat: d.lat, lon: d.lon })));
+        setSuggestions(results.map((d) => ({ label: Object.keys(d.address).length ? shortAddress(d.address, d.name, d.display_name) : [d.name,d.display_name].filter(Boolean).join(" — "), exactAddress: d.display_name, place: placeFromAddress(d.address, d.display_name.split(",")[0] ?? d.display_name), lat: d.lat, lon: d.lon })));
         setFailed(searchError ?? null);
-      } catch { if (current) { setSuggestions([]); setFailed("Could not reach Google Maps search. Check your connection and try again."); } }
+      } catch { if (current) { setSuggestions([]); setFailed("Could not reach Maps search. Check your connection and try again."); } }
       if (current) setLoading(false);
     }, 400);
     return () => { current = false; clearTimeout(t); };
@@ -150,7 +150,7 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder, cl
               {s.label}
             </button>
           ))}
-          {suggestions.length > 0 && <div className="border-t border-border px-3 py-2 text-xs text-muted-foreground">Powered by Google Maps</div>}
+          {suggestions.length > 0 && <div className="border-t border-border px-3 py-2 text-xs text-muted-foreground">Google Maps results via SerpAPI</div>}
         </div>
       )}
     </div>
