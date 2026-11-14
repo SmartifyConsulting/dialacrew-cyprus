@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -41,7 +42,7 @@ export function RecceSandbox({ p, date }: { p: Production; date: string }) {
     <h3 className="bg-primary px-4 py-3 font-semibold text-primary-foreground">Recce sandbox · {date} · {fmtMoney(recceCost(selection), p.currency)}</h3>
     <div className="space-y-3 p-4">
       <p className="text-xs text-muted-foreground">Select the crew needed for this recce and their recce-day rates. This is a planned expense, separate from shoot bookings. Save to include it in the crew budget.</p>
-      {plans.isError && <p role="alert">Could not load saved recce crew. <button className="underline" onClick={() => void plans.refetch()}>Try again</button></p>}
+      {plans.isError && <p role="alert">Could not load saved recce crew. <button className="underline" onClick={() => void plans.refetch()}><UiText k="library.retry" /></button></p>}
       <input aria-label="Search recce crew" placeholder="Search crew or role" className="w-full rounded border border-input bg-background p-2 text-sm" value={search} onChange={(e) => setSearch(e.target.value)} />
       <ul className="max-h-72 divide-y divide-border overflow-y-auto">
         {crew.filter((c) => [c.name, c.role].some((v) => v.toLowerCase().includes(search.toLowerCase()))).map((c) => <li key={c.id} className="flex items-center gap-3 py-2 text-sm">

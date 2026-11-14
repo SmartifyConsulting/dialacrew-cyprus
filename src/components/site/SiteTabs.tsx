@@ -1,4 +1,6 @@
 import { TimeInput } from "@/components/ui/time-input";
+import { UiText } from "@/components/UiText";
+
 import { DateInput } from "@/components/ui/date-input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { taskAssignees } from "@/lib/task-assignees";
@@ -52,8 +54,8 @@ function OvertimeApprovals({ production }: { production: string }) {
           <li key={r.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
             <div className="min-w-0 flex-1"><div className="font-semibold">{r.who}</div><div className="text-xs text-muted-foreground">{r.detail}</div></div>
             <span className="font-semibold">{zar(r.amount)}</span>
-            <button onClick={() => setState.mutate({ id: r.id, state: "Approved" })} className="rounded-md bg-success px-3 py-1.5 text-xs font-semibold text-white">Approve</button>
-            <button onClick={() => setState.mutate({ id: r.id, state: "Declined" })} className="rounded-md bg-[#DC143C] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#DC143C]/90">Decline</button>
+            <button onClick={() => setState.mutate({ id: r.id, state: "Approved" })} className="rounded-md bg-success px-3 py-1.5 text-xs font-semibold text-white"><UiText k="dashboard.approve" /></button>
+            <button onClick={() => setState.mutate({ id: r.id, state: "Declined" })} className="rounded-md bg-[#DC143C] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#DC143C]/90"><UiText k="dashboard.decline" /></button>
           </li>
         ))}
       </ul>
@@ -501,7 +503,7 @@ function LocationPoints({ p, isProducer, myCrewId }: Pick<Ctx, "p" | "isProducer
                 </div>
               )}
               <details className="group rounded-lg border border-border/70">
-                <summary className="cursor-pointer select-none px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/40">Photos</summary>
+                <summary className="cursor-pointer select-none px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/40"><UiText k="workspace.tabs.Photos" /></summary>
                 <div className="border-t border-border px-3 py-3"><LocationPhotos p={p} locationId={pt.id} isProducer={isProducer} /></div>
               </details>
               {isProducer && (<>
@@ -899,10 +901,10 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
                   {item.done
                     ? <span className="min-w-0 flex-1 space-y-1">
                         <span className="block w-fit rounded-full bg-success px-2 py-0.5 text-xs font-semibold text-white">{item.label}</span>
-                        {item.done_at && <span className="block text-[11px] text-muted-foreground">Done {when(item.done_at)}</span>}
+                        {item.done_at && <span className="block text-[11px] text-muted-foreground"><UiText k="calendar.done" />{" "}{when(item.done_at)}</span>}
                       </span>
                     : <span className="min-w-0 flex-1">{item.label}</span>}
-                  {isProducer && uploadingItem === item.id && <span className="text-xs text-muted-foreground">Uploading…</span>}
+                  {isProducer && uploadingItem === item.id && <span className="text-xs text-muted-foreground"><UiText k="files.uploading" /></span>}
                   {isProducer && uploadingItem !== item.id && (
                     <>
                       <label className="cursor-pointer text-muted-foreground hover:text-primary" aria-label={`Take photo for ${item.label}`}>
@@ -955,7 +957,7 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
           {isProducer && view === "Checklist" && (
             <form onSubmit={(e) => { e.preventDefault(); addItem(c.id, c.production_checklist_items.length); }} className="flex gap-2 border-t border-border p-3">
               <input className={`${input} flex-1`} placeholder="Add item…" value={newItem[c.id] ?? ""} onChange={(e) => setNewItem((prev) => ({ ...prev, [c.id]: e.target.value }))} />
-              <button type="submit" className={btn}>Add</button>
+              <button type="submit" className={btn}><UiText k="common.add" /></button>
             </form>
           )}
         </Panel>
@@ -1033,15 +1035,14 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
       { id: "travel", node: (
         <Panel title="Travel" collapsible defaultCollapsed>
           <div className="space-y-3 p-4 text-sm">
-            <label className="flex items-center justify-between gap-3">Travel required
-              <SearchableSelect aria-label="Travel required" disabled={!isProducer} className={input} value={p.travelRequired ? "yes" : "no"} onChange={async e => {
+            <label className="flex items-center justify-between gap-3"><UiText k="continuation.travel" /><SearchableSelect aria-label="Travel required" disabled={!isProducer} className={input} value={p.travelRequired ? "yes" : "no"} onChange={async e => {
                 const { error } = await supabase.from("productions").update({ travel_required: e.target.value === "yes" }).eq("id", p.id).select("id").single();
                 if (error) { toast.error(friendlyError(error)); return; } inv(["productions"]);
               }}><option value="no">No</option><option value="yes">Yes</option></SearchableSelect>
             </label>
             {p.travelRequired && <>
               <label className="block text-xs">Passport / destination requirements<textarea rows={3} value={passportRequirements} readOnly={!isProducer} onChange={e => setPassportRequirements(e.target.value)} className={`${input} mt-1 w-full`} placeholder="Destination, passport validity, visas and travel dates" /></label>
-              {isProducer && <button type="button" className={btn} onClick={async () => { const { error } = await supabase.from("productions").update({ passport_requirements: passportRequirements.trim() }).eq("id",p.id).select("id").single(); if(error){toast.error(friendlyError(error));return;} inv(["productions"]);toast.success("Travel requirements saved"); }}>Save travel requirements</button>}
+              {isProducer && <button type="button" className={btn} onClick={async () => { const { error } = await supabase.from("productions").update({ passport_requirements: passportRequirements.trim() }).eq("id",p.id).select("id").single(); if(error){toast.error(friendlyError(error));return;} inv(["productions"]);toast.success("Travel requirements saved"); }}><UiText k="continuation.saveTravel" /></button>}
               <p className="text-xs text-muted-foreground">Crew remain selectable if a passport is missing or expired. Check destination entry rules before booking travel. Travel costs are recorded in Budget.</p>
             </>}
           </div>
@@ -1235,10 +1236,8 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
           <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-2.5 text-xs">
             <label className="flex items-center gap-2 font-semibold">
               <input type="checkbox" className="h-4 w-4 accent-primary" checked={allSelected} aria-label="Select all crew for overtime"
-                onChange={(e) => setOtSelected(e.target.checked ? Object.fromEntries(eligible.map((m) => [m.crew_id, true])) : {})} />
-              Select all
-            </label>
-            <span className="text-muted-foreground">{selectedIds.length} selected</span>
+                onChange={(e) => setOtSelected(e.target.checked ? Object.fromEntries(eligible.map((m) => [m.crew_id, true])) : {})} /><UiText k="library.selectAll" /></label>
+            <span className="text-muted-foreground">{selectedIds.length}{" "}<UiText k="library.selected" /></span>
             <SearchableSelect value={otBulkShift} onChange={(e) => setOtBulkShift(e.target.value as "day" | "night")} className={input} aria-label="Overtime shift for selected crew">
               <option value="day">Day (1.5×)</option>
               <option value="night">Night (2×)</option>
@@ -1299,7 +1298,7 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
                   <div className="mr-auto flex items-center gap-1">
                     <span className="mr-1 text-xs font-medium text-muted-foreground">Attendance</span>
                     <button className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted" onClick={() => mark("in", m.crew_id, m.name)}>In</button>
-                    <button className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted" onClick={() => mark("out", m.crew_id, m.name)}>Out</button>
+                    <button className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted" onClick={() => mark("out", m.crew_id, m.name)}><UiText k="equipment.out" /></button>
                   </div>
                   <RequestOvertimeButton productionId={p.id} crewId={m.crew_id} live={liveRequest(overtime, m.crew_id)} />
                   <ProducerCrewEmergency crewId={m.crew_id} productionId={p.id} />
@@ -1472,7 +1471,7 @@ export function MessagesTab({ p, userId, myName }: Ctx & { bookings: Booking[]; 
       </div>
       <div className="flex gap-2">
         <textarea rows={2} className={`${input} flex-1`} placeholder="Call time, location, documents, changes…" value={body} onChange={(e) => setBody(e.target.value)} />
-        <button onClick={send} disabled={busy} className={btn}>Send</button>
+        <button onClick={send} disabled={busy} className={btn}><UiText k="common.send" /></button>
       </div>
     </div>
   );
@@ -1575,7 +1574,7 @@ export function RegisterTab({ p, isProducer, userId, myName, myCrewId }: Ctx) {
           <div className="flex flex-wrap items-center gap-3 p-4">
             <span className="text-sm">Status: <strong>{myLast?.kind === "in" ? "On site" : "Not checked in"}</strong></span>
             <button disabled={busy} onClick={() => selfMark("in")} className={`${btn} inline-flex items-center gap-1`}><LogIn className="h-4 w-4" /> Check in</button>
-            <button disabled={busy} onClick={() => selfMark("out")} className="inline-flex items-center gap-1 rounded-sm border border-border px-3 py-2 text-xs font-semibold"><LogOut className="h-4 w-4" /> Check out</button>
+            <button disabled={busy} onClick={() => selfMark("out")} className="inline-flex items-center gap-1 rounded-sm border border-border px-3 py-2 text-xs font-semibold"><LogOut className="h-4 w-4" />{" "}<UiText k="equipment.checkout" /></button>
             <label className="ml-auto flex items-center gap-2 text-sm"><input type="checkbox" className="accent-primary" checked={auto} disabled={!hasSite} onChange={(e) => setAuto(e.target.checked)} /> Automatic tracking while this page is open</label>
           </div>
           {pending > 0 && (
@@ -1589,7 +1588,7 @@ export function RegisterTab({ p, isProducer, userId, myName, myCrewId }: Ctx) {
       {p.status === "Active" && (
         <Panel title="Register — all ins and outs">
           <table className="w-full text-sm">
-            <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Time</th><th className="px-4">Member</th><th className="px-4">In/Out</th><th className="px-4">How</th><th className="px-4">Location</th></tr></thead>
+            <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Time</th><th className="px-4">Member</th><th className="px-4">In/Out</th><th className="px-4">How</th><th className="px-4"><UiText k="productionList.columns.Location" /></th></tr></thead>
             <tbody>
               {rows.length === 0 && <tr><td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">No entries yet.</td></tr>}
               {rows.map((r) => (
@@ -1641,7 +1640,7 @@ export function TasksTab({ p, userId, isProducer }: Ctx) {
   async function remove(id: string) { const { error } = await supabase.from("site_tasks").delete().eq("id", id); if (error) toast.error(friendlyError(error)); inv(["tasks", p.id]); }
   return (
     <Panel title={translate("workspace.tabs.Tasks")}>
-      {memberQuery.isError && <p role="alert" className="p-3 text-xs text-destructive">Could not load production members. <button className="underline" onClick={() => void memberQuery.refetch()}>Retry</button></p>}
+      {memberQuery.isError && <p role="alert" className="p-3 text-xs text-destructive">Could not load production members. <button className="underline" onClick={() => void memberQuery.refetch()}><UiText k="continuation.retry" /></button></p>}
       <div className="flex flex-wrap gap-2 border-b border-border p-4">
         <input className={`${input} min-w-56 flex-1`} placeholder={translate("tasks.new")} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} onKeyDown={(e) => e.key === "Enter" && add()} />
         <SearchableSelect className={input} value={f.crew} onChange={(e) => setF({ ...f, crew: e.target.value })}><option value="">{translate("tasks.unassigned")}</option>{members.map((m) => <option key={m.crew_id} value={m.crew_id}>{m.name} · {m.role}{m.user_id === userId ? ` (${translate("tasks.self")})` : ""}</option>)}</SearchableSelect>
@@ -1764,7 +1763,7 @@ export function CommercialsTab({ p, bookings, crewNames, requests }: Ctx & { boo
               </tr>
             ))}
             {extras.map((r, i) => (
-              <tr key={i} className="border-t border-border"><td className="px-4 py-2.5 font-medium">{r.kind}</td><td className="px-4 text-muted-foreground" colSpan={p.travelRequired ? 10 : 5}>{r.detail}</td><td className="px-4">{zar(r.amount)}</td><td className="px-4"><Badge>Approved</Badge></td></tr>
+              <tr key={i} className="border-t border-border"><td className="px-4 py-2.5 font-medium">{r.kind}</td><td className="px-4 text-muted-foreground" colSpan={p.travelRequired ? 10 : 5}>{r.detail}</td><td className="px-4">{zar(r.amount)}</td><td className="px-4"><Badge>approved</Badge></td></tr>
             ))}
           </tbody>
         </table>

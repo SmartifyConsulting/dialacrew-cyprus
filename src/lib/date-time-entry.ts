@@ -1,24 +1,27 @@
 import { format, isValid, parse } from "date-fns";
-import { enUS } from "date-fns/locale";
+import { el, enUS } from "date-fns/locale";
 
 export function parseDateEntry(text: string): string | null {
   if (!text.trim()) return "";
   if (
-    !/^(?:\d{4}-\d{2}-\d{2}|\d{1,2}-[a-zA-Z]{3}-\d{2}(?:\d{2})?|\d{1,2}\/\d{1,2}\/\d{2}(?:\d{2})?)$/.test(
+    !/^(?:\d{4}-\d{2}-\d{2}|\d{1,2}-\p{L}{3,6}-\d{2}(?:\d{2})?|\d{1,2}\/\d{1,2}\/\d{2}(?:\d{2})?)$/u.test(
       text.trim(),
     )
   )
     return null;
-  for (const pattern of ["yyyy-MM-dd", "d-MMM-yy", "d-MMM-yyyy", "d/M/yyyy", "d/M/yy"]) {
-    const date = parse(text.trim(), pattern, new Date(2026, 0, 1), { locale: enUS });
-    if (isValid(date) && date.getFullYear() >= 1900 && date.getFullYear() <= 2199)
-      return format(date, "yyyy-MM-dd");
-  }
+  for (const locale of [enUS, el])
+    for (const pattern of ["yyyy-MM-dd", "d-MMM-yy", "d-MMM-yyyy", "d/M/yyyy", "d/M/yy"]) {
+      const date = parse(text.trim(), pattern, new Date(2026, 0, 1), { locale });
+      if (isValid(date) && date.getFullYear() >= 1900 && date.getFullYear() <= 2199)
+        return format(date, "yyyy-MM-dd");
+    }
   return null;
 }
-export function displayDate(value: string): string {
+export function displayDate(value: string, language = "en"): string {
   const date = value ? new Date(value + "T00:00:00") : undefined;
-  return date && isValid(date) ? format(date, "dd-MMM-yy", { locale: enUS }) : value;
+  return date && isValid(date)
+    ? format(date, "dd-MMM-yy", { locale: language.startsWith("el") ? el : enUS })
+    : value;
 }
 export function parseTimeEntry(text: string): string | null {
   if (!text.trim()) return "";

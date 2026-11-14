@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -234,7 +235,7 @@ export function SoundDesignStudio({ p, isProducer }: { p: Production; isProducer
                 </label>
               ))}
               <div className="flex gap-2 pt-1">
-                <button onClick={addPicked} className={btn}>Add {picked.size} as drafts</button>
+                <button onClick={addPicked} className={btn}><UiText k="common.add" />{" "}{picked.size} as drafts</button>
                 <button onClick={() => setProposals(null)} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold">Dismiss</button>
               </div>
             </div>

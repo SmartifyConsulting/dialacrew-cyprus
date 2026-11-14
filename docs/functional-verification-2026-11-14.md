@@ -86,3 +86,10 @@ Secret metadata inspection (names only) found the project uses SERPAPI_AI_KEY. T
 - Published app now visibly runs the Outlook-style date/time controls from 9eb9cfa. A 390px browser check found header and bottom-navigation overflow; compact/wrapping layout repair is in this batch, awaiting live recheck.
 - Full suite before the extra insecure-checkout case: 205 tests passed; TypeScript passed. No production gig, document, booking, passport, invoice or storyboard fixture changes were retained.
 - Still open: app-integrated staging top-up-to-wallet browser round trip (provider checkout and ledger separately passed); actual paid AI/PDF and silent MP4 export; real device pushes; final mobile visual check; complete Greek and remaining languages. The OpenAI provider has no free sandbox; a test wallet alone does not eliminate provider usage costs.
+## Latest verification and account setup
+
+- The compact mobile header and bottom navigation fit the published 390px test viewport; Sign Out remains visible. Evidence: docs/verification/mobile-header-after.jpg.
+- Georgia confirmed the earlier account-name change is already in place; that item is closed.
+- The original translation stash has been restored into a reviewed incremental source batch while preserving newer Maps, Outlook controls, inventory labels and mobile layout fixes. Full suite passed 208 tests; production build passed. Final TypeScript run is checked separately.
+- OpenAI normal API key remains in Lovable; it cannot be retrieved from write-only secrets. Georgia approved up to USD 1 of synthetic AI tests and ultimately selected a separate producer test account using that server key. She asked us to create the user. Awaiting the destination email before account invitation/provisioning. No OpenAI provider test has run, no AI test funds added to her real account, and no key has been exposed.
+- Local ignored .env.paystack-test.local contains the Paystack sandbox key and an optional empty OpenAI test-key field. Do not read/print or commit secrets. Only test-mode Paystack was used.

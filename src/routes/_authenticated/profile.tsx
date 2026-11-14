@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -98,14 +99,14 @@ function AvatarCard({ userId, embedded = false }: { userId: string | undefined; 
           <div className="flex items-center gap-2">
             <input autoFocus className="min-w-0 flex-1 rounded-sm border border-input bg-background px-2 py-1 text-sm" value={name} onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") saveName(); if (e.key === "Escape") setEditingName(false); }} />
-            <button disabled={busy} onClick={saveName} className="rounded-sm bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground disabled:opacity-50">Save</button>
-            <button onClick={() => setEditingName(false)} className="text-xs font-semibold text-muted-foreground">Cancel</button>
+            <button disabled={busy} onClick={saveName} className="rounded-sm bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground disabled:opacity-50"><UiText k="common.save" /></button>
+            <button onClick={() => setEditingName(false)} className="text-xs font-semibold text-muted-foreground"><UiText k="common.cancel" /></button>
           </div>
         ) : (
           <>
             <div className="flex items-center gap-2">
               <span className="font-semibold">{me.data?.full_name || "Your profile"}</span>
-              <button onClick={() => { setName(me.data?.full_name ?? ""); setEditingName(true); }} className="text-xs font-semibold text-primary hover:underline">Edit</button>
+              <button onClick={() => { setName(me.data?.full_name ?? ""); setEditingName(true); }} className="text-xs font-semibold text-primary hover:underline"><UiText k="common.edit" /></button>
             </div>
             <div className="text-xs text-muted-foreground">Click the camera icon to update your profile picture.</div>
           </>
@@ -192,7 +193,7 @@ function CompanyPanel({ userId }: { userId: string | undefined }) {
     navigator.clipboard.writeText(url).then(() => toast.success("Invite link copied")).catch(() => toast.error("Could not copy — select and copy manually"));
   }
 
-  if (company.isLoading) return <Page open title="My Company"><p className="text-muted-foreground">Loading…</p></Page>;
+  if (company.isLoading) return <Page open title="My Company"><p className="text-muted-foreground"><UiText k="library.loading" /></p></Page>;
 
   if (!company.data) {
     return (
@@ -219,8 +220,7 @@ function CompanyPanel({ userId }: { userId: string | undefined }) {
           <Panel title="Invite a teammate">
             <div className="space-y-3 p-4">
               <input type="email" placeholder="teammate@company.com" className={field} value={email} onChange={(e) => setEmail(e.target.value)} />
-              <label className="block text-xs font-semibold text-muted-foreground">Role
-                <SearchableSelect required className={`${field} mt-1`} value={inviteRole} onChange={(e) => setInviteRole(e.target.value as (typeof ROLES)[number])}>
+              <label className="block text-xs font-semibold text-muted-foreground"><UiText k="common.role" /><SearchableSelect required className={`${field} mt-1`} value={inviteRole} onChange={(e) => setInviteRole(e.target.value as (typeof ROLES)[number])}>
                   {ROLES.map((r) => <option key={r} value={r}>{r === "other" ? "Other" : r.replace("_", " ").replace(/^./, (c) => c.toUpperCase())}</option>)}
                 </SearchableSelect>
               </label>
@@ -320,8 +320,8 @@ function TeamPanel({ companyId, canManage, domain }: { companyId: string; canMan
                   <div className="text-xs text-muted-foreground">{r.email} · {new Date(r.created_at).toLocaleDateString("en-ZA")}</div>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => decide(r.id, true)} className="rounded-sm bg-success px-3 py-2 text-xs font-semibold text-white hover:bg-success/90">Approve</button>
-                  <button onClick={() => decide(r.id, false)} className="rounded-sm bg-[#DC143C] px-3 py-2 text-xs font-semibold text-white hover:bg-[#DC143C]/90">Decline</button>
+                  <button onClick={() => decide(r.id, true)} className="rounded-sm bg-success px-3 py-2 text-xs font-semibold text-white hover:bg-success/90"><UiText k="dashboard.approve" /></button>
+                  <button onClick={() => decide(r.id, false)} className="rounded-sm bg-[#DC143C] px-3 py-2 text-xs font-semibold text-white hover:bg-[#DC143C]/90"><UiText k="dashboard.decline" /></button>
                 </div>
               </li>
             ))}

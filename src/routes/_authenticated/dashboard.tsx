@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { EVENT_CHIP, useCalendarEvents } from "@/lib/use-calendar-events";
 import { useTranslation } from "react-i18next";
 import type React from "react";
@@ -23,7 +24,7 @@ import { forecastSummary, useCalendarExtras, type DayShoot } from "@/lib/calenda
 function DashboardRouter() {
   const { session } = useSession();
   const role = useRole(session?.user.id);
-  if (role.isLoading) return <Page open title="Home"><p className="text-muted-foreground">Loading…</p></Page>;
+  if (role.isLoading) return <Page open title="Home"><p className="text-muted-foreground"><UiText k="library.loading" /></p></Page>;
   if (role.data === "crew") return <CrewDashboard />;
   if (role.data === "client") return <PendingGate><Dashboard /></PendingGate>;
   return <Dashboard />;
@@ -107,13 +108,13 @@ function CrewDashboard() {
             <div className="mt-3 font-display text-xl font-semibold">{pr?.name ?? "Production"}</div>
             <div className="text-sm text-muted-foreground">{pr?.client ?? ""}{pr?.client ? " · " : ""}{j.role}</div>
             <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-              <div><div className="text-xs text-muted-foreground">Date</div>{j.booking_date ?? "TBC"}{days > 1 ? ` · ${days} days` : ""}</div>
+              <div><div className="text-xs text-muted-foreground"><UiText k="productionList.columns.Date" /></div>{j.booking_date ?? "TBC"}{days > 1 ? ` · ${days} days` : ""}</div>
               <div><div className="text-xs text-muted-foreground">Where</div>{pr?.address || pr?.location || "TBC"}</div>
               <div><div className="text-xs text-muted-foreground">Day rate</div>{zar(rate)}</div>
               <div><div className="text-xs text-muted-foreground">Total</div><span className="font-semibold">{zar(rate * days)}</span></div>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2">
-              <button onClick={() => respond(j.id, false)} className="rounded-xl bg-[#DC143C] py-3 text-sm font-semibold text-white hover:bg-[#DC143C]/90">Decline</button>
+              <button onClick={() => respond(j.id, false)} className="rounded-xl bg-[#DC143C] py-3 text-sm font-semibold text-white hover:bg-[#DC143C]/90"><UiText k="dashboard.decline" /></button>
               <button onClick={() => respond(j.id, true)} className="rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground">Accept pencil</button>
             </div>
           </section>
@@ -130,7 +131,7 @@ function CrewDashboard() {
             <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
               <div><div className="text-xs opacity-60">Call</div><div className="font-display text-xl font-semibold">{todayJob.call_time?.slice(0, 5) ?? "TBC"}</div></div>
               <div><div className="text-xs opacity-60">Wrap</div><div className="font-display text-xl font-semibold">{todayJob.call_time ? `${String((Number(todayJob.call_time.slice(0, 2)) + 12) % 24).padStart(2, "0")}${todayJob.call_time.slice(2, 5)}` : "TBC"}</div></div>
-              <div><div className="text-xs opacity-60">Status</div><div className="font-semibold capitalize">{todayJob.status.replace(/_/g, " ")}</div></div>
+              <div><div className="text-xs opacity-60"><UiText k="productionList.columns.Status" /></div><div className="font-semibold capitalize">{todayJob.status.replace(/_/g, " ")}</div></div>
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               <Link to="/productions/$id" params={{ id: todayJob.production_id }} className="flex-1 rounded-xl bg-background py-3 text-center text-sm font-semibold text-foreground">Open job day</Link>
@@ -469,7 +470,7 @@ function PendingGate({ children }: { children: React.ReactNode }) {
     queryKey: ["my-join-request", uid], enabled: !!uid,
     queryFn: async () => { const { data } = await supabase.from("company_join_requests").select("status, companies(name)").eq("user_id", uid!).order("created_at", { ascending: false }).limit(1).maybeSingle(); return data; },
   });
-  if (req.isLoading) return <Page open title="Home"><p className="text-muted-foreground">Loading…</p></Page>;
+  if (req.isLoading) return <Page open title="Home"><p className="text-muted-foreground"><UiText k="library.loading" /></p></Page>;
   if (req.data && req.data.status !== "approved") {
     const name = (req.data.companies as { name?: string } | null)?.name ?? "your company";
     return (

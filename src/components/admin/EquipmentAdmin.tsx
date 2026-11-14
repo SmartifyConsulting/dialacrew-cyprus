@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { DateInput } from "@/components/ui/date-input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useQueryClient } from "@tanstack/react-query";
@@ -191,7 +192,7 @@ export function EquipmentAdmin() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-left text-[11px] text-muted-foreground">
-              <tr><th className="px-4 py-2">Item</th><th className="px-4">Qty</th><th className="px-4">Who</th><th className="px-4">Production</th><th className="px-4">Collection date</th><th className="px-4">Due back</th><th className="px-4">Status</th><th className="px-4" /></tr>
+              <tr><th className="px-4 py-2"><UiText k="equipment.item" /></th><th className="px-4">Qty</th><th className="px-4">Who</th><th className="px-4"><UiText k="productionList.columns.Production" /></th><th className="px-4">Collection date</th><th className="px-4">Due back</th><th className="px-4"><UiText k="productionList.columns.Status" /></th><th className="px-4" /></tr>
             </thead>
             <tbody>
               {checkouts.map((c) => (
@@ -205,10 +206,10 @@ export function EquipmentAdmin() {
                   <td className="whitespace-nowrap px-4">
                     {c.returned_at
                       ? <span className="text-success">Returned {ymdLabel(c.returned_at)}</span>
-                      : isOverdue(c) ? <span className="font-semibold text-destructive">Overdue</span> : <span className="text-primary">{LOAN_STATES[c.request_state]}</span>}
+                      : isOverdue(c) ? <span className="font-semibold text-destructive"><UiText k="workflowStatuses.overdue" /></span> : <span className="text-primary">{LOAN_STATES[c.request_state]}</span>}
                   </td>
                   <td className="px-4">{canManage && <div className="flex gap-3 whitespace-nowrap">
-                    {c.request_state === "requested" && <><button onClick={() => changeState(c.id, "approved")} className="text-xs font-semibold text-primary">Approve</button><button onClick={() => changeState(c.id, "declined")} className="text-xs text-destructive">Decline</button></>}
+                    {c.request_state === "requested" && <><button onClick={() => changeState(c.id, "approved")} className="text-xs font-semibold text-primary"><UiText k="dashboard.approve" /></button><button onClick={() => changeState(c.id, "declined")} className="text-xs text-destructive"><UiText k="dashboard.decline" /></button></>}
                     {c.request_state === "approved" && <button onClick={() => changeState(c.id, "collected")} className="text-xs font-semibold text-primary">Mark collected</button>}
                     {c.request_state === "collected" && <button onClick={() => changeState(c.id, "returned")} className="text-xs font-semibold text-primary">Mark returned</button>}
                     </div>}</td>
@@ -277,7 +278,7 @@ function CheckoutDialog({ item, free, onClose, onDone }: { item: EquipmentItem; 
           <DialogDescription>{t("checkout.availability", { free, total: item.total_count })}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-3">
-          {canManage && <label className="block"><span className="text-xs text-muted-foreground">Crew member</span>
+          {canManage && <label className="block"><span className="text-xs text-muted-foreground"><UiText k="signup.crew" /></span>
             <SearchableSelect required className={`${field} mt-1 w-full`} value={f.who} onChange={(e) => setF({ ...f, who: e.target.value })}>
               <option value="">Select crew member</option>{crew.map((c) => <option key={c.id} value={c.id}>{c.name} · {c.role} ({c.id.slice(-6)})</option>)}
             </SearchableSelect></label>}

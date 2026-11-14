@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -273,14 +274,14 @@ function IllustrateMode({ p, isProducer }: { p: Production; isProducer: boolean 
 
   return (
     <div className="space-y-4">
-      {shotsQuery.isError && <p role="alert" className="rounded border border-destructive p-3 text-sm">Saved storyboard could not be loaded. <button className="underline" onClick={() => void refresh()}>Retry</button></p>}
+      {shotsQuery.isError && <p role="alert" className="rounded border border-destructive p-3 text-sm">Saved storyboard could not be loaded. <button className="underline" onClick={() => void refresh()}><UiText k="continuation.retry" /></button></p>}
       {(breakingDown || generatingId || enhancing || pdfBusy) && <OperationProgress label={pdfBusy ? "Extracting and saving PDF" : breakingDown ? "Creating and saving storyboard" : enhancing ? "Enhancing references" : "Generating illustration"} {...(bulk ? { completed: bulk.done, total: bulk.total } : {})} />}
       <Panel title="AI shot breakdown">
         <div className="space-y-2 p-4">
           <div role="tablist" aria-label="Storyboard prompt" className="flex flex-wrap gap-2">
             {["Working prompt", "Original prompt", "PDF summary", "Extracted text"].map((tab) => <button key={tab} role="tab" aria-selected={promptTab === tab} onClick={() => setPromptTab(tab)} className={`rounded border px-3 py-1 text-xs ${promptTab === tab ? "border-primary text-primary" : "border-border"}`}>{tab}</button>)}
           </div>
-          {(briefs.isError || promptError) && <p role="alert" className="text-xs text-destructive">{promptError || "Saved prompt could not be loaded. Try again before editing."}<button className="ml-2 underline" onClick={() => void briefs.refetch()}>Retry</button></p>}
+          {(briefs.isError || promptError) && <p role="alert" className="text-xs text-destructive">{promptError || "Saved prompt could not be loaded. Try again before editing."}<button className="ml-2 underline" onClick={() => void briefs.refetch()}><UiText k="continuation.retry" /></button></p>}
           {promptTab === "Working prompt" && <textarea aria-label="Storyboard working prompt" rows={3} className={`${input} w-full`} placeholder="Paste the creative brief or script excerpt…" value={brief} disabled={briefs.isLoading || briefs.isError || breakingDown || pdfBusy} onChange={(e) => editBrief(e.target.value)} />}
           {promptTab === "Original prompt" && <div className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded border border-border p-3 text-xs">{briefs.data?.original_prompt || "The original prompt is preserved when you first generate a storyboard."}</div>}
           {promptTab === "PDF summary" && <><div className="max-h-48 overflow-y-auto whitespace-pre-wrap p-3 text-xs">{briefs.data?.pdf_summary || "No PDF summary yet."}</div>{briefs.data?.pdf_summary && <button className={btn} onClick={() => { editBrief(briefs.data!.pdf_summary.slice(0, 8000)); setPromptTab("Working prompt"); }}>Use summary as working prompt</button>}</>}
@@ -351,7 +352,7 @@ function IllustrateMode({ p, isProducer }: { p: Production; isProducer: boolean 
                 </button>
               </div>
               {shot.status !== "approved" ? (
-                <button onClick={() => updateShot(shot.id, { status: "approved" })} disabled={!shot.image_path} className="w-full rounded-sm border border-success px-2 py-1 text-[11px] font-semibold text-success disabled:opacity-50">Approve</button>
+                <button onClick={() => updateShot(shot.id, { status: "approved" })} disabled={!shot.image_path} className="w-full rounded-sm border border-success px-2 py-1 text-[11px] font-semibold text-success disabled:opacity-50"><UiText k="dashboard.approve" /></button>
               ) : (
                 <button onClick={() => updateShot(shot.id, { status: "generated" })} className="w-full rounded-sm border border-border px-2 py-1 text-[11px] font-semibold text-muted-foreground">Approved — unapprove</button>
               )}

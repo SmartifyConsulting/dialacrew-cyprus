@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -183,5 +184,5 @@ export function AnimaticStudio({ p, isProducer }: { p: Production; isProducer: b
 function ExportLink({ path }: { path: string }) {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => { let live = true; void signedUrl(path).then((u) => { if (live) setUrl(u); }); return () => { live = false; }; }, [path]);
-  return url ? <a href={url} target="_blank" rel="noreferrer" className="text-primary underline">Download</a> : <span>Loading…</span>;
+  return url ? <a href={url} target="_blank" rel="noreferrer" className="text-primary underline"><UiText k="library.download" /></a> : <span><UiText k="library.loading" /></span>;
 }

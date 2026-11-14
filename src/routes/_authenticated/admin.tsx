@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { DateInput } from "@/components/ui/date-input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { createFileRoute } from "@tanstack/react-router";
@@ -115,9 +116,7 @@ function ImportTab() {
       <Panel title="Import crew from CSV">
         <div className="space-y-3 p-4">
           <p className="text-sm text-muted-foreground">Upload a CSV with a header row. Map its columns to crew fields below, preview, then import. Required: name, role, department. Rows with an email are automatically invited to the app.</p>
-          <label className="inline-flex w-fit cursor-pointer items-center rounded-sm bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground">
-            Upload
-            <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={(e) => onFile(e.target.files?.[0])} className="hidden" />
+          <label className="inline-flex w-fit cursor-pointer items-center rounded-sm bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground"><UiText k="files.upload" /><input ref={fileRef} type="file" accept=".csv,text/csv" onChange={(e) => onFile(e.target.files?.[0])} className="hidden" />
           </label>
           {csv && <p className="text-xs text-muted-foreground">{csv.rows.length} row(s) loaded.</p>}
           {csv && (
@@ -218,7 +217,7 @@ function AdminPage() {
   const activeGroup = groups.find((g) => g.name === group) ?? groups[0];
   const [tab, setTab] = useState<AdminTab>(requestedGroup && requestedTab ? requestedTab : activeGroup.tabs[0]);
 
-  if (role.isLoading) return <Page open title="Admin"><p className="text-muted-foreground">Loading…</p></Page>;
+  if (role.isLoading) return <Page open title="Admin"><p className="text-muted-foreground"><UiText k="library.loading" /></p></Page>;
   if (!isSuperAdmin && !isProducer) {
     return (
       <Page open title="Admin">
@@ -463,7 +462,7 @@ function DefaultCrewRolesPanel() {
         {roles.map((r) => (
           <li key={r.id} className="flex items-center justify-between gap-3 px-4 py-2">
             {r.role}
-            <button onClick={() => removeRole(r.role)} aria-label={`Remove ${r.role}`} className="text-xs text-muted-foreground hover:text-destructive">Remove</button>
+            <button onClick={() => removeRole(r.role)} aria-label={`Remove ${r.role}`} className="text-xs text-muted-foreground hover:text-destructive"><UiText k="templates.remove" /></button>
           </li>
         ))}
       </ul>
@@ -542,10 +541,10 @@ function CrewTypeSizesTab() {
     )}>
       {adding && (
         <div className="flex flex-wrap items-end gap-2 border-b border-border p-4">
-          <label className="text-xs"><span className="block text-muted-foreground">Name</span>
+          <label className="text-xs"><span className="block text-muted-foreground"><UiText k="common.name" /></span>
             <input autoFocus className={`${invField} min-w-40`} value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g. Skeleton Crew" /></label>
           <button onClick={createTier} className={btn}>Create</button>
-          <button onClick={() => { setAdding(false); setNewName(""); }} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold">Cancel</button>
+          <button onClick={() => { setAdding(false); setNewName(""); }} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold"><UiText k="common.cancel" /></button>
         </div>
       )}
       <ul className="divide-y divide-border text-sm">
@@ -561,8 +560,8 @@ function CrewTypeSizesTab() {
                   {g.name} <span className="font-normal text-muted-foreground">({g.memberIds.length})</span>
                 </button>
               )}
-              <button onClick={() => setRenaming(renaming === g.id ? null : g.id)} className="shrink-0 text-xs text-primary hover:underline">Rename</button>
-              <button onClick={() => deleteGroup.mutate(g.id)} className="shrink-0 text-xs text-destructive hover:underline">Delete</button>
+              <button onClick={() => setRenaming(renaming === g.id ? null : g.id)} className="shrink-0 text-xs text-primary hover:underline"><UiText k="library.rename" /></button>
+              <button onClick={() => deleteGroup.mutate(g.id)} className="shrink-0 text-xs text-destructive hover:underline"><UiText k="library.delete" /></button>
             </div>
             {expanded === g.id && (
               <div className="space-y-2 border-t border-border bg-muted/20 px-4 py-3">
@@ -573,7 +572,7 @@ function CrewTypeSizesTab() {
                     return (
                       <li key={id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
                         <span className="min-w-0 truncate">{c?.name ?? "Unknown"}{c?.role && <span className="text-xs text-muted-foreground"> · {c.role}</span>}</span>
-                        <button onClick={() => removeMember.mutate({ groupId: g.id, crewId: id })} aria-label={`Remove ${c?.name ?? "member"}`} className="shrink-0 text-xs text-muted-foreground hover:text-destructive">Remove</button>
+                        <button onClick={() => removeMember.mutate({ groupId: g.id, crewId: id })} aria-label={`Remove ${c?.name ?? "member"}`} className="shrink-0 text-xs text-muted-foreground hover:text-destructive"><UiText k="templates.remove" /></button>
                       </li>
                     );
                   })}
@@ -583,7 +582,7 @@ function CrewTypeSizesTab() {
                     <option value="">+ Add a user to this tier…</option>
                     {crew.filter((c) => !g.memberIds.includes(c.id)).map((c) => <option key={c.id} value={c.id}>{c.name} · {c.role}</option>)}
                   </SearchableSelect>
-                  <button onClick={() => addCrewToGroup(g.id)} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary hover:text-primary">Add</button>
+                  <button onClick={() => addCrewToGroup(g.id)} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary hover:text-primary"><UiText k="common.add" /></button>
                 </div>
               </div>
             )}
@@ -642,24 +641,24 @@ function CrewTypesTab() {
       </div>
       {adding && (
         <div className="flex flex-wrap items-end gap-2 rounded-sm border border-border bg-card p-4">
-          <label className="text-xs"><span className="block text-muted-foreground">Name</span>
+          <label className="text-xs"><span className="block text-muted-foreground"><UiText k="common.name" /></span>
             <input className={`${invField} min-w-40`} value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g. Commercial B-Unit" /></label>
           <label className="text-xs"><span className="block text-muted-foreground">Production type (optional)</span>
             {addingType ? (
               <span className="mt-1 flex gap-1">
                 <input autoFocus className={invField} value={newTypeName} onChange={(e) => setNewTypeName(e.target.value)} placeholder="New type" />
-                <button onClick={addProductionType} className="rounded-sm bg-primary px-2 py-1.5 text-xs font-semibold text-primary-foreground">Save</button>
+                <button onClick={addProductionType} className="rounded-sm bg-primary px-2 py-1.5 text-xs font-semibold text-primary-foreground"><UiText k="common.save" /></button>
               </span>
             ) : (
               <SearchableSelect className={invField} value={newType} onChange={(e) => e.target.value === "__add__" ? setAddingType(true) : setNewType(e.target.value)}>
-                <option value="">Any production type</option>
+                <option value=""><UiText k="directory.anyType" /></option>
                 {productionTypes.map((t) => <option key={t} value={t}>{t}</option>)}
                 <option value="__add__">+ Add new type…</option>
               </SearchableSelect>
             )}
           </label>
           <button onClick={createCrewType} className={btn}>Create</button>
-          <button onClick={() => { setAdding(false); setNewName(""); setNewType(""); }} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold">Cancel</button>
+          <button onClick={() => { setAdding(false); setNewName(""); setNewType(""); }} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold"><UiText k="common.cancel" /></button>
         </div>
       )}
       {groups.length === 0 && <p className="rounded-sm border border-dashed border-border p-4 text-xs text-muted-foreground">No crew mixes yet — add one above.</p>}
@@ -673,7 +672,7 @@ function CrewTypesTab() {
                 <span className="truncate font-display text-sm font-semibold uppercase tracking-wide">{g.name}</span>
                 <span className="shrink-0 text-xs font-normal opacity-90">({g.memberIds.length}){g.productionType ? ` · ${g.productionType}` : ""}</span>
               </button>
-              <button onClick={() => deleteGroup.mutate(g.id)} className="shrink-0 text-xs font-semibold text-primary-foreground/80 hover:text-white">Delete</button>
+              <button onClick={() => deleteGroup.mutate(g.id)} className="shrink-0 text-xs font-semibold text-primary-foreground/80 hover:text-white"><UiText k="library.delete" /></button>
             </div>
             {isOpen && (
               <div className="space-y-2 px-4 py-3">
@@ -687,7 +686,7 @@ function CrewTypesTab() {
                     return (
                       <li key={id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
                         <span className="min-w-0 truncate">{c?.name ?? "Unknown"}{c?.role && <span className="text-xs text-muted-foreground"> · {c.role}</span>}</span>
-                        <button onClick={() => removeMember.mutate({ groupId: g.id, crewId: id })} aria-label={`Remove ${c?.name ?? "member"}`} className="shrink-0 text-xs text-muted-foreground hover:text-destructive">Remove</button>
+                        <button onClick={() => removeMember.mutate({ groupId: g.id, crewId: id })} aria-label={`Remove ${c?.name ?? "member"}`} className="shrink-0 text-xs text-muted-foreground hover:text-destructive"><UiText k="templates.remove" /></button>
                       </li>
                     );
                   })}
@@ -697,7 +696,7 @@ function CrewTypesTab() {
                     <option value="">+ Add a user to this crew type…</option>
                     {crew.filter((c) => !g.memberIds.includes(c.id)).map((c) => <option key={c.id} value={c.id}>{c.name} · {c.role}</option>)}
                   </SearchableSelect>
-                  <button onClick={() => addCrewToGroup(g.id)} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary hover:text-primary">Add</button>
+                  <button onClick={() => addCrewToGroup(g.id)} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary hover:text-primary"><UiText k="common.add" /></button>
                 </div>
               </div>
             )}
@@ -758,24 +757,24 @@ function CompaniesTab() {
           <input placeholder="Company name" className={`${invField} min-w-48`} value={newCo.name} onChange={(e) => setNewCo({ ...newCo, name: e.target.value })} />
           <input placeholder="Billing email" className={`${invField} min-w-48`} value={newCo.billing_email} onChange={(e) => setNewCo({ ...newCo, billing_email: e.target.value })} />
           <input placeholder="Phone" className={`${invField} min-w-36`} value={newCo.phone} onChange={(e) => setNewCo({ ...newCo, phone: e.target.value })} />
-          <button onClick={addCompany} className={btn}>Add</button>
-          <button onClick={() => setAdding(false)} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold">Cancel</button>
+          <button onClick={addCompany} className={btn}><UiText k="common.add" /></button>
+          <button onClick={() => setAdding(false)} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold"><UiText k="common.cancel" /></button>
         </div>
       )}
       <table className="w-full text-sm">
-        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Name</th><th className="px-4">Billing email</th><th className="px-4">Phone</th><th className="px-4">Users</th><th className="px-4">Action</th></tr></thead>
+        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2"><UiText k="common.name" /></th><th className="px-4">Billing email</th><th className="px-4"><UiText k="common.phone" /></th><th className="px-4"><UiText k="adminNav.labels.Users" /></th><th className="px-4"><UiText k="dashboard.action" /></th></tr></thead>
         <tbody>{(companies.data ?? []).map((c) => editing === c.id ? (
           <tr key={c.id} className="border-t border-border">
             <td className="px-4 py-2"><input className={`${invField} w-full`} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></td>
             <td className="px-4"><input className={`${invField} w-full`} value={draft.billing_email} onChange={(e) => setDraft({ ...draft, billing_email: e.target.value })} /></td>
             <td className="px-4"><input className={`${invField} w-full`} value={draft.phone} onChange={(e) => setDraft({ ...draft, phone: e.target.value })} /></td>
             <td className="px-4">{(c.company_users as unknown as { count: number }[])?.[0]?.count ?? 0}</td>
-            <td className="px-4 flex gap-2"><button onClick={() => saveEdit(c.id)} className="text-xs text-primary hover:underline">Save</button><button onClick={() => setEditing(null)} className="text-xs text-muted-foreground hover:underline">Cancel</button></td>
+            <td className="px-4 flex gap-2"><button onClick={() => saveEdit(c.id)} className="text-xs text-primary hover:underline"><UiText k="common.save" /></button><button onClick={() => setEditing(null)} className="text-xs text-muted-foreground hover:underline"><UiText k="common.cancel" /></button></td>
           </tr>
         ) : (
           <tr key={c.id} className="border-t border-border">
             <td className="px-4 py-2 font-medium">{c.name}</td><td className="px-4 text-muted-foreground">{c.billing_email || "—"}</td><td className="px-4">{c.phone || "—"}</td><td className="px-4">{(c.company_users as unknown as { count: number }[])?.[0]?.count ?? 0}</td>
-            <td className="px-4 flex gap-2"><button onClick={() => startEdit(c)} className="text-xs text-primary hover:underline">Edit</button><button onClick={() => removeCompany(c.id)} className="text-xs text-destructive hover:underline">Delete</button></td>
+            <td className="px-4 flex gap-2"><button onClick={() => startEdit(c)} className="text-xs text-primary hover:underline"><UiText k="common.edit" /></button><button onClick={() => removeCompany(c.id)} className="text-xs text-destructive hover:underline"><UiText k="library.delete" /></button></td>
           </tr>
         ))}</tbody>
       </table>
@@ -835,7 +834,7 @@ function BookingsTab() {
             </button>
             {openProd === prodId && (
               <table className="w-full border-t border-border bg-muted/20 text-sm">
-                <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Crew</th><th className="px-4">Role</th><th className="px-4">Date</th><th className="px-4">Status</th><th className="px-4">Payment</th><th className="px-4">Action</th></tr></thead>
+                <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2"><UiText k="accountRoles.crew" /></th><th className="px-4"><UiText k="common.role" /></th><th className="px-4"><UiText k="productionList.columns.Date" /></th><th className="px-4"><UiText k="productionList.columns.Status" /></th><th className="px-4">Payment</th><th className="px-4"><UiText k="dashboard.action" /></th></tr></thead>
                 <tbody>{group.rows.map((b) => (
                   <tr key={b.id} className="border-t border-border">
                     <td className="px-4 py-2 font-medium">{(b.crew_members as { name: string } | null)?.name}</td>
@@ -844,7 +843,7 @@ function BookingsTab() {
                       <StatusPill value={b.status as (typeof BOOKING_STATUSES)[number]} options={BOOKING_STATUSES} label={(s) => t(`workflowStatuses.${s}`)} onChange={(s) => setStatus(b.id, s)} />
                     </td>
                     <td className="whitespace-nowrap px-4 text-xs text-muted-foreground">{t(`workflowStatuses.${b.payment_status}`)}</td>
-                    <td className="px-4"><button onClick={() => removeBooking(b.id)} className="text-xs text-destructive hover:underline">Delete</button></td>
+                    <td className="px-4"><button onClick={() => removeBooking(b.id)} className="text-xs text-destructive hover:underline"><UiText k="library.delete" /></button></td>
                   </tr>
                 ))}</tbody>
               </table>
@@ -876,7 +875,7 @@ function PaymentsTab() {
   return (
     <Panel title={`${t("nav.payments")} (${rows.data?.length ?? 0})`}>
       <table className="w-full text-sm">
-        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Production</th><th className="px-4">Crew</th><th className="px-4">Amount</th><th className="px-4">Status</th></tr></thead>
+        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2"><UiText k="productionList.columns.Production" /></th><th className="px-4"><UiText k="accountRoles.crew" /></th><th className="px-4">Amount</th><th className="px-4"><UiText k="productionList.columns.Status" /></th></tr></thead>
         <tbody>{(rows.data ?? []).map((b) => (
           <tr key={b.id} className="border-t border-border">
             <td className="px-4 py-2 font-medium">{(b.productions as { name: string } | null)?.name}</td>
@@ -974,7 +973,7 @@ function InvoicesTab() {
   return (
     <Panel title={`${t("nav.invoices")} (${invoices.data?.length ?? 0})`}>
       <table className="w-full text-sm">
-        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Invoice #</th><th className="px-4">Crew</th><th className="px-4">Production</th><th className="px-4">Subtotal</th><th className="px-4">VAT</th><th className="px-4">Total</th><th className="px-4">Status</th><th className="px-4">Action</th></tr></thead>
+        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Invoice #</th><th className="px-4"><UiText k="accountRoles.crew" /></th><th className="px-4"><UiText k="productionList.columns.Production" /></th><th className="px-4">Subtotal</th><th className="px-4">VAT</th><th className="px-4">Total</th><th className="px-4"><UiText k="productionList.columns.Status" /></th><th className="px-4"><UiText k="dashboard.action" /></th></tr></thead>
         <tbody>{(invoices.data ?? []).map((i) => (
           <tr key={i.id} className="border-t border-border">
             <td className="px-4 py-2 font-medium">{i.invoice_number}</td>
@@ -984,7 +983,7 @@ function InvoicesTab() {
             <td className="px-4">
               <StatusPill value={i.status as (typeof INVOICE_STATUSES)[number]} options={INVOICE_STATUSES} label={(s) => t(`workflowStatuses.${s}`)} onChange={(s) => setStatus(i.id, s)} />
             </td>
-            <td className="px-4"><button onClick={() => removeInvoice(i.id)} className="text-xs text-destructive hover:underline">Delete</button></td>
+            <td className="px-4"><button onClick={() => removeInvoice(i.id)} className="text-xs text-destructive hover:underline"><UiText k="library.delete" /></button></td>
           </tr>
         ))}</tbody>
       </table>
@@ -1014,7 +1013,7 @@ function GigsTab() {
   return (
     <Panel title={`Gigs (${gigs.data?.length ?? 0})`}>
       <table className="w-full text-sm">
-        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Title</th><th className="px-4">Posted by</th><th className="px-4">Secured by</th><th className="px-4">Date</th><th className="px-4">Amount</th><th className="px-4">Status</th><th className="px-4">Action</th></tr></thead>
+        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Title</th><th className="px-4">Posted by</th><th className="px-4">Secured by</th><th className="px-4"><UiText k="productionList.columns.Date" /></th><th className="px-4">Amount</th><th className="px-4"><UiText k="productionList.columns.Status" /></th><th className="px-4"><UiText k="dashboard.action" /></th></tr></thead>
         <tbody>{(gigs.data ?? []).map((g) => (
           <tr key={g.id} className="border-t border-border">
             <td className="px-4 py-2 font-medium">{g.title}<div className="text-xs font-normal text-muted-foreground">{g.role} · {g.department}</div></td>
@@ -1025,7 +1024,7 @@ function GigsTab() {
             <td className="px-4">
               <StatusPill value={g.status as (typeof GIG_STATUSES)[number]} options={GIG_STATUSES} label={(s) => s} onChange={(s) => setStatus(g.id, s)} />
             </td>
-            <td className="px-4"><button onClick={() => removeGig(g.id)} className="text-xs text-destructive hover:underline">Delete</button></td>
+            <td className="px-4"><button onClick={() => removeGig(g.id)} className="text-xs text-destructive hover:underline"><UiText k="library.delete" /></button></td>
           </tr>
         ))}</tbody>
       </table>
@@ -1071,7 +1070,7 @@ function DisputesTab() {
                   <button onClick={() => resolve(d.id, "rejected")} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold">Reject</button>
                 </>
               )}
-              <button onClick={() => remove(d.id)} className="text-xs text-destructive hover:underline">Delete</button>
+              <button onClick={() => remove(d.id)} className="text-xs text-destructive hover:underline"><UiText k="library.delete" /></button>
             </div>
           </li>
         ))}
@@ -1100,7 +1099,7 @@ function ReviewsTab() {
               <div className="text-sm"><strong>{(r.crew_members as { name: string } | null)?.name}</strong> rated {r.rating}★ by {r.reviewer_name}</div>
               {r.comment && <p className="text-xs text-muted-foreground">{r.comment}</p>}
             </div>
-            <button onClick={() => remove(r.id)} className="text-xs text-destructive hover:underline">Remove</button>
+            <button onClick={() => remove(r.id)} className="text-xs text-destructive hover:underline"><UiText k="templates.remove" /></button>
           </li>
         ))}
       </ul>
@@ -1123,7 +1122,7 @@ function SubscriptionsTab() {
     <div className="space-y-5">
       <Panel title="Pricing">
         <table className="w-full text-sm">
-          <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">Type</th><th className="px-4">Price (cents)</th><th className="px-4">Currency</th><th className="px-4">Action</th></tr></thead>
+          <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2"><UiText k="productionList.columns.Type" /></th><th className="px-4">Price (cents)</th><th className="px-4">Currency</th><th className="px-4"><UiText k="dashboard.action" /></th></tr></thead>
           <tbody>{(plans.data ?? []).map((p) => (
             <PlanRow key={p.id} plan={p} onSave={updatePrice} />
           ))}</tbody>
@@ -1140,7 +1139,7 @@ function PlanRow({ plan, onSave }: { plan: { id: string; membership_type: string
       <td className="px-4 py-2 font-medium capitalize">{plan.membership_type}</td>
       <td className="px-4"><input type="number" className="w-28 rounded-sm border border-input bg-background px-2 py-1 text-xs" value={v} onChange={(e) => setV(e.target.value)} /></td>
       <td className="px-4">{plan.currency}</td>
-      <td className="px-4"><button onClick={() => onSave(plan.id, Number(v) || 0)} className="text-xs text-primary hover:underline">Save</button></td>
+      <td className="px-4"><button onClick={() => onSave(plan.id, Number(v) || 0)} className="text-xs text-primary hover:underline"><UiText k="common.save" /></button></td>
     </tr>
   );
 }
@@ -1153,7 +1152,7 @@ function AuditLogTab() {
   return (
     <Panel title={`Audit log (last ${logs.data?.length ?? 0})`}>
       <table className="w-full text-sm">
-        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">When</th><th className="px-4">Action</th><th className="px-4">Table</th><th className="px-4">Record</th><th className="px-4">Change</th></tr></thead>
+        <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">When</th><th className="px-4"><UiText k="dashboard.action" /></th><th className="px-4">Table</th><th className="px-4">Record</th><th className="px-4">Change</th></tr></thead>
         <tbody>{(logs.data ?? []).map((l) => (
           <tr key={l.id} className="border-t border-border">
             <td className="px-4 py-2 text-xs">{new Date(l.created_at).toLocaleString("en-ZA")}</td>
@@ -1190,7 +1189,7 @@ function SpotlightCell({ id, featuredAt, links }: { id: string; featuredAt: stri
         <div className="mt-1 space-y-1 rounded-sm border border-border bg-background p-2">
           <DateInput type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full rounded-sm border border-input bg-card px-2 py-1" aria-label="Date featured" />
           <textarea rows={2} value={text} onChange={(e) => setText(e.target.value)} placeholder="Post links, one per line" className="w-full rounded-sm border border-input bg-card px-2 py-1" />
-          <div className="flex gap-2"><button onClick={() => save()} className={btn}>Save</button>{featuredAt && <button onClick={() => save(true)} className="text-destructive hover:underline">Clear</button>}</div>
+          <div className="flex gap-2"><button onClick={() => save()} className={btn}><UiText k="common.save" /></button>{featuredAt && <button onClick={() => save(true)} className="text-destructive hover:underline">Clear</button>}</div>
         </div>
       )}
     </div>

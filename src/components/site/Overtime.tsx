@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -69,8 +70,7 @@ export function OvertimeStatus({ request, rate, date, now }: { request: Overtime
   const hours = hoursSince(request.accepted_at, end);
   const amount = overtimeAmount(rate, hours, date, request.shift as OvertimeShift);
   return (
-    <span className="text-[11px] text-muted-foreground">
-      Overtime {request.ended_at ? "ended" : "running"} since {clock(request.accepted_at)} · {durationLabel(hours)} · {fmtMoney(amount)} ({shiftLabel(date, request.shift as OvertimeShift)})
+    <span className="text-[11px] text-muted-foreground"><UiText k="dashboard.kind.Overtime" />{" "}{request.ended_at ? "ended" : "running"} since {clock(request.accepted_at)} · {durationLabel(hours)} · {fmtMoney(amount)} ({shiftLabel(date, request.shift as OvertimeShift)})
     </span>
   );
 }
@@ -95,7 +95,7 @@ export function RequestOvertimeButton({ productionId, crewId, live }: { producti
         <option value="day">Day (1.5×)</option>
         <option value="night">Night (2×)</option>
       </SearchableSelect>
-      <button onClick={request} disabled={busy || !!live} className={btn}>Overtime</button>
+      <button onClick={request} disabled={busy || !!live} className={btn}><UiText k="dashboard.kind.Overtime" /></button>
     </div>
   );
 }
@@ -130,7 +130,7 @@ export function CrewOvertimePanel({ productionId, crewId, rate, date }: { produc
           <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason for declining (optional)" className={`${input} mt-2 w-full`} />
           <div className="mt-2 flex gap-2">
             <button disabled={busy} onClick={() => respond("accepted")} className="rounded-sm bg-success px-3 py-2 text-xs font-semibold text-white hover:bg-success/90">Accept</button>
-            <button disabled={busy} onClick={() => respond("declined")} className="rounded-sm bg-[#DC143C] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">Decline</button>
+            <button disabled={busy} onClick={() => respond("declined")} className="rounded-sm bg-[#DC143C] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"><UiText k="dashboard.decline" /></button>
           </div>
         </>
       ) : (

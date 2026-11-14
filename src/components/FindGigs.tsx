@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -83,7 +84,7 @@ export function FindGigsTab({ canClaim, canManage = false }: { canClaim: boolean
           <p className="mt-2 text-sm text-muted-foreground">Accept the advertised rate and review the job terms, or send a counter-offer. A counter-offer does not reserve the gig. Once a rate is agreed, accept the reserved booking’s terms from Home.</p>
           <GigNegotiation bookingId={reviewGig.id} role="crew" offeredRate={Number(reviewGig.crew_rate)} productionId={reviewGig.production_id} onBusyChange={setClaimBusy} onReserved={() => setReviewGig(null)} />
           <div className="mt-4 flex flex-wrap justify-end gap-3">
-            <button disabled={claimBusy} onClick={() => setReviewGig(null)} className="rounded border border-border px-3 py-2 text-sm">Close</button>
+            <button disabled={claimBusy} onClick={() => setReviewGig(null)} className="rounded border border-border px-3 py-2 text-sm"><UiText k="common.close" /></button>
             <button disabled={claimBusy} onClick={() => { setPendingGig(reviewGig); setReviewGig(null); }} className="rounded bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-60">Accept {zar(reviewGig.crew_rate)}/day & review terms</button>
           </div>
         </section>
@@ -102,8 +103,8 @@ export function FindGigsTab({ canClaim, canManage = false }: { canClaim: boolean
         </button>
         {near && <button onClick={() => setNear(null)} className="text-xs text-muted-foreground hover:underline">Clear location filter</button>}
       </div>
-      {gigs.isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
-      {gigs.isError && <p role="alert" className="text-sm text-destructive">Could not load open gigs. <button onClick={() => void gigs.refetch()} className="underline">Try again</button></p>}
+      {gigs.isLoading && <p className="text-sm text-muted-foreground"><UiText k="library.loading" /></p>}
+      {gigs.isError && <p role="alert" className="text-sm text-destructive">Could not load open gigs. <button onClick={() => void gigs.refetch()} className="underline"><UiText k="library.retry" /></button></p>}
       {!gigs.isLoading && !gigs.isError && list.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">No open gigs match these filters right now.</p>}
       <ul className="divide-y divide-border">
         {list.map((g) => (

@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -104,7 +105,7 @@ function MemoryPage() {
         </Panel>
         <Panel title="What the AI has learned">
           <div className="space-y-3 p-4 text-sm">
-            {memories.isLoading && <p className="text-muted-foreground">Loading…</p>}
+            {memories.isLoading && <p className="text-muted-foreground"><UiText k="library.loading" /></p>}
             {!memories.isLoading && !memories.data?.length && <p className="text-muted-foreground">Nothing yet. Memory builds from post-shoot reviews (Review tab on a production) and crew ratings. You can also learn now from a client's history:</p>}
             {memories.data?.map((m) => (
               <div key={m.client} className="rounded-sm border border-border p-3">

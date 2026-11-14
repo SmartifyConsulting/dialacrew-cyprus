@@ -16,6 +16,11 @@ describe("borrowed language architecture", () => {
       }
     }
   });
+  it("resolves static UiText keys in the source and Greek dictionaries", () => {
+    const sources = import.meta.glob<string>(["../components/**/*.tsx", "../routes/**/*.tsx"], {query:"?raw",import:"default",eager:true});
+    const instance=createAppI18n();
+    for(const [filename,source] of Object.entries(sources))for(const match of source.matchAll(/<UiText\s+k="([^"]+)"/g))for(const language of ["en","el"])expect(instance.getResource(language,"translation",match[1]!),filename+": "+match[1]).toBeTypeOf("string");
+  });
   it("provides Greek strings for every extracted English dictionary key", () => {
     const instance = createAppI18n();
     const verify = (value: Record<string, unknown>, prefix = "") => {

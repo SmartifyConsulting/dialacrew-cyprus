@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
@@ -187,7 +188,7 @@ export function PhotosTab({ p, userId, isProducer }: { p: { id: string }; userId
       <div className="flex flex-wrap items-center gap-2">
         <SearchableSelect className={`${input} py-2 text-xs`} value={uploadLocation} onChange={(e) => setUploadLocation(e.target.value)} aria-label="Location for new photos">
           <option value="">{t("photos.noLocation")}</option>
-          {locations.map((l, i) => <option key={l.id} value={l.id}>Location {i + 1} · {l.label}</option>)}
+          {locations.map((l, i) => <option key={l.id} value={l.id}><UiText k="productionList.columns.Location" />{" "}{i + 1} · {l.label}</option>)}
         </SearchableSelect>
         <label className={`${btn} inline-flex cursor-pointer items-center gap-1.5 ${busy ? "opacity-60" : ""}`}>
           <Camera className="h-4 w-4" /> {t("photos.take")}
@@ -241,7 +242,7 @@ export function PhotosTab({ p, userId, isProducer }: { p: { id: string }; userId
                   <input autoFocus className={`${input} min-w-48`} placeholder={t("photos.name")} value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && createGroup()} />
                   <CalendarDatePicker label="New album date" value={date} onChange={setDate} />
                   <button onClick={createGroup} className={btn}>{t("photos.create")}</button>
-                  <button onClick={() => setAdding(false)} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold">Cancel</button>
+                  <button onClick={() => setAdding(false)} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold"><UiText k="common.cancel" /></button>
                 </div>
               ) : (
                 <button onClick={() => setAdding(true)} className={btn}>+ {t("photos.new")}</button>
@@ -269,8 +270,8 @@ export function PhotosTab({ p, userId, isProducer }: { p: { id: string }; userId
           <PhotoGrid items={openLocItems} canDelete={canDelete} onDelete={removePhoto} renderControls={(ph) => (
             <SearchableSelect className={`${input} w-full py-1 text-xs`} value={ph.location_id ?? ""} aria-label="Move photo to location"
               onChange={(e) => updatePhoto(ph.id, { location_id: e.target.value || null })}>
-              <option value="">No location</option>
-              {locations.map((o, j) => <option key={o.id} value={o.id}>Location {j + 1} · {o.label}</option>)}
+              <option value=""><UiText k="photos.noLocation" /></option>
+              {locations.map((o, j) => <option key={o.id} value={o.id}><UiText k="productionList.columns.Location" />{" "}{j + 1} · {o.label}</option>)}
             </SearchableSelect>
           )} />
         </div>

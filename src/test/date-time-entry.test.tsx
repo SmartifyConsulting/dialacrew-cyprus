@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { TimeInput, DateTimeInput } from "@/components/ui/time-input";
 import { DateInput } from "@/components/ui/date-input";
-import { parseDateEntry, parseTimeEntry } from "@/lib/date-time-entry";
+import { displayDate, parseDateEntry, parseTimeEntry } from "@/lib/date-time-entry";
 afterEach(cleanup);
 function Form() {
   const [time, setTime] = useState("20:15");
@@ -31,6 +31,8 @@ function Form() {
 describe("Outlook-style date and time entry", () => {
   it("normalizes supported entries without accepting impossible dates or times", () => {
     expect(parseDateEntry("14-Nov-26")).toBe("2026-11-14");
+    expect(parseDateEntry("14-Νοε-26")).toBe("2026-11-14");
+    expect(displayDate("2026-11-14", "el")).toBe("14-Νοε-26");
     expect(parseDateEntry("31-Feb-26")).toBeNull();
     expect(parseDateEntry("14-Nov-2")).toBeNull();
     expect(parseTimeEntry("8:30 PM")).toBe("20:30");

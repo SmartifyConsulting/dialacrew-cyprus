@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -53,7 +54,7 @@ export function CalendarExport({ events, userId }: { events: CalEvent[]; userId:
       </div>
       {open && (
         <div className="mt-3 space-y-2 text-xs text-muted-foreground">
-          <p><strong className="text-foreground">Download</strong> is a snapshot — it won't change after you import it. <strong className="text-foreground">Subscribe</strong> keeps your calendar app updated automatically (Google and Outlook refresh every few hours). It's read-only: changes made in Google or Outlook don't come back here.</p>
+          <p><strong className="text-foreground"><UiText k="library.download" /></strong> is a snapshot — it won't change after you import it. <strong className="text-foreground">Subscribe</strong> keeps your calendar app updated automatically (Google and Outlook refresh every few hours). It's read-only: changes made in Google or Outlook don't come back here.</p>
           {token.isPending ? <p>Creating your private link…</p> : token.isError ? <p className="text-destructive">Couldn't create your link.</p> : (
             <>
               <div className="flex gap-2">

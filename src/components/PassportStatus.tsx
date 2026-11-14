@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -13,8 +14,9 @@ export function useCrewTravelStatus(ids: string[], date?: string) {
 }
 
 export function PassportBadge({ status }: { status: string | undefined }) {
+  const { t, i18n } = useTranslation();
   return <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${status === "valid" ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"}`}>
-    {status === "valid" ? "Valid passport" : status === "expired" ? "Passport expired" : status === "missing" ? "No passport" : "Passport status unavailable"}
+    {t(status === "valid" ? "continuation.passportValid" : status === "expired" ? "continuation.passportExpired" : status === "missing" ? "continuation.passportMissing" : "continuation.passportUnknown")}
   </span>;
 }
 

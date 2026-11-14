@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -119,8 +120,7 @@ export function LocationPhotos({ p, locationId, isProducer }: { p: { id: string 
         <span className="text-xs font-semibold text-muted-foreground">Location photos ({items.length})</span>
         <div className={`flex items-center gap-2 ${busy ? "opacity-60" : ""}`}>
           <label className={pick}>
-            <Camera className="h-3.5 w-3.5" /> Take photo
-            <input type="file" accept="image/*" capture="environment" hidden disabled={busy} onChange={(e) => { upload(e.target.files); e.target.value = ""; }} />
+            <Camera className="h-3.5 w-3.5" />{" "}<UiText k="photos.take" /><input type="file" accept="image/*" capture="environment" hidden disabled={busy} onChange={(e) => { upload(e.target.files); e.target.value = ""; }} />
           </label>
           <label className={pick}>
             <ImageUp className="h-3.5 w-3.5" /> {busy ? "Uploading…" : "Upload"}

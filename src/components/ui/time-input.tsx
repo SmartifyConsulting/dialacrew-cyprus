@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import {
   useEffect,
   useId,
@@ -19,6 +20,7 @@ export function TimeInput({
   className,
   ...props
 }: InputHTMLAttributes<HTMLInputElement>) {
+  const { t } = useTranslation();
   const saved = useRef<HTMLInputElement>(null);
   const visible = useRef<HTMLInputElement>(null);
   const list = useRef<HTMLDivElement>(null);
@@ -90,16 +92,20 @@ export function TimeInput({
             aria-activedescendant={open ? `${id}-${active}` : undefined}
             autoComplete="off"
             value={draft ?? displayTime(raw)}
-            placeholder={props.placeholder ?? "Select time"}
+            placeholder={
+              props.placeholder ?? t("dateTime.placeholder", { defaultValue: "Select time" })
+            }
             className="w-full min-w-0 border-0 bg-transparent pr-6 outline-none"
             onChange={(event) => {
               setDraft(event.target.value);
               const time = parseTimeEntry(event.target.value);
               event.target.setCustomValidity(
                 time === null
-                  ? "Enter a valid time, e.g. 8:30 PM"
+                  ? t("dateTime.invalidTime", { defaultValue: "Enter a valid time, e.g. 8:30 PM" })
                   : !bounded(time)
-                    ? "Time is outside the allowed range"
+                    ? t("dateTime.timeBounds", {
+                        defaultValue: "Time is outside the allowed range",
+                      })
                     : "",
               );
               if (time !== null && bounded(time)) {
@@ -139,7 +145,14 @@ export function TimeInput({
           <button
             type="button"
             disabled={props.disabled || props.readOnly}
-            aria-label={`Show times${props["aria-label"] ? ` for ${props["aria-label"]}` : ""}`}
+            aria-label={
+              props["aria-label"]
+                ? t("dateTime.showFor", {
+                    field: props["aria-label"],
+                    defaultValue: `Show times for ${props["aria-label"]}`,
+                  })
+                : t("dateTime.show", { defaultValue: "Show times" })
+            }
             className="absolute inset-y-0 right-0 border-l px-2 text-muted-foreground"
             onClick={() => (open ? setOpen(false) : show())}
           >
@@ -162,7 +175,7 @@ export function TimeInput({
           ref={list}
           id={id}
           role="listbox"
-          aria-label="Times"
+          aria-label={t("dateTime.times", { defaultValue: "Times" })}
           className="max-h-52 overflow-y-auto py-1"
         >
           {options.map((time, index) => (

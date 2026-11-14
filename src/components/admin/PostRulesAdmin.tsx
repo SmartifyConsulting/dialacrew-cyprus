@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -24,12 +25,12 @@ export function PostRulesAdmin() {
     const {error}=await supabase.from("producer_post_rules").upsert({producer_id:target,rules:rules.trim(),apply_to_all:all,updated_at:new Date().toISOString()});setBusy(false);
     if(error){toast.error(friendlyError(error));return;}await qc.invalidateQueries({queryKey:["producer-post-rules"]});toast.success("Post rules saved");
   }
-  return <Panel title="Producer post rules"><div className="space-y-3 p-4 text-sm">
-    {role.data==="admin"&&<label className="block">Producer<SearchableSelect className="mt-1 w-full rounded border border-input bg-background p-2" value={target??""} onChange={e=>setProducer(e.target.value)}><option value={session?.user.id}>My account</option>{producers.data?.map(p=><option key={p.id} value={p.id}>{p.full_name||p.email}</option>)}</SearchableSelect></label>}
-    {settings.isError&&<p role="alert">Could not load producer rules.</p>}
-    <label className="block">Rules of engagement<textarea rows={7} className="mt-1 w-full rounded border border-input bg-background p-2" value={rules} onChange={e=>setRules(e.target.value)} /></label>
-    <label className="flex items-center gap-2"><input type="checkbox" checked={all} onChange={e=>setAll(e.target.checked)} />Apply these rules to every production owned by this producer</label>
-    <p className="text-xs text-muted-foreground">If this is off, each production can use the producer default, its own rules, or no rules. Existing custom text is preserved.</p>
-    <button className="rounded bg-primary px-3 py-2 font-semibold text-primary-foreground disabled:opacity-50" disabled={busy||settings.isPending||settings.isError} onClick={save}>Save post rules</button>
+  return <Panel title={<UiText k="continuation.rulesTitle" />}><div className="space-y-3 p-4 text-sm">
+    {role.data==="admin"&&<label className="block"><UiText k="accountRoles.producer" /><SearchableSelect className="mt-1 w-full rounded border border-input bg-background p-2" value={target??""} onChange={e=>setProducer(e.target.value)}><option value={session?.user.id}><UiText k="continuation.myAccount" /></option>{producers.data?.map(p=><option key={p.id} value={p.id}>{p.full_name||p.email}</option>)}</SearchableSelect></label>}
+    {settings.isError&&<p role="alert"><UiText k="continuation.rulesError" /></p>}
+    <label className="block"><UiText k="continuation.engagementRules" /><textarea rows={7} className="mt-1 w-full rounded border border-input bg-background p-2" value={rules} onChange={e=>setRules(e.target.value)} /></label>
+    <label className="flex items-center gap-2"><input type="checkbox" checked={all} onChange={e=>setAll(e.target.checked)} /><UiText k="continuation.rulesAll" /></label>
+    <p className="text-xs text-muted-foreground"><UiText k="continuation.rulesHelp" /></p>
+    <button className="rounded bg-primary px-3 py-2 font-semibold text-primary-foreground disabled:opacity-50" disabled={busy||settings.isPending||settings.isError} onClick={save}><UiText k="continuation.rulesSave" /></button>
   </div></Panel>;
 }

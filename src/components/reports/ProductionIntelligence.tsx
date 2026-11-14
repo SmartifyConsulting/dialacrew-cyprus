@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
@@ -66,7 +67,7 @@ export function ProductionIntelligence() {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-3">
-        <label className="text-xs font-semibold text-muted-foreground">Production</label>
+        <label className="text-xs font-semibold text-muted-foreground"><UiText k="productionList.columns.Production" /></label>
         <SearchableSelect value={scope} onChange={(e) => setScope(e.target.value)} className="rounded-sm border border-input bg-background px-3 py-1.5 text-sm">
           <option value="all">All productions ({reports.length})</option>
           {reports.map((r) => <option key={r.production.id} value={r.production.id}>{r.production.jobId ? `${r.production.jobId} · ` : ""}{r.production.name}</option>)}
@@ -112,7 +113,7 @@ export function ProductionIntelligence() {
                 {q === "cost" && (
                   <div className="space-y-2">
                     <div className="h-2 overflow-hidden rounded-full bg-muted"><div className={`h-full ${r.budgetUsedPct > 100 ? "bg-destructive" : "bg-primary"}`} style={{ width: `${Math.min(100, r.budgetUsedPct)}%` }} /></div>
-                    <div className="grid grid-cols-3 gap-2 text-xs"><span>Budget <b>{cur(r.budget)}</b></span><span>Committed <b>{cur(r.committed)}</b></span><span>Paid <b>{cur(r.paid)}</b></span></div>
+                    <div className="grid grid-cols-3 gap-2 text-xs"><span><UiText k="budget.Budget" />{" "}<b>{cur(r.budget)}</b></span><span>Committed <b>{cur(r.committed)}</b></span><span>Paid <b>{cur(r.paid)}</b></span></div>
                     <ul className="divide-y divide-border text-xs">{rows.filter((b) => BOOKED.includes(b.status)).map((b) => <li key={b.id} className="flex justify-between py-1.5"><span>{crewName(b.crewId)} · {b.role}</span><span className="whitespace-nowrap">{cur(b.crewRate)} × {Math.max(1, b.days)}d</span></li>)}</ul>
                   </div>
                 )}

@@ -1,4 +1,6 @@
 import { TimeInput } from "@/components/ui/time-input";
+import { UiText } from "@/components/UiText";
+
 import { DateInput } from "@/components/ui/date-input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -195,14 +197,14 @@ function CrewPage() {
         )}
         {picking && (
           <div className="ml-auto flex flex-wrap items-center gap-2">
-            <span className="text-xs text-muted-foreground">{picked.length} selected</span>
+            <span className="text-xs text-muted-foreground">{picked.length}{" "}<UiText k="library.selected" /></span>
             <input value={mixName} onChange={(e) => setMixName(e.target.value)} placeholder="Name this combo" className="rounded-sm border border-input bg-card px-2 py-1.5 text-sm" />
             <SearchableSelect value={mixType} onChange={(e) => setMixType(e.target.value)} className="rounded-sm border border-input bg-card px-2 py-1.5 text-sm" aria-label="Production type this combo is for">
               <option value="">{t("directory.anyType")}</option>
               {productionTypes.map((type) => <option key={type} value={type}>{t(`productionTypes.${type}`, type)}</option>)}
             </SearchableSelect>
             <button onClick={saveMix} disabled={createGroup.isPending} className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-60">{createGroup.isPending ? "Saving…" : "Save mix"}</button>
-            <button onClick={cancelPicking} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold">Cancel</button>
+            <button onClick={cancelPicking} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold"><UiText k="common.cancel" /></button>
           </div>
         )}
       </div>
@@ -264,7 +266,7 @@ function CrewPage() {
             </dl>
             {open.kit && <div className="mt-5"><div className="text-xs font-semibold text-muted-foreground">{t("adminNav.labels.Equipment")}</div><p className="mt-1 text-sm">{open.kit}</p></div>}
             <div className="mt-6 flex gap-2">
-              <button onClick={() => { setPencilling({ id: open.id, name: open.name, role: open.role, dayRate: open.dayRate }); setOpen(null); }} className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Pencil</button>
+              <button onClick={() => { setPencilling({ id: open.id, name: open.name, role: open.role, dayRate: open.dayRate }); setOpen(null); }} className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"><UiText k="workflowStatuses.pencil" /></button>
               <Link to="/crew/$id" params={{ id: open.id }} className="flex-1 rounded-md border border-border px-4 py-2 text-center text-sm font-semibold">{t("directory.fullProfile")}</Link>
             </div>
             <AvailabilityCalendar crewId={open.id} />

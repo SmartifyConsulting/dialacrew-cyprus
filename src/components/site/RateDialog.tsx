@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
@@ -112,7 +113,7 @@ export function RateDialog({ crewId, name, role, department, productionId, onClo
           )}
         </div>
         <div className="flex justify-end gap-2 border-t border-border p-3">
-          <button onClick={onClose} className="px-3 py-2 text-xs text-muted-foreground">Cancel</button>
+          <button onClick={onClose} className="px-3 py-2 text-xs text-muted-foreground"><UiText k="common.cancel" /></button>
           <button disabled={busy} onClick={submit} className="rounded-md bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">{busy ? "Saving…" : "Save rating"}</button>
         </div>
       </div>

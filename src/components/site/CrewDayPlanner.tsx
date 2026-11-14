@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { CrewPassportBadge, PassportBadge, useCrewTravelStatus } from "@/components/PassportStatus";
 import { useMemo, useState, useSyncExternalStore } from "react";
@@ -232,7 +233,7 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
               );
             })}
             <th className="min-w-[7rem] px-2 py-2 text-left sm:min-w-[11rem] sm:px-3">
-              <button onClick={sc.createScenario} className={`${ghost} whitespace-nowrap`}><Plus className="h-3.5 w-3.5 shrink-0" /> <span className="hidden sm:inline">Add Sandbox {sc.scenarios.length + 2}</span><span className="sm:hidden">Add</span></button>
+              <button onClick={sc.createScenario} className={`${ghost} whitespace-nowrap`}><Plus className="h-3.5 w-3.5 shrink-0" /> <span className="hidden sm:inline">Add Sandbox {sc.scenarios.length + 2}</span><span className="sm:hidden"><UiText k="common.add" /></span></button>
             </th>
           </tr>
         </thead>
@@ -340,7 +341,7 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
             <Dialog open onOpenChange={() => setGuidedFor(null)}>
               <DialogContent className="max-w-sm">
                 <DialogHeader><DialogTitle>AI Crew Wizard · {target.label}</DialogTitle><DialogDescription>Done — every open role has been reviewed.</DialogDescription></DialogHeader>
-                <DialogFooter><Button type="button" onClick={() => setGuidedFor(null)}>Close</Button></DialogFooter>
+                <DialogFooter><Button type="button" onClick={() => setGuidedFor(null)}><UiText k="common.close" /></Button></DialogFooter>
               </DialogContent>
             </Dialog>
           );
@@ -353,7 +354,7 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>AI Crew Wizard · {target.label}</DialogTitle>
-                <DialogDescription>Role {guidedFor.idx + 1} of {guidedFor.roles.length}: {role}</DialogDescription>
+                <DialogDescription><UiText k="common.role" />{" "}{guidedFor.idx + 1} of {guidedFor.roles.length}: {role}</DialogDescription>
               </DialogHeader>
               <div className="max-h-72 space-y-1.5 overflow-y-auto">
                 {candidates.length === 0 && <p className="text-xs text-muted-foreground">No available crew fit this role.</p>}
@@ -624,9 +625,7 @@ export function CrewDayPlanner({ p }: { p: Production }) {
                     {copyOpenFor === day && (
                       <div className="absolute right-0 top-full z-20 mt-1 w-60 rounded-sm border border-border bg-card p-3 text-foreground shadow-md">
                         <label className="flex items-center gap-2 border-b border-border pb-2 text-xs font-semibold">
-                          <input type="checkbox" checked={copyTargets.size === otherDays.length} onChange={() => toggleSelectAll(otherDays)} className="accent-primary" />
-                          Select all
-                        </label>
+                          <input type="checkbox" checked={copyTargets.size === otherDays.length} onChange={() => toggleSelectAll(otherDays)} className="accent-primary" /><UiText k="library.selectAll" /></label>
                         <ul className="max-h-48 space-y-1 overflow-y-auto py-2">
                           {otherDays.map((d) => (
                             <li key={d}>

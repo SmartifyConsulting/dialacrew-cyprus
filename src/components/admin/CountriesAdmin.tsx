@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -98,7 +99,7 @@ export function CountriesAdmin() {
       <label className="text-xs"><span className="mb-1 block text-muted-foreground">Currency</span>
         <input className={`${field} w-20 uppercase`} maxLength={3} value={draft.currency} onChange={(e) => setDraft({ ...draft, currency: e.target.value })} placeholder="KES" /></label>
       <button onClick={() => void submit()} className={btn}>{editing === "new" ? "Add country" : "Save"}</button>
-      <button onClick={() => setEditing(null)} className="rounded-sm px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground">Cancel</button>
+      <button onClick={() => setEditing(null)} className="rounded-sm px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"><UiText k="common.cancel" /></button>
     </div>
   );
 
@@ -135,7 +136,7 @@ export function CountriesAdmin() {
                           {busy === `${c.code}-${k.key}` ? "Uploading…" : url ? "Replace" : "Upload"}
                           <input type="file" accept="image/*" className="sr-only" disabled={!!busy} onChange={(e) => { void upload(c.code, k.key, e.target.files?.[0]); e.target.value = ""; }} />
                         </label>
-                        {url && <button type="button" onClick={() => void clear(c.code, k.key)} className="rounded-sm bg-muted px-2 py-1 text-xs text-muted-foreground hover:text-foreground">Remove</button>}
+                        {url && <button type="button" onClick={() => void clear(c.code, k.key)} className="rounded-sm bg-muted px-2 py-1 text-xs text-muted-foreground hover:text-foreground"><UiText k="templates.remove" /></button>}
                       </div>
                     </div>
                   );

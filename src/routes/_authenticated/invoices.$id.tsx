@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -43,11 +44,11 @@ function InvoiceDetail() {
     <div className="text-right"><h1 className="text-3xl font-bold">{i.status==="draft"?"DRAFT INVOICE":vatRegistered ? "TAX INVOICE" : "INVOICE"}</h1><p>{i.invoice_number}</p><p>{new Date(i.created_at).toLocaleDateString("en-ZA")}</p><p className="font-semibold uppercase">{i.status}</p></div>
    </header>
    <p className="mb-6 text-sm"><strong>Bill to:</strong> {i.productions?.name} · {i.productions?.client}{field("customer_tax_number") && <span className="block">Customer VAT / tax number: {field("customer_tax_number")}</span>}</p>
-   <table className="w-full text-sm"><thead><tr className="border-b text-left"><th className="py-3">Description</th><th>Qty</th><th className="text-right">Amount (excl. VAT / tax)</th></tr></thead><tbody>
+   <table className="w-full text-sm"><thead><tr className="border-b text-left"><th className="py-3"><UiText k="productionModal.description" /></th><th>Qty</th><th className="text-right">Amount (excl. VAT / tax)</th></tr></thead><tbody>
     <tr className="border-b"><td className="py-3">{i.service_description || "Professional services"}</td><td>{i.days}</td><td className="text-right">{money(i.day_rate * i.days)}</td></tr>
     {i.equipment_amount > 0 && <tr className="border-b"><td className="py-3">Equipment rental</td><td>1</td><td className="text-right">{money(i.equipment_amount)}</td></tr>}
     {Number(i.wrap_fee)>0 && <tr className="border-b"><td className="py-3">Wrap-up / pack-down ({i.wrap_minutes} minutes at {money(Number(i.wrap_hourly_rate))} per hour)</td><td>{(Number(i.wrap_minutes)/60).toFixed(2)}h</td><td className="text-right">{money(Number(i.wrap_fee))}</td></tr>}
-    {i.overtime_amount > 0 && <tr className="border-b"><td className="py-3">Overtime</td><td>1</td><td className="text-right">{money(i.overtime_amount)}</td></tr>}
+    {i.overtime_amount > 0 && <tr className="border-b"><td className="py-3"><UiText k="dashboard.kind.Overtime" /></td><td>1</td><td className="text-right">{money(i.overtime_amount)}</td></tr>}
    </tbody></table>
    <div className="mt-6 space-y-2 text-right text-sm"><p>Subtotal: {money(i.subtotal)}</p><p>{vatRegistered ? `VAT / tax (${Number(i.vat_rate)}%)` : "VAT / tax (not charged)"}: {money(i.vat_amount)}</p><p className="text-xl font-bold">Total: {money(i.total)}</p></div>
    <footer className="mt-10 border-t pt-4 text-sm"><p className="whitespace-pre-line">{field("bank_details")}</p><p className="mt-4 whitespace-pre-line">{field("footer_text")}</p></footer>

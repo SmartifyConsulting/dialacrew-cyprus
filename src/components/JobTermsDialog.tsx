@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { useState } from "react";
 import terms from "@/content/terms.txt?raw";
 
@@ -19,7 +20,7 @@ export function JobTermsDialog({ jobName, role, onAccept, onClose, busy = false 
           <span>I have read and agree to the terms and conditions for <strong>{jobName}</strong>.</span>
         </label>
         <div className="flex justify-end gap-3">
-          <button type="button" onClick={onClose} disabled={busy} className="rounded-md border border-border px-4 py-2 text-sm font-semibold">Cancel</button>
+          <button type="button" onClick={onClose} disabled={busy} className="rounded-md border border-border px-4 py-2 text-sm font-semibold"><UiText k="common.cancel" /></button>
           <button type="button" onClick={onAccept} disabled={!agreed || busy} className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">{busy ? "Recording acceptance…" : "Agree & accept job"}</button>
         </div>
       </footer>

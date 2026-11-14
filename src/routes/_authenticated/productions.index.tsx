@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { DateInput } from "@/components/ui/date-input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useQuery } from "@tanstack/react-query";
@@ -310,8 +311,8 @@ function Productions() {
                   {addingType ? (
                     <div className="mt-1 flex gap-2">
                       <input autoFocus className={field} placeholder={t("productionModal.newType")} value={newType} onChange={(e) => setNewType(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addType())} />
-                      <button type="button" onClick={addType} className="shrink-0 rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground">Save</button>
-                      <button type="button" onClick={() => { setAddingType(false); setNewType(""); }} className="shrink-0 rounded-sm border border-border px-3 py-2 text-xs font-semibold">Cancel</button>
+                      <button type="button" onClick={addType} className="shrink-0 rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"><UiText k="common.save" /></button>
+                      <button type="button" onClick={() => { setAddingType(false); setNewType(""); }} className="shrink-0 rounded-sm border border-border px-3 py-2 text-xs font-semibold"><UiText k="common.cancel" /></button>
                     </div>
                   ) : (
                     <SearchableSelect className={`${field} mt-1`} value={f.type} onChange={(e) => e.target.value === "__add__" ? setAddingType(true) : setF({ ...f, type: e.target.value, name: f.name === `${f.type} - ${f.client}` || !f.name ? `${e.target.value} - ${f.client}` : f.name })}>
@@ -393,7 +394,7 @@ function Productions() {
             </div>
             <div className="mt-2 text-xs text-muted-foreground"><span className="whitespace-nowrap">{p.date ? fmtDate(p.date) : "Date TBC"}</span> · {p.days} day(s) · {p.location}</div>
             <div className="text-xs text-muted-foreground">Created {createdLabel(p.createdAt)}</div>
-            <div className="mt-3 flex items-center justify-between text-sm"><span>{fmtMoney(p.budget, p.currency)}</span><span className="text-xs text-muted-foreground">Crew {p.crewBooked}/{p.crewNeeded}</span></div>
+            <div className="mt-3 flex items-center justify-between text-sm"><span>{fmtMoney(p.budget, p.currency)}</span><span className="text-xs text-muted-foreground"><UiText k="accountRoles.crew" />{" "}{p.crewBooked}/{p.crewNeeded}</span></div>
             <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary" style={{ width: `${p.crewNeeded ? Math.min(100, (p.crewBooked / p.crewNeeded) * 100) : 0}%` }} /></div>
           </div>
         ))}

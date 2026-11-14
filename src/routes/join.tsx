@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
@@ -67,9 +68,7 @@ function Join() {
             <button
               disabled={state === "sending"}
               className="-mt-6 w-[150px] bg-primary py-4 font-script text-xl text-primary-foreground hover:opacity-90 disabled:opacity-60"
-            >
-              Send
-            </button>
+            ><UiText k="common.send" /></button>
           </div>
         </form>
       )}

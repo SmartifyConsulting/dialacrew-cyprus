@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,7 +34,7 @@ export function GigNegotiation({bookingId,role,offeredRate,productionId,onBusyCh
    finally { setBusy(false);onBusyChange?.(false); }
  }
  if(negotiations.isLoading||(role==="crew"&&me.isLoading))return <p role="status" className="mt-2 text-xs">Loading rate discussion…</p>;
- if(negotiations.isError||(role==="crew"&&me.isError))return <p role="alert" className="mt-2 text-xs text-destructive">Could not load rate discussion. <button className="underline" onClick={()=>{void negotiations.refetch();if(role==="crew")void me.refetch();}}>Try again</button></p>;
+ if(negotiations.isError||(role==="crew"&&me.isError))return <p role="alert" className="mt-2 text-xs text-destructive">Could not load rate discussion. <button className="underline" onClick={()=>{void negotiations.refetch();if(role==="crew")void me.refetch();}}><UiText k="library.retry" /></button></p>;
  if(role==="crew"&&!me.data?.id)return <p className="mt-2 text-xs">A linked crew profile is required to negotiate.</p>;
  if(role==="producer"&&!current.length)return null;
  return <div className="mt-2 space-y-2 rounded-md border border-border bg-muted/20 p-3 text-xs">
@@ -42,7 +43,7 @@ export function GigNegotiation({bookingId,role,offeredRate,productionId,onBusyCh
    <div><strong>{role==="producer"?(n.crew_members?.name??`Crew ${n.crew_id.slice(0,6)}`):"Your negotiation"}</strong> · {n.status.replaceAll("_"," ")} · Latest {money(Number(n.latest_rate))} from {n.latest_by}</div>
    {((role==="crew"&&n.status==="pending_crew")||(role==="producer"&&n.status==="pending_producer"))&&<div className="space-y-2">
     {role==="crew"&&Number(n.latest_rate)<Number(me.data?.day_rate??0)&&<label className="flex items-start gap-2"><input type="checkbox" checked={ack} onChange={e=>setAck(e.target.checked)}/><span>I acknowledge that {money(Number(n.latest_rate))} is below my usual day rate of {money(Number(me.data?.day_rate??0))}, and I agree to accept this lower rate for this job.</span></label>}
-    <div className="flex flex-wrap gap-2"><button disabled={busy||(role==="crew"&&Number(n.latest_rate)<Number(me.data?.day_rate??0)&&!ack)} onClick={()=>act(n.crew_id,"accept",n)} className="rounded bg-primary px-2 py-1 text-primary-foreground disabled:opacity-50">Accept {money(Number(n.latest_rate))}</button><button disabled={busy} onClick={()=>act(n.crew_id,"decline",n)} className="rounded border px-2 py-1">Decline</button></div>
+    <div className="flex flex-wrap gap-2"><button disabled={busy||(role==="crew"&&Number(n.latest_rate)<Number(me.data?.day_rate??0)&&!ack)} onClick={()=>act(n.crew_id,"accept",n)} className="rounded bg-primary px-2 py-1 text-primary-foreground disabled:opacity-50">Accept {money(Number(n.latest_rate))}</button><button disabled={busy} onClick={()=>act(n.crew_id,"decline",n)} className="rounded border px-2 py-1"><UiText k="dashboard.decline" /></button></div>
    </div>}
    {n.status==="accepted"&&<div className="font-semibold">Agreed: {money(Number(n.agreed_rate))} / day</div>}
   </div>)}

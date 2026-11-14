@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
@@ -174,7 +175,7 @@ export function TopNav() {
 function RoleGate({ children, open }: { children: ReactNode; open?: boolean | undefined }) {
   const { session } = useSession();
   const role = useRole(session?.user.id);
-  if (!session || role.isLoading) return <p className="text-muted-foreground">Loading…</p>;
+  if (!session || role.isLoading) return <p className="text-muted-foreground"><UiText k="library.loading" /></p>;
   const isManager = role.data === "producer" || (role.data as string) === "admin";
   if (!isManager && !open)
     return (

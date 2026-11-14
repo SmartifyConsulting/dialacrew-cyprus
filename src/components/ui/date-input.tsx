@@ -66,7 +66,7 @@ export function DateInput({
             min={undefined}
             max={undefined}
             type="text"
-            value={draft ?? displayDate(raw)}
+            value={draft ?? displayDate(raw, greek ? "el" : "en")}
             placeholder={props.placeholder ?? "dd-MMM-yy"}
             autoComplete="off"
             onChange={(event) => {

@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { DateInput } from "@/components/ui/date-input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -291,7 +292,7 @@ function ProjectRow({ job: j, userId, canRespond, isProducer, onChange }: { job:
       {canRespond && pending && (
         <div className="mt-2 flex gap-2">
           <button onClick={accept} className="rounded-sm bg-success px-3 py-1.5 text-xs font-semibold text-white">Accept</button>
-          <button onClick={decline} className="rounded-sm bg-[#DC143C] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#DC143C]/90">Decline</button>
+          <button onClick={decline} className="rounded-sm bg-[#DC143C] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#DC143C]/90"><UiText k="dashboard.decline" /></button>
           <button onClick={() => setNegOpen(!negOpen)} className="ml-auto text-xs text-primary hover:underline">{negOpen ? "Hide rate negotiation" : "Negotiate rate"}</button>
         </div>
       )}
@@ -306,7 +307,7 @@ function ProjectRow({ job: j, userId, canRespond, isProducer, onChange }: { job:
               {n.status === "pending" && n.proposed_by !== userId && (
                 <div className="flex gap-2">
                   <button onClick={() => respondProposal(n.id, "accepted")} className="text-primary hover:underline">Accept</button>
-                  <button onClick={() => respondProposal(n.id, "declined")} className="font-semibold text-destructive hover:underline">Decline</button>
+                  <button onClick={() => respondProposal(n.id, "declined")} className="font-semibold text-destructive hover:underline"><UiText k="dashboard.decline" /></button>
                 </div>
               )}
             </div>
@@ -422,7 +423,7 @@ function BankingTab({ crewId }: { crewId: string }) {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Lock className="h-3 w-3" /> Encrypted at rest · only you and producers can view this</p>
-        {!editing && <button onClick={() => setEditing(true)} className="text-xs font-semibold text-primary hover:underline">Edit</button>}
+        {!editing && <button onClick={() => setEditing(true)} className="text-xs font-semibold text-primary hover:underline"><UiText k="common.edit" /></button>}
       </div>
       {editing ? (
         <div className="grid gap-3 sm:grid-cols-2">
@@ -448,7 +449,7 @@ function BankingTab({ crewId }: { crewId: string }) {
             <textarea rows={2} className={`${input} mt-1 w-full`} value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} /></label>
           <div className="flex gap-2 sm:col-span-2">
             <button disabled={saving} onClick={save} className={`${btn} disabled:opacity-60`}>{saving ? "Saving…" : "Save"}</button>
-            <button onClick={() => setEditing(false)} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold">Cancel</button>
+            <button onClick={() => setEditing(false)} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold"><UiText k="common.cancel" /></button>
           </div>
         </div>
       ) : (
@@ -531,7 +532,7 @@ function PassportTab({ crewId, canEdit }: { crewId: string; canEdit: boolean }) 
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Lock className="h-3 w-3" /> Encrypted at rest · only you and producers can view this</p>
-        {!editing && canEdit && <button onClick={() => setEditing(true)} className="text-xs font-semibold text-primary hover:underline">Edit</button>}
+        {!editing && canEdit && <button onClick={() => setEditing(true)} className="text-xs font-semibold text-primary hover:underline"><UiText k="common.edit" /></button>}
       </div>
       <p className="text-xs text-muted-foreground">These details are used to book flights when a production requires international travel.</p>
       {editing ? (
@@ -544,7 +545,7 @@ function PassportTab({ crewId, canEdit }: { crewId: string; canEdit: boolean }) 
             <DateInput type="date" className={`${input} mt-1 w-full`} value={f.expiryDate} onChange={(e) => setF({ ...f, expiryDate: e.target.value })} /></label>
           <div className="flex gap-2 sm:col-span-2">
             <button disabled={saving} onClick={save} className={`${btn} disabled:opacity-60`}>{saving ? "Saving…" : "Save"}</button>
-            <button onClick={() => setEditing(false)} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold">Cancel</button>
+            <button onClick={() => setEditing(false)} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold"><UiText k="common.cancel" /></button>
           </div>
         </div>
       ) : (
@@ -590,7 +591,7 @@ function Kit({ crewId, items, canEdit, onChange }: { crewId: string; items: { id
           <input className={`${input} flex-1`} placeholder="Item (e.g. ARRI Alexa Mini)" value={n.name} onChange={(e) => setN({ ...n, name: e.target.value })} />
           <SearchableSelect className={input} value={n.category} onChange={(e) => setN({ ...n, category: e.target.value })}>{["Equipment", "Prop", "Vehicle", "Lighting", "Sound", "Wardrobe"].map((c) => <option key={c} value={c}>{c === "Equipment" ? "Inventory" : c}</option>)}</SearchableSelect>
           <input type="number" className={`${input} w-32`} placeholder="Fee / day (R)" value={n.fee} onChange={(e) => setN({ ...n, fee: e.target.value })} />
-          <button className={btn} onClick={add}>Add</button>
+          <button className={btn} onClick={add}><UiText k="common.add" /></button>
         </div>
       )}
     </div>

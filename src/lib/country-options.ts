@@ -8,3 +8,14 @@ export function countryOptions(configured: {code:string;name:string}[] = []) {
  return [...all.values()].sort((a,b)=>a.name.localeCompare(b.name,"en"));
 }
 export function useCountryOptions(){return countryOptions(useCountries());}
+
+/** Translate official country names for display without changing stored/custom labels. */
+export function countryDisplayName(country:{code:string;name:string},language:string){
+ try {
+  if(!/^[A-Z]{2}$/.test(country.code))return country.name;
+  const standard=new Intl.DisplayNames(["en"],{type:"region"}).of(country.code);
+  if(standard!==country.name)return country.name;
+  const localized=new Intl.DisplayNames([language||"en"],{type:"region"}).of(country.code);
+  return localized && localized!==country.code ? localized : country.name;
+ }catch{return country.name;}
+}

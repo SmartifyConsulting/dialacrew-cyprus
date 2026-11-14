@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -50,7 +51,7 @@ function BillingPanel({ userId, embedded }: { userId: string | undefined; embedd
       <div className="space-y-2 p-4 text-sm">
         <div className="flex items-center justify-between"><span className="text-muted-foreground">Plan</span><span className="font-medium capitalize">{plan?.membership_type ?? role.data ?? "—"}</span></div>
         <div className="flex items-center justify-between"><span className="text-muted-foreground">Price</span><span className="font-medium">{plan ? `${plan.currency} ${(plan.price_cents / 100).toFixed(2)}` : "—"}</span></div>
-        <div className="flex items-center justify-between"><span className="text-muted-foreground">Status</span>{current ? <Badge>{current.status}</Badge> : <span>No membership yet</span>}</div>
+        <div className="flex items-center justify-between"><span className="text-muted-foreground"><UiText k="productionList.columns.Status" /></span>{current ? <Badge>{current.status}</Badge> : <span>No membership yet</span>}</div>
         <div className="flex items-center justify-between"><span className="text-muted-foreground">Started</span><span>{fmt(current?.started_at ?? null)}</span></div>
         <div className="flex items-center justify-between"><span className="text-muted-foreground">Renews / expires</span><span>{fmt(current?.expires_at ?? null)}</span></div>
       </div>

@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Page } from "@/components/AppShell";
@@ -29,7 +30,7 @@ function ReportsPage() {
   const isAdmin = role.data === "admin";
   const [tab, setTab] = useState<(typeof TABS)[number]>("Production Intelligence");
 
-  if (role.isLoading) return <Page open title="Reports"><p className="text-muted-foreground">Loading…</p></Page>;
+  if (role.isLoading) return <Page open title="Reports"><p className="text-muted-foreground"><UiText k="library.loading" /></p></Page>;
   if (!isAdmin && role.data !== "producer") return <Page open title="Reports"><p className="text-muted-foreground">Reports are for producers only.</p></Page>;
 
   return (

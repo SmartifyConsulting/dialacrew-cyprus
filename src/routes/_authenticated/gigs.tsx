@@ -1,4 +1,6 @@
 import { TimeInput, DateTimeInput } from "@/components/ui/time-input";
+import { UiText } from "@/components/UiText";
+
 import { DateInput } from "@/components/ui/date-input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { createFileRoute } from "@tanstack/react-router";
@@ -8,7 +10,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { startGigCheckout, verifyGigCheckout, chargeGigPenalties } from "@/lib/paystack.functions";
 import { toast } from "sonner";
 import { useDepartments } from "@/lib/db";
-import { useCountryOptions } from "@/lib/country-options";
+import { countryDisplayName, useCountryOptions } from "@/lib/country-options";
 import { EQUIPMENT_CATEGORIES, useEquipmentItems } from "@/lib/equipment";
 import { AddressAutocomplete } from "@/components/site/SiteTabs";
 import { PolishDescription } from "@/components/site/PolishDescription";
@@ -44,7 +46,7 @@ type Gig = Database["public"]["Tables"]["community_gigs"]["Row"];
 const empty = { title: "", role: "", department: "", description: "", event_date: "", end_date: "", call_time: "", venue: "", country: "South Africa", kit_required: "", pay_type: "day_rate", amount: "", contact_phone: "", expires_at: "" };
 
 function GigsPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { session } = useSession();
   const uid = session?.user.id;
   const role = useRole(uid).data;
@@ -98,15 +100,15 @@ function GigsPage() {
     const required: (keyof typeof empty)[] = ["title", "role", "department", "description", "event_date", "call_time", "venue", "country", "amount", "contact_phone", "expires_at"];
     const missing = required.filter((k) => !String(form[k]).trim());
     if (missing.length) {
-      const labels: Record<string,string> = { title: "Gig title", role: "Role needed", department: "Department", description: "Description", event_date: "Event date", call_time: "Call time", venue: "Venue / address", country: "Country", amount: "Amount", contact_phone: "Contact phone", expires_at: "Posting expiry" };
-      return void toast.error(`Please complete: ${missing.map(k => labels[k] ?? k).join(", ")}.`);
+      const labels: Record<string,string> = {title: t("gigForm.title").replace(/\s*\*/g,""), role: t("gigForm.role").replace(/\s*\*/g,""), department: t("gigForm.department").replace(/\s*\*/g,""), description: t("gigForm.description").replace(/\s*\*/g,""), event_date: t("gigForm.date").replace(/\s*\*/g,""), call_time: t("gigForm.call").replace(/\s*\*/g,""), venue: t("gigForm.venue").replace(/\s*\*/g,""), country: t("gigForm.country").replace(/\s*\*/g,""), amount: t("gigForm.amount").replace(/\s*\*/g,""), contact_phone: t("gigForm.phone").replace(/\s*\*/g,""), expires_at: t("gigForm.expiry").replace(/\s*\*/g,"")};
+      return void toast.error(t("gigForm.missing",{fields:missing.map(k => labels[k] ?? k).join(", ")}));
     }
-    if (new Date(form.expires_at) > new Date(`${form.event_date}T${form.call_time}`)) return void toast.error("The posting must expire before the event starts.");
+    if (new Date(form.expires_at) > new Date(`${form.event_date}T${form.call_time}`)) return void toast.error(t("gigForm.expiryBefore"));
     let contactPhone: string;
     try { contactPhone = internationalPhone(form.contact_phone, phonePrefix); } catch (e) { return void toast.error((e as Error).message); }
-    if (!Number.isFinite(Number(form.amount)) || Number(form.amount) <= 0) return void toast.error("Enter a positive amount.");
-    if (form.end_date && form.end_date < form.event_date) return void toast.error("End date cannot be before the event date.");
-    if (new Date(form.expires_at) <= new Date()) return void toast.error("The posting expiry must be in the future.");
+    if (!Number.isFinite(Number(form.amount)) || Number(form.amount) <= 0) return void toast.error(t("gigForm.positiveAmount"));
+    if (form.end_date && form.end_date < form.event_date) return void toast.error(t("gigForm.endBefore"));
+    if (new Date(form.expires_at) <= new Date()) return void toast.error(t("gigForm.futureExpiry"));
     setPosting(true);
     try {
     const { data: p } = await supabase.from("profiles").select("full_name, email").eq("id", uid!).maybeSingle();
@@ -115,7 +117,7 @@ function GigsPage() {
       expires_at: new Date(form.expires_at).toISOString(), poster_name: p?.full_name || p?.email || "Crew member",
     });
     if (error) return void toast.error(error.message);
-    toast.success("Gig posted to the community"); setForm(empty); setShowForm(false); refresh();
+    toast.success(t("gigForm.posted")); setForm(empty); setShowForm(false); refresh();
     } catch (e) { toast.error((e as Error).message); } finally { setPosting(false); }
   }
   async function secure(g: Gig) {
@@ -150,7 +152,7 @@ function GigsPage() {
   return (
     <Page open title={t("nav.findGigs")} subtitle={t("gigs.subtitle")}>
       <div role="tablist" aria-label="Gigs" className="mb-6 flex gap-2 border-b border-border">
-        {([["find", "Find a Gig"], ["post", "Post a Gig"]] as const).map(([k, l]) => (
+        {([["find", t("gigForm.findTab")], ["post", t("gigForm.postTab")]] as const).map(([k, l]) => (
           <button key={k} role="tab" aria-selected={view === k} onClick={() => { setView(k); window.history.replaceState(null, "", k === "post" ? "/gigs#post" : "/gigs"); }}
             className={`border-b-2 px-4 py-2 text-sm font-semibold ${view === k ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}>{l}</button>
         ))}
@@ -158,36 +160,37 @@ function GigsPage() {
       {view === "find" && <Panel title={t("gigs.open")}><div className="p-4"><FindGigsTab canClaim={role === "crew" && !!crewId} canManage={role === "producer" || role === "admin"} /></div></Panel>}
 
       <div className={view === "find" ? "mt-8" : ""}>
-        <Panel title={view === "post" ? "Post a Gig" : t("gigs.community")}>
+        <Panel title={view === "post" ? t("gigForm.postTab") : t("gigs.community")}>
           <div className="p-4">
             <p className="text-sm text-muted-foreground">{t("gigs.communityHelp")}</p>
 
             {showForm && (
               <div id="post-gig-form" className="mt-4 rounded-xl border border-border p-4">
                 <div className="grid gap-3 md:grid-cols-2">
-                  <label className="text-sm">Gig title *<input required className={field} value={form.title} onChange={set("title")} /></label>
-                  <label className="text-sm">Role needed *<input required className={field} placeholder="e.g. Focus puller" value={form.role} onChange={set("role")} /></label>
-                  <label className="text-sm">Department<SearchableSelect required className={field} value={form.department} onChange={set("department")}><option value="">Select department</option>{departments.map(d => <option key={d}>{d}</option>)}</SearchableSelect></label>
-                  <div className="text-sm"><label htmlFor="gig-contact">Contact phone</label><div className="flex gap-2"><SearchableSelect aria-label="Phone country code" className={`${field} max-w-44`} value={phonePrefix} onChange={e => setPhonePrefix(e.target.value)}>{PHONE_CODES.map(([name, code]) => <option key={name} value={code}>{name} ({code})</option>)}</SearchableSelect><input id="gig-contact" required type="tel" inputMode="tel" className={field} value={form.contact_phone} onChange={set("contact_phone")} /></div></div>
-                  <label className="text-sm">Event date *<DateInput required type="date" className={field} value={form.event_date} onChange={set("event_date")} /></label>
-                  <label className="text-sm">End date<DateInput type="date" className={field} value={form.end_date} onChange={set("end_date")} /></label>
-                  <label className="text-sm">Call time *<TimeInput required  className={field} value={form.call_time} onChange={set("call_time")} /></label>
-                  <label className="text-sm">Posting expires *<DateTimeInput aria-label="Posting expires" required className={field} value={form.expires_at} onChange={set("expires_at")} /></label>
-                  <div className="text-sm md:col-span-2">Venue / address<AddressAutocomplete required className={field} placeholder="Start typing the venue or street address" country={countries.find(c => c.name === form.country)?.code.toLowerCase() ?? ""} value={form.venue} onChange={venue => setForm(f => ({ ...f, venue }))} onSelect={place => setForm(f => ({ ...f, venue: place.exactAddress }))} /></div>
-                  <label className="text-sm">Country *<SearchableSelect required className={field} value={form.country} onChange={set("country")}>{countries.map((c) => <option key={c.code} value={c.name}>{c.name}</option>)}</SearchableSelect></label>
-                  <label className="text-sm">Inventory required<SearchableSelect className={field} value={form.kit_required} onChange={set("kit_required")}><option value="">None required</option>{[...new Set([...EQUIPMENT_CATEGORIES, ...equipment.map(i => i.name)])].map(name => <option key={name} value={name}>{name === "Equipment" ? "Inventory" : name}</option>)}</SearchableSelect></label>
-                  <label className="text-sm">Pay type *<SearchableSelect required className={field} value={form.pay_type} onChange={set("pay_type")}><option value="day_rate">Day rate</option><option value="fixed">Fixed price</option></SearchableSelect></label>
-                  <label className="text-sm">Amount (R) *<input required type="number" min="1" className={field} value={form.amount} onChange={set("amount")} /></label>
-                  <label className="text-sm md:col-span-2">Description *<textarea required rows={3} className={field} value={form.description} onChange={set("description")} /></label>
+                  <label className="text-sm">{t("gigForm.title")}<input required className={field} value={form.title} onChange={set("title")} /></label>
+                  <label className="text-sm">{t("gigForm.role")}<input required className={field} placeholder={t("gigForm.roleExample")} value={form.role} onChange={set("role")} /></label>
+                  <label className="text-sm">{t("gigForm.department")}<SearchableSelect required className={field} value={form.department} onChange={set("department")}><option value="">{t("gigForm.chooseDepartment")}</option>{departments.map(d => <option key={d} value={d}>{t(`gigDepartments.${d}`, {defaultValue:d})}</option>)}</SearchableSelect></label>
+                  <div className="text-sm"><label htmlFor="gig-contact">{t("gigForm.phone")}</label><div className="flex gap-2"><SearchableSelect aria-label={t("gigForm.phoneCode")} className={`${field} max-w-44`} value={phonePrefix} onChange={e => setPhonePrefix(e.target.value)}>{PHONE_CODES.map(([name, code]) => <option key={name} value={code}>{countryDisplayName(countries.find(c=>c.name===name)??{code:"",name},i18n.language)} ({code})</option>)}</SearchableSelect><input id="gig-contact" required type="tel" inputMode="tel" className={field} value={form.contact_phone} onChange={set("contact_phone")} /></div></div>
+                  <label className="text-sm">{t("gigForm.date")}<DateInput required type="date" className={field} value={form.event_date} onChange={set("event_date")} /></label>
+                  <label className="text-sm"><UiText k="productionModal.end" /><DateInput type="date" className={field} value={form.end_date} onChange={set("end_date")} /></label>
+                  <label className="text-sm">{t("gigForm.call")}<TimeInput required  className={field} value={form.call_time} onChange={set("call_time")} /></label>
+                  <label className="text-sm">{t("gigForm.expiry")}<DateTimeInput aria-label={t("gigForm.expiryLabel")} required className={field} value={form.expires_at} onChange={set("expires_at")} /></label>
+
+                  <div className="text-sm md:col-span-2">{t("gigForm.venue")}<AddressAutocomplete required className={field} placeholder={t("gigForm.addressHint")} country={countries.find(c => c.name === form.country)?.code.toLowerCase() ?? ""} value={form.venue} onChange={venue => setForm(f => ({ ...f, venue }))} onSelect={place => setForm(f => ({ ...f, venue: place.exactAddress }))} /></div>
+                  <label className="text-sm">{t("gigForm.country")}<SearchableSelect required className={field} value={form.country} onChange={set("country")}>{countries.map((c) => <option key={c.code} value={c.name}>{countryDisplayName(c,i18n.language)}</option>)}</SearchableSelect></label>
+                  <label className="text-sm">{t("gigForm.inventory")}<SearchableSelect className={field} value={form.kit_required} onChange={set("kit_required")}><option value="">{t("gigForm.noInventory")}</option>{[...new Set([...EQUIPMENT_CATEGORIES, ...equipment.map(i => i.name)])].map(name => <option key={name} value={name}>{t(`inventoryCategories.${name}`, {defaultValue:name})}</option>)}</SearchableSelect></label>
+                  <label className="text-sm">{t("gigForm.payType")}<SearchableSelect required className={field} value={form.pay_type} onChange={set("pay_type")}><option value="day_rate">{t("gigForm.dayRate")}</option><option value="fixed">{t("gigForm.fixed")}</option></SearchableSelect></label>
+                  <label className="text-sm">{t("gigForm.amount")}<input required type="number" min="1" className={field} value={form.amount} onChange={set("amount")} /></label>
+                  <label className="text-sm md:col-span-2">{t("gigForm.description")}<textarea required rows={3} className={field} value={form.description} onChange={set("description")} /></label>
                   <div className="md:col-span-2"><PolishDescription text={form.description} name={form.title} type={`Crew gig: ${form.role}`.slice(0,60)} client="" onPolished={description => setForm(f => ({ ...f, description }))} /></div>
-                  <div className="md:col-span-2"><button disabled={posting} onClick={post} className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">{posting ? "Posting…" : "Post to community"}</button></div>
+                  <div className="md:col-span-2"><button disabled={posting} onClick={post} className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">{posting ? t("gigForm.posting") : t("gigForm.submit")}</button></div>
                 </div>
               </div>
             )}
 
             {view === "find" && <>
             <h4 className="mt-6 text-sm font-semibold uppercase tracking-wide text-primary">{t("nav.findGigs")}</h4>
-            <label className="mt-3 block text-sm">Department<SearchableSelect className={field} value={departmentFilter} onChange={e => setDepartmentFilter(e.target.value)}><option value="">All departments</option>{departments.map(d => <option key={d}>{d}</option>)}</SearchableSelect></label>
+            <label className="mt-3 block text-sm">{t("gigForm.department")}<SearchableSelect className={field} value={departmentFilter} onChange={e => setDepartmentFilter(e.target.value)}><option value="">{t("gigForm.allDepartments")}</option>{departments.map(d => <option key={d} value={d}>{t(`gigDepartments.${d}`, {defaultValue:d})}</option>)}</SearchableSelect></label>
             {isCrew && (
               <label className="my-4 flex items-start gap-2 rounded-xl border border-border bg-card p-3 text-sm">
                 <input type="checkbox" className="mt-1" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
@@ -206,7 +209,7 @@ function GigsPage() {
                   <p className="text-sm text-muted-foreground">{g.role} · {g.department}</p>
                   <p className="mt-2 text-sm">{g.event_date}{g.end_date ? ` – ${g.end_date}` : ""} · call {String(g.call_time).slice(0, 5)}</p>
                   <p className="text-sm">{g.venue}, {g.country}</p>
-                  {g.kit_required && <p className="text-sm text-muted-foreground">Inventory: {g.kit_required === "Equipment" ? "Inventory" : g.kit_required}</p>}
+                  {g.kit_required && <p className="text-sm text-muted-foreground">{t("gigForm.inventoryLabel")} {g.kit_required === "Equipment" ? "Inventory" : g.kit_required}</p>}
                   <div className="mt-2 text-sm text-muted-foreground"><AutoTranslatedText text={g.description} /></div>
                   <p className="mt-3 text-xl font-bold text-foreground">{rand(g.amount)} <span className="text-sm font-normal text-muted-foreground">{g.pay_type === "fixed" ? t("gigs.fixed") : t("gigs.perDay")}</span></p>
                   <p className="text-xs text-muted-foreground">Posted by {g.poster_name} · expires {new Date(g.expires_at).toLocaleString("en-ZA")}</p>

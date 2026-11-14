@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { DateInput } from "@/components/ui/date-input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useMemo, useState } from "react";
@@ -137,12 +138,12 @@ export function FinanceStatement({ includeAi }: { includeAi: boolean }) {
         <div className="flex flex-wrap items-end gap-3 border-b border-border p-4 text-xs">
           <label className="space-y-1"><span className="block text-muted-foreground">From</span><DateInput type="date" className={field} value={from} max={to} onChange={(e) => setFrom(e.target.value)} /></label>
           <label className="space-y-1"><span className="block text-muted-foreground">To</span><DateInput type="date" className={field} value={to} min={from} onChange={(e) => setTo(e.target.value)} /></label>
-          <label className="space-y-1"><span className="block text-muted-foreground">Type</span>
-            <SearchableSelect className={field} value={type} onChange={(e) => setType(e.target.value as typeof type)}><option value="all">All</option><option value="income">Income</option><option value="expenses">Expenses</option></SearchableSelect></label>
+          <label className="space-y-1"><span className="block text-muted-foreground"><UiText k="productionList.columns.Type" /></span>
+            <SearchableSelect className={field} value={type} onChange={(e) => setType(e.target.value as typeof type)}><option value="all"><UiText k="directory.all" /></option><option value="income">Income</option><option value="expenses">Expenses</option></SearchableSelect></label>
           <label className="space-y-1"><span className="block text-muted-foreground">Supplier / party</span><input className={field} value={party} onChange={(e) => setParty(e.target.value)} placeholder="Any" /></label>
-          <label className="space-y-1"><span className="block text-muted-foreground">Project</span><input className={field} value={project} onChange={(e) => setProject(e.target.value)} placeholder="Any" /></label>
-          <label className="space-y-1"><span className="block text-muted-foreground">Status</span>
-            <SearchableSelect className={field} value={status} onChange={(e) => setStatus(e.target.value)}><option value="all">All</option>{statuses.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}</SearchableSelect></label>
+          <label className="space-y-1"><span className="block text-muted-foreground"><UiText k="review.project" /></span><input className={field} value={project} onChange={(e) => setProject(e.target.value)} placeholder="Any" /></label>
+          <label className="space-y-1"><span className="block text-muted-foreground"><UiText k="productionList.columns.Status" /></span>
+            <SearchableSelect className={field} value={status} onChange={(e) => setStatus(e.target.value)}><option value="all"><UiText k="directory.all" /></option>{statuses.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}</SearchableSelect></label>
           <label className="flex items-center gap-1.5 pb-1.5"><input type="checkbox" checked={showUnpaid} onChange={(e) => setShowUnpaid(e.target.checked)} /> Show unpaid / outstanding ({money(outstanding)})</label>
           <div className="ml-auto flex gap-3 pb-1.5 font-semibold text-primary">
             <button onClick={() => setAll(true)} className="hover:underline">Expand all</button>
@@ -178,9 +179,9 @@ export function FinanceStatement({ includeAi }: { includeAi: boolean }) {
                       ? <p className="px-10 pb-3 text-xs text-muted-foreground">No transactions recorded in this period.</p>
                       : <div className="overflow-x-auto px-4 pb-3"><table className="w-full text-xs">
                           <thead className="text-left text-[11px] text-muted-foreground"><tr>
-                            <th className="py-1.5 pl-6">Date</th><th>Reference</th><th>Party</th><th>Project / user</th><th>Description</th>
+                            <th className="py-1.5 pl-6"><UiText k="productionList.columns.Date" /></th><th>Reference</th><th>Party</th><th>Project / user</th><th><UiText k="productionModal.description" /></th>
                             {c.name.startsWith("AI") && <th className="text-right">Tokens</th>}
-                            <th className="text-right">Amount</th><th className="text-right">Cash</th><th className="pl-3">Status</th></tr></thead>
+                            <th className="text-right">Amount</th><th className="text-right">Cash</th><th className="pl-3"><UiText k="productionList.columns.Status" /></th></tr></thead>
                           <tbody>{list.map((r) => (
                             <tr key={r.key} onClick={() => setSel(r)} className="cursor-pointer border-t border-border hover:bg-muted/50">
                               <td className="whitespace-nowrap py-1.5 pl-6">{fmtDate(r.date)}</td>
@@ -212,7 +213,7 @@ export function FinanceStatement({ includeAi }: { includeAi: boolean }) {
               {([["Date", fmtDate(sel.date)], ["Reference", sel.ref], ["Party", sel.party], ["Project / user", sel.project], ["Description", sel.description], ...(sel.tokens != null ? [["Tokens", sel.tokens.toLocaleString("en-ZA")]] : []), ["Amount", money(sel.amount)], ["Cash moved", money(cashOf(sel))], ["Outstanding", money(sel.amount - cashOf(sel))]] as [string, string][]).map(([k, v]) => (
                 <div key={k} className="contents"><dt className="text-muted-foreground">{k}</dt><dd className="font-medium">{v}</dd></div>
               ))}
-              <dt className="text-muted-foreground">Status</dt>
+              <dt className="text-muted-foreground"><UiText k="productionList.columns.Status" /></dt>
               <dd>{sel.sourceType === "invoice"
                 ? <StatusPill value={sel.status as (typeof INVOICE_STATUSES)[number]} options={INVOICE_STATUSES} label={(s) => s} onChange={(s) => updateStatus(sel, s)} />
                 : sel.sourceType === "booking"

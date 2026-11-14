@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -160,7 +161,7 @@ function TemplateEditor({ template, busy, onSetDefault, onRename, onDelete }: {
       <div className="space-y-4 p-4">
         <div className="flex gap-2">
           <input className={`${input} flex-1`} value={name} onChange={(e) => setName(e.target.value)} aria-label="Checklist name" />
-          <button onClick={() => onRename(name)} className={btn}>Rename</button>
+          <button onClick={() => onRename(name)} className={btn}><UiText k="library.rename" /></button>
         </div>
         <ul className="divide-y divide-border rounded-sm border border-border text-sm">
           {items.length === 0 && <li className="p-3 text-muted-foreground">No items yet.</li>}
@@ -176,7 +177,7 @@ function TemplateEditor({ template, busy, onSetDefault, onRename, onDelete }: {
         <form onSubmit={(e) => { e.preventDefault(); addItem(); }} className="flex flex-wrap gap-2">
           <input className={`${input} min-w-48 flex-1`} placeholder={isCashflow ? "Cost line, e.g. Permit (JMPD)" : "Document, e.g. Call sheet"} value={label} onChange={(e) => setLabel(e.target.value)} />
           {isCashflow && <input className={`${input} w-32`} type="number" min={0} placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} />}
-          <button type="submit" className={btn}>Add item</button>
+          <button type="submit" className={btn}><UiText k="templates.addItem" /></button>
         </form>
       </div>
     </Panel>

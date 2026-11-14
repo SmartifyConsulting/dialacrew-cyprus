@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { DateInput } from "@/components/ui/date-input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useMemo, useState } from "react";
@@ -132,7 +133,7 @@ export function TokenLedger() {
       <details className="border-t border-border">
         <summary className="cursor-pointer px-4 py-2.5 text-xs font-semibold text-primary">Every call ({rows.length})</summary>
         <table className="w-full text-sm">
-          <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">When</th><th className="px-4">Activity</th><th className="px-4">Model</th><th className="px-4">Person</th><th className="px-4">Tokens</th><th className="px-4">Cost</th><th className="px-4">Result</th></tr></thead>
+          <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-4 py-2">When</th><th className="px-4"><UiText k="continuation.activity" /></th><th className="px-4">Model</th><th className="px-4">Person</th><th className="px-4">Tokens</th><th className="px-4">Cost</th><th className="px-4">Result</th></tr></thead>
           <tbody>{rows.map((r) => (
             <tr key={r.id} className="border-t border-border">
               <td className="whitespace-nowrap px-4 py-2 text-muted-foreground">{fmtDate(r.created_at)} {fmtTime(r.created_at)}</td>

@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Mic, Square, X } from "lucide-react";
@@ -65,8 +66,7 @@ export function AudioRecorder({ onDone, onCancel }: { onDone: (blob: Blob, trans
   const mm = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
   const cancelBtn = (
     <button onClick={cancel} type="button" className="flex items-center gap-1 rounded-sm border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:border-destructive hover:text-destructive">
-      <X className="h-3 w-3" /> Cancel
-    </button>
+      <X className="h-3 w-3" />{" "}<UiText k="common.cancel" /></button>
   );
 
   return (

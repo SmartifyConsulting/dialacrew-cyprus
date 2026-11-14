@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -32,27 +33,27 @@ export function AiBalance({ production, currency = "USD", embedded = false, show
     finally { setBusy(false); }
   }
   return <section className={`space-y-3 p-4 text-sm ${embedded ? "border-t border-border" : "rounded border border-border bg-card"}`}>
-    <h3 className="font-semibold">AI balance · {balance.data ? money(balance.data.usd, "USD") : "…"}</h3>
-    {balance.isError && <p role="alert">AI balance is unavailable. <button className="underline" onClick={() => void balance.refetch()}>Try again</button></p>}
+    <h3 className="font-semibold"><UiText k="continuation.balance" />{" "}{balance.data ? money(balance.data.usd, "USD") : "…"}</h3>
+    {balance.isError && <p role="alert"><UiText k="continuation.balanceError" />{" "}<button className="underline" onClick={() => void balance.refetch()}><UiText k="library.retry" /></button></p>}
     {balance.data && <>
-      <p className="text-xs text-muted-foreground">Total paid contributions: <strong className="text-foreground">{money(balance.data.contributedUsd, "USD")}</strong></p>
-      <p className="text-xs text-muted-foreground">Local equivalent: {money(balance.data.usd * balance.data.localPerUsd, balance.data.currency)}. Minimum top-up {money(balance.data.minimumUsd, "USD")} ≈ {money(balance.data.minimumUsd * balance.data.localPerUsd, balance.data.currency)} (R200 equivalent). Exchange rates are indicative; checkout confirms the local amount.</p>
-      <div className="flex flex-wrap items-center gap-3"><label>Top-up (USD) <input type="number" min={balance.data.minimumUsd} step="0.01" aria-label="AI balance top-up in USD" value={amount || balance.data.minimumUsd} onChange={(e) => setAmount(e.target.value)} className="w-24 rounded border border-input bg-background p-2" /></label>
+      <p className="text-xs text-muted-foreground"><UiText k="continuation.contributions" />{" "}<strong className="text-foreground">{money(balance.data.contributedUsd, "USD")}</strong></p>
+      <p className="text-xs text-muted-foreground"><UiText k="continuation.localEquivalent" />{" "}{money(balance.data.usd * balance.data.localPerUsd, balance.data.currency)}<UiText k="continuation.minimum" />{" "}{money(balance.data.minimumUsd, "USD")} ≈ {money(balance.data.minimumUsd * balance.data.localPerUsd, balance.data.currency)}{" "}<UiText k="continuation.exchangeNote" /></p>
+      <div className="flex flex-wrap items-center gap-3"><label><UiText k="continuation.topupUsd" />{" "}<input type="number" min={balance.data.minimumUsd} step="0.01" aria-label="AI balance top-up in USD" value={amount || balance.data.minimumUsd} onChange={(e) => setAmount(e.target.value)} className="w-24 rounded border border-input bg-background p-2" /></label>
       <span>{money(usd * balance.data.localPerUsd, balance.data.currency)}</span>
-      <button disabled={busy || !balance.data.paymentsConnected || usd < balance.data.minimumUsd} className="rounded bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50" onClick={async () => { setBusy(true); try { const result = await checkout({ data: { ...(production ? { productionId: production.id } : {}), currency: balance.data!.currency, usd } }); window.location.assign(result.url); } catch (error) { toast.error(friendlyError(error)); setBusy(false); } }}>Top up AI balance</button></div>
-      {!balance.data.paymentsConnected && <p role="status" className="text-xs text-destructive">AI top-up checkout is not connected yet. Please contact your administrator.</p>}
-      <p className="text-xs text-muted-foreground">USD charges: breakdown {money(balance.data.prices.breakdown, "USD")}; references {money(balance.data.prices.references, "USD")}; illustration or regeneration {money(balance.data.prices.image, "USD")}; PDF extraction {money(balance.data.prices.pdf, "USD")}. Failed operations are refunded.</p>
-      <p className="text-xs text-muted-foreground">Local-currency checkout requires that currency to be enabled on the payment account. Rates supplied by <a href="https://www.exchangerate-api.com" target="_blank" rel="noreferrer" className="underline">ExchangeRate-API</a>.</p>
+      <button disabled={busy || !balance.data.paymentsConnected || usd < balance.data.minimumUsd} className="rounded bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50" onClick={async () => { setBusy(true); try { const result = await checkout({ data: { ...(production ? { productionId: production.id } : {}), currency: balance.data!.currency, usd } }); window.location.assign(result.url); } catch (error) { toast.error(friendlyError(error)); setBusy(false); } }}><UiText k="continuation.topup" /></button></div>
+      {!balance.data.paymentsConnected && <p role="status" className="text-xs text-destructive"><UiText k="continuation.topupError" /></p>}
+      <p className="text-xs text-muted-foreground"><UiText k="continuation.breakdownCharge" />{" "}{money(balance.data.prices.breakdown, "USD")}<UiText k="continuation.referenceCharge" />{" "}{money(balance.data.prices.references, "USD")}<UiText k="continuation.imageCharge" />{" "}{money(balance.data.prices.image, "USD")}<UiText k="continuation.pdfCharge" />{" "}{money(balance.data.prices.pdf, "USD")}<UiText k="continuation.refundNote" /></p>
+      <p className="text-xs text-muted-foreground"><UiText k="continuation.currencyHelp" />{" "}<a href="https://www.exchangerate-api.com" target="_blank" rel="noreferrer" className="underline">ExchangeRate-API</a>.</p>
     </>}
     {showLedger && <div className="space-y-2 border-t border-border pt-3">
-      <h4 className="font-semibold">Your AI/token ledger</h4><p className="text-xs text-muted-foreground">AI credit transactions in USD.</p>
-      {ledger.isPending && <p role="status">Loading transactions…</p>}
-      {ledger.isError && <p role="alert">Could not load transactions. <button className="underline" onClick={() => void ledger.refetch()}>Retry</button></p>}
-      {ledger.isSuccess && <><div className="overflow-x-auto"><table className="w-full text-left text-xs"><thead><tr><th className="py-2">Date / time</th><th>Activity</th><th>Type</th><th className="text-right">Amount (USD)</th></tr></thead><tbody>
+      <h4 className="font-semibold"><UiText k="continuation.ledger" /></h4><p className="text-xs text-muted-foreground"><UiText k="continuation.ledgerHelp" /></p>
+      {ledger.isPending && <p role="status"><UiText k="continuation.loadingTransactions" /></p>}
+      {ledger.isError && <p role="alert"><UiText k="continuation.transactionsError" />{" "}<button className="underline" onClick={() => void ledger.refetch()}><UiText k="continuation.retry" /></button></p>}
+      {ledger.isSuccess && <><div className="overflow-x-auto"><table className="w-full text-left text-xs"><thead><tr><th className="py-2"><UiText k="continuation.dateTime" /></th><th><UiText k="continuation.activity" /></th><th><UiText k="productionList.columns.Type" /></th><th className="text-right"><UiText k="continuation.amountUsd" /></th></tr></thead><tbody>
         {ledger.data.map(row => <tr key={row.id} className="border-t border-border"><td className="whitespace-nowrap py-2 pr-3">{new Date(row.created_at).toLocaleString()}</td><td className="pr-3">{row.activity}</td><td className="pr-3">{row.kind === "topup" ? "Top-up" : row.kind === "charge" ? "Usage" : "Refund"}</td><td className="text-right">{row.kind === "charge" ? "−" : "+"}{money(Number(row.amount_micros) / 1_000_000,"USD")}</td></tr>)}
-        {!ledger.data.length && <tr><td colSpan={4} className="py-3 text-muted-foreground">No transactions yet.</td></tr>}
-      </tbody></table></div><div className="flex items-center justify-between text-xs"><button disabled={page === 0} onClick={() => setPage(p => p-1)} className="underline disabled:opacity-40">Previous</button><span>Page {page+1}</span><button disabled={ledger.data.length < 20} onClick={() => setPage(p => p+1)} className="underline disabled:opacity-40">Next</button></div></>}
+        {!ledger.data.length && <tr><td colSpan={4} className="py-3 text-muted-foreground"><UiText k="continuation.transactionsEmpty" /></td></tr>}
+      </tbody></table></div><div className="flex items-center justify-between text-xs"><button disabled={page === 0} onClick={() => setPage(p => p-1)} className="underline disabled:opacity-40"><UiText k="directory.previous" /></button><span><UiText k="continuation.page" />{" "}{page+1}</span><button disabled={ledger.data.length < 20} onClick={() => setPage(p => p+1)} className="underline disabled:opacity-40"><UiText k="directory.next" /></button></div></>}
     </div>}
-    {reference && <button disabled={busy} onClick={verifyPayment} className="underline">Verify returned AI payment</button>}
+    {reference && <button disabled={busy} onClick={verifyPayment} className="underline"><UiText k="continuation.verifyPayment" /></button>}
   </section>;
 }

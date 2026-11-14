@@ -1,3 +1,4 @@
+import { UiText } from "@/components/UiText";
 import { DateInput } from "@/components/ui/date-input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useQuery } from "@tanstack/react-query";
@@ -121,7 +122,7 @@ export function AuditTab({ p }: { p: { id: string } }) {
   return (
     <div className="space-y-4">
       {eventsQuery.isPending && <p role="status">Loading activity history…</p>}
-      {eventsQuery.isError && <p role="alert" className="rounded border border-destructive p-3 text-sm">Could not load complete activity history. <button className="underline" onClick={() => void eventsQuery.refetch()}>Retry</button></p>}
+      {eventsQuery.isError && <p role="alert" className="rounded border border-destructive p-3 text-sm">Could not load complete activity history. <button className="underline" onClick={() => void eventsQuery.refetch()}><UiText k="continuation.retry" /></button></p>}
       <Panel title={t("audit.title")}>
         <div className="grid gap-3 p-4 sm:grid-cols-3">
           <label className="text-xs font-semibold">{t("audit.search")}
