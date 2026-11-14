@@ -14,7 +14,7 @@ export function EquipmentAvailability({ p }: { p: { id: string; date: string; na
   const [search, setSearch] = useState("");
   return <Panel title="Our inventory" collapsible defaultCollapsed>
     <div className="space-y-2 p-3">
-      <Link to="/inventory" className="text-sm font-semibold text-primary">Open inventory library — request equipment</Link>
+      <Link to="/inventory" className="text-sm font-semibold text-primary">Open inventory library — request inventory</Link>
       <input aria-label="Search inventory" placeholder="Search inventory" value={search} onChange={e => setSearch(e.target.value)} className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm" />
       {stock.isError && <p role="alert">Inventory availability could not be loaded.</p>}
       {items.filter(i => i.name.toLowerCase().includes(search.toLowerCase())).map(item => {

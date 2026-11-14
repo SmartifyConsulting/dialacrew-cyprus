@@ -1,3 +1,4 @@
+import { TimeInput } from "@/components/ui/time-input";
 import { DateInput } from "@/components/ui/date-input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { taskAssignees } from "@/lib/task-assignees";
@@ -1777,27 +1778,8 @@ export const SiteIcons = { Users };
 
 /* Selectable 12-hour time slots; database values remain 24-hour HH:mm. */
 export function AmPmTimePicker({ value, onChange, label, placeholder = "Select time" }: { value: string; onChange: (value: string) => void; label: string; placeholder?: string }) {
-  const { i18n, t } = useTranslation();
-  const formatTime = (hour: number, minute: number) => new Intl.DateTimeFormat(i18n.language, { hour: "numeric", minute: "2-digit" }).format(new Date(2024, 0, 1, hour, minute));
-  // Listed starting at 8am (the usual start of a shoot day) and wrapping back around to 7:30am, rather than starting at midnight.
-  const options = Array.from({ length: 48 }, (_, i) => {
-    const h = Math.floor(((i + 16) % 48) / 2), m = (i + 16) % 2 ? "30" : "00";
-    return { value: `${String(h).padStart(2, "0")}:${m}`, label: formatTime(h, Number(m)) };
-  });
-  const normalized = value.slice(0, 5);
-  if (normalized && !options.some((option) => option.value === normalized)) {
-    const [hour, minute] = normalized.split(":").map(Number);
-    if (hour !== undefined && minute !== undefined && Number.isFinite(hour) && Number.isFinite(minute)) {
-      options.push({ value: normalized, label: formatTime(hour, minute) });
-      options.sort((a, b) => a.value.localeCompare(b.value));
-    }
-  }
-  return (
-    <SearchableSelect aria-label={label} className={`${input} min-w-0 flex-1 py-1 text-xs`} value={normalized} onChange={(e) => onChange(e.target.value)}>
-      <option value="">{placeholder === "Select time" ? t("productionModal.selectTime") : placeholder}</option>
-      {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-    </SearchableSelect>
-  );
+  const { t } = useTranslation();
+  return <TimeInput aria-label={label} className={`${input} min-w-0 flex-1 py-1 text-xs`} value={value} onChange={event=>onChange(event.target.value)} placeholder={placeholder === "Select time" ? t("productionModal.selectTime") : placeholder} />;
 }
 
 // A nicer date picker than the native <input type="date">: a button showing the chosen day, with a

@@ -97,7 +97,7 @@ export function EquipmentAdmin() {
         <div className="flex flex-wrap items-end gap-2 p-4">
           <input placeholder={t("equipment.name")} className={`${field} min-w-48 flex-1`} value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} />
           <SearchableSelect className={field} value={newItem.category} onChange={(e) => setNewItem({ ...newItem, category: e.target.value })} aria-label="Category">
-            {EQUIPMENT_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+            {EQUIPMENT_CATEGORIES.map((c) => <option key={c} value={c}>{c === "Equipment" ? "Inventory" : c}</option>)}
           </SearchableSelect>
           <input type="number" min="1" className={`${field} w-24`} placeholder={t("checkout.quantity")} value={newItem.total_count} onChange={(e) => setNewItem({ ...newItem, total_count: e.target.value })} aria-label={t("equipment.owned")} />
           <input placeholder={t("checkout.serial")} className={`${field} w-32`} value={newItem.serial_code} onChange={(e) => setNewItem({ ...newItem, serial_code: e.target.value })} />
@@ -106,7 +106,7 @@ export function EquipmentAdmin() {
         </div>
       </Panel>}
 
-      {stockQuery.isError && <p role="alert" className="text-sm text-destructive">Inventory availability could not be loaded. Please retry before requesting equipment.</p>}
+      {stockQuery.isError && <p role="alert" className="text-sm text-destructive">Inventory availability could not be loaded. Please retry before requesting inventory.</p>}
       <div className="flex items-center justify-between gap-2">
         <h2 className="font-display text-sm font-semibold uppercase tracking-wide text-primary">{t("equipment.inventory", { count: items.length })}</h2>
         <div className="relative">
@@ -125,7 +125,7 @@ export function EquipmentAdmin() {
             <button type="button" onClick={() => toggleCategory(category)}
               className="flex w-full items-center gap-2 border-b border-primary bg-primary px-4 py-2.5 text-left text-primary-foreground">
               <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${isOpen ? "" : "-rotate-90"}`} />
-              <span className="font-display text-sm font-semibold uppercase tracking-wide">{category}</span>
+              <span className="font-display text-sm font-semibold uppercase tracking-wide">{category === "Equipment" ? "Inventory" : category}</span>
               <span className="text-xs font-normal opacity-90">({catItems.length} item{catItems.length === 1 ? "" : "s"})</span>
             </button>
             {isOpen && (
@@ -144,7 +144,7 @@ export function EquipmentAdmin() {
                               <input className={`${field} mt-1 w-full`} placeholder="Serial/Asset ID" value={draft.serial_code} onChange={(e) => setDraft({ ...draft, serial_code: e.target.value })} aria-label="Serial/Asset ID" />
                               <input className={`${field} mt-1 w-full`} placeholder="Notes" value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} aria-label="Notes" />
                               <SearchableSelect className={`${field} mt-1`} value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })} aria-label="Category">
-                                {EQUIPMENT_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+                                {EQUIPMENT_CATEGORIES.map((c) => <option key={c} value={c}>{c === "Equipment" ? "Inventory" : c}</option>)}
                               </SearchableSelect></td>
                             <td className="px-4"><input type="number" min="1" className={`${field} w-20`} value={draft.total_count} onChange={(e) => setDraft({ ...draft, total_count: e.target.value })} aria-label="How many we own" /></td>
                             <td className="px-4">{out}</td>
@@ -172,7 +172,7 @@ export function EquipmentAdmin() {
                           <td className="px-4 py-2">{out}</td>
                           <td className={`px-4 py-2 font-semibold ${it.total_count - reserved(it.id) > 0 ? "text-success" : "text-destructive"}`}>{it.total_count - reserved(it.id)}</td>
                           <td className="px-4 py-2"><div className="flex gap-3 whitespace-nowrap">
-                            <button disabled={!stockQuery.isSuccess || it.total_count - reserved(it.id) <= 0} onClick={() => setCheckoutFor(it)} className="text-xs font-semibold text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline">Request equipment</button>
+                            <button disabled={!stockQuery.isSuccess || it.total_count - reserved(it.id) <= 0} onClick={() => setCheckoutFor(it)} className="text-xs font-semibold text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline">Request inventory</button>
                             {canManage && <><button onClick={() => startEdit(it)} className="text-xs text-primary hover:underline">{t("common.edit")}</button>
                             <button onClick={() => removeItem(it)} className="text-xs text-destructive hover:underline">{t("common.delete")}</button></>}
                           </div></td>
@@ -273,7 +273,7 @@ function CheckoutDialog({ item, free, onClose, onDone }: { item: EquipmentItem; 
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Request equipment: {item.name}</DialogTitle>
+          <DialogTitle>Request inventory: {item.name}</DialogTitle>
           <DialogDescription>{t("checkout.availability", { free, total: item.total_count })}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-3">
@@ -297,7 +297,7 @@ function CheckoutDialog({ item, free, onClose, onDone }: { item: EquipmentItem; 
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose}>{t("common.cancel")}</Button>
-          <Button type="button" onClick={submit} disabled={busy}>{busy ? t("recovery.saving") : "Request equipment"}</Button>
+          <Button type="button" onClick={submit} disabled={busy}>{busy ? t("recovery.saving") : "Request inventory"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

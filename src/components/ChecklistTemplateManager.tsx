@@ -31,7 +31,8 @@ export function ChecklistTemplateManager({ audience, targetId }: { audience: Che
   const refresh = () => qc.invalidateQueries({ queryKey: ["checklist-templates", audience] });
   async function save() {
     const title = name.trim(), lines = items.map((x) => x.trim()).filter(Boolean);
-    if (!title || !lines.length || !session?.user.id) { toast.error(translate("templates.required")); return; }
+    if (!session?.user.id) { toast.error("Please sign in before saving a template"); return; }
+    if (!title || !lines.length) { toast.error(`Please complete: ${[!title && "Template title", !lines.length && "Checklist items"].filter(Boolean).join(", ")}.`); return; }
     setBusy(true);
     const payload = { title, items: lines, audience, owner_id: session.user.id };
     const result = editingId

@@ -64,3 +64,14 @@ The synchronized integration reaches SerpAPI, but the provider rejects the confi
 Google OAuth now completes end to end on the standalone preview: Google accepted the corrected Supabase callback and returned the existing Georgia Adams admin account to the dashboard. The earlier missing-secret and redirect-mismatch issues are resolved for that tested preview flow.
 
 Secret metadata inspection (names only) found the project uses SERPAPI_AI_KEY. The runtime helper previously read SERPAPI_API_KEY / SERP_API_KEY. Added support for the existing project name with priority over stale aliases, retaining both standard names. No secret values were read, copied or displayed. Eleven focused Maps tests passed, including a regression for the actual project secret name and precedence. Live retest follows synchronization.
+## Outlook-style controls and remaining-work pass — 14 November
+
+- Shared DateInput now displays dd-MMM-yy, accepts direct entry, offers a Sunday-first compact month/year calendar, green selected day and Today action. Stored/form values remain ISO dates. Calendar and typed dates respect bounds.
+- Shared TimeInput accepts 12/24-hour typing, shows half-hour AM/PM choices, preserves precise existing times, scrolls to the chosen/current time and supports keyboard selection. Existing AmPmTimePicker delegates to it. Remaining native time and datetime-local inputs in crew/gigs were replaced; expiry combines date/time into the original local ISO format.
+- Local browser verification used isolated actual shared components: chose 15 November and 9 PM and observed stored 2026-11-15 / 21:00. Screenshots are under docs/verification. This is local verification, not a claim of published deployment.
+- Additional Inventory wording corrected in category displays, gig cards and request actions without changing database category identifiers. Named missing-field messages added for pencil bookings and checklist templates.
+- Full suite after initial controls: 188 tests passed; TypeScript and production build passed. Focused final controls checks are recorded with the commit.
+- Published SerpAPI search and result selection passed earlier in this session; preview search still showed the older error. Existing ROADCOVER location unchanged-save survived cross-production navigation and refresh. New Maps-selected location persistence remains unverified end to end.
+- Only main exists in current local/remote branch inventory. Global ModifyApps skill already contains fast-commit guidance and the prohibition on Lovable AI credits.
+- Georgia authorized Paystack TEST environment and test AI balance for remaining payment/AI checks. Do not switch live keys or use actual funds. A separate configured test environment must be established before claiming provider payment tests complete.
+- Translation drafts remain preserved in the existing stash; no claim of complete Greek or 30-language coverage.

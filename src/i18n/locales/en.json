@@ -587,7 +587,7 @@
     "confirmedAs": " confirmed as {{role}}",
     "requestFor": "{{kind}} for ",
     "kind": {
-      "Equipment": "Equipment",
+      "Equipment": "Inventory",
       "Overtime": "Overtime",
       "Expense": "Expense",
       "Transport": "Transport",

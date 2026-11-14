@@ -1,3 +1,4 @@
+import { TimeInput, DateTimeInput } from "@/components/ui/time-input";
 import { DateInput } from "@/components/ui/date-input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { createFileRoute } from "@tanstack/react-router";
@@ -170,11 +171,11 @@ function GigsPage() {
                   <div className="text-sm"><label htmlFor="gig-contact">Contact phone</label><div className="flex gap-2"><SearchableSelect aria-label="Phone country code" className={`${field} max-w-44`} value={phonePrefix} onChange={e => setPhonePrefix(e.target.value)}>{PHONE_CODES.map(([name, code]) => <option key={name} value={code}>{name} ({code})</option>)}</SearchableSelect><input id="gig-contact" required type="tel" inputMode="tel" className={field} value={form.contact_phone} onChange={set("contact_phone")} /></div></div>
                   <label className="text-sm">Event date *<DateInput required type="date" className={field} value={form.event_date} onChange={set("event_date")} /></label>
                   <label className="text-sm">End date<DateInput type="date" className={field} value={form.end_date} onChange={set("end_date")} /></label>
-                  <label className="text-sm">Call time *<input required type="time" className={field} value={form.call_time} onChange={set("call_time")} /></label>
-                  <label className="text-sm">Posting expires *<input required type="datetime-local" className={field} value={form.expires_at} onChange={set("expires_at")} /></label>
+                  <label className="text-sm">Call time *<TimeInput required  className={field} value={form.call_time} onChange={set("call_time")} /></label>
+                  <label className="text-sm">Posting expires *<DateTimeInput aria-label="Posting expires" required className={field} value={form.expires_at} onChange={set("expires_at")} /></label>
                   <div className="text-sm md:col-span-2">Venue / address<AddressAutocomplete required className={field} placeholder="Start typing the venue or street address" country={countries.find(c => c.name === form.country)?.code.toLowerCase() ?? ""} value={form.venue} onChange={venue => setForm(f => ({ ...f, venue }))} onSelect={place => setForm(f => ({ ...f, venue: place.exactAddress }))} /></div>
                   <label className="text-sm">Country *<SearchableSelect required className={field} value={form.country} onChange={set("country")}>{countries.map((c) => <option key={c.code} value={c.name}>{c.name}</option>)}</SearchableSelect></label>
-                  <label className="text-sm">Inventory required<SearchableSelect className={field} value={form.kit_required} onChange={set("kit_required")}><option value="">None required</option>{[...new Set([...EQUIPMENT_CATEGORIES, ...equipment.map(i => i.name)])].map(name => <option key={name}>{name}</option>)}</SearchableSelect></label>
+                  <label className="text-sm">Inventory required<SearchableSelect className={field} value={form.kit_required} onChange={set("kit_required")}><option value="">None required</option>{[...new Set([...EQUIPMENT_CATEGORIES, ...equipment.map(i => i.name)])].map(name => <option key={name} value={name}>{name === "Equipment" ? "Inventory" : name}</option>)}</SearchableSelect></label>
                   <label className="text-sm">Pay type *<SearchableSelect required className={field} value={form.pay_type} onChange={set("pay_type")}><option value="day_rate">Day rate</option><option value="fixed">Fixed price</option></SearchableSelect></label>
                   <label className="text-sm">Amount (R) *<input required type="number" min="1" className={field} value={form.amount} onChange={set("amount")} /></label>
                   <label className="text-sm md:col-span-2">Description *<textarea required rows={3} className={field} value={form.description} onChange={set("description")} /></label>
@@ -205,7 +206,7 @@ function GigsPage() {
                   <p className="text-sm text-muted-foreground">{g.role} · {g.department}</p>
                   <p className="mt-2 text-sm">{g.event_date}{g.end_date ? ` – ${g.end_date}` : ""} · call {String(g.call_time).slice(0, 5)}</p>
                   <p className="text-sm">{g.venue}, {g.country}</p>
-                  {g.kit_required && <p className="text-sm text-muted-foreground">Equipment: {g.kit_required}</p>}
+                  {g.kit_required && <p className="text-sm text-muted-foreground">Inventory: {g.kit_required === "Equipment" ? "Inventory" : g.kit_required}</p>}
                   <div className="mt-2 text-sm text-muted-foreground"><AutoTranslatedText text={g.description} /></div>
                   <p className="mt-3 text-xl font-bold text-foreground">{rand(g.amount)} <span className="text-sm font-normal text-muted-foreground">{g.pay_type === "fixed" ? t("gigs.fixed") : t("gigs.perDay")}</span></p>
                   <p className="text-xs text-muted-foreground">Posted by {g.poster_name} · expires {new Date(g.expires_at).toLocaleString("en-ZA")}</p>

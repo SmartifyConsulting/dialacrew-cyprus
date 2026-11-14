@@ -1,3 +1,4 @@
+import { TimeInput } from "@/components/ui/time-input";
 import { DateInput } from "@/components/ui/date-input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -292,7 +293,7 @@ function PencilDialog({ crew, onClose }: { crew: { id: string; name: string; rol
   const field = "w-full rounded-sm border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring";
 
   async function submit() {
-    if (!f.productionId || !f.date) { toast.error(t("pencilDialog.required")); return; }
+    if (!f.productionId || !f.date) { toast.error(`Please complete: ${[!f.productionId && "Production", !f.date && "Shoot date"].filter(Boolean).join(", ")}.`); return; }
     try {
       await create.mutateAsync({
         productionId: f.productionId, crewId: crew.id, role: f.role, bookingDate: f.date,
@@ -330,9 +331,9 @@ function PencilDialog({ crew, onClose }: { crew: { id: string; name: string; rol
             <label className="block"><span className="text-xs text-muted-foreground">{t("productionList.columns.Date")}</span>
               <DateInput type="date" className={`${field} mt-1`} value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} /></label>
             <label className="block"><span className="text-xs text-muted-foreground">{t("pencilDialog.call")}</span>
-              <input type="time" className={`${field} mt-1`} value={f.callTime} onChange={(e) => setF({ ...f, callTime: e.target.value })} /></label>
+              <TimeInput className={`${field} mt-1`} value={f.callTime} onChange={(e) => setF({ ...f, callTime: e.target.value })} /></label>
             <label className="block"><span className="text-xs text-muted-foreground">{t("pencilDialog.wrap")}</span>
-              <input type="time" className={`${field} mt-1`} value={f.wrapTime} onChange={(e) => setF({ ...f, wrapTime: e.target.value })} /></label>
+              <TimeInput className={`${field} mt-1`} value={f.wrapTime} onChange={(e) => setF({ ...f, wrapTime: e.target.value })} /></label>
           </div>
         </div>
         <div className="mt-4 flex justify-end gap-2">
