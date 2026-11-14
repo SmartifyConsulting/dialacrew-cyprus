@@ -104,17 +104,21 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder, cl
   useEffect(() => {
     let current = true;
     if (!open || value.trim().length < 3) { setSuggestions([]); setLoading(false); return; }
+    const controller = new AbortController();
+    let deadline: ReturnType<typeof setTimeout> | undefined;
     const t = setTimeout(async () => {
       setLoading(true);
+      deadline = setTimeout(() => controller.abort(), 25000);
       try {
-        const { results, error: searchError } = await search({ data: country ? { q: value, country } : { q: value } });
+        const { results, error: searchError } = await search({ data: country ? { q: value, country } : { q: value }, signal: controller.signal });
         if (!current) return;
         setSuggestions(results.map((d) => ({ label: Object.keys(d.address).length ? shortAddress(d.address, d.name, d.display_name) : [d.name,d.display_name].filter(Boolean).join(" — "), exactAddress: d.display_name, place: placeFromAddress(d.address, d.display_name.split(",")[0] ?? d.display_name), lat: d.lat, lon: d.lon })));
         setFailed(searchError ?? null);
-      } catch (error) { if (current) { setSuggestions([]); setFailed(`Maps search failed: ${friendlyError(error).replace(/https?:\/\/\S+/g, "[request]")}`); } }
+      } catch (error) { if (current) { setSuggestions([]); setFailed(controller.signal.aborted ? "Maps search timed out. Please try again." : `Maps search failed: ${friendlyError(error).replace(/https?:\/\/\S+/g, "[request]")}`); } }
+      clearTimeout(deadline);
       if (current) setLoading(false);
     }, 400);
-    return () => { current = false; clearTimeout(t); };
+    return () => { current = false; clearTimeout(t); clearTimeout(deadline); controller.abort(); };
   }, [value, open, search, country]);
 
   useEffect(() => {

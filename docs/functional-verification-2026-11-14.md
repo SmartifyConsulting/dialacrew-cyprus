@@ -49,3 +49,12 @@ Additional rollback tests passed: nested document folder rename/move, bulk file 
 ## SerpAPI live status
 
 The synchronized integration reaches SerpAPI, but the provider rejects the configured key/account access. Georgia confirmed serpapi.com. This remains an external configuration blocker, not a successful Maps certification. The final follow-up trims pasted-secret whitespace and differentiates invalid keys, account verification and quota failures. No secrets were read or displayed. Ten focused SerpAPI tests and TypeScript passed after this follow-up; the full suite before it passed 181 tests.
+
+## Final status of this verification pass
+
+- Lovable source synchronization verified through 4fc2a2c; publish operation 62244817-1c30-4871-9c22-b713a0203a65 showed `Your website was updated` in the publish panel.
+- Google sign-in on the standalone preview fails with Supabase `Unsupported provider: missing OAuth secret`. This is an additional unresolved authentication configuration issue; email/password sessions were used for the successful crew/admin preview checks.
+- The normalized-secret Maps retest stalled after a preview renderer crash/recovery. The last completed provider response denied the configured key/account access. Do not claim normalization fixed it. Georgia confirmed serpapi.com; active-key re-save confirmation is pending.
+- Added a 25-second browser request deadline and cancellation when a query changes or closes, so Maps cannot stay on Searching indefinitely. TypeScript passed for this follow-up.
+- Still unverified: real payment capture/callbacks, paid storyboard/PDF operations, MP4 rendering and actual device notification delivery. No fees were charged and no real loan/assignment/document mutations were performed by this browser audit.
+- Translation drafts remain paused in Git stash. All functional source edits are committed separately.
