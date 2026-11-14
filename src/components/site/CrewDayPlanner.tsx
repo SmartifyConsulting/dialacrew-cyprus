@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { CrewPassportBadge, PassportBadge, useCrewTravelStatus } from "@/components/PassportStatus";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { CREW_COUNTRIES, matchesCountry, productionCountry, setCrewCountryFilter, useCrewCountryFilter } from "@/lib/crew-country";
@@ -198,12 +199,12 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
             <th className={`min-w-[10rem] border-l-2 border-border px-2 py-2 text-left sm:min-w-[17rem] sm:px-3 ${selCls(selected, "s1")}`}>
               <div className="flex items-center gap-2">
                 <span className="flex-1 font-display text-xs font-semibold uppercase tracking-wide text-primary sm:text-sm">Sandbox 1</span>
-                <select className="w-20 shrink-0 rounded-sm bg-primary px-1.5 py-1 text-[9px] font-semibold text-primary-foreground sm:w-28 sm:text-[10px]" value=""
+                <SearchableSelect className="w-20 shrink-0 rounded-sm bg-primary px-1.5 py-1 text-[9px] font-semibold text-primary-foreground sm:w-28 sm:text-[10px]" value=""
                   onChange={(e) => { const g = sc.crewMixes.find((x) => x.id === e.target.value); if (g) applyMixToS1(g); }} aria-label="Favourites for Sandbox 1">
                   <option value="" disabled className="bg-background text-foreground">Favourites</option>
                   {sc.crewMixes.length === 0 && <option value="" disabled className="bg-background text-foreground">No crew mixes saved yet</option>}
                   {sc.crewMixes.map((g) => <option key={g.id} value={g.id} className="bg-background text-foreground">{g.name} ({g.memberIds.length}){g.productionType ? ` · ${g.productionType}` : ""}</option>)}
-                </select>
+                </SearchableSelect>
                 <WizardMenu target={s1Target} open={wizardMenuFor === "s1"} onToggle={() => setWizardMenuFor(wizardMenuFor === "s1" ? null : "s1")}
                   onRunAuto={(strategy) => { setWizardMenuFor(null); runAutoWizard(s1Target, strategy); }}
                   onGuided={() => { setWizardMenuFor(null); startGuided(s1Target); }} />
@@ -216,12 +217,12 @@ function DayTable({ p, date, roleList, newRole, setNewRole, addRole, removeRole 
                   <div className="flex items-center gap-2">
                     <input defaultValue={s.name} onBlur={(e) => sc.renameScenario(s, e.target.value)} maxLength={80} aria-label="Sandbox name"
                       className="min-w-0 flex-1 bg-transparent font-display text-xs font-semibold uppercase tracking-wide text-primary outline-none sm:text-sm" />
-                    <select className="w-20 shrink-0 rounded-sm bg-primary px-1.5 py-1 text-[9px] font-semibold text-primary-foreground sm:w-28 sm:text-[10px]" value=""
+                    <SearchableSelect className="w-20 shrink-0 rounded-sm bg-primary px-1.5 py-1 text-[9px] font-semibold text-primary-foreground sm:w-28 sm:text-[10px]" value=""
                       onChange={(e) => { const g = sc.crewMixes.find((x) => x.id === e.target.value); if (g) sc.applyGroupToScenario(s, g); }} aria-label={`Favourites for ${s.name}`}>
                       <option value="" disabled className="bg-background text-foreground">Favourites</option>
                       {sc.crewMixes.length === 0 && <option value="" disabled className="bg-background text-foreground">No crew mixes saved yet</option>}
                       {sc.crewMixes.map((g) => <option key={g.id} value={g.id} className="bg-background text-foreground">{g.name} ({g.memberIds.length}){g.productionType ? ` · ${g.productionType}` : ""}</option>)}
-                    </select>
+                    </SearchableSelect>
                     <WizardMenu target={target} open={wizardMenuFor === s.id} onToggle={() => setWizardMenuFor(wizardMenuFor === s.id ? null : s.id)}
                       onRunAuto={(strategy) => { setWizardMenuFor(null); runAutoWizard(target, strategy); }}
                       onGuided={() => { setWizardMenuFor(null); startGuided(target); }} />
@@ -560,11 +561,11 @@ export function CrewDayPlanner({ p }: { p: Production }) {
         <span className="text-muted-foreground">Pencilled crew + planned recce expense:</span> <b>{fmtMoney(totalPencilled, p.currency)}</b>{" "}
         <span className={variance < 0 ? "text-destructive" : "text-success"}>({variance < 0 ? `${fmtMoney(-variance, p.currency)} over` : `${fmtMoney(variance, p.currency)} under`} budget of {fmtMoney(p.budget, p.currency)})</span>
         <label className="ml-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground">Crew from
-          <select value={crewCountry} onChange={(e) => setCrewCountryFilter(e.target.value)} className="rounded-sm border border-input bg-background px-2 py-1 text-xs text-foreground">
+          <SearchableSelect value={crewCountry} onChange={(e) => setCrewCountryFilter(e.target.value)} className="rounded-sm border border-input bg-background px-2 py-1 text-xs text-foreground">
             <option value="local">Local ({CREW_COUNTRIES.find((c) => c.code === productionCountry(p.currency))?.label})</option>
             {countries.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
             <option value="ALL">All countries</option>
-          </select>
+          </SearchableSelect>
         </label>
       </div>
       <section className="rounded-sm border border-border bg-card">
@@ -606,12 +607,12 @@ export function CrewDayPlanner({ p }: { p: Production }) {
               </button>
               <div className="flex items-center gap-2">
                 <div className="relative">
-                <select disabled={sizeTypes.length === 0} value=""
+                <SearchableSelect disabled={sizeTypes.length === 0} value=""
                   onChange={(e) => { const g = sizeTypes.find((x) => x.id === e.target.value); if (g) applySizeType(day, g); }}
                   className="h-8 cursor-pointer appearance-none rounded-md border border-primary-foreground/60 bg-primary-foreground/10 pl-3 pr-9 text-xs font-semibold text-primary-foreground hover:bg-primary-foreground/20 disabled:cursor-not-allowed disabled:opacity-40" aria-label="Select Crew Type">
                   <option value="" disabled className="bg-background text-foreground">Select Crew Type</option>
                   {sizeTypes.map((g) => <option key={g.id} value={g.id} className="bg-background text-foreground">{g.name} ({g.memberIds.length})</option>)}
-                </select>
+                </SearchableSelect>
                 <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-primary-foreground" />
                 </div>
                 {shootDays.length > 1 && (

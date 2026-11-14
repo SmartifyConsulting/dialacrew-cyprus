@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -105,10 +106,10 @@ export function DocumentsTab({ p, userId, myName, isProducer }: { p: { id: strin
       <button className={btn} disabled={busy || !selected.size} onClick={() => void run("delete")}>{t("library.delete")}</button>
     </div>}
     {moving && <div className="flex flex-wrap items-center gap-3 border-b border-border p-3">
-      <select aria-label={t("library.destination")} className={input} value={destination} onChange={(e) => setDestination(e.target.value)}>
+      <SearchableSelect aria-label={t("library.destination")} className={input} value={destination} onChange={(e) => setDestination(e.target.value)}>
         <option value="">{t("library.root")}</option>
         {folders.filter((folder) => !chosenFolders.some((chosen) => folder === chosen || folder.startsWith(chosen + "/"))).map((folder) => <option key={folder} value={folder}>{folder}</option>)}
-      </select>
+      </SearchableSelect>
       <button className={btn} disabled={busy} onClick={() => void run("move")}>{t("library.move")}</button>
       <button className={btn} onClick={() => setMoving(false)}>{t("common.cancel")}</button>
     </div>}

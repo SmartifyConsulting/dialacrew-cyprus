@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -92,9 +93,9 @@ export function RetroTab({ p }: { p: Production }) {
         <section className="rounded-sm border border-border bg-card p-4">
           <h3 className="mb-3 font-display text-sm text-primary">1 · {translate("review.project")}</h3>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <label className="space-y-1"><span className={label}>{translate("productionList.columns.Type")}</span><select className={field} value={f.type} onChange={(e) => set("type", e.target.value)}>{TYPES.map((t) => <option key={t} value={t}>{translate(`review.types.${t}`)}</option>)}</select></label>
+            <label className="space-y-1"><span className={label}>{translate("productionList.columns.Type")}</span><SearchableSelect className={field} value={f.type} onChange={(e) => set("type", e.target.value)}>{TYPES.map((t) => <option key={t} value={t}>{translate(`review.types.${t}`)}</option>)}</SearchableSelect></label>
             <label className="space-y-1"><span className={label}>{translate("review.shootDays")}</span>{num("shootDays")}</label>
-            <label className="space-y-1"><span className={label}>{translate("review.crewSize")}</span><select className={field} value={f.crewSize} onChange={(e) => set("crewSize", e.target.value)}>{SIZES.map((t) => <option key={t}>{t}</option>)}</select></label>
+            <label className="space-y-1"><span className={label}>{translate("review.crewSize")}</span><SearchableSelect className={field} value={f.crewSize} onChange={(e) => set("crewSize", e.target.value)}>{SIZES.map((t) => <option key={t}>{t}</option>)}</SearchableSelect></label>
             <label className="space-y-1"><span className={label}>{translate("overview.locations")}</span>{num("locationsCount")}</label>
           </div>
         </section>
@@ -108,7 +109,7 @@ export function RetroTab({ p }: { p: Production }) {
             <span>{translate("review.post")}</span>{num("postPlanned")}{num("postActual")}
           </div>
           <label className="mt-3 block space-y-1"><span className={label}>{translate("review.cause")}</span>
-            <select className={field} value={f.deltaCause} onChange={(e) => set("deltaCause", e.target.value)}>{CAUSES.map((c) => <option key={c} value={c}>{translate(`review.causes.${c}`)}</option>)}</select></label>
+            <SearchableSelect className={field} value={f.deltaCause} onChange={(e) => set("deltaCause", e.target.value)}>{CAUSES.map((c) => <option key={c} value={c}>{translate(`review.causes.${c}`)}</option>)}</SearchableSelect></label>
         </section>
 
         <section className="rounded-sm border border-border bg-card p-4">

@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -90,10 +91,10 @@ export function RequestOvertimeButton({ productionId, crewId, live }: { producti
 
   return (
     <div className="flex items-center gap-1">
-      <select aria-label="Overtime shift" value={shift} disabled={!!live} onChange={(e) => setShift(e.target.value as OvertimeShift)} className={`${input} py-1`}>
+      <SearchableSelect aria-label="Overtime shift" value={shift} disabled={!!live} onChange={(e) => setShift(e.target.value as OvertimeShift)} className={`${input} py-1`}>
         <option value="day">Day (1.5×)</option>
         <option value="night">Night (2×)</option>
-      </select>
+      </SearchableSelect>
       <button onClick={request} disabled={busy || !!live} className={btn}>Overtime</button>
     </div>
   );

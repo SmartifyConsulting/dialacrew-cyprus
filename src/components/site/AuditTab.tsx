@@ -1,3 +1,5 @@
+import { DateInput } from "@/components/ui/date-input";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -126,13 +128,13 @@ export function AuditTab({ p }: { p: { id: string } }) {
             <input aria-label={t("audit.search")} className="mt-1 w-full rounded border border-border bg-background px-3 py-2 text-sm" placeholder={t("audit.placeholder")} value={search} onChange={(e) => setSearch(e.target.value)} />
           </label>
           <label className="text-xs font-semibold">{t("productionList.columns.Date")}
-            <input type="date" aria-label={t("audit.dateFilter")} className="mt-1 w-full rounded border border-border bg-background px-3 py-2 text-sm" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
+            <DateInput type="date" aria-label={t("audit.dateFilter")} className="mt-1 w-full rounded border border-border bg-background px-3 py-2 text-sm" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
           </label>
           <label className="text-xs font-semibold">{t("audit.type")}
-            <select aria-label={t("audit.typeFilter")} className="mt-1 w-full rounded border border-border bg-background px-3 py-2 text-sm" value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+            <SearchableSelect aria-label={t("audit.typeFilter")} className="mt-1 w-full rounded border border-border bg-background px-3 py-2 text-sm" value={filterType} onChange={(e) => setFilterType(e.target.value)}>
               <option value="">{t("audit.all")}</option>
               {types.map((type) => <option key={type} value={type}>{type.replaceAll("_", " ")}</option>)}
-            </select>
+            </SearchableSelect>
           </label>
         </div>
         <p className="px-4 pb-3 text-xs text-muted-foreground">{t("audit.count", { shown: filtered.length, total: events.length })}</p>

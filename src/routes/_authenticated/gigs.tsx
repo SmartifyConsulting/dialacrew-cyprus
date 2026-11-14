@@ -1,3 +1,5 @@
+import { DateInput } from "@/components/ui/date-input";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -164,16 +166,16 @@ function GigsPage() {
                 <div className="grid gap-3 md:grid-cols-2">
                   <label className="text-sm">Gig title *<input required className={field} value={form.title} onChange={set("title")} /></label>
                   <label className="text-sm">Role needed *<input required className={field} placeholder="e.g. Focus puller" value={form.role} onChange={set("role")} /></label>
-                  <label className="text-sm">Department<select required className={field} value={form.department} onChange={set("department")}><option value="">Select department</option>{departments.map(d => <option key={d}>{d}</option>)}</select></label>
-                  <div className="text-sm"><label htmlFor="gig-contact">Contact phone</label><div className="flex gap-2"><select aria-label="Phone country code" className={`${field} max-w-44`} value={phonePrefix} onChange={e => setPhonePrefix(e.target.value)}>{PHONE_CODES.map(([name, code]) => <option key={name} value={code}>{name} ({code})</option>)}</select><input id="gig-contact" required type="tel" inputMode="tel" className={field} value={form.contact_phone} onChange={set("contact_phone")} /></div></div>
-                  <label className="text-sm">Event date *<input required type="date" className={field} value={form.event_date} onChange={set("event_date")} /></label>
-                  <label className="text-sm">End date<input type="date" className={field} value={form.end_date} onChange={set("end_date")} /></label>
+                  <label className="text-sm">Department<SearchableSelect required className={field} value={form.department} onChange={set("department")}><option value="">Select department</option>{departments.map(d => <option key={d}>{d}</option>)}</SearchableSelect></label>
+                  <div className="text-sm"><label htmlFor="gig-contact">Contact phone</label><div className="flex gap-2"><SearchableSelect aria-label="Phone country code" className={`${field} max-w-44`} value={phonePrefix} onChange={e => setPhonePrefix(e.target.value)}>{PHONE_CODES.map(([name, code]) => <option key={name} value={code}>{name} ({code})</option>)}</SearchableSelect><input id="gig-contact" required type="tel" inputMode="tel" className={field} value={form.contact_phone} onChange={set("contact_phone")} /></div></div>
+                  <label className="text-sm">Event date *<DateInput required type="date" className={field} value={form.event_date} onChange={set("event_date")} /></label>
+                  <label className="text-sm">End date<DateInput type="date" className={field} value={form.end_date} onChange={set("end_date")} /></label>
                   <label className="text-sm">Call time *<input required type="time" className={field} value={form.call_time} onChange={set("call_time")} /></label>
                   <label className="text-sm">Posting expires *<input required type="datetime-local" className={field} value={form.expires_at} onChange={set("expires_at")} /></label>
                   <div className="text-sm md:col-span-2">Venue / address<AddressAutocomplete required className={field} placeholder="Start typing the venue or street address" country={countries.find(c => c.name === form.country)?.code.toLowerCase() ?? ""} value={form.venue} onChange={venue => setForm(f => ({ ...f, venue }))} onSelect={place => setForm(f => ({ ...f, venue: place.exactAddress }))} /></div>
-                  <label className="text-sm">Country *<select required className={field} value={form.country} onChange={set("country")}>{countries.map((c) => <option key={c.code} value={c.name}>{c.name}</option>)}</select></label>
-                  <label className="text-sm">Inventory required<select className={field} value={form.kit_required} onChange={set("kit_required")}><option value="">None required</option>{[...new Set([...EQUIPMENT_CATEGORIES, ...equipment.map(i => i.name)])].map(name => <option key={name}>{name}</option>)}</select></label>
-                  <label className="text-sm">Pay type *<select required className={field} value={form.pay_type} onChange={set("pay_type")}><option value="day_rate">Day rate</option><option value="fixed">Fixed price</option></select></label>
+                  <label className="text-sm">Country *<SearchableSelect required className={field} value={form.country} onChange={set("country")}>{countries.map((c) => <option key={c.code} value={c.name}>{c.name}</option>)}</SearchableSelect></label>
+                  <label className="text-sm">Inventory required<SearchableSelect className={field} value={form.kit_required} onChange={set("kit_required")}><option value="">None required</option>{[...new Set([...EQUIPMENT_CATEGORIES, ...equipment.map(i => i.name)])].map(name => <option key={name}>{name}</option>)}</SearchableSelect></label>
+                  <label className="text-sm">Pay type *<SearchableSelect required className={field} value={form.pay_type} onChange={set("pay_type")}><option value="day_rate">Day rate</option><option value="fixed">Fixed price</option></SearchableSelect></label>
                   <label className="text-sm">Amount (R) *<input required type="number" min="1" className={field} value={form.amount} onChange={set("amount")} /></label>
                   <label className="text-sm md:col-span-2">Description *<textarea required rows={3} className={field} value={form.description} onChange={set("description")} /></label>
                   <div className="md:col-span-2"><PolishDescription text={form.description} name={form.title} type={`Crew gig: ${form.role}`.slice(0,60)} client="" onPolished={description => setForm(f => ({ ...f, description }))} /></div>
@@ -184,7 +186,7 @@ function GigsPage() {
 
             {view === "find" && <>
             <h4 className="mt-6 text-sm font-semibold uppercase tracking-wide text-primary">{t("nav.findGigs")}</h4>
-            <label className="mt-3 block text-sm">Department<select className={field} value={departmentFilter} onChange={e => setDepartmentFilter(e.target.value)}><option value="">All departments</option>{departments.map(d => <option key={d}>{d}</option>)}</select></label>
+            <label className="mt-3 block text-sm">Department<SearchableSelect className={field} value={departmentFilter} onChange={e => setDepartmentFilter(e.target.value)}><option value="">All departments</option>{departments.map(d => <option key={d}>{d}</option>)}</SearchableSelect></label>
             {isCrew && (
               <label className="my-4 flex items-start gap-2 rounded-xl border border-border bg-card p-3 text-sm">
                 <input type="checkbox" className="mt-1" checked={agree} onChange={(e) => setAgree(e.target.checked)} />

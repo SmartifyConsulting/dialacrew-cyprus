@@ -1,3 +1,5 @@
+import { DateInput } from "@/components/ui/date-input";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -312,18 +314,18 @@ function Productions() {
                       <button type="button" onClick={() => { setAddingType(false); setNewType(""); }} className="shrink-0 rounded-sm border border-border px-3 py-2 text-xs font-semibold">Cancel</button>
                     </div>
                   ) : (
-                    <select className={`${field} mt-1`} value={f.type} onChange={(e) => e.target.value === "__add__" ? setAddingType(true) : setF({ ...f, type: e.target.value, name: f.name === `${f.type} - ${f.client}` || !f.name ? `${e.target.value} - ${f.client}` : f.name })}>
+                    <SearchableSelect className={`${field} mt-1`} value={f.type} onChange={(e) => e.target.value === "__add__" ? setAddingType(true) : setF({ ...f, type: e.target.value, name: f.name === `${f.type} - ${f.client}` || !f.name ? `${e.target.value} - ${f.client}` : f.name })}>
                       {productionTypes.map((type) => <option key={type} value={type}>{t(`productionTypes.${type}`, type)}</option>)}
                       <option value="__add__">+ {t("productionModal.addType")}</option>
-                    </select>
+                    </SearchableSelect>
                   )}</label>
                 <label className={labelCls}>{t("overview.recceDate")}
                   <div className="mt-1 flex gap-2">
-                    <input className={`${field} min-w-0 flex-1`} type="date" max={f.startDate || undefined} value={f.recceDate} onChange={(e) => setF({ ...f, recceDate: e.target.value })} />
+                    <DateInput className={`${field} min-w-0 flex-1`} type="date" max={f.startDate || undefined} value={f.recceDate} onChange={(e) => setF({ ...f, recceDate: e.target.value })} />
                     <AmPmTimePicker label={t("productionModal.recceTime")} placeholder={t("productionModal.selectTime")} value={f.recceTime} onChange={(value) => setF({ ...f, recceTime: value })} />
                   </div></label>
                 <label className={labelCls}>{t("productionModal.start")} *
-                  <input className={`${field} mt-1`} type="date" value={f.startDate}
+                  <DateInput className={`${field} mt-1`} type="date" value={f.startDate}
                     onChange={(e) => setF({
                       ...f, startDate: e.target.value,
                       endDate: !f.endDate || f.endDate < e.target.value ? e.target.value : f.endDate,
@@ -331,7 +333,7 @@ function Productions() {
                       recceDate: !f.recceDate ? addDays(e.target.value, -3) : f.recceDate > e.target.value ? e.target.value : f.recceDate,
                     })} /></label>
                 <label className={labelCls}>{t("productionModal.end")} *
-                  <input className={`${field} mt-1`} type="date" min={f.startDate || undefined} value={f.endDate} onChange={(e) => setF({ ...f, endDate: e.target.value })} /></label>
+                  <DateInput className={`${field} mt-1`} type="date" min={f.startDate || undefined} value={f.endDate} onChange={(e) => setF({ ...f, endDate: e.target.value })} /></label>
                 <label className={labelCls}>{t("productionModal.netBudget")} *
                   <input className={`${field} mt-1`} type="number" min={0} placeholder="0" value={f.budget || ""} onChange={(e) => setF({ ...f, budget: +e.target.value })} /></label>
                 <div>

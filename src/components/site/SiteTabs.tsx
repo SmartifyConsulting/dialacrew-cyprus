@@ -1,3 +1,5 @@
+import { DateInput } from "@/components/ui/date-input";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { taskAssignees } from "@/lib/task-assignees";
 import { AssignmentStamp } from "@/components/site/AssignmentStamp";
 import { ProducerCrewEmergency } from "@/components/CrewEmergencyDetails";
@@ -15,7 +17,6 @@ import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { nativeFeedback } from "@/lib/native";
 import { Camera, Check, CheckCircle2, CalendarDays, Circle, Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Download, FileText, GripVertical, ImageUp, LogIn, LogOut, MapPin, Megaphone, Mic, Minus, Paperclip, Pencil, Plus, Sparkles, Star, Sun, Trash2, Users } from "lucide-react";
-import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { EquipmentAvailability } from "@/components/site/EquipmentAvailability";
@@ -914,13 +915,13 @@ export function ChecklistsPanel({ p, isProducer }: Pick<Ctx, "p" | "isProducer">
                 <div className="ml-7 mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   {isProducer ? (
                     <>
-                      <select aria-label={`Assign ${item.label}`} value={item.assigned_to ?? ""} onChange={(e) => assignItem(item.id, e.target.value)}
+                      <SearchableSelect aria-label={`Assign ${item.label}`} value={item.assigned_to ?? ""} onChange={(e) => assignItem(item.id, e.target.value)}
                         className="shrink-0 rounded-sm border border-input bg-background px-1.5 py-1 text-[11px] max-w-full">
                         <option value="">{t("tasks.unassigned")}</option>
                         {members.map((m) => <option key={m.crew_id} value={m.crew_id}>{m.name} · {m.role}</option>)}
-                      </select>
+                      </SearchableSelect>
                       {item.assigned_to && (
-                        <input type="date" aria-label={`Due date for ${item.label}`} value={item.due_date ?? ""} onChange={(e) => setDueDate(item.id, e.target.value)}
+                        <DateInput type="date" aria-label={`Due date for ${item.label}`} value={item.due_date ?? ""} onChange={(e) => setDueDate(item.id, e.target.value)}
                           className="shrink-0 rounded-sm border border-input bg-background px-1.5 py-1 text-[11px]" />
                       )}
                     </>
@@ -1028,10 +1029,10 @@ export function OverviewTab({ p, isProducer, myCrewId }: Ctx) {
         <Panel title="Travel" collapsible defaultCollapsed>
           <div className="space-y-3 p-4 text-sm">
             <label className="flex items-center justify-between gap-3">Travel required
-              <select aria-label="Travel required" disabled={!isProducer} className={input} value={p.travelRequired ? "yes" : "no"} onChange={async e => {
+              <SearchableSelect aria-label="Travel required" disabled={!isProducer} className={input} value={p.travelRequired ? "yes" : "no"} onChange={async e => {
                 const { error } = await supabase.from("productions").update({ travel_required: e.target.value === "yes" }).eq("id", p.id).select("id").single();
                 if (error) { toast.error(friendlyError(error)); return; } inv(["productions"]);
-              }}><option value="no">No</option><option value="yes">Yes</option></select>
+              }}><option value="no">No</option><option value="yes">Yes</option></SearchableSelect>
             </label>
             {p.travelRequired && <>
               <label className="block text-xs">Passport / destination requirements<textarea rows={3} value={passportRequirements} readOnly={!isProducer} onChange={e => setPassportRequirements(e.target.value)} className={`${input} mt-1 w-full`} placeholder="Destination, passport validity, visas and travel dates" /></label>
@@ -1233,10 +1234,10 @@ export function MembersList({ p, userId, isProducer }: Ctx) {
               Select all
             </label>
             <span className="text-muted-foreground">{selectedIds.length} selected</span>
-            <select value={otBulkShift} onChange={(e) => setOtBulkShift(e.target.value as "day" | "night")} className={input} aria-label="Overtime shift for selected crew">
+            <SearchableSelect value={otBulkShift} onChange={(e) => setOtBulkShift(e.target.value as "day" | "night")} className={input} aria-label="Overtime shift for selected crew">
               <option value="day">Day (1.5×)</option>
               <option value="night">Night (2×)</option>
-            </select>
+            </SearchableSelect>
             <button disabled={otBusy || selectedIds.length === 0} onClick={() => requestOvertimeFor(selectedIds)} className={btn}>Request overtime for selected</button>
           </div>
         )}
@@ -1638,8 +1639,8 @@ export function TasksTab({ p, userId, isProducer }: Ctx) {
       {memberQuery.isError && <p role="alert" className="p-3 text-xs text-destructive">Could not load production members. <button className="underline" onClick={() => void memberQuery.refetch()}>Retry</button></p>}
       <div className="flex flex-wrap gap-2 border-b border-border p-4">
         <input className={`${input} min-w-56 flex-1`} placeholder={translate("tasks.new")} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} onKeyDown={(e) => e.key === "Enter" && add()} />
-        <select className={input} value={f.crew} onChange={(e) => setF({ ...f, crew: e.target.value })}><option value="">{translate("tasks.unassigned")}</option>{members.map((m) => <option key={m.crew_id} value={m.crew_id}>{m.name} · {m.role}{m.user_id === userId ? ` (${translate("tasks.self")})` : ""}</option>)}</select>
-        <input type="date" className={input} value={f.due} onChange={(e) => setF({ ...f, due: e.target.value })} />
+        <SearchableSelect className={input} value={f.crew} onChange={(e) => setF({ ...f, crew: e.target.value })}><option value="">{translate("tasks.unassigned")}</option>{members.map((m) => <option key={m.crew_id} value={m.crew_id}>{m.name} · {m.role}{m.user_id === userId ? ` (${translate("tasks.self")})` : ""}</option>)}</SearchableSelect>
+        <DateInput type="date" className={input} value={f.due} onChange={(e) => setF({ ...f, due: e.target.value })} />
         <button onClick={add} className={btn}>{translate("tasks.add")}</button>
       </div>
       <ul className="divide-y divide-border">
@@ -1650,10 +1651,10 @@ export function TasksTab({ p, userId, isProducer }: Ctx) {
             <div className="min-w-0 flex-1">
               <span className={`block text-sm ${t.done ? "text-muted-foreground line-through" : ""}`}>{t.title}</span>
               <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                {isProducer ? <select aria-label={`Assign ${t.title}`} className="max-w-full rounded-sm border border-input bg-background px-1.5 py-1" value={t.assigned_crew_id ?? ""} onChange={e => assignTask(t.id, e.target.value)}>
+                {isProducer ? <SearchableSelect aria-label={`Assign ${t.title}`} className="max-w-full rounded-sm border border-input bg-background px-1.5 py-1" value={t.assigned_crew_id ?? ""} onChange={e => assignTask(t.id, e.target.value)}>
                   <option value="">{translate("tasks.unassigned")}</option>
                   {members.map(m => <option key={m.crew_id} value={m.crew_id}>{m.name} · {m.role}</option>)}
-                </select> : <span>{assigneeLabel(t.assigned_crew_id)}</span>}
+                </SearchableSelect> : <span>{assigneeLabel(t.assigned_crew_id)}</span>}
                 {t.due_date && <span>Due {t.due_date}</span>}
               </div>
               <AssignmentStamp value={t} />
@@ -1788,34 +1789,17 @@ export function AmPmTimePicker({ value, onChange, label, placeholder = "Select t
     }
   }
   return (
-    <select aria-label={label} className={`${input} min-w-0 flex-1 py-1 text-xs`} value={normalized} onChange={(e) => onChange(e.target.value)}>
+    <SearchableSelect aria-label={label} className={`${input} min-w-0 flex-1 py-1 text-xs`} value={normalized} onChange={(e) => onChange(e.target.value)}>
       <option value="">{placeholder === "Select time" ? t("productionModal.selectTime") : placeholder}</option>
       {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-    </select>
+    </SearchableSelect>
   );
 }
 
 // A nicer date picker than the native <input type="date">: a button showing the chosen day, with a
 // popover calendar (reusing the shadcn/react-day-picker Calendar already in the app) to pick from.
 export function CalendarDatePicker({ value, onChange, label, placeholder = "Select date", className, min, max }: { value: string; onChange: (value: string) => void; label: string; placeholder?: string; className?: string; min?: string; max?: string }) {
-  const [open, setOpen] = useState(false);
-  const selected = value ? new Date(`${value}T00:00:00`) : undefined;
-  return (
-    <div className={`relative shrink-0 ${className ?? ""}`}>
-      <button type="button" aria-label={label} onClick={() => setOpen((o) => !o)}
-        className={`${input} flex min-w-0 items-center gap-1.5 py-1 text-left text-xs ${className ? "w-full" : ""}`}>
-        <CalendarDays className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-        <span className={value ? "" : "text-muted-foreground"}>{value ? dayLabel(`${value}T00:00:00`) : placeholder}</span>
-      </button>
-      {open && (
-        <div className="absolute left-0 top-full z-20 mt-1 rounded-sm border border-border bg-card shadow-md">
-          <Calendar mode="single" selected={selected}
-            onSelect={(d) => { if (d) onChange(format(d, "yyyy-MM-dd")); setOpen(false); }}
-            disabled={(d) => (min ? format(d, "yyyy-MM-dd") < min : false) || (max ? format(d, "yyyy-MM-dd") > max : false)} />
-        </div>
-      )}
-    </div>
-  );
+  return <DateInput aria-label={label} value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} className={className ?? input} min={min} max={max} />;
 }
 
 /* ---------------- Production recce times + Gear Check (producer edits; site members see) ---------------- */
@@ -1846,13 +1830,13 @@ function ProductionSchedule({ p, isProducer }: { p: Ctx["p"]; isProducer: boolea
             <div className="grid gap-3">
               <fieldset className="space-y-1"><legend className="text-xs font-semibold text-foreground">Pickup</legend>
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
-                  <input type="date" aria-label="Gear pickup date" className={`${input} min-w-0 flex-[2] py-1 text-xs`} value={cur.gear_pickup_date ?? ""} onChange={(e) => save("gear_pickup_date", e.target.value)} />
+                  <DateInput type="date" aria-label="Gear pickup date" className={`${input} min-w-0 flex-[2] py-1 text-xs`} value={cur.gear_pickup_date ?? ""} onChange={(e) => save("gear_pickup_date", e.target.value)} />
                   <AmPmTimePicker label="Gear pickup time" value={t(cur.gear_pickup_time)} onChange={(value) => save("gear_pickup_time", value)} />
                 </div>
               </fieldset>
               <fieldset className="space-y-1"><legend className="text-xs font-semibold text-foreground">Drop-off</legend>
                 <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
-                  <input type="date" aria-label="Gear drop-off date" className={`${input} min-w-0 flex-[2] py-1 text-xs`} value={cur.gear_dropoff_date ?? ""} onChange={(e) => save("gear_dropoff_date", e.target.value)} />
+                  <DateInput type="date" aria-label="Gear drop-off date" className={`${input} min-w-0 flex-[2] py-1 text-xs`} value={cur.gear_dropoff_date ?? ""} onChange={(e) => save("gear_dropoff_date", e.target.value)} />
                   <AmPmTimePicker label="Gear drop-off time" value={t(cur.gear_dropoff_time)} onChange={(value) => save("gear_dropoff_time", value)} />
                 </div>
               </fieldset>

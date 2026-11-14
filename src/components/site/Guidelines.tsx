@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AutoTranslatedText } from "@/components/AutoTranslatedText";
@@ -94,7 +95,7 @@ export function Guidelines({ p, isProducer }: { p: Production; isProducer: boole
         <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("guidelines.title")}</div>
         <div className="flex items-center gap-3">
           {canManage && !forced && mode === "custom" && <button onClick={() => { setText(p.postRules || DEFAULT_GUIDELINES); setEditing(true); }} className="text-xs font-semibold text-primary hover:underline">{t("common.edit")}</button>}
-          {canManage && !forced && <select aria-label="Post rules source" value={mode} className="rounded border border-input bg-background p-1 text-xs" onChange={async e => { const { error } = await supabase.from("productions").update({ post_rules_mode:e.target.value, post_rules_hidden:false }).eq("id",p.id).select("id").single();if(error){toast.error(friendlyError(error));return;}qc.invalidateQueries({queryKey:["productions"]}); }}><option value="custom">This production's rules</option><option value="producer">Producer default</option><option value="none">No rules</option></select>}
+          {canManage && !forced && <SearchableSelect aria-label="Post rules source" value={mode} className="rounded border border-input bg-background p-1 text-xs" onChange={async e => { const { error } = await supabase.from("productions").update({ post_rules_mode:e.target.value, post_rules_hidden:false }).eq("id",p.id).select("id").single();if(error){toast.error(friendlyError(error));return;}qc.invalidateQueries({queryKey:["productions"]}); }}><option value="custom">This production's rules</option><option value="producer">Producer default</option><option value="none">No rules</option></SearchableSelect>}
           {forced && <span className="text-xs text-muted-foreground">Producer rules apply to all productions</span>}
           {hideToggle}
           {!forced && <button onClick={dismiss} className="text-xs font-semibold text-muted-foreground hover:text-foreground">Don't show again</button>}

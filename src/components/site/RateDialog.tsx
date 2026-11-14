@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
@@ -58,10 +59,10 @@ export function RateDialog({ crewId, name, role, department, productionId, onClo
         <div className="border-b border-border p-4">
           <h3 className="text-xl font-semibold text-foreground">Rate {name}</h3>
           <label className="mt-2 block text-xs text-muted-foreground">Rating framework{!inferred && <span className="text-destructive"> · please choose</span>}
-            <select className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground" value={fw ?? ""} onChange={(e) => setFw((e.target.value || null) as FrameworkId | null)}>
+            <SearchableSelect className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground" value={fw ?? ""} onChange={(e) => setFw((e.target.value || null) as FrameworkId | null)}>
               <option value="">Select…</option>
               {Object.values(FRAMEWORKS).map((f) => <option key={f.id} value={f.id}>{f.name} — {f.blurb}</option>)}
-            </select>
+            </SearchableSelect>
           </label>
           {sum && <p className="mt-2 text-sm font-semibold text-foreground">Overall: {sum.overall != null ? `${sum.overall} / 5` : "Not rated"} <span className="text-xs font-normal text-muted-foreground">({sum.rated}/{sum.total} criteria)</span></p>}
         </div>

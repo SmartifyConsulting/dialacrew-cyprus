@@ -1,3 +1,5 @@
+import { DateInput } from "@/components/ui/date-input";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -86,10 +88,10 @@ export function TokenLedger() {
     }>
       <div className="space-y-4 p-4">
         <div className="flex flex-wrap items-end gap-3 text-xs">
-          <label className="space-y-1"><span className="block text-muted-foreground">From</span><input type="date" className={field} value={from} max={to} onChange={(e) => setFrom(e.target.value)} /></label>
-          <label className="space-y-1"><span className="block text-muted-foreground">To</span><input type="date" className={field} value={to} min={from} onChange={(e) => setTo(e.target.value)} /></label>
+          <label className="space-y-1"><span className="block text-muted-foreground">From</span><DateInput type="date" className={field} value={from} max={to} onChange={(e) => setFrom(e.target.value)} /></label>
+          <label className="space-y-1"><span className="block text-muted-foreground">To</span><DateInput type="date" className={field} value={to} min={from} onChange={(e) => setTo(e.target.value)} /></label>
           <label className="space-y-1"><span className="block text-muted-foreground">Group by</span>
-            <select className={field} value={group} onChange={(e) => setGroup(e.target.value as Group)}>{GROUPS.map((g) => <option key={g.key} value={g.key}>{g.label}</option>)}</select>
+            <SearchableSelect className={field} value={group} onChange={(e) => setGroup(e.target.value as Group)}>{GROUPS.map((g) => <option key={g.key} value={g.key}>{g.label}</option>)}</SearchableSelect>
           </label>
           <div className="ml-auto inline-flex rounded-sm border border-border font-semibold">
             <button onClick={() => setShowRand(true)} disabled={!rate} className={`px-2.5 py-1.5 ${inRand ? "bg-primary text-primary-foreground" : "text-muted-foreground"} disabled:opacity-50`}>ZAR</button>

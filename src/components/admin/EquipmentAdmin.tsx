@@ -1,3 +1,5 @@
+import { DateInput } from "@/components/ui/date-input";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -94,9 +96,9 @@ export function EquipmentAdmin() {
       {canManage && <Panel title={t("equipment.add")}>
         <div className="flex flex-wrap items-end gap-2 p-4">
           <input placeholder={t("equipment.name")} className={`${field} min-w-48 flex-1`} value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} />
-          <select className={field} value={newItem.category} onChange={(e) => setNewItem({ ...newItem, category: e.target.value })} aria-label="Category">
+          <SearchableSelect className={field} value={newItem.category} onChange={(e) => setNewItem({ ...newItem, category: e.target.value })} aria-label="Category">
             {EQUIPMENT_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-          </select>
+          </SearchableSelect>
           <input type="number" min="1" className={`${field} w-24`} placeholder={t("checkout.quantity")} value={newItem.total_count} onChange={(e) => setNewItem({ ...newItem, total_count: e.target.value })} aria-label={t("equipment.owned")} />
           <input placeholder={t("checkout.serial")} className={`${field} w-32`} value={newItem.serial_code} onChange={(e) => setNewItem({ ...newItem, serial_code: e.target.value })} />
           <input placeholder={t("checkout.notes")} className={`${field} min-w-48`} value={newItem.notes} onChange={(e) => setNewItem({ ...newItem, notes: e.target.value })} />
@@ -141,9 +143,9 @@ export function EquipmentAdmin() {
                             <td className="px-4 py-2"><input className={`${field} w-full`} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} aria-label="Item name" />
                               <input className={`${field} mt-1 w-full`} placeholder="Serial/Asset ID" value={draft.serial_code} onChange={(e) => setDraft({ ...draft, serial_code: e.target.value })} aria-label="Serial/Asset ID" />
                               <input className={`${field} mt-1 w-full`} placeholder="Notes" value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} aria-label="Notes" />
-                              <select className={`${field} mt-1`} value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })} aria-label="Category">
+                              <SearchableSelect className={`${field} mt-1`} value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })} aria-label="Category">
                                 {EQUIPMENT_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-                              </select></td>
+                              </SearchableSelect></td>
                             <td className="px-4"><input type="number" min="1" className={`${field} w-20`} value={draft.total_count} onChange={(e) => setDraft({ ...draft, total_count: e.target.value })} aria-label="How many we own" /></td>
                             <td className="px-4">{out}</td>
                             <td className="px-4">{(Number(draft.total_count) || 0) - out}</td>
@@ -276,22 +278,22 @@ function CheckoutDialog({ item, free, onClose, onDone }: { item: EquipmentItem; 
         </DialogHeader>
         <div className="grid gap-3">
           {canManage && <label className="block"><span className="text-xs text-muted-foreground">Crew member</span>
-            <select required className={`${field} mt-1 w-full`} value={f.who} onChange={(e) => setF({ ...f, who: e.target.value })}>
+            <SearchableSelect required className={`${field} mt-1 w-full`} value={f.who} onChange={(e) => setF({ ...f, who: e.target.value })}>
               <option value="">Select crew member</option>{crew.map((c) => <option key={c.id} value={c.id}>{c.name} · {c.role} ({c.id.slice(-6)})</option>)}
-            </select></label>}
+            </SearchableSelect></label>}
           <label className="block"><span className="text-xs text-muted-foreground">{t("checkout.production")}</span>
-            <select required className={`${field} mt-1 w-full`} value={f.productionId} onChange={(e) => chooseProduction(e.target.value)}>
+            <SearchableSelect required className={`${field} mt-1 w-full`} value={f.productionId} onChange={(e) => chooseProduction(e.target.value)}>
               <option value="">Select production</option>
               {[...productions].sort((a, b) => a.name.localeCompare(b.name)).map((p) => <option key={p.id} value={p.id}>{p.name.trim() || `Unnamed production (${p.id})`}{p.date ? ` · ${p.date}` : ""}</option>)}
-            </select></label>
+            </SearchableSelect></label>
           <div className="grid grid-cols-3 gap-3">
             <label className="block"><span className="text-xs text-muted-foreground">{t("checkout.quantity")}</span>
               <input required type="number" min="1" max={free} className={`${field} mt-1 w-full`} value={f.quantity} onChange={(e) => setF({ ...f, quantity: e.target.value })} /></label>
             <label className="col-span-2 block"><span className="text-xs text-muted-foreground">Collection date</span>
-              <input required type="date" className={`${field} mt-1 w-full`} value={f.outAt} onChange={(e) => setF({ ...f, outAt: e.target.value })} /></label>
+              <DateInput required type="date" className={`${field} mt-1 w-full`} value={f.outAt} onChange={(e) => setF({ ...f, outAt: e.target.value })} /></label>
           </div>
           <label className="block"><span className="text-xs text-muted-foreground">{t("checkout.dueDate")}</span>
-            <input required type="date" min={f.outAt} className={`${field} mt-1 w-full`} value={f.dueAt} onChange={(e) => setF({ ...f, dueAt: e.target.value })} /></label>
+            <DateInput required type="date" min={f.outAt} className={`${field} mt-1 w-full`} value={f.dueAt} onChange={(e) => setF({ ...f, dueAt: e.target.value })} /></label>
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose}>{t("common.cancel")}</Button>

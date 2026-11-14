@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -193,9 +194,9 @@ export function AuthForm() {
           </div>
           <div><label className={labelClass} htmlFor="phone">{t("common.phone")}</label>
             <div className="flex gap-2">
-              <select aria-label={t("signup.countryCode")} value={dialCode} onChange={(e) => setDialCode(e.target.value)} className={`${fieldClass} w-28`}>
+              <SearchableSelect aria-label={t("signup.countryCode")} value={dialCode} onChange={(e) => setDialCode(e.target.value)} className={`${fieldClass} w-28`}>
                 {DIAL_CODES.map((d) => <option key={d.code} value={d.code}>{d.label}</option>)}
-              </select>
+              </SearchableSelect>
               <input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="82 123 4567" className={fieldClass} />
             </div></div>
           {!invite && producerSignupEnabled && role === "producer" && (
@@ -204,9 +205,9 @@ export function AuthForm() {
           )}
           {role === "producer" && (
             <div><label className={labelClass} htmlFor="producerCountry">{t("signup.country")}</label>
-              <select id="producerCountry" required value={country} onChange={(e) => setCountry(e.target.value)} className={fieldClass}>
+              <SearchableSelect id="producerCountry" required value={country} onChange={(e) => setCountry(e.target.value)} className={fieldClass}>
                 {countries.map((c) => <option key={c.code} value={c.code}>{c.name} ({c.currency})</option>)}
-              </select>
+              </SearchableSelect>
               <p className="mt-1 text-[11px] text-muted-foreground">{t("signup.currency")}</p></div>
           )}
           {!invite && role === "crew" && (

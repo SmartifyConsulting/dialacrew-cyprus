@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -73,11 +74,11 @@ export function ChecklistTemplateManager({ audience, targetId }: { audience: Che
     <h2 className="text-lg font-bold">{translate(audience === "producer" ? "templates.producer" : "templates.crew")}</h2>
     <p className="text-sm text-muted-foreground">{translate("templates.help")}</p>
     {targetId && <div className="flex flex-wrap gap-2">
-      <select aria-label={translate("templates.choose")} value={selected} onChange={(e) => setSelected(e.target.value)} className="min-w-52 flex-1 rounded border border-border bg-background p-2 text-sm">
+      <SearchableSelect aria-label={translate("templates.choose")} value={selected} onChange={(e) => setSelected(e.target.value)} className="min-w-52 flex-1 rounded border border-border bg-background p-2 text-sm">
         <option value="">{translate("templates.choose")}</option>
         <optgroup label="Checklists">{(q.data ?? []).map((t) => <option key={t.id} value={t.id}>{t.title}{t.owner_id ? ` (${translate("templates.mine")})` : ""}</option>)}</optgroup>
         {docTemplates.length > 0 && <optgroup label="Documents">{docTemplates.map((d) => <option key={d.id} value={`doc:${d.id}`}>{d.name}</option>)}</optgroup>}
-      </select>
+      </SearchableSelect>
       <button disabled={!selected || busy} onClick={apply} className="rounded bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-50">{translate("templates.addChecklist")}</button>
     </div>}
     {!targetId && <>

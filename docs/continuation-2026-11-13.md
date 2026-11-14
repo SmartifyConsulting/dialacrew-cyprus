@@ -40,3 +40,7 @@ See request-audit-2026-11-13.md for earlier omissions and verification limits. M
 ## MVP rollout
 
 0077 is now APPLIED after rollback tests for cross-account table/RPC/storage reads, foreign mutations, imported-email crew signup, self conversion and retained data. Existing seven accounts remain committed; future accounts default MVP. Added MVP banner, profile confirmation/commit preserving data, admin list flags; roles and billing remain separate. TypeScript, production build and all 160 tests passed. Caller-session visibility now precedes service reads on gig-payment completion/penalties as well as storyboard generation. Live signup/payment E2E remains unverified; no real fees or paid AI used.
+
+## Shared form controls — 14 November continuation
+
+All application native selects (26 screens/components) now use a shared component that retains native desktop behavior and adds typing/filtering on coarse-pointer/mobile devices. Disabled options, controlled values and selection are covered by regression tests. All native date fields use a shared input with direct entry plus a month/year calendar; existing recce/location/album calendar wrappers use it too. Date bounds are enforced by the calendar. Five new control tests pass; full suite is 165 passing, TypeScript and production build pass. This does not replace live mobile layout/accessibility verification.

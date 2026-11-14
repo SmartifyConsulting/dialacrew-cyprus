@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -67,10 +68,10 @@ function MemoryPage() {
       <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <Panel title="Brief matcher">
           <form onSubmit={run} className="grid gap-3 p-4">
-            <select className={field} value={f.client} onChange={(e) => setF({ ...f, client: e.target.value })}>
+            <SearchableSelect className={field} value={f.client} onChange={(e) => setF({ ...f, client: e.target.value })}>
               <option value="">Client (optional — enables MemoryBank)</option>
               {clients.map((c) => <option key={c.id} value={c.company}>{c.company}</option>)}
-            </select>
+            </SearchableSelect>
             {mem && <p className="rounded-sm border border-primary/40 bg-primary/10 p-2 text-xs"><Brain className="mr-1 inline h-3.5 w-3.5 text-primary" />Using memory: {mem.summary}</p>}
             <textarea className={`${field} min-h-32`} maxLength={4000} placeholder="e.g. 30-second gin commercial, golden-hour exteriors in the Karoo, drone shots, small agile crew, moody cinematic look…" value={f.brief} onChange={(e) => setF({ ...f, brief: e.target.value })} />
             <div className="grid grid-cols-2 gap-3">

@@ -1,3 +1,5 @@
+import { DateInput } from "@/components/ui/date-input";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -539,7 +541,7 @@ function PassportTab({ crewId, canEdit }: { crewId: string; canEdit: boolean }) 
           <label className="block"><span className="text-xs text-muted-foreground">Passport number</span>
             <input className={`${input} mt-1 w-full`} value={f.passportNumber} onChange={(e) => setF({ ...f, passportNumber: e.target.value.toUpperCase() })} /></label>
           <label className="block"><span className="text-xs text-muted-foreground">Expiry date</span>
-            <input type="date" className={`${input} mt-1 w-full`} value={f.expiryDate} onChange={(e) => setF({ ...f, expiryDate: e.target.value })} /></label>
+            <DateInput type="date" className={`${input} mt-1 w-full`} value={f.expiryDate} onChange={(e) => setF({ ...f, expiryDate: e.target.value })} /></label>
           <div className="flex gap-2 sm:col-span-2">
             <button disabled={saving} onClick={save} className={`${btn} disabled:opacity-60`}>{saving ? "Saving…" : "Save"}</button>
             <button onClick={() => setEditing(false)} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold">Cancel</button>
@@ -586,7 +588,7 @@ function Kit({ crewId, items, canEdit, onChange }: { crewId: string; items: { id
       {canEdit && (
         <div className="flex flex-wrap gap-2">
           <input className={`${input} flex-1`} placeholder="Item (e.g. ARRI Alexa Mini)" value={n.name} onChange={(e) => setN({ ...n, name: e.target.value })} />
-          <select className={input} value={n.category} onChange={(e) => setN({ ...n, category: e.target.value })}>{["Equipment", "Prop", "Vehicle", "Lighting", "Sound", "Wardrobe"].map((c) => <option key={c} value={c}>{c === "Equipment" ? "Inventory" : c}</option>)}</select>
+          <SearchableSelect className={input} value={n.category} onChange={(e) => setN({ ...n, category: e.target.value })}>{["Equipment", "Prop", "Vehicle", "Lighting", "Sound", "Wardrobe"].map((c) => <option key={c} value={c}>{c === "Equipment" ? "Inventory" : c}</option>)}</SearchableSelect>
           <input type="number" className={`${input} w-32`} placeholder="Fee / day (R)" value={n.fee} onChange={(e) => setN({ ...n, fee: e.target.value })} />
           <button className={btn} onClick={add}>Add</button>
         </div>

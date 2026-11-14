@@ -1,3 +1,5 @@
+import { DateInput } from "@/components/ui/date-input";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -133,14 +135,14 @@ export function FinanceStatement({ includeAi }: { includeAi: boolean }) {
         </div>
       }>
         <div className="flex flex-wrap items-end gap-3 border-b border-border p-4 text-xs">
-          <label className="space-y-1"><span className="block text-muted-foreground">From</span><input type="date" className={field} value={from} max={to} onChange={(e) => setFrom(e.target.value)} /></label>
-          <label className="space-y-1"><span className="block text-muted-foreground">To</span><input type="date" className={field} value={to} min={from} onChange={(e) => setTo(e.target.value)} /></label>
+          <label className="space-y-1"><span className="block text-muted-foreground">From</span><DateInput type="date" className={field} value={from} max={to} onChange={(e) => setFrom(e.target.value)} /></label>
+          <label className="space-y-1"><span className="block text-muted-foreground">To</span><DateInput type="date" className={field} value={to} min={from} onChange={(e) => setTo(e.target.value)} /></label>
           <label className="space-y-1"><span className="block text-muted-foreground">Type</span>
-            <select className={field} value={type} onChange={(e) => setType(e.target.value as typeof type)}><option value="all">All</option><option value="income">Income</option><option value="expenses">Expenses</option></select></label>
+            <SearchableSelect className={field} value={type} onChange={(e) => setType(e.target.value as typeof type)}><option value="all">All</option><option value="income">Income</option><option value="expenses">Expenses</option></SearchableSelect></label>
           <label className="space-y-1"><span className="block text-muted-foreground">Supplier / party</span><input className={field} value={party} onChange={(e) => setParty(e.target.value)} placeholder="Any" /></label>
           <label className="space-y-1"><span className="block text-muted-foreground">Project</span><input className={field} value={project} onChange={(e) => setProject(e.target.value)} placeholder="Any" /></label>
           <label className="space-y-1"><span className="block text-muted-foreground">Status</span>
-            <select className={field} value={status} onChange={(e) => setStatus(e.target.value)}><option value="all">All</option>{statuses.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}</select></label>
+            <SearchableSelect className={field} value={status} onChange={(e) => setStatus(e.target.value)}><option value="all">All</option>{statuses.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}</SearchableSelect></label>
           <label className="flex items-center gap-1.5 pb-1.5"><input type="checkbox" checked={showUnpaid} onChange={(e) => setShowUnpaid(e.target.checked)} /> Show unpaid / outstanding ({money(outstanding)})</label>
           <div className="ml-auto flex gap-3 pb-1.5 font-semibold text-primary">
             <button onClick={() => setAll(true)} className="hover:underline">Expand all</button>

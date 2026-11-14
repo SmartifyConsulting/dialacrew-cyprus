@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { ChevronDown } from "lucide-react";
 
 // Compact, colour-coded status pill that still lets an admin change the value.
@@ -14,10 +15,10 @@ export function StatusPill<T extends string>({ value, options, label, onChange, 
 }) {
   return (
     <span className={`relative inline-flex items-center rounded-full ${statusTone(value)}`}>
-      <select aria-label={ariaLabel ?? "Change status"} value={value} onChange={(e) => onChange(e.target.value as T)}
+      <SearchableSelect aria-label={ariaLabel ?? "Change status"} value={value} onChange={(e) => onChange(e.target.value as T)}
         className="cursor-pointer appearance-none whitespace-nowrap rounded-full bg-transparent py-0.5 pl-2.5 pr-6 text-[11px] font-medium text-current outline-none focus-visible:ring-2 focus-visible:ring-ring">
         {options.map((s) => <option key={s} value={s} className="bg-background text-foreground">{label(s)}</option>)}
-      </select>
+      </SearchableSelect>
       <ChevronDown className="pointer-events-none absolute right-1.5 h-3 w-3 opacity-70" />
     </span>
   );

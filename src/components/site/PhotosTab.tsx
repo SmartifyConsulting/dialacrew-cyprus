@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
@@ -184,10 +185,10 @@ export function PhotosTab({ p, userId, isProducer }: { p: { id: string }; userId
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-2">
-        <select className={`${input} py-2 text-xs`} value={uploadLocation} onChange={(e) => setUploadLocation(e.target.value)} aria-label="Location for new photos">
+        <SearchableSelect className={`${input} py-2 text-xs`} value={uploadLocation} onChange={(e) => setUploadLocation(e.target.value)} aria-label="Location for new photos">
           <option value="">{t("photos.noLocation")}</option>
           {locations.map((l, i) => <option key={l.id} value={l.id}>Location {i + 1} · {l.label}</option>)}
-        </select>
+        </SearchableSelect>
         <label className={`${btn} inline-flex cursor-pointer items-center gap-1.5 ${busy ? "opacity-60" : ""}`}>
           <Camera className="h-4 w-4" /> {t("photos.take")}
           <input type="file" accept="image/*" capture="environment" hidden disabled={busy} onChange={(e) => { upload(e.target.files); e.target.value = ""; }} />
@@ -224,11 +225,11 @@ export function PhotosTab({ p, userId, isProducer }: { p: { id: string }; userId
               </div>
             )}
             <PhotoGrid items={openGroupItems} canDelete={canDelete} onDelete={removePhoto} renderControls={(ph) => (
-              <select className={`${input} w-full py-1 text-xs`} value={ph.group_id ?? ""} aria-label="Move photo to album"
+              <SearchableSelect className={`${input} w-full py-1 text-xs`} value={ph.group_id ?? ""} aria-label="Move photo to album"
                 onChange={(e) => updatePhoto(ph.id, { group_id: e.target.value || null })}>
                 <option value="">Unsorted</option>
                 {groups.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-              </select>
+              </SearchableSelect>
             )} />
           </div>
         ) : (
@@ -266,11 +267,11 @@ export function PhotosTab({ p, userId, isProducer }: { p: { id: string }; userId
             <span className="w-16" />
           </div>
           <PhotoGrid items={openLocItems} canDelete={canDelete} onDelete={removePhoto} renderControls={(ph) => (
-            <select className={`${input} w-full py-1 text-xs`} value={ph.location_id ?? ""} aria-label="Move photo to location"
+            <SearchableSelect className={`${input} w-full py-1 text-xs`} value={ph.location_id ?? ""} aria-label="Move photo to location"
               onChange={(e) => updatePhoto(ph.id, { location_id: e.target.value || null })}>
               <option value="">No location</option>
               {locations.map((o, j) => <option key={o.id} value={o.id}>Location {j + 1} · {o.label}</option>)}
-            </select>
+            </SearchableSelect>
           )} />
         </div>
       ) : (

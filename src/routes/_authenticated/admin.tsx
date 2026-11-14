@@ -1,3 +1,5 @@
+import { DateInput } from "@/components/ui/date-input";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -124,10 +126,10 @@ function ImportTab() {
                 {CREW_FIELDS.map((f) => (
                   <label key={f} className="block text-xs">
                     <span className="uppercase tracking-wider text-muted-foreground">{f}{(REQUIRED_FIELDS as readonly string[]).includes(f) ? " *" : ""}</span>
-                    <select className="mt-1 w-full rounded-sm border border-input bg-background px-2 py-1" value={mapping[f] ?? ""} onChange={(e) => setMapping({ ...mapping, [f]: e.target.value })}>
+                    <SearchableSelect className="mt-1 w-full rounded-sm border border-input bg-background px-2 py-1" value={mapping[f] ?? ""} onChange={(e) => setMapping({ ...mapping, [f]: e.target.value })}>
                       <option value="">— not mapped —</option>
                       {csv.headers.map((h) => <option key={h} value={h}>{h}</option>)}
-                    </select>
+                    </SearchableSelect>
                   </label>
                 ))}
               </div>
@@ -411,12 +413,12 @@ function UsersTab({ canManageAdmins = true }: { canManageAdmins?: boolean }) {
                     </span>
                   ))}
                   {canManageAdmins && ROLES.filter((r) => !u.roles.includes(r)).length > 0 && (
-                    <select value="" onChange={(e) => { if (e.target.value) addRole(u.id, e.target.value as (typeof ROLES)[number]); }}
+                    <SearchableSelect value="" onChange={(e) => { if (e.target.value) addRole(u.id, e.target.value as (typeof ROLES)[number]); }}
                       aria-label={`Add a role to ${u.full_name || u.email}`}
                       className="rounded-full border border-dashed border-border bg-transparent px-2.5 py-1 text-xs font-medium text-muted-foreground hover:border-primary hover:text-primary">
                       <option value="">+ {t("common.role")}</option>
                       {ROLES.filter((r) => !u.roles.includes(r)).map((r) => <option key={r} value={r} className="bg-background text-foreground capitalize">{t(`accountRoles.${r}`)}</option>)}
-                    </select>
+                    </SearchableSelect>
                   )}
                 </div>
               </td>
@@ -577,10 +579,10 @@ function CrewTypeSizesTab() {
                   })}
                 </ul>
                 <div className="flex items-center gap-2">
-                  <select className={`${invField} min-w-48`} value={memberPick[g.id] ?? ""} onChange={(e) => setMemberPick((prev) => ({ ...prev, [g.id]: e.target.value }))}>
+                  <SearchableSelect className={`${invField} min-w-48`} value={memberPick[g.id] ?? ""} onChange={(e) => setMemberPick((prev) => ({ ...prev, [g.id]: e.target.value }))}>
                     <option value="">+ Add a user to this tier…</option>
                     {crew.filter((c) => !g.memberIds.includes(c.id)).map((c) => <option key={c.id} value={c.id}>{c.name} · {c.role}</option>)}
-                  </select>
+                  </SearchableSelect>
                   <button onClick={() => addCrewToGroup(g.id)} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary hover:text-primary">Add</button>
                 </div>
               </div>
@@ -649,11 +651,11 @@ function CrewTypesTab() {
                 <button onClick={addProductionType} className="rounded-sm bg-primary px-2 py-1.5 text-xs font-semibold text-primary-foreground">Save</button>
               </span>
             ) : (
-              <select className={invField} value={newType} onChange={(e) => e.target.value === "__add__" ? setAddingType(true) : setNewType(e.target.value)}>
+              <SearchableSelect className={invField} value={newType} onChange={(e) => e.target.value === "__add__" ? setAddingType(true) : setNewType(e.target.value)}>
                 <option value="">Any production type</option>
                 {productionTypes.map((t) => <option key={t} value={t}>{t}</option>)}
                 <option value="__add__">+ Add new type…</option>
-              </select>
+              </SearchableSelect>
             )}
           </label>
           <button onClick={createCrewType} className={btn}>Create</button>
@@ -691,10 +693,10 @@ function CrewTypesTab() {
                   })}
                 </ul>
                 <div className="flex items-center gap-2">
-                  <select className={`${invField} min-w-48`} value={memberPick[g.id] ?? ""} onChange={(e) => setMemberPick((prev) => ({ ...prev, [g.id]: e.target.value }))}>
+                  <SearchableSelect className={`${invField} min-w-48`} value={memberPick[g.id] ?? ""} onChange={(e) => setMemberPick((prev) => ({ ...prev, [g.id]: e.target.value }))}>
                     <option value="">+ Add a user to this crew type…</option>
                     {crew.filter((c) => !g.memberIds.includes(c.id)).map((c) => <option key={c.id} value={c.id}>{c.name} · {c.role}</option>)}
-                  </select>
+                  </SearchableSelect>
                   <button onClick={() => addCrewToGroup(g.id)} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold hover:border-primary hover:text-primary">Add</button>
                 </div>
               </div>
@@ -1186,7 +1188,7 @@ function SpotlightCell({ id, featuredAt, links }: { id: string; featuredAt: stri
       <button onClick={() => setOpen(!open)} className="ml-2 text-primary hover:underline">{featuredAt ? "Edit" : "Record feature"}</button>
       {open && (
         <div className="mt-1 space-y-1 rounded-sm border border-border bg-background p-2">
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full rounded-sm border border-input bg-card px-2 py-1" aria-label="Date featured" />
+          <DateInput type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full rounded-sm border border-input bg-card px-2 py-1" aria-label="Date featured" />
           <textarea rows={2} value={text} onChange={(e) => setText(e.target.value)} placeholder="Post links, one per line" className="w-full rounded-sm border border-input bg-card px-2 py-1" />
           <div className="flex gap-2"><button onClick={() => save()} className={btn}>Save</button>{featuredAt && <button onClick={() => save(true)} className="text-destructive hover:underline">Clear</button>}</div>
         </div>
@@ -1214,9 +1216,9 @@ function SpotlightTab() {
     <div className="rounded-sm border border-border bg-card">
       <div className="flex items-center justify-between p-4">
         <p className="text-sm text-muted-foreground">New members who agreed to be featured on social media. Newest first.</p>
-        <select className="rounded-sm border border-input bg-background px-2 py-1 text-sm" value={country} onChange={(e) => setCountry(e.target.value)}>
+        <SearchableSelect className="rounded-sm border border-input bg-background px-2 py-1 text-sm" value={country} onChange={(e) => setCountry(e.target.value)}>
           {countries.map((c) => <option key={c}>{c}</option>)}
-        </select>
+        </SearchableSelect>
       </div>
       <ul className="divide-y divide-border">
         {rows.length === 0 && <li className="p-4 text-sm text-muted-foreground">Nobody yet.</li>}

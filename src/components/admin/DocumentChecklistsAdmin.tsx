@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -94,9 +95,9 @@ export function DocumentChecklistsAdmin() {
         <Panel title="New checklist">
           <div className="space-y-2 p-4">
             <input className={`${input} w-full`} placeholder="Checklist name" value={newName} onChange={(e) => setNewName(e.target.value)} />
-            <select className={`${input} w-full`} value={newKind} onChange={(e) => setNewKind(e.target.value)} aria-label="Checklist type">
+            <SearchableSelect className={`${input} w-full`} value={newKind} onChange={(e) => setNewKind(e.target.value)} aria-label="Checklist type">
               {KINDS.map((k) => <option key={k.value} value={k.value}>{k.label}</option>)}
-            </select>
+            </SearchableSelect>
             <button disabled={busy} onClick={createTemplate} className={btn}>Create checklist</button>
           </div>
         </Panel>

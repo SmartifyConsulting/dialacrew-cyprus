@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -66,10 +67,10 @@ export function ProductionIntelligence() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-3">
         <label className="text-xs font-semibold text-muted-foreground">Production</label>
-        <select value={scope} onChange={(e) => setScope(e.target.value)} className="rounded-sm border border-input bg-background px-3 py-1.5 text-sm">
+        <SearchableSelect value={scope} onChange={(e) => setScope(e.target.value)} className="rounded-sm border border-input bg-background px-3 py-1.5 text-sm">
           <option value="all">All productions ({reports.length})</option>
           {reports.map((r) => <option key={r.production.id} value={r.production.id}>{r.production.jobId ? `${r.production.jobId} · ` : ""}{r.production.name}</option>)}
-        </select>
+        </SearchableSelect>
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">

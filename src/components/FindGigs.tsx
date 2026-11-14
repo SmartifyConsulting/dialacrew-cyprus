@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useState } from "react";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
@@ -90,11 +91,11 @@ export function FindGigsTab({ canClaim, canManage = false }: { canClaim: boolean
       <p className="text-sm text-muted-foreground">Open gigs aren't assigned to anyone specific yet — first to grab it gets it. Available anywhere in the world; filter by location below.</p>
       <div className="flex flex-wrap gap-2">
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search role, production, city, country…" className={`${input} min-w-56 flex-1`} />
-        <select aria-label="Department" value={department} onChange={e => setDepartment(e.target.value)} className={input}><option value="">All departments</option>{departmentNames.map(d => <option key={d}>{d}</option>)}</select>
-        <select value={country} onChange={(e) => setCountry(e.target.value)} className={input} aria-label="Country">
+        <SearchableSelect aria-label="Department" value={department} onChange={e => setDepartment(e.target.value)} className={input}><option value="">All departments</option>{departmentNames.map(d => <option key={d}>{d}</option>)}</SearchableSelect>
+        <SearchableSelect value={country} onChange={(e) => setCountry(e.target.value)} className={input} aria-label="Country">
           <option value="">All countries</option>
           {countries.map((c) => <option key={c}>{c}</option>)}
-        </select>
+        </SearchableSelect>
         <input type="number" value={radiusKm} onChange={(e) => setRadiusKm(e.target.value)} className={`${input} w-28`} placeholder="Radius (km)" disabled={!near} />
         <button onClick={useMyLocation} className="rounded-sm border border-border px-3 py-2 text-xs font-semibold hover:border-primary">
           {near ? "Near me ✓" : "Filter near me"}

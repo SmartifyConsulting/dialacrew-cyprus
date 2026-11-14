@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -219,9 +220,9 @@ function CompanyPanel({ userId }: { userId: string | undefined }) {
             <div className="space-y-3 p-4">
               <input type="email" placeholder="teammate@company.com" className={field} value={email} onChange={(e) => setEmail(e.target.value)} />
               <label className="block text-xs font-semibold text-muted-foreground">Role
-                <select required className={`${field} mt-1`} value={inviteRole} onChange={(e) => setInviteRole(e.target.value as (typeof ROLES)[number])}>
+                <SearchableSelect required className={`${field} mt-1`} value={inviteRole} onChange={(e) => setInviteRole(e.target.value as (typeof ROLES)[number])}>
                   {ROLES.map((r) => <option key={r} value={r}>{r === "other" ? "Other" : r.replace("_", " ").replace(/^./, (c) => c.toUpperCase())}</option>)}
-                </select>
+                </SearchableSelect>
               </label>
               {inviteRole === "other" && (
                 <input placeholder="Describe their role, e.g. Office manager" className={field} value={otherRole} onChange={(e) => setOtherRole(e.target.value)} />

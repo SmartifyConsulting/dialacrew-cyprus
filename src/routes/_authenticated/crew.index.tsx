@@ -1,3 +1,5 @@
+import { DateInput } from "@/components/ui/date-input";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -159,14 +161,14 @@ function CrewPage() {
     <Page title={t("nav.crew")} subtitle={t("directory.subtitle", { count: total })}>
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("directory.search")} className="min-w-64 flex-1 rounded-sm border border-input bg-card px-3 py-2 text-sm outline-none focus:border-ring" />
-        <select value={dept} onChange={(e) => setDept(e.target.value)} className="rounded-sm border border-input bg-card px-3 py-2 text-sm">
+        <SearchableSelect value={dept} onChange={(e) => setDept(e.target.value)} className="rounded-sm border border-input bg-card px-3 py-2 text-sm">
           {departments.map((d) => <option key={d} value={d}>{d === "All" ? t("directory.all") : t(`roles.${d}`, d)}</option>)}
-        </select>
-        <select value={country} onChange={(e) => setCountry(e.target.value)} aria-label="Crew country" className="rounded-sm border border-input bg-card px-3 py-2 text-sm">
+        </SearchableSelect>
+        <SearchableSelect value={country} onChange={(e) => setCountry(e.target.value)} aria-label="Crew country" className="rounded-sm border border-input bg-card px-3 py-2 text-sm">
           <option value="local">Local ({countries.find((c) => c.code === localCountry)?.name ?? localCountry})</option>
           {countries.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
           <option value="ALL">All countries</option>
-        </select>
+        </SearchableSelect>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={availOnly} onChange={(e) => setAvailOnly(e.target.checked)} className="accent-primary" /> {t("directory.availableOnly")}</label>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={favOnly} onChange={(e) => setFavOnly(e.target.checked)} className="accent-primary" /> {t("directory.favouritesOnly")}</label>
         {isProducer && !picking && (
@@ -194,10 +196,10 @@ function CrewPage() {
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <span className="text-xs text-muted-foreground">{picked.length} selected</span>
             <input value={mixName} onChange={(e) => setMixName(e.target.value)} placeholder="Name this combo" className="rounded-sm border border-input bg-card px-2 py-1.5 text-sm" />
-            <select value={mixType} onChange={(e) => setMixType(e.target.value)} className="rounded-sm border border-input bg-card px-2 py-1.5 text-sm" aria-label="Production type this combo is for">
+            <SearchableSelect value={mixType} onChange={(e) => setMixType(e.target.value)} className="rounded-sm border border-input bg-card px-2 py-1.5 text-sm" aria-label="Production type this combo is for">
               <option value="">{t("directory.anyType")}</option>
               {productionTypes.map((type) => <option key={type} value={type}>{t(`productionTypes.${type}`, type)}</option>)}
-            </select>
+            </SearchableSelect>
             <button onClick={saveMix} disabled={createGroup.isPending} className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-60">{createGroup.isPending ? "Saving…" : "Save mix"}</button>
             <button onClick={cancelPicking} className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold">Cancel</button>
           </div>
@@ -317,16 +319,16 @@ function PencilDialog({ crew, onClose }: { crew: { id: string; name: string; rol
             ))}
           </div>
           <label className="block"><span className="text-xs text-muted-foreground">{t("productionList.columns.Production")}</span>
-            <select className={`${field} mt-1`} value={f.productionId} onChange={(e) => { const p = active.find((x) => x.id === e.target.value); setF({ ...f, productionId: e.target.value, date: p?.date ?? f.date }); }}>
+            <SearchableSelect className={`${field} mt-1`} value={f.productionId} onChange={(e) => { const p = active.find((x) => x.id === e.target.value); setF({ ...f, productionId: e.target.value, date: p?.date ?? f.date }); }}>
               {active.length === 0 && <option value="">{t("pencilDialog.noProductions")}</option>}
               {active.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
+            </SearchableSelect>
           </label>
           <label className="block"><span className="text-xs text-muted-foreground">{t("pencilDialog.role")}</span>
             <input className={`${field} mt-1`} value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })} /></label>
           <div className="grid grid-cols-3 gap-3">
             <label className="block"><span className="text-xs text-muted-foreground">{t("productionList.columns.Date")}</span>
-              <input type="date" className={`${field} mt-1`} value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} /></label>
+              <DateInput type="date" className={`${field} mt-1`} value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} /></label>
             <label className="block"><span className="text-xs text-muted-foreground">{t("pencilDialog.call")}</span>
               <input type="time" className={`${field} mt-1`} value={f.callTime} onChange={(e) => setF({ ...f, callTime: e.target.value })} /></label>
             <label className="block"><span className="text-xs text-muted-foreground">{t("pencilDialog.wrap")}</span>
