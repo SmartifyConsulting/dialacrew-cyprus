@@ -103,7 +103,7 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder, cl
 
   useEffect(() => {
     let current = true;
-    if (!open || value.trim().length < 3) { setSuggestions([]); return; }
+    if (!open || value.trim().length < 3) { setSuggestions([]); setLoading(false); return; }
     const t = setTimeout(async () => {
       setLoading(true);
       try {
@@ -111,7 +111,7 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder, cl
         if (!current) return;
         setSuggestions(results.map((d) => ({ label: Object.keys(d.address).length ? shortAddress(d.address, d.name, d.display_name) : [d.name,d.display_name].filter(Boolean).join(" — "), exactAddress: d.display_name, place: placeFromAddress(d.address, d.display_name.split(",")[0] ?? d.display_name), lat: d.lat, lon: d.lon })));
         setFailed(searchError ?? null);
-      } catch { if (current) { setSuggestions([]); setFailed("Could not reach Maps search. Check your connection and try again."); } }
+      } catch (error) { if (current) { setSuggestions([]); setFailed(`Maps search failed: ${friendlyError(error).replace(/https?:\/\/\S+/g, "[request]")}`); } }
       if (current) setLoading(false);
     }, 400);
     return () => { current = false; clearTimeout(t); };
@@ -131,8 +131,8 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder, cl
         className={className}
         placeholder={placeholder}
         value={value}
-        onChange={(e) => { onChange(e.target.value); setOpen(true); }}
-        onFocus={() => setOpen(true)}
+        onChange={(e) => { onChange(e.target.value); setOpen(true); setFailed(null); setLoading(e.target.value.trim().length >= 3); }}
+        onFocus={() => { setOpen(true); if (value.trim().length >= 3) setLoading(true); }}
         autoComplete="off"
       />
       {open && value.trim().length >= 3 && (
