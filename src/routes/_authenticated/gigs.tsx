@@ -7,7 +7,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { startGigCheckout, verifyGigCheckout, chargeGigPenalties } from "@/lib/paystack.functions";
 import { toast } from "sonner";
 import { useDepartments } from "@/lib/db";
-import { useCountries } from "@/lib/use-countries";
+import { useCountryOptions } from "@/lib/country-options";
 import { EQUIPMENT_CATEGORIES, useEquipmentItems } from "@/lib/equipment";
 import { AddressAutocomplete } from "@/components/site/SiteTabs";
 import { PolishDescription } from "@/components/site/PolishDescription";
@@ -50,7 +50,7 @@ function GigsPage() {
   const crewId = useMyCrewId(role === "crew").data;
   const qc = useQueryClient();
   const [form, setForm] = useState(empty);
-  const countries = useCountries();
+  const countries = useCountryOptions();
   const departments = [...new Set([...GIG_DEPARTMENTS, ...(useDepartments().data ?? []).filter(d => d && d !== "All")])].sort();
   const equipment = useEquipmentItems().data ?? [];
   const [phonePrefix, setPhonePrefix] = useState("+27");

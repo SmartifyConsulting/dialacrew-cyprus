@@ -3,7 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 import { useOpenGigs, type OpenGig } from "@/lib/db";
-import { useCountries } from "@/lib/use-countries";
+import { useCountryOptions } from "@/lib/country-options";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { GigNegotiation } from "@/components/GigNegotiation";
@@ -27,7 +27,7 @@ export function FindGigsTab({ canClaim, canManage = false }: { canClaim: boolean
   const [radiusKm, setRadiusKm] = useState("100");
   const [country, setCountry] = useState("");
   const [department, setDepartment] = useState("");
-  const configuredCountries = useCountries();
+  const configuredCountries = useCountryOptions();
   const roleDepartments = useQuery({ queryKey: ["gig-role-departments"], queryFn: async () => { const { data, error } = await supabase.from("crew_members").select("role, department"); if (error) throw error; return data ?? []; } });
   const departmentNames = [...new Set((roleDepartments.data ?? []).map(r => r.department).filter(Boolean))].sort();
   const roleKey = (value: string) => value.trim().toLowerCase().replace(/s$/, "");

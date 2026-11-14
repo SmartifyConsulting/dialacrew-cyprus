@@ -12,7 +12,7 @@ import { useRole, useSession } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { zar } from "@/lib/demo-data";
 import { useTranslation } from "react-i18next";
-import { useCountries } from "@/lib/use-countries";
+import { useCountryOptions } from "@/lib/country-options";
 import { useVisitorCountry } from "@/lib/country-logos";
 import { useCreateCrewGroup, useCreatePencil, useCrewSearch, useDeleteCrewGroup, useCrewGroups, useDepartments, useFavourites, useProductions, useProductionTypes, useToggleFavourite } from "@/lib/db";
 
@@ -114,7 +114,7 @@ function CrewPage() {
   const [dept, setDept] = useState("All");
   const [availOnly, setAvailOnly] = useState(false);
   const localCountry = useVisitorCountry();
-  const countries = useCountries();
+  const countries = useCountryOptions();
   const [country, setCountry] = useState<string>("local");
   const countryCode = country === "local" ? localCountry : country;
   const [favOnly, setFavOnly] = useState(false);

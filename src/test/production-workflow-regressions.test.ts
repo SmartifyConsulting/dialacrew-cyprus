@@ -14,7 +14,7 @@ it("round-trips a saved location time without shifting it on every edit", () => 
 describe("Google Maps location lookup", () => {
   it("fails explicitly when no key is configured and never falls back to another provider", async () => {
     vi.stubEnv("GOOGLE_MAPS_API_KEY", ""); const fetcher = vi.fn(); vi.stubGlobal("fetch", fetcher);
-    await expect(googlePlacesSearch("Nicosia")).rejects.toThrow("not configured");
+    expect((await googlePlacesSearch("Nicosia")).error).toContain("not configured");
     expect(fetcher).not.toHaveBeenCalled();
   });
   it("normalizes Google coordinates and address fields, with country bias", async () => {
@@ -28,7 +28,9 @@ describe("Google Maps location lookup", () => {
   });
   it("surfaces provider failures instead of reporting an empty successful search", async () => {
     vi.stubEnv("GOOGLE_MAPS_API_KEY", "test-key"); vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("denied", { status: 403 })));
-    await expect(googlePlacesSearch("Studio")).rejects.toThrow("unavailable");
+    const result = await googlePlacesSearch("Studio");
+    expect(result.error).toContain("rejected");
+    expect(result.results).toEqual([]);
   });
 });
 describe("recce sandbox dates and expenses", () => {

@@ -1,0 +1,8 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { googlePlacesSearch } from "@/lib/google-places.server";
+afterEach(()=>{vi.unstubAllEnvs();vi.unstubAllGlobals();});
+describe("Google Places search",()=>{
+ it("reports missing configuration without making a request",async()=>{vi.stubEnv("GOOGLE_MAPS_API_KEY","");const fetch=vi.fn();vi.stubGlobal("fetch",fetch);expect((await googlePlacesSearch("Sandton")).error).toContain("GOOGLE_MAPS_API_KEY");expect(fetch).not.toHaveBeenCalled();});
+ it.each(["SERVICE_DISABLED","API_KEY_HTTP_REFERRER_BLOCKED","BILLING_DISABLED"])("returns actionable safe diagnostics for %s",async reason=>{vi.stubEnv("GOOGLE_MAPS_API_KEY","unit-test-key");vi.stubGlobal("fetch",vi.fn(async()=>new Response(JSON.stringify({error:{message:"secret diagnostic that must not be exposed",details:[{reason}]}}),{status:403})));const result=await googlePlacesSearch("Sandton");expect(result.error).toBeTruthy();expect(result.error).not.toContain("secret diagnostic");expect(result.error).not.toContain("unit-test-key");expect(result.results).toEqual([]);});
+ it("returns verified provider addresses and coordinates",async()=>{vi.stubEnv("GOOGLE_MAPS_API_KEY","unit-test-key");const fetch=vi.fn(async(_url:RequestInfo|URL,_init?:RequestInit)=>new Response(JSON.stringify({places:[{id:"place-1",formattedAddress:"Test venue, Sandton",location:{latitude:-26,longitude:28}}]})));vi.stubGlobal("fetch",fetch);const result=await googlePlacesSearch("Sandton","za");expect(result.error).toBeNull();expect(result.results[0]).toMatchObject({placeId:"place-1",lat:"-26",lon:"28"});expect(JSON.parse(fetch.mock.calls[0]![1]!.body as string).regionCode).toBe("ZA");});
+});

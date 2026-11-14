@@ -97,7 +97,7 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder, cl
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
   const boxRef = useRef<HTMLDivElement>(null);
   const search = useServerFn(geocodeSearch);
 
@@ -107,11 +107,11 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder, cl
     const t = setTimeout(async () => {
       setLoading(true);
       try {
-        const { results } = await search({ data: country ? { q: value, country } : { q: value } });
+        const { results, error: searchError } = await search({ data: country ? { q: value, country } : { q: value } });
         if (!current) return;
         setSuggestions(results.map((d) => ({ label: shortAddress(d.address, d.name, d.display_name), exactAddress: d.display_name, place: placeFromAddress(d.address, d.display_name.split(",")[0] ?? d.display_name), lat: d.lat, lon: d.lon })));
-        setFailed(false);
-      } catch { if (current) { setSuggestions([]); setFailed(true); } }
+        setFailed(searchError ?? null);
+      } catch { if (current) { setSuggestions([]); setFailed("Could not reach Google Maps search. Check your connection and try again."); } }
       if (current) setLoading(false);
     }, 400);
     return () => { current = false; clearTimeout(t); };
@@ -143,7 +143,7 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder, cl
           </button>
           {!loading && !failed && suggestions.length === 0 && <div className="px-3 py-2 text-xs text-muted-foreground">No matching places — keep typing the street and suburb, or use it as typed.</div>}
           {loading && <div className="px-3 py-2 text-xs text-muted-foreground">Searching…</div>}
-          {!loading && failed && suggestions.length === 0 && <div role="alert" className="px-3 py-2 text-xs text-destructive">Google Maps search is unavailable. A manually entered address has no verified coordinates.</div>}
+          {!loading && failed && suggestions.length === 0 && <div role="alert" className="px-3 py-2 text-xs text-destructive">{failed} A manually entered address has no verified coordinates.</div>}
           {!loading && suggestions.map((s, i) => (
             <button key={i} type="button" onClick={() => { onSelect(s); setOpen(false); setSuggestions([]); }}
               className="block w-full px-3 py-2 text-left text-xs hover:bg-muted">
