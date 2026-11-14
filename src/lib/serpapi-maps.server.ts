@@ -5,8 +5,9 @@ const cache = new Map<string,{expires:number;value:SearchResult}>();
 const fail = (error:string):SearchResult => ({provider:"serpapi",results:[],error});
 /** Google Maps search through SerpAPI. Credentials and provider raw errors stay server-side. */
 export async function serpMapsSearch(q:string,country?:string):Promise<SearchResult> {
- const key=(process.env["SERPAPI_API_KEY"] || process.env["SERP_API_KEY"] || "").trim();
- if(!key)return fail("Maps search is not configured. Ask your administrator to add the SERPAPI_API_KEY server secret.");
+ // Match the existing Book a Crew project secret; retain standard aliases for other environments.
+ const key=[process.env["SERPAPI_AI_KEY"],process.env["SERPAPI_API_KEY"],process.env["SERP_API_KEY"]].map(value=>value?.trim()).find(Boolean) ?? "";
+ if(!key)return fail("Maps search is not configured. Ask your administrator to add the SERPAPI_AI_KEY or SERPAPI_API_KEY server secret.");
  const region=country?.toUpperCase();
  const cacheKey=(region??"")+":"+q.trim().toLowerCase();const cached=cache.get(cacheKey);
  if(cached && cached.expires>Date.now())return cached.value;

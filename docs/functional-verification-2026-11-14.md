@@ -58,3 +58,9 @@ The synchronized integration reaches SerpAPI, but the provider rejects the confi
 - Added a 25-second browser request deadline and cancellation when a query changes or closes, so Maps cannot stay on Searching indefinitely. TypeScript passed for this follow-up.
 - Still unverified: real payment capture/callbacks, paid storyboard/PDF operations, MP4 rendering and actual device notification delivery. No fees were charged and no real loan/assignment/document mutations were performed by this browser audit.
 - Translation drafts remain paused in Git stash. All functional source edits are committed separately.
+
+## Follow-up after credential configuration
+
+Google OAuth now completes end to end on the standalone preview: Google accepted the corrected Supabase callback and returned the existing Georgia Adams admin account to the dashboard. The earlier missing-secret and redirect-mismatch issues are resolved for that tested preview flow.
+
+Secret metadata inspection (names only) found the project uses SERPAPI_AI_KEY. The runtime helper previously read SERPAPI_API_KEY / SERP_API_KEY. Added support for the existing project name with priority over stale aliases, retaining both standard names. No secret values were read, copied or displayed. Eleven focused Maps tests passed, including a regression for the actual project secret name and precedence. Live retest follows synchronization.
