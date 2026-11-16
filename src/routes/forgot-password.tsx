@@ -1,10 +1,9 @@
+import { sendPasswordReset } from "@/lib/password-reset.functions";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { TopNav } from "@/components/AppShell";
 import { fieldClass, labelClass, submitClass } from "@/components/PasswordInput";
-import { mapAuthError } from "@/lib/auth";
 import { useTranslation } from "react-i18next";
 
 export const Route = createFileRoute("/forgot-password")({
@@ -31,9 +30,13 @@ function Forgot() {
   async function submit(e: FormEvent) {
     e.preventDefault();
     setBusy(true); setError("");
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
+    try {
+      await sendPasswordReset({ data: { email, origin: window.location.origin } });
+    } catch {
+      setBusy(false);
+      const m = "We couldn't send the reset email. Please try again."; setError(m); toast.error(m); return;
+    }
     setBusy(false);
-    if (error) { const m = mapAuthError(error); setError(m.message); toast.error(m.message); return; }
     setSent(true);
   }
 
