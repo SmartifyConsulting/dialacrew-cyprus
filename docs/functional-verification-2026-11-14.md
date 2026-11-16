@@ -101,3 +101,11 @@ Secret metadata inspection (names only) found the project uses SERPAPI_AI_KEY. T
 - Prepared a synthetic one-page PDF fixture (The Blue Parcel) for extraction testing; it contains no personal/client data. Generator: scripts/create-qa-pdf.mjs.
 - Greek gig form, department options, phone-country labels and official country names were visually verified on the published app from c26e004. Restored the original English preference afterward. This is a page check, not all-screen or native-language certification.
 - The live check identified untranslated Inventory/Reports navigation and theme accessibility labels; corrected these and localized the combined date/time field accessibility suffixes. Focused 46 tests and TypeScript passed for this follow-up.
+## Approved negotiation repair — 16 November
+
+- Georgia approved the tested booking guard/negotiation repair. Migration 0081 is APPLIED to Book a Crew.
+- Previously, gig_negotiate recorded an accepted offer while guard_booking_crew_update silently restored the open booking's original crew/rate/status. The repair records the accepted negotiation first, then permits only that matching own-crew reservation. It verifies the saved booking before completing the agreement. Installed MVP and participant checks are preserved.
+- Guard now recognises existing admin management rights, and prevents crew edits to the newly restored travel-cost columns. No price settings, real gigs or existing negotiated rates were changed by installation.
+- Post-install rollback tests passed: below-usual acknowledgment, alternating counteroffers, accepted rate/crew reservation pending terms, duplicate acceptance denial, immutable financial-field protections and audit events. All test changes rolled back.
+- QA Test Producer is now visibly signed into the published app. Created its own QA TEST — Synthetic Client and QA TEST — The Blue Parcel draft through the UI. No other company records were visible in the client chooser.
+- Started the approved synthetic PDF extraction from that account. Progress UI is visible. Provider/result/balance checks follow; do not claim the operation succeeded until saved results are checked.
