@@ -204,6 +204,13 @@
       "when": 1794516342741,
       "tag": "0028_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1794834098757,
+      "tag": "0029_restrict_production_types_insert",
+      "breakpoints": true
     }
   ]
 }
