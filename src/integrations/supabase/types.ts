@@ -2285,6 +2285,42 @@ export type Database = {
           },
         ]
       }
+      notification_email_outbox: {
+        Row: {
+          attempts: number
+          claimed_at: string | null
+          created_at: string
+          dispatch_token: string
+          error: string | null
+          id: string
+          notification_id: string
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          attempts?: number
+          claimed_at?: string | null
+          created_at?: string
+          dispatch_token?: string
+          error?: string | null
+          id?: string
+          notification_id: string
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          attempts?: number
+          claimed_at?: string | null
+          created_at?: string
+          dispatch_token?: string
+          error?: string | null
+          id?: string
+          notification_id?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           acknowledged_at: string | null
@@ -4343,6 +4379,10 @@ export type Database = {
         Returns: undefined
       }
       claim_native_push: {
+        Args: { p_id: string; p_token: string }
+        Returns: Json
+      }
+      claim_notification_email: {
         Args: { p_id: string; p_token: string }
         Returns: Json
       }

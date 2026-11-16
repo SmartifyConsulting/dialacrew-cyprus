@@ -39,6 +39,7 @@ import { Route as AuthenticatedInvoicesIdRouteImport } from './routes/_authentic
 import { Route as AuthenticatedProductionsIndexRouteImport } from './routes/_authenticated/productions.index'
 import { Route as AuthenticatedProductionsIdRouteImport } from './routes/_authenticated/productions.$id'
 import { Route as ApiPublicNativePushRouteImport } from './routes/api/public/native-push'
+import { Route as ApiPublicNotificationEmailRouteImport } from './routes/api/public/notification-email'
 import { Route as ApiPublicPaystackWebhookRouteImport } from './routes/api/public/paystack-webhook'
 import { Route as ApiPublicCalendarTokenRouteImport } from './routes/api/public/calendar.$token'
 
@@ -194,6 +195,12 @@ const ApiPublicNativePushRoute = ApiPublicNativePushRouteImport.update({
   path: '/api/public/native-push',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicNotificationEmailRoute =
+  ApiPublicNotificationEmailRouteImport.update({
+    id: '/api/public/notification-email',
+    path: '/api/public/notification-email',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicPaystackWebhookRoute =
   ApiPublicPaystackWebhookRouteImport.update({
     id: '/api/public/paystack-webhook',
@@ -234,6 +241,7 @@ export interface FileRoutesByFullPath {
   '/invoices/$id': typeof AuthenticatedInvoicesIdRoute
   '/productions/$id': typeof AuthenticatedProductionsIdRoute
   '/api/public/native-push': typeof ApiPublicNativePushRoute
+  '/api/public/notification-email': typeof ApiPublicNotificationEmailRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
   '/crew/': typeof AuthenticatedCrewIndexRoute
   '/productions/': typeof AuthenticatedProductionsIndexRoute
@@ -267,6 +275,7 @@ export interface FileRoutesByTo {
   '/invoices/$id': typeof AuthenticatedInvoicesIdRoute
   '/productions/$id': typeof AuthenticatedProductionsIdRoute
   '/api/public/native-push': typeof ApiPublicNativePushRoute
+  '/api/public/notification-email': typeof ApiPublicNotificationEmailRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
   '/crew': typeof AuthenticatedCrewIndexRoute
   '/productions': typeof AuthenticatedProductionsIndexRoute
@@ -302,6 +311,7 @@ export interface FileRoutesById {
   '/_authenticated/invoices/$id': typeof AuthenticatedInvoicesIdRoute
   '/_authenticated/productions/$id': typeof AuthenticatedProductionsIdRoute
   '/api/public/native-push': typeof ApiPublicNativePushRoute
+  '/api/public/notification-email': typeof ApiPublicNotificationEmailRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
   '/_authenticated/crew/': typeof AuthenticatedCrewIndexRoute
   '/_authenticated/productions/': typeof AuthenticatedProductionsIndexRoute
@@ -337,6 +347,7 @@ export interface FileRouteTypes {
     | '/invoices/$id'
     | '/productions/$id'
     | '/api/public/native-push'
+    | '/api/public/notification-email'
     | '/api/public/paystack-webhook'
     | '/crew/'
     | '/productions/'
@@ -370,6 +381,7 @@ export interface FileRouteTypes {
     | '/invoices/$id'
     | '/productions/$id'
     | '/api/public/native-push'
+    | '/api/public/notification-email'
     | '/api/public/paystack-webhook'
     | '/crew'
     | '/productions'
@@ -404,6 +416,7 @@ export interface FileRouteTypes {
     | '/_authenticated/invoices/$id'
     | '/_authenticated/productions/$id'
     | '/api/public/native-push'
+    | '/api/public/notification-email'
     | '/api/public/paystack-webhook'
     | '/_authenticated/crew/'
     | '/_authenticated/productions/'
@@ -424,6 +437,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermsRoute: typeof TermsRoute
   ApiPublicNativePushRoute: typeof ApiPublicNativePushRoute
+  ApiPublicNotificationEmailRoute: typeof ApiPublicNotificationEmailRoute
   ApiPublicPaystackWebhookRoute: typeof ApiPublicPaystackWebhookRoute
   ApiPublicCalendarTokenRoute: typeof ApiPublicCalendarTokenRoute
 }
@@ -640,6 +654,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicNativePushRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/notification-email': {
+      id: '/api/public/notification-email'
+      path: '/api/public/notification-email'
+      fullPath: '/api/public/notification-email'
+      preLoaderRoute: typeof ApiPublicNotificationEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/paystack-webhook': {
       id: '/api/public/paystack-webhook'
       path: '/api/public/paystack-webhook'
@@ -725,6 +746,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   TermsRoute: TermsRoute,
   ApiPublicNativePushRoute: ApiPublicNativePushRoute,
+  ApiPublicNotificationEmailRoute: ApiPublicNotificationEmailRoute,
   ApiPublicPaystackWebhookRoute: ApiPublicPaystackWebhookRoute,
   ApiPublicCalendarTokenRoute: ApiPublicCalendarTokenRoute,
 }
