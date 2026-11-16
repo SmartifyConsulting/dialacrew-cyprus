@@ -43,7 +43,7 @@ export function ProductionCover({ p, isProducer }: { p: { id: string; name: stri
       <ProductionAvatar name={p.name} imagePath={p.imagePath} className="h-10 w-10 text-sm" />
       {isProducer && (
         <>
-          <label className={`absolute -bottom-1 -right-1 grid h-5 w-5 cursor-pointer place-items-center rounded-full bg-primary text-primary-foreground shadow ${busy ? "opacity-60" : ""}`} aria-label="Edit picture">
+          <label className={`absolute bottom-1 right-1 grid h-5 w-5 cursor-pointer place-items-center rounded-full bg-primary text-primary-foreground shadow ring-2 ring-background ${busy ? "opacity-60" : ""}`} aria-label="Edit picture">
             <Pencil className="h-3 w-3" />
             <input type="file" accept="image/*" hidden disabled={busy} onChange={(e) => { setCropSource(e.target.files?.[0] ?? null); e.target.value = ""; }} />
           </label>
