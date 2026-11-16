@@ -20,7 +20,7 @@ export const sendPasswordReset = createServerFn({ method: "POST" })
     if (error || !link?.properties?.action_link) return { ok: true }; // unknown email: stay silent
     await sendBrandedEmail({
       to: data.email,
-      content: { ...authEmails.recovery!, action: { label: "Reset password", url: link.properties.action_link } },
+      content: { ...authEmails['recovery']!, action: { label: "Reset password", url: link.properties.action_link } },
       eventId: `recovery:${link.user?.id ?? "u"}:${Date.now()}`,
     });
     return { ok: true };
