@@ -14,7 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      producer_post_rules: { Row: { producer_id: string; rules: string; apply_to_all: boolean; updated_at: string }; Insert: { producer_id: string; rules?: string; apply_to_all?: boolean; updated_at?: string }; Update: { producer_id?: string; rules?: string; apply_to_all?: boolean; updated_at?: string }; Relationships: [] }
       ai_balance_ledger: {
         Row: {
           activity: string
@@ -332,6 +331,11 @@ export type Database = {
           review_deadline: string | null
           role: string
           status: Database["public"]["Enums"]["booking_status"]
+          travel_accommodation_cost: number
+          travel_flight_cost: number
+          travel_food_cost: number
+          travel_per_diem_rate: number
+          travel_visa_cost: number
           wrap_time: string | null
         }
         Insert: {
@@ -362,6 +366,11 @@ export type Database = {
           review_deadline?: string | null
           role: string
           status?: Database["public"]["Enums"]["booking_status"]
+          travel_accommodation_cost?: number
+          travel_flight_cost?: number
+          travel_food_cost?: number
+          travel_per_diem_rate?: number
+          travel_visa_cost?: number
           wrap_time?: string | null
         }
         Update: {
@@ -392,6 +401,11 @@ export type Database = {
           review_deadline?: string | null
           role?: string
           status?: Database["public"]["Enums"]["booking_status"]
+          travel_accommodation_cost?: number
+          travel_flight_cost?: number
+          travel_food_cost?: number
+          travel_per_diem_rate?: number
+          travel_visa_cost?: number
           wrap_time?: string | null
         }
         Relationships: [
@@ -539,6 +553,7 @@ export type Database = {
           name: string
           notes: string
           phone: string
+          trial_owner_id: string | null
         }
         Insert: {
           company?: string
@@ -548,6 +563,7 @@ export type Database = {
           name: string
           notes?: string
           phone?: string
+          trial_owner_id?: string | null
         }
         Update: {
           company?: string
@@ -557,6 +573,7 @@ export type Database = {
           name?: string
           notes?: string
           phone?: string
+          trial_owner_id?: string | null
         }
         Relationships: []
       }
@@ -660,6 +677,7 @@ export type Database = {
           id: string
           name: string
           phone: string | null
+          trial_owner_id: string | null
         }
         Insert: {
           address?: string | null
@@ -673,6 +691,7 @@ export type Database = {
           id?: string
           name: string
           phone?: string | null
+          trial_owner_id?: string | null
         }
         Update: {
           address?: string | null
@@ -686,6 +705,7 @@ export type Database = {
           id?: string
           name?: string
           phone?: string | null
+          trial_owner_id?: string | null
         }
         Relationships: []
       }
@@ -1133,6 +1153,7 @@ export type Database = {
           safety_record: number
           skills: string[]
           team_led: number
+          trial_owner_id: string | null
           user_id: string | null
           vimeo_url: string | null
           youtube_url: string | null
@@ -1162,6 +1183,7 @@ export type Database = {
           safety_record?: number
           skills?: string[]
           team_led?: number
+          trial_owner_id?: string | null
           user_id?: string | null
           vimeo_url?: string | null
           youtube_url?: string | null
@@ -1191,6 +1213,7 @@ export type Database = {
           safety_record?: number
           skills?: string[]
           team_led?: number
+          trial_owner_id?: string | null
           user_id?: string | null
           vimeo_url?: string | null
           youtube_url?: string | null
@@ -1718,15 +1741,13 @@ export type Database = {
       }
       inventory_checkouts: {
         Row: {
-          request_state: string
-          requested_by: string | null
-          approved_by: string | null
           approved_at: string | null
-          collected_by: string | null
-          collected_at: string | null
+          approved_by: string | null
           checked_out_at: string
           checked_out_crew_id: string | null
           checked_out_to: string
+          collected_at: string | null
+          collected_by: string | null
           created_at: string
           due_notified_at: string | null
           expected_return_at: string | null
@@ -1734,18 +1755,18 @@ export type Database = {
           item_id: string
           production_id: string | null
           quantity: number
+          request_state: string
+          requested_by: string | null
           returned_at: string | null
         }
         Insert: {
-          request_state?: string
-          requested_by?: string | null
-          approved_by?: string | null
           approved_at?: string | null
-          collected_by?: string | null
-          collected_at?: string | null
+          approved_by?: string | null
           checked_out_at?: string
           checked_out_crew_id?: string | null
           checked_out_to?: string
+          collected_at?: string | null
+          collected_by?: string | null
           created_at?: string
           due_notified_at?: string | null
           expected_return_at?: string | null
@@ -1753,18 +1774,18 @@ export type Database = {
           item_id: string
           production_id?: string | null
           quantity?: number
+          request_state?: string
+          requested_by?: string | null
           returned_at?: string | null
         }
         Update: {
-          request_state?: string
-          requested_by?: string | null
-          approved_by?: string | null
           approved_at?: string | null
-          collected_by?: string | null
-          collected_at?: string | null
+          approved_by?: string | null
           checked_out_at?: string
           checked_out_crew_id?: string | null
           checked_out_to?: string
+          collected_at?: string | null
+          collected_by?: string | null
           created_at?: string
           due_notified_at?: string | null
           expected_return_at?: string | null
@@ -1772,6 +1793,8 @@ export type Database = {
           item_id?: string
           production_id?: string | null
           quantity?: number
+          request_state?: string
+          requested_by?: string | null
           returned_at?: string | null
         }
         Relationships: [
@@ -1807,6 +1830,7 @@ export type Database = {
           notes: string
           serial_code: string | null
           total_count: number
+          trial_owner_id: string | null
         }
         Insert: {
           category?: string
@@ -1816,6 +1840,7 @@ export type Database = {
           notes?: string
           serial_code?: string | null
           total_count?: number
+          trial_owner_id?: string | null
         }
         Update: {
           category?: string
@@ -1825,6 +1850,7 @@ export type Database = {
           notes?: string
           serial_code?: string | null
           total_count?: number
+          trial_owner_id?: string | null
         }
         Relationships: []
       }
@@ -2411,6 +2437,75 @@ export type Database = {
         }
         Relationships: []
       }
+      producer_post_rules: {
+        Row: {
+          apply_to_all: boolean
+          producer_id: string
+          rules: string
+          updated_at: string
+        }
+        Insert: {
+          apply_to_all?: boolean
+          producer_id: string
+          rules?: string
+          updated_at?: string
+        }
+        Update: {
+          apply_to_all?: boolean
+          producer_id?: string
+          rules?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      production_audit_events: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_name: string
+          after_values: Json | null
+          before_values: Json | null
+          changed_fields: string[]
+          entity_id: string
+          entity_table: string
+          id: string
+          occurred_at: string
+          production_id: string | null
+          production_name: string | null
+          production_owner: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_name: string
+          after_values?: Json | null
+          before_values?: Json | null
+          changed_fields?: string[]
+          entity_id: string
+          entity_table: string
+          id?: string
+          occurred_at?: string
+          production_id?: string | null
+          production_name?: string | null
+          production_owner?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_name?: string
+          after_values?: Json | null
+          before_values?: Json | null
+          changed_fields?: string[]
+          entity_id?: string
+          entity_table?: string
+          id?: string
+          occurred_at?: string
+          production_id?: string | null
+          production_name?: string | null
+          production_owner?: string | null
+        }
+        Relationships: []
+      }
       production_checklist_item_photos: {
         Row: {
           created_at: string
@@ -2448,7 +2543,11 @@ export type Database = {
       }
       production_checklist_items: {
         Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          assigned_by_name: string | null
           assigned_to: string | null
+          assigned_to_name: string | null
           checklist_id: string
           created_at: string
           created_by: string
@@ -2460,7 +2559,11 @@ export type Database = {
           sort_order: number
         }
         Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assigned_by_name?: string | null
           assigned_to?: string | null
+          assigned_to_name?: string | null
           checklist_id: string
           created_at?: string
           created_by?: string
@@ -2472,7 +2575,11 @@ export type Database = {
           sort_order?: number
         }
         Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assigned_by_name?: string | null
           assigned_to?: string | null
+          assigned_to_name?: string | null
           checklist_id?: string
           created_at?: string
           created_by?: string
@@ -2909,9 +3016,6 @@ export type Database = {
       }
       productions: {
         Row: {
-          travel_required: boolean
-          passport_requirements: string
-          post_rules_mode: string
           address: string
           budget: number
           client: string
@@ -2939,8 +3043,10 @@ export type Database = {
           location: string
           longitude: number | null
           name: string
+          passport_requirements: string
           post_rules: string
           post_rules_hidden: boolean
+          post_rules_mode: string
           recce_date: string | null
           recce_end_time: string | null
           recce_start_time: string | null
@@ -2949,12 +3055,10 @@ export type Database = {
           storyboard_characters: string | null
           summary: string
           timezone: string
+          travel_required: boolean
           type: string
         }
         Insert: {
-          travel_required?: boolean
-          passport_requirements?: string
-          post_rules_mode?: string
           address?: string
           budget?: number
           client: string
@@ -2982,8 +3086,10 @@ export type Database = {
           location?: string
           longitude?: number | null
           name: string
+          passport_requirements?: string
           post_rules?: string
           post_rules_hidden?: boolean
+          post_rules_mode?: string
           recce_date?: string | null
           recce_end_time?: string | null
           recce_start_time?: string | null
@@ -2992,12 +3098,10 @@ export type Database = {
           storyboard_characters?: string | null
           summary?: string
           timezone?: string
+          travel_required?: boolean
           type?: string
         }
         Update: {
-          travel_required?: boolean
-          passport_requirements?: string
-          post_rules_mode?: string
           address?: string
           budget?: number
           client?: string
@@ -3025,8 +3129,10 @@ export type Database = {
           location?: string
           longitude?: number | null
           name?: string
+          passport_requirements?: string
           post_rules?: string
           post_rules_hidden?: boolean
+          post_rules_mode?: string
           recce_date?: string | null
           recce_end_time?: string | null
           recce_start_time?: string | null
@@ -3035,6 +3141,7 @@ export type Database = {
           storyboard_characters?: string | null
           summary?: string
           timezone?: string
+          travel_required?: boolean
           type?: string
         }
         Relationships: [
@@ -3049,7 +3156,7 @@ export type Database = {
       }
       profiles: {
         Row: {
-          account_stage: "mvp" | "committed"
+          account_stage: string
           avatar_url: string | null
           country: string | null
           created_at: string
@@ -3067,7 +3174,7 @@ export type Database = {
           whatsapp_number: string | null
         }
         Insert: {
-          account_stage?: "mvp" | "committed"
+          account_stage?: string
           avatar_url?: string | null
           country?: string | null
           created_at?: string
@@ -3085,7 +3192,7 @@ export type Database = {
           whatsapp_number?: string | null
         }
         Update: {
-          account_stage?: "mvp" | "committed"
+          account_stage?: string
           avatar_url?: string | null
           country?: string | null
           created_at?: string
@@ -3154,6 +3261,7 @@ export type Database = {
           phone: string
           rate: number
           service_type: string
+          trial_owner_id: string | null
         }
         Insert: {
           available?: boolean
@@ -3166,6 +3274,7 @@ export type Database = {
           phone?: string
           rate?: number
           service_type?: string
+          trial_owner_id?: string | null
         }
         Update: {
           available?: boolean
@@ -3178,6 +3287,7 @@ export type Database = {
           phone?: string
           rate?: number
           service_type?: string
+          trial_owner_id?: string | null
         }
         Relationships: []
       }
@@ -3497,7 +3607,11 @@ export type Database = {
       }
       site_tasks: {
         Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          assigned_by_name: string | null
           assigned_crew_id: string | null
+          assigned_to_name: string | null
           checklist_item_id: string | null
           created_at: string
           created_by: string
@@ -3509,7 +3623,11 @@ export type Database = {
           title: string
         }
         Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assigned_by_name?: string | null
           assigned_crew_id?: string | null
+          assigned_to_name?: string | null
           checklist_item_id?: string | null
           created_at?: string
           created_by?: string
@@ -3521,7 +3639,11 @@ export type Database = {
           title: string
         }
         Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assigned_by_name?: string | null
           assigned_crew_id?: string | null
+          assigned_to_name?: string | null
           checklist_item_id?: string | null
           created_at?: string
           created_by?: string
@@ -4167,9 +4289,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      buy_crew_refeature: { Args: { p_operation: string; p_expected_price_micros: number }; Returns: string }
-      crew_travel_status: { Args: { p_ids: string[]; p_on?: string }; Returns: { crew_id: string; passport_status: string; featured_at: string | null }[] }
-      inventory_stock: { Args: Record<PropertyKey, never>; Returns: { item_id: string; reserved: number; collected: number }[] }
       accept_booking_with_terms: {
         Args: { p_booking_id: string; p_terms_version: string }
         Returns: undefined
@@ -4197,6 +4316,10 @@ export type Database = {
       approve_job: { Args: { _booking: string }; Returns: undefined }
       auto_approve_reviews: { Args: never; Returns: undefined }
       banking_key: { Args: never; Returns: string }
+      buy_crew_refeature: {
+        Args: { p_expected_price_micros: number; p_operation: string }
+        Returns: string
+      }
       can_access_banking: { Args: { _crew_id: string }; Returns: boolean }
       can_access_passport: { Args: { _crew_id: string }; Returns: boolean }
       cancel_booking: {
@@ -4223,6 +4346,7 @@ export type Database = {
         Args: { p_id: string; p_token: string }
         Returns: Json
       }
+      claim_trial_crew_profile: { Args: never; Returns: string }
       company_should_auto_admin: {
         Args: { _company: string }
         Returns: boolean
@@ -4248,6 +4372,14 @@ export type Database = {
       }
       credit_ai_purchase: { Args: { p_reference: string }; Returns: undefined }
       crew_on_time_pct: { Args: { _crew_id: string }; Returns: number }
+      crew_travel_status: {
+        Args: { p_ids: string[]; p_on?: string }
+        Returns: {
+          crew_id: string
+          featured_at: string
+          passport_status: string
+        }[]
+      }
       decide_join_request: {
         Args: { _approve: boolean; _request: string }
         Returns: undefined
@@ -4312,6 +4444,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      inventory_stock: {
+        Args: never
+        Returns: {
+          collected: number
+          item_id: string
+          reserved: number
+        }[]
+      }
       is_company_admin: {
         Args: { _company: string; _user: string }
         Returns: boolean
@@ -4324,7 +4464,9 @@ export type Database = {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
       }
+      is_mvp_user: { Args: never; Returns: boolean }
       is_site_member: { Args: { _prod: string }; Returns: boolean }
+      is_trial_account: { Args: { p_user: string }; Returns: boolean }
       manage_document_library: {
         Args: {
           p_action: string
@@ -4411,6 +4553,14 @@ export type Database = {
           user_id: string
         }[]
       }
+      trial_company_visible: { Args: { p_id: string }; Returns: boolean }
+      trial_crew_visible: { Args: { p_id: string }; Returns: boolean }
+      trial_parent_visible: {
+        Args: { p_id: string; p_kind: string }
+        Returns: boolean
+      }
+      trial_production_visible: { Args: { p_id: string }; Returns: boolean }
+      trial_user_visible: { Args: { p_user: string }; Returns: boolean }
       upsert_banking_details: {
         Args: {
           _account_holder_name: string
