@@ -1,0 +1,13 @@
+Book a Crew
+
+Confirm your email address
+
+Confirm this email address to complete the requested change to your Book a Crew account.
+
+If you did not request this change, open Book a Crew directly and review your account security.
+
+Confirm email change: {{ .ConfirmationURL }}
+
+This is an automated message from Book a Crew. Please do not reply to this address.
+
+https://bookacrew.film

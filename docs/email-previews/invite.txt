@@ -1,0 +1,13 @@
+Book a Crew
+
+You’re invited
+
+You have been invited to join Book a Crew. Accept your invitation to set up your account and connect with your production team.
+
+If you were not expecting this invitation, you can ignore this email.
+
+Accept invitation: {{ .ConfirmationURL }}
+
+This is an automated message from Book a Crew. Please do not reply to this address.
+
+https://bookacrew.film

@@ -1,0 +1,13 @@
+Book a Crew
+
+Welcome to Book a Crew
+
+Confirm your email address to finish setting up your account.
+
+If you did not create an account, you can ignore this email.
+
+Confirm email address: {{ .ConfirmationURL }}
+
+This is an automated message from Book a Crew. Please do not reply to this address.
+
+https://bookacrew.film
