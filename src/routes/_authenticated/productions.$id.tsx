@@ -94,7 +94,7 @@ function ProductionSite() {
   );
 
   return (
-    <Page open compact title={<span className="inline-flex items-center gap-3"><ProductionCover p={p} isProducer={isProducer} />{p.name}</span>} subtitle={<span className="inline-flex items-center gap-2"><ClientBadge name={p.client} /> {p.type} · {p.date} · {p.days} day(s) · <MapPin className="h-3 w-3 text-primary" />{p.address || p.location}</span>} actions={actions}>
+    <Page open compact title={<span className="inline-flex items-center gap-3"><ProductionCover p={p} isProducer={isProducer} />{p.name}</span>} subtitle={<span className="inline-flex items-center gap-2 pt-3"><ClientBadge name={p.client} /> {p.type} · {p.date} · {p.days} day(s) · <MapPin className="h-3 w-3 text-primary" />{p.address || p.location}</span>} actions={actions}>
       {closeError && <p role="alert" className="mb-3 text-sm text-destructive">{closeError}</p>}
       {closed && <div className="mb-4 rounded border border-border bg-muted p-3 text-sm font-semibold">Completed — read-only archive. No new activity or invoices can be added.</div>}
       <div className={`grid gap-5 ${asideOpen ? "lg:grid-cols-[380px_minmax(0,1fr)]" : "lg:grid-cols-[minmax(0,1fr)]"}`}>
